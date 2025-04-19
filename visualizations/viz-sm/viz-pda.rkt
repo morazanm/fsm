@@ -374,14 +374,6 @@ farthest-consumed-input | is the portion the ci that the machine consumed the mo
       (for/list ([rule a-config]
                  #:unless (equal? rule DUMMY-RULE))
         rule))))
-
-  ;;pda-config -> boolean
-  ;;Purpose: Determines if the config is in an accpeting configration
-  (define (accepting-configuration? a-config)
-    (and (member? (pda-config-state a-config) (pda-finals (building-viz-state-M a-vs)))
-         (empty? (pda-config-word a-config))
-         (empty? (pda-config-stack a-config))))
-        
   
   ;;(listof trace) (X -> Y) -> (listof rule)
   ;;Purpose: Extracts the rule from the first trace in a (listof trace)
@@ -400,7 +392,6 @@ farthest-consumed-input | is the portion the ci that the machine consumed the mo
          ;;Purpose: Gets the states where it's computation has cutoff
          [cut-off-states (if cut-off
                              (remove-duplicates (for/list ([computation (building-viz-state-computations a-vs)])
-                                                  #|#:unless (accepting-configuration? (first computation))|#
                                                   (pda-config-state (first computation))))
                              '())]
 
