@@ -101,16 +101,8 @@
   
   (struct-copy computation a-comp
                [LoC (treelist-add (computation-LoC a-comp) (apply-rule-helper (treelist-last (computation-LoC a-comp))))]
-               [LoR (treelist-add (computation-LoR a-comp) a-rule)]))
-  
-  ;;mutable set
-  ;;Purpose: holds all of the visited configurations
-  (define visited-configuration-set (mutable-set))
-
-  ;;configuration -> void
-  ;;Purpose: updates the set of visited configurations
-  (define (update-visited a-config)
-    (set-add! visited-configuration-set a-config))
+               [LoR (treelist-add (computation-LoR a-comp) a-rule)]
+               [visited (set-add (computation-visited a-comp) (treelist-last (computation-LoC a-comp)))]))
 
   ;;hash-set
   ;;Purpose: accumulates the number of computations in a hashset
@@ -159,11 +151,10 @@
                                                    lor)]
                      ;;(listof computation)
                      [new-configs (treelist-filter (λ (new-c) 
-                                            (not (set-member? visited-configuration-set (treelist-last (computation-LoC new-c)))))
+                                            (not (set-member? (computation-visited (qfirst QoC)) (treelist-last (computation-LoC new-c)))))
                                           (treelist-map connected-read-rules (λ (rule) (apply-rule (qfirst QoC) rule))))])
                 (begin
                   (update-hash current-config current-tape)
-                  (update-visited current-config)
                   (if (treelist-empty? new-configs)
                       (make-computations (dequeue QoC) (treelist-add path (qfirst QoC)))
                       (make-computations (enqueue new-configs (dequeue QoC)) path))))))))
@@ -171,7 +162,7 @@
         ;;Purpose: The starting computation
         [starting-computation (computation (treelist (tm-config start head-pos a-word 0))
                                            empty-treelist
-                                           '())])
+                                           (set))])
     (make-computations (enqueue (treelist starting-computation) E-QUEUE) empty-treelist)))
 
 

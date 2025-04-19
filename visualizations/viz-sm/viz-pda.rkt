@@ -140,16 +140,8 @@ farthest-consumed-input | is the portion the ci that the machine consumed the mo
 
     (struct-copy computation a-comp
                  [LoC (treelist-add (computation-LoC a-comp) (apply-rule-helper (treelist-last (computation-LoC a-comp))))]
-                 [LoR (treelist-add (computation-LoR a-comp) a-rule)]))
-
-  ;;mutable set
-  ;;Purpose: holds all of the visited configurations
-  (define visited-configuration-set (mutable-set))
-
-  ;;configuration -> void
-  ;;Purpose: updates the set of visited configurations
-  (define (update-visited a-config)
-    (set-add! visited-configuration-set a-config))
+                 [LoR (treelist-add (computation-LoR a-comp) a-rule)]
+                 [visited (set-add (computation-visited a-comp) (treelist-last (computation-LoC a-comp)))]))
 
   ;;hash-set
   ;;Purpose: accumulates the number of computations in a hashset
@@ -232,14 +224,12 @@ farthest-consumed-input | is the portion the ci that the machine consumed the mo
                        ;;(listof coniguration)
                        ;;Purpose: Holds all the new configurations generated from the appliciable rules
                        [new-configs (treelist-filter (λ (new-c) 
-                                                       (not (set-member? visited-configuration-set
-                                                                         (treelist-last (computation-LoC new-c)))))
+                                                       (not (set-member? (computation-visited (qfirst QoC))
+                                                                              (treelist-last (computation-LoC new-c)))))
                                                      (treelist-map connected-pop-rules
-                                                                   (λ (rule) (apply-rule (qfirst QoC) rule))
-                                                                   ))])
+                                                                   (λ (rule) (apply-rule (qfirst QoC) rule))))])
                   (begin
                     (update-hash curr-config curr-word)
-                    (update-visited curr-config)
                     (if (treelist-empty? new-configs)
                         (make-computations-helper (dequeue QoC) (treelist-add path (qfirst QoC)))
                         (make-computations-helper (enqueue new-configs (dequeue QoC)) path))))))))

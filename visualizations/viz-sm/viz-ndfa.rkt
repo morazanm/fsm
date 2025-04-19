@@ -141,8 +141,7 @@ type -> the type of the ndfa (ndfa/dfa) | symbol
                      ;;(trreelistof configurations)
                      ;;Purpose: Makes new configurations using given word and connected-rules
                      [new-configs (treelist-filter (λ (new-c)
-                                                     (not (set-member? (computation-visited (qfirst QoC)) 
-                                                                       (treelist-last (computation-LoC new-c)))))
+                                                     (not (set-member? (computation-visited (qfirst QoC)) (treelist-last (computation-LoC new-c)))))
                                                    (treelist-map (treelist-append connected-emp-rules connected-read-rules)
                                                                  (λ (rule) (apply-rule (qfirst QoC) rule))))])
                 (begin
