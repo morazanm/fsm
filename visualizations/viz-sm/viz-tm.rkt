@@ -132,7 +132,7 @@
   ;;     that are within the bounds of the max computation limit
   (define (make-computations QoC path)
     (if (qempty? QoC)
-        (list path computation-number-hash)
+        (list path)
         (let* ([current-config (treelist-last (computation-LoC (qfirst QoC)))]
                [current-state (tm-config-state current-config)]
                [current-tape (tm-config-tape current-config)]
@@ -140,7 +140,7 @@
           (if (or (> (treelist-length (computation-LoC (qfirst QoC))) max-cmps)
                   (member? current-state finals eq?))
               (begin
-                (update-hash current-config current-tape)
+                ;(update-hash current-config current-tape)
                 (make-computations (dequeue QoC) (treelist-add path (qfirst QoC))))
               (let* (;;(listof rules)
                      ;;Purpose: Filters all the rules that can be applied to the configuration by reading the element in the rule
@@ -154,7 +154,7 @@
                                             (not (set-member? (computation-visited (qfirst QoC)) (treelist-last (computation-LoC new-c)))))
                                           (treelist-map connected-read-rules (λ (rule) (apply-rule (qfirst QoC) rule))))])
                 (begin
-                  (update-hash current-config current-tape)
+                  ;(update-hash current-config current-tape)
                   (if (treelist-empty? new-configs)
                       (make-computations (dequeue QoC) (treelist-add path (qfirst QoC)))
                       (make-computations (enqueue new-configs (dequeue QoC)) path))))))))
@@ -212,16 +212,14 @@
 (define (return-brk-inv-configs inv-config-results)
   (remove-duplicates (filter (λ (config) (not (second config))) inv-config-results)))
 
-
-
-;(listof symbols) -> string
-;;Purpose: Converts the given los into a string
-(define (make-edge-label rule)
-  (format "\n[~a ~a]" (rule-read rule) (rule-action rule)))
-
 ;;(listof rules)
 ;;Purpose: Transforms the pda rules into triples similiar to an ndfa 
 (define (make-rule-triples rules)
+  ;(listof symbols) -> string
+  ;;Purpose: Converts the given los into a string
+  (define (make-edge-label rule)
+    (format "\n[~a ~a]" (rule-read rule) (rule-action rule)))
+
   (map (λ (rule)
          (list (rule-source rule)
                (string->symbol (make-edge-label rule))
@@ -264,14 +262,6 @@
 ;;Purpose: Extracts the empty trace from the (listof trace) and maps rest onto the non-empty trace
 (define (get-next-traces LoT)
   (filter-map-acc empty? rest not id LoT))
-
-;; (listof configuration) number -> (listof configuration)
-;; Purpose: Returns the first configuration in a (listof configuration) if it exceeds the cut-off amount
-(define (get-cut-off LoC max-cmps)
-  (filter-map (λ (config)
-                (and (>= (length config) max-cmps)
-                     (first config)))
-              LoC))
 
 ;;(listof rules) -> (listof rules)
 ;;Purpose: Converts the given (listof configurations)s to rules
@@ -834,9 +824,9 @@
   (let* (;;tm-struct
          [M (remake-tm M)]
          ;;(listof computations) ;;Purpose: All computations that the machine can have
-         [computations+hash (get-computations a-word (tm-rules M) (tm-start M) (tm-finals M) cut-off head-pos)]
+         ;[computations (get-computations a-word (tm-rules M) (tm-start M) (tm-finals M) cut-off head-pos)]
 
-         [computations (treelist->list (first computations+hash))]
+         [computations (treelist->list (get-computations a-word (tm-rules M) (tm-start M) (tm-finals M) cut-off head-pos))]
          ;;(listof configurations) ;;Purpose: Extracts the configurations from the computation
          [LoC (map computation-LoC computations)]
 
