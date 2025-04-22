@@ -172,19 +172,19 @@ destination -> the rest of a mttm rule | half-rule
   (define finals-set (list->seteq finals))
 
   
-  ;;(queueof computation) (treelistof computation) -> (list (listof computation) hashtable)
+  ;;(queueof computation) (treelistof computation) -> (listof computation)
   ;;Purpose: Makes all the computations based around the (queueof computation) and (listof rule)
   ;;     that are within the bounds of the max computation limit
   (define (make-computations QoC path)
     (if (qempty? QoC)
-        (list path computation-number-hash)
+        path
         (let* ([current-config (treelist-last (computation-LoC (qfirst QoC)))]
                [current-state (mttm-config-state current-config)]
                [current-lotc (mttm-config-lotc current-config)])
           (if (or (> (treelist-length (computation-LoC (qfirst QoC))) max-cmps)
                   (member? current-state finals eq?))
               (begin
-                (update-hash current-config current-lotc)
+                ;(update-hash current-config current-lotc)
                 (make-computations (dequeue QoC) (treelist-add path (qfirst QoC))))
               (let* (;;(listof rules)
                      ;;Purpose: Filters all the rules that can be applied to the configuration by reading the element in the rule
@@ -197,7 +197,7 @@ destination -> the rest of a mttm rule | half-rule
                                             (not (set-member? (computation-visited (qfirst QoC)) (treelist-last (computation-LoC new-c)))))
                                           (treelist-map connected-read-rules (λ (rule) (apply-rule (qfirst QoC) rule))))])
                 (begin
-                  (update-hash current-config current-lotc)
+                  ;(update-hash current-config current-lotc)
                   (if (treelist-empty? new-configs)
                       (make-computations (dequeue QoC) (treelist-add path (qfirst QoC)))
                       (make-computations (enqueue new-configs (dequeue QoC)) path))))))))
@@ -208,25 +208,6 @@ destination -> the rest of a mttm rule | half-rule
                                            (set))])
     (make-computations (enqueue (treelist starting-computation) E-QUEUE) empty-treelist)))
 
-(define (remake-rules a-lor)
-    (for/treelist ([mttm-rule a-lor])
-      (rule (half-rule (first (first mttm-rule)) (second (first mttm-rule)))
-            (half-rule (first (second mttm-rule)) (second (second mttm-rule))))))
-
-
-(define (remake-mttm M)
-  (define (remake-rules a-lor)
-    (for/treelist ([mttm-rule a-lor])
-      (rule (half-rule (first (first mttm-rule)) (second (first mttm-rule)))
-            (half-rule (first (second mttm-rule)) (second (second mttm-rule))))))
-  (mttm (mttm-get-states M)
-        (mttm-get-sigma M)
-        (mttm-get-start M)
-        (mttm-get-finals M)
-        (remake-rules (mttm-get-rules M))
-        (M 'get-numtapes)
-        (if (eq? (mttm-what-am-i M) 'mttm-language-recognizer) (mttm-get-accept M) 'none)
-        (mttm-what-am-i M)))
 
 ;;rule symbol (listof rules) -> boolean
 ;;Purpose: Determines if the given rule is a member of the given (listof rules)
@@ -339,7 +320,212 @@ destination -> the rest of a mttm rule | half-rule
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 
+;;mttm tape [natnum] [natnum] . -> (void) Throws error
+;;Purpose: Visualizes the given ndfa processing the given word
+;;Assumption: The given machine is a ndfa or dfa
+(define (mttm-viz M a-word head-pos #:cut-off [cut-off 100] . invs)
+  ;;Mttm -> mttm-struct
+  ;;Purpose: Converts a mttm interface into the mttm structure
+  (define (remake-mttm M)
+    ;;(listof rule) -> (treelistof rule-struct)
+    ;;Purose: Converts a rule into a rule-struct
+    (define (remake-rules a-lor)
+      (for/treelist ([mttm-rule a-lor])
+        (rule (half-rule (first (first mttm-rule)) (second (first mttm-rule)))
+              (half-rule (first (second mttm-rule)) (second (second mttm-rule))))))
+    (mttm (mttm-get-states M)
+          (mttm-get-sigma M)
+          (mttm-get-start M)
+          (mttm-get-finals M)
+          (remake-rules (mttm-get-rules M))
+          (M 'get-numtapes)
+          (if (eq? (mttm-what-am-i M) 'mttm-language-recognizer) (mttm-get-accept M) 'none)
+          (mttm-what-am-i M)))
+  
+  (let* (;;tm-struct
+         [M (remake-mttm M)]
+         ;;(listof computations) ;;Purpose: All computations that the machine can have
+         ;[computations (get-computations a-word (tm-rules M) (tm-start M) (tm-finals M) cut-off head-pos)]
 
+         [computations (treelist->list (get-computations a-word (mttm-tape-amount M) (mttm-rules M) (mttm-start M) (mttm-finals M) cut-off head-pos))]
+         ;;(listof configurations) ;;Purpose: Extracts the configurations from the computation
+         [LoC (map computation-LoC computations)]
+
+         [reached-final? (ormap (λ (computation) (member? (mttm-config-state (treelist-last computation)) (mttm-finals M) eq?)) LoC)]
+         ;;(listof computation) ;;Purpose: Extracts all accepting computations
+         [accepting-computations (if (eq? (mttm-type M) 'mttm-language-recognizer)
+                                     (filter (λ (comp)
+                                           (eq? (mttm-config-state (treelist-last (computation-LoC comp))) (mttm-accepting-final M)))
+                                         computations)
+                                     '())]
+         ;;(listof trace) ;;Purpose: Makes traces from the accepting computations
+         #;[accepting-traces (map (λ (acc-comp)
+                                  (make-trace (computation-LoC acc-comp)
+                                              (computation-LoR acc-comp)
+                                              '()))
+                                accepting-computations)]
+        #| [computation-has-cut-off? (ormap (λ (comp-length)
+                                            (>= comp-length cut-off))
+                                          (if (empty? accepting-traces)
+                                              (map treelist-length LoC)
+                                              '()))]
+         ;;(listof trace) ;;Purpose: Gets the cut off trace if the the word length is greater than the cut
+         [cut-accept-traces '()]
+         ;;(listof trace) ;;Purpose: Gets the cut off trace if the the word length is greater than the cut
+         [accept-cmps (if (empty? cut-accept-traces)
+                          accepting-traces
+                          (map (λ (configs last-reject)
+                                 (append configs (list last-reject)))
+                               accepting-traces
+                               cut-accept-traces))]
+         ;;(listof computation) ;;Purpose: Extracts all rejecting computations
+         [rejecting-computations (filter (λ (config)
+                                           (not (member? config accepting-computations equal?)))
+                                         computations)]
+         ;;(listof trace) ;;Purpose: Makes traces from the rejecting computations
+         [rejecting-traces (map (λ (comp)
+                                  (make-trace (computation-LoC comp)
+                                              (computation-LoR comp)
+                                              '()))
+                                rejecting-computations)]
+         
+         ;;(listof rules) ;;Purpose: Returns the first accepting computations (listof rules)
+         [accepting-trace (if (empty? accept-cmps) '() (first accept-cmps))]
+         [rejecting-trace (if (empty? accept-cmps) (find-longest-computation rejecting-traces '()) '())]
+         [displayed-tape (map (λ (trace) (tm-config-tape (trace-config trace)))
+                              (cond [(and (empty? accepting-trace)
+                                          (not computation-has-cut-off?)
+                                          (= (length rejecting-computations) 1))
+                                     rejecting-trace]
+                                    [(and (not computation-has-cut-off?) (not (empty? accepting-trace))) accepting-trace]
+                                    [else '()]))]
+         [all-displayed-tape (list->zipper displayed-tape)]
+         [tracked-head-pos (let ([head-pos (map (λ (trace) (tm-config-head-position (trace-config trace)))
+                                               (if (empty? accepting-trace)
+                                                   rejecting-trace
+                                                   accepting-trace))])
+                             (if reached-final? head-pos (append head-pos '(-1))))]
+                                 
+                             
+         [all-head-pos (list->zipper tracked-head-pos)]
+         [machine-decision (if (not (empty? accepting-computations))
+                               'accept
+                               'reject)]
+         
+         [tracked-trace (cond [(and (empty? accepting-trace)
+                                    (not computation-has-cut-off?)
+                                    (= (length rejecting-computations) 1))
+                               (list rejecting-trace)]
+                              [(and (not computation-has-cut-off?) (not (empty? accepting-trace))) (list accepting-trace)]
+                              [computation-has-cut-off? (if (empty? accepting-trace)
+                                                            (list rejecting-trace)
+                                                            (list accepting-trace))]
+                              [else '()])]
+         ;;(listof number) ;;Purpose: Gets all the invariant configurations
+         [all-inv-configs (reverse (get-inv-config-results accepting-computations invs))]
+         [failed-inv-configs (return-brk-inv-configs all-inv-configs)]
+         
+         
+         
+         ;;building-state struct
+         [building-state (building-viz-state all-displayed-tape
+                                             LoC
+                                             tracked-trace
+                                             (if (empty? accept-cmps) '() (rest accept-cmps))
+                                             rejecting-traces
+                                             M
+                                             all-inv-configs
+                                             cut-off
+                                             all-head-pos
+                                             machine-decision)]
+                     
+         ;;(listof graph-thunk) ;;Purpose: Gets all the graphs needed to run the viz
+         [graphs (create-graph-thunks building-state '())]
+         ;;(listof number) ;;Purpose: Gets the number of computations for each step
+         [cut-off-computations-lengths (take (count-computations LoC '()) (length tracked-head-pos))]||#)
+    
+    reached-final?
+    #;(run-viz graphs
+             (lambda () (graph->bitmap (first graphs)))
+             (posn (/ E-SCENE-WIDTH 2) (/ TM-E-SCENE-HEIGHT 2))
+             DEFAULT-ZOOM
+             DEFAULT-ZOOM-CAP
+             DEFAULT-ZOOM-FLOOR
+             (informative-messages tm-create-draw-informative-message
+                                   (imsg-state-mttm M
+                                                  (if (zipper-empty? all-displayed-tape) (list->zipper (list a-word)) all-displayed-tape)
+                                                  all-head-pos
+                                                  (list->zipper (map (λ (trace)
+                                                                       (list (rule-read (trace-rules trace))
+                                                                             (rule-action (trace-rules trace))))
+                                                                     (cond [(empty? tracked-trace) tracked-trace]
+                                                                           [(or (and (not computation-has-cut-off?)
+                                                                                     (not (empty? accepting-trace)))
+                                                                                (and (empty? accepting-trace)
+                                                                                     (not computation-has-cut-off?)
+                                                                                     (= (length rejecting-computations) 1)))
+                                                                            (first tracked-trace)]
+                                                                           [else '()])))
+                                                  (list->zipper (if (empty? tracked-trace) tracked-trace (first tracked-trace)))
+                                                  (list->zipper failed-inv-configs) 
+                                                  (list->zipper cut-off-computations-lengths)
+                                                  cut-off
+                                                  machine-decision
+                                                  0
+                                                  (let ([offset-cap (- (length a-word) TAPE-SIZE)])
+                                                    (if (> 0 offset-cap) 0 offset-cap))
+                                                  0)
+                                   tm-img-bounding-limit)
+             (instructions-graphic E-SCENE-TOOLS
+                                   (bounding-limits 0
+                                                    (image-width E-SCENE-TOOLS)
+                                                    (+ EXTRA-HEIGHT-FROM-CURSOR
+                                                       TM-E-SCENE-HEIGHT
+                                                       (image-height tm-info-img)
+                                                       INS-TOOLS-BUFFER)
+                                                    (+ EXTRA-HEIGHT-FROM-CURSOR
+                                                       TM-E-SCENE-HEIGHT
+                                                       (image-height tm-info-img)
+                                                       INS-TOOLS-BUFFER
+                                                       (image-height ARROW-UP-KEY))))
+             (create-viz-draw-world E-SCENE-WIDTH TM-E-SCENE-HEIGHT INS-TOOLS-BUFFER)
+             (create-viz-process-key [ "right" viz-go-next right-key-pressed]
+                                     [ "left" viz-go-prev left-key-pressed]
+                                     [ "up" viz-go-to-begin up-key-pressed]
+                                     [ "down" viz-go-to-end down-key-pressed]
+                                     [ "w" viz-zoom-in identity]
+                                     [ "s" viz-zoom-out identity]
+                                     [ "r" viz-max-zoom-out identity]
+                                     [ "f" viz-max-zoom-in identity]
+                                     [ "e" viz-reset-zoom identity]
+                                     [ "a" identity a-key-pressed]
+                                     [ "d" identity d-key-pressed]
+                                     [ "wheel-down" viz-zoom-in identity]
+                                     [ "wheel-up" viz-zoom-out identity]
+                                     [ "j" tm-jump-prev j-key-pressed]
+                                     [ "l" tm-jump-next l-key-pressed]
+                                     )
+             (create-viz-process-tick TM-E-SCENE-BOUNDING-LIMITS
+                                      NODE-SIZE
+                                      E-SCENE-WIDTH
+                                      TM-E-SCENE-HEIGHT
+                                      CLICK-BUFFER-SECONDS
+                                      ( [tm-img-bounding-limit
+                                         (lambda (a-imsgs x-diff y-diff) a-imsgs)])
+                                      ( [ ARROW-UP-KEY-DIMS viz-go-to-begin up-key-pressed]
+                                        [ ARROW-DOWN-KEY-DIMS viz-go-to-end down-key-pressed]
+                                        [ ARROW-LEFT-KEY-DIMS viz-go-prev left-key-pressed]
+                                        [ ARROW-RIGHT-KEY-DIMS viz-go-next right-key-pressed]
+                                        [ W-KEY-DIMS viz-zoom-in identity]
+                                        [ S-KEY-DIMS viz-zoom-out identity]
+                                        [ R-KEY-DIMS viz-max-zoom-out identity]
+                                        [ E-KEY-DIMS viz-reset-zoom identity]
+                                        [ F-KEY-DIMS viz-max-zoom-in identity]
+                                        [ A-KEY-DIMS identity a-key-pressed]
+                                        [ D-KEY-DIMS identity d-key-pressed]
+                                        [ J-KEY-DIMS tm-jump-prev j-key-pressed]
+                                        [ L-KEY-DIMS tm-jump-next l-key-pressed]))
+             'mttm-viz)))
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
