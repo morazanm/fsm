@@ -129,7 +129,7 @@ To visualize a dfa or ndfa create a new file and require fsm. Then provide one o
 
 ## Current Maintainers
 - [Marco T. Morazán](https://github.com/morazanm)
-- [Andres M. Garced](https://github.com/sora-g22)
+- [Andrés M. Garced](https://github.com/sora-g22)
 - [David Anthony K. Fields](https://github.com/David-Fields27)
 - [Sophia G. Turano](https://github.com/sophiaturano)
 ## Contributors 
