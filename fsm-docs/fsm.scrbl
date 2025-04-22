@@ -781,11 +781,14 @@ A list of pairs containing a word and the result of attemting to derive the
 word are returned.
 
 
-@section{Combined Turing Machines}
+@section{Composed Turing Machines}
 
 @defproc[(combine-tms [d ctmd] [sigma alphabet])
          ctm]{Builds a (combined) Turing machine from the given
  ctmd and the given tape alphabet union {BLANK}.}
+
+@defproc[(ctm-graph [d ctmd])
+         image?]{Generates a flowchart image for the given composed Turing machine description.}
 
 @defproc[(ctm-run [m ctm] [w tmtape] [i natural?])
          list]{Runs the given machine on the given tape with the
@@ -793,6 +796,11 @@ word are returned.
  index into w (without exceeding the length of w).
  A list containing the state the machine halts in, the
  position of the head, and the tape is returned.}
+
+@defproc[(ctm-viz  [m ctm] [d ctmd] [tape (listof symbol?)] [headpos natural?])
+         ctm]{Launches a dynamic visualization tool for the application of the
+              given ctm to the given tape using the given initial head position.
+              The given machine needs to correspond to the given ctmd.}
 
 @section{Regular Expression Constructors}
 

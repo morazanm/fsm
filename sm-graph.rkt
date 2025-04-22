@@ -1,9 +1,10 @@
 #lang racket/base
 
 (require "fsm-gviz/interface.rkt" "fsm-core/private/sm-getters.rkt"
-         "fsm-core/private/callgraphs/transdiagram-mttm.rkt")
+         "fsm-core/private/callgraphs/transdiagram-mttm.rkt"
+         "fsm-core/private/callgraphs/transdiagram-ctm6.rkt")
 
-(provide sm-graph)
+(provide sm-graph ctm-graph)
 
 ;; sm-graph :: fsa optional(number) -> bitmap
 ;; draws a graph of the given machine and returns the bitmap so it
@@ -15,3 +16,5 @@
           (eq? (sm-type fsa) 'mttm-language-recognizer))
       (transition-diagram-mttm fsa)
       (fsa->bitmap fsa color-blind-mode)))
+
+(define ctm-graph transition-diagram-ctm)

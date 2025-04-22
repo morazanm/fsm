@@ -129,16 +129,21 @@ To visualize a dfa or ndfa create a new file and require fsm. Then provide one o
 
 ## Current Maintainers
 - [Marco T. Morazán](https://github.com/morazanm)
-- [Joshua Schappel](https://github.com/jschappel)
-
-## Notable Contributors 
+- [Andrés M. Garced](https://github.com/sora-g22)
+- [David Anthony K. Fields](https://github.com/David-Fields27)
+- [Sophia G. Turano](https://github.com/sophiaturano)
+## Contributors 
 - [Marco T. Morazán](https://github.com/morazanm)
-- Rosario Antunez
+- [Andrés M. Garced](https://github.com/sora-g22)
+- [David Anthony K. Fields](https://github.com/David-Fields27)
+- [Sophia G. Turano](https://github.com/sophiaturano)
 - [Josephine A. Des Rosiers](https://github.com/josdes)
-- [Joshua Schappel](https://github.com/jschappel)
-- [Sachin Mahashabde](https://github.com/sachinmahashabde)
+- [Shamil Dzhatdoyev](https://github.com/shamil-dzhatdo)
+- Rosario Antunez
 - [Tijana Minic](https://github.com/tijanaminic1)
 - [Oliwia Kempinski](https://github.com/oliwial23)
+- [Joshua Schappel](https://github.com/jschappel)
+- [Sachin Mahashabde](https://github.com/sachinmahashabde)
 
 ## License
 Copyright (c) 2020 by Marco T. Morazan
