@@ -37,7 +37,7 @@
    sm-accept sm-numtapes
 
    ;; sm graph
-   sm-graph
+   sm-graph ctm-graph
     
    ; sm testers
    sm-sameresult? sm-testequiv? sm-test
