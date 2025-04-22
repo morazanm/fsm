@@ -48,8 +48,8 @@
                          shown-accepting trace  ;;(zipperof trace)
                          invs-zipper            ;;(zipperof inv-configs)
                          computation-lengths    ;;(zipperof natnum)
-                         max-cmps
-                         machine-decision
+                         max-cmps               ;;natnum
+                         machine-decision       ;;symbol
                          word-img-offset
                          word-img-offset-cap
                          scroll-accum)

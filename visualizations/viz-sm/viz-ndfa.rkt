@@ -90,17 +90,8 @@ type -> the type of the ndfa (ndfa/dfa) | symbol
                  [LoC (treelist-add (computation-LoC a-computation)
                                     (make-new-config (treelist-last (computation-LoC a-computation))))]
                  [LoR (treelist-add (computation-LoR a-computation) rule)]
-                 [visited (treelist-add (computation-visited a-computation) (treelist-last (computation-LoC a-computation)))]))
+                 [visited (set-add (computation-visited a-computation) (treelist-last (computation-LoC a-computation)))]))
   
-  ;;mutable set
-  ;;Purpose: holds all of the visited configurations
-  (define visited-configuration-set (mutable-set))
-
-  ;;configuration -> void
-  ;;Purpose: updates the set of visited configurations
-  (define (update-visited a-config)
-    (set-add! visited-configuration-set a-config))
-
   ;;hash-set
   ;;Purpose: accumulates the number of computations in a hashset
   (define computation-number-hash (make-hash))
@@ -150,14 +141,11 @@ type -> the type of the ndfa (ndfa/dfa) | symbol
                      ;;(trreelistof configurations)
                      ;;Purpose: Makes new configurations using given word and connected-rules
                      [new-configs (treelist-filter (λ (new-c)
-                                                     (not (set-member? visited-configuration-set
-                                                                       (treelist-last (computation-LoC new-c)))))
-                                                   
+                                                     (not (set-member? (computation-visited (qfirst QoC)) (treelist-last (computation-LoC new-c)))))
                                                    (treelist-map (treelist-append connected-emp-rules connected-read-rules)
                                                                  (λ (rule) (apply-rule (qfirst QoC) rule))))])
                 (begin
                   (update-hash current-config current-word)
-                  (update-visited current-config)
                   (if (treelist-empty? new-configs)
                       (make-computations (dequeue QoC) (treelist-add path (qfirst QoC)))
                       (make-computations (enqueue new-configs (dequeue QoC)) path))))))))
@@ -166,7 +154,7 @@ type -> the type of the ndfa (ndfa/dfa) | symbol
         ;;Purpose: The starting configuration
         [starting-config (computation (treelist (ndfa-config start word 0))
                                       empty-treelist
-                                      empty-treelist)])
+                                      (set))])
     (make-computations (enqueue (treelist starting-config) E-QUEUE) empty-treelist)))
 
   
