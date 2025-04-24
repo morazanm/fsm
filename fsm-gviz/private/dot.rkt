@@ -26,7 +26,7 @@
 ;; find-dot : path | false
 ;; looks for the dot path on computer, if exists then returns it otherwise returns false
 (define (find-dot)
-  (with-handlers ([(lambda (e) ; may not have permission
+  (let ([res (with-handlers ([(lambda (e) ; may not have permission
                      (and (exn:fail? e)
                           (regexp-match "access denied" (exn-message e))))
                    (λ (x) #f)])
@@ -36,7 +36,10 @@
       [else
        (ormap (λ (x) (and (file-exists? (build-path x dot.exe))
                           (build-path x dot.exe)))
-              dot-paths)])))
+              dot-paths)]))])
+    (if (path? res)
+        res
+        (raise-user-error "GraphViz is not installed or not found in your system's path. Please visit https://graphviz.org/ for installation instructions."))))
 
 ;; find-tmp-dir: path
 ;; Looks for the systems tmp directory, if it exists then returns the path to that directory.
