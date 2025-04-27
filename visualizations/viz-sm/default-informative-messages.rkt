@@ -14,11 +14,14 @@
 (provide ndfa-create-draw-informative-message
          pda-create-draw-informative-message
          tm-create-draw-informative-message
+         mttm-create-draw-informative-message
          trace trace-config trace-rules
          ndfa-config ndfa-config-state ndfa-config-word ndfa-config-index
          pda-config pda-config-state pda-config-word pda-config-stack pda-config-index
          tm-config tm-config-state tm-config-head-position tm-config-tape tm-config-index
          tm tm-states tm-sigma tm-rules tm-start tm-finals tm-accepting-final tm-type
+         mttm-config mttm-config-state mttm-config-lotc mttm-config-index
+         mttm mttm-states mttm-sigma mttm-rules mttm-start mttm-finals mttm-accepting-final mttm-tape-amount mttm-type
          ci ci-upci ci-pci)
 
 
@@ -32,7 +35,9 @@ rules are a (listof rule-structs)
 (struct pda-config (state word stack index) #:transparent)
 (struct ndfa-config (state word index) #:transparent)
 (struct tm-config (state head-position tape index) #:transparent)
+(struct mttm-config (state lotc index) #:transparent)
 (struct tm (states sigma rules start finals accepting-final type) #:transparent)
+(struct mttm (states sigma start finals rules tape-amount accepting-final type) #:transparent)
 (struct ci (upci pci) #:transparent)
 (struct pda-ci (upci pci stack) #:transparent)
 
@@ -55,6 +60,7 @@ rules are a (listof rule-structs)
 (define DUMMY-TM-RULE '(@ @))
 
 (define accessor-func (compose tm-config-index (compose trace-config zipper-current)))
+(define mttm-accessor-func (compose mttm-config-index (compose trace-config zipper-current)))
 (define pda-accessor-func (compose pda-config-index (compose trace-config zipper-current)))
 (define ndfa-accessor-func (compose third (compose trace-config zipper-current)))
 
@@ -420,6 +426,92 @@ rules are a (listof rule-structs)
                   (eq? (tm-type (imsg-state-tm-M imsg-st)) 'tm))
              (text "The machine reaches a final state and halts." FONT-SIZE ACCEPT-COLOR)]
             [else (text "Word Status: accept " FONT-SIZE BLANK-COLOR)])))
+
+(define (mttm-create-draw-informative-message imsg-st)
+  (define (make-tapes tape-amount tapes head-positions)
+    (define (draw-tape tape head-pos)
+      (let* [(start-index 0)
+             (TAPE-SIZE 24)]
+        (define (make-tape-img loi start-index)
+          (if (empty? (rest loi))
+              (above (first loi)
+                     (square 5 'solid BLANK-COLOR)
+                     (text (number->string start-index) 10 FONT-COLOR))
+              (beside (above (first loi)
+                             (square 5 'solid BLANK-COLOR)
+                             (text (number->string start-index) 10 FONT-COLOR))
+                      (make-tape-img (rest loi) (add1 start-index)))))
+        (let [(letter-imgs (build-list TAPE-SIZE
+                                       (λ (i) (if (< (+ start-index i) (length tape))
+                                                  (overlay (text (symbol->string (list-ref tape (+ start-index i)))
+                                                                 24
+                                                                 (cond [(= i (- head-pos start-index)) REJECT-COLOR]
+                                                                       [else FONT-COLOR]))
+                                                           (overlay (square 50 'solid BLANK-COLOR)
+                                                                    (square (add1 50) 'solid
+                                                                            FONT-COLOR)))
+                                                  (overlay (text (symbol->string BLANK)
+                                                                 24
+                                                                 (cond [(= i (- head-pos start-index)) REJECT-COLOR]
+                                                                   
+                                                                       [else FONT-COLOR]))
+                                                           (square 50 'solid BLANK-COLOR)
+                                                           (square (add1 50) 'solid
+                                                                   FONT-COLOR))))))]
+          (make-tape-img letter-imgs start-index))))
+    (if (= tape-amount 0)
+        (draw-tape (first tapes)
+                   (first head-positions))
+        (above (draw-tape (first tapes)
+                          (first head-positions))
+               (make-tapes (sub1 tape-amount) (rest tapes) (rest head-positions)))))
+  (above/align
+   'left
+   (if (zipper-empty? (imsg-state-mttm-rules-used imsg-st))
+       (text "Head position is not updated when there are multiple rejecting computations." FONT-SIZE FONT-COLOR)
+       (beside (text "Last rule used: " FONT-SIZE FONT-COLOR)
+               (text (format "~a" (if (or (equal? (zipper-current (imsg-state-mttm-rules-used imsg-st)) DUMMY-TM-RULE)
+                                          (zipper-empty? (imsg-state-mttm-rules-used imsg-st)))
+                                      ""
+                                      (zipper-current (imsg-state-mttm-rules-used imsg-st))))
+                     FONT-SIZE
+                     (if (equal? (imsg-state-mttm-machine-decision imsg-st) 'accept)
+                         ACCEPT-COLOR
+                         REJECT-COMPUTATION-COLOR))))
+              
+   (text "Tape: " 1 BLANK-COLOR)
+   (make-tapes (if (or (zipper-empty? (imsg-state-mttm-shown-accepting-trace imsg-st))
+                       (zipper-empty? (imsg-state-mttm-rules-used imsg-st)))
+                   0
+                   (sub1 (mttm-tape-amount (imsg-state-mttm-M imsg-st))))
+               (zipper-current (imsg-state-mttm-tapes imsg-st))
+               (zipper-current (imsg-state-mttm-head-positions imsg-st)))
+   (text (format "The current number of possible computations is: ~a (without repeated configurations)."
+                 (number->string (zipper-current (imsg-state-mttm-computation-lengths imsg-st))))
+         FONT-SIZE
+         COMPUTATION-LENGTH-COLOR)
+   (cond [(and (not (zipper-empty? (imsg-state-mttm-shown-accepting-trace imsg-st)))
+               (>= (mttm-accessor-func (imsg-state-mttm-shown-accepting-trace imsg-st)) (imsg-state-mttm-max-cmps imsg-st))
+               (not (equal? (mttm-config-state (trace-config (zipper-current (imsg-state-mttm-shown-accepting-trace imsg-st))))
+                            (mttm-accepting-final (imsg-state-mttm-M imsg-st)))))
+          (text (format "There are computations that exceed the cut-off limit (~a)."
+                        (imsg-state-mttm-max-cmps imsg-st)) FONT-SIZE DARKGOLDENROD2)]
+         [(and (zipper-at-end? (imsg-state-mttm-tapes imsg-st))
+               (zipper-at-end? (imsg-state-mttm-head-positions imsg-st))
+               (eq? (imsg-state-mttm-machine-decision imsg-st) 'accept)
+               (eq? (mttm-type (imsg-state-mttm-M imsg-st)) 'mttm-language-recognizer))
+          (text "There is a computation that accepts." FONT-SIZE ACCEPT-COLOR)]
+         [(and (zipper-at-end? (imsg-state-mttm-tapes imsg-st))
+               (zipper-at-end? (imsg-state-mttm-head-positions imsg-st))
+               (eq? (imsg-state-mttm-machine-decision imsg-st) 'reject)
+               (eq? (mttm-type (imsg-state-mttm-M imsg-st)) 'mttm-language-recognizer))
+          (text "All computations end in a non-final configuration and the machine rejects." FONT-SIZE REJECT-COLOR)]
+         [(and (zipper-at-end? (imsg-state-mttm-tapes imsg-st))
+               (zipper-at-end? (imsg-state-mttm-head-positions imsg-st))
+               (eq? (imsg-state-mttm-machine-decision imsg-st) 'reject)
+               (eq? (mttm-type (imsg-state-mttm-M imsg-st)) 'mttm))
+          (text "The machine reaches a final state and halts." FONT-SIZE ACCEPT-COLOR)]
+         [else (text "Word Status: accept " FONT-SIZE BLANK-COLOR)])))
 
 ;"notes to self:"
 ;"scroll thru word instead of jumping to end"
