@@ -19,30 +19,11 @@
                     FONT-SIZE)
          "default-informative-messages.rkt")
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-;;state -> all of the states that the mttm has    | (listof symbol
-;;sigma -> all of letters the mttm can read/write | (listof symbol)
-;;start -> the starting state                     | symbol
-;;finals -> the final states                      | (listof symbol)
-;;rules -> the transition rules for the mttm      | (treelistof mttm-rule)
-;;tape-amount -> the number of tapes the mttm has | natnum
-;;accepting-final -> the accepting final state    | symbol
-;;type -> the type of mttm                        | symbol
-;(struct mttm (states sigma start finals rules tape-amount accepting-final type) #:transparent)
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;;head-position -> the head position of the tape | natnum
 ;;tape -> the listof letters being read/written  | (listof symbol)
 (struct tape-config (head-position tape) #:transparent)
-
-;;state -> the state that the ocnfiguration is in                               | symbol
-;;lotc  -> all of the tape configurations associated with current configuration | (listof tape-config)
-;;index -> the number associated with the configuration                         | natnum
-;(struct mttm-config (state lotc index) #:transparent)
-
-;;source-rule -> the portion of the rule containing the source state           | half-rule
-;;destination-rule -> the portion of the rule containing the destination state | half-rule
-(struct mttm-rule (source-rule destination-rule) #:transparent) ;;<- not needed?
 
 #|
 state -> the state at which the actions are applied | symbol
@@ -80,7 +61,7 @@ destination -> the rest of a mttm rule | half-rule
 
 (define init-aux-tape (tape-config 0 (list BLANK)))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 
 ;;word natnum (listof rule) symbol symbol number -> (listof computation)
@@ -97,11 +78,11 @@ destination -> the rest of a mttm rule | half-rule
   ;;(listof tm-action) (listof tape-config) -> boolean
   ;;Purpose: Determines if (listof tm-action) from a rule is applicable to the (listof tape-config)
   (define (applicable-rule? lota lotc)
-  (andmap (λ (tc tm-action)
-            (and (<= (tape-config-head-position tc) (length (tape-config-tape tc)))
-                 (eq? tm-action (list-ref (tape-config-tape tc) (tape-config-head-position tc)))))
-          lotc
-          lota))
+    (andmap (λ (tc tm-action)
+              (and (<= (tape-config-head-position tc) (length (tape-config-tape tc)))
+                   (eq? tm-action (list-ref (tape-config-tape tc) (tape-config-head-position tc)))))
+            lotc
+            lota))
   
 ;;computation rule -> computation
 ;;Purpose: Applys the given rule to the given config and returns the updated computation
@@ -149,24 +130,6 @@ destination -> the rest of a mttm rule | half-rule
                [LoR (treelist-add (computation-LoR a-comp) a-rule)]
                [visited (set-add (computation-visited a-comp) (treelist-last (computation-LoC a-comp)))]))
 
-  ;;hash-set
-  ;;Purpose: accumulates the number of computations in a hashset
-  (define computation-number-hash (make-hash))
-  
-  ;;set
-  ;;an empty set
-  (define EMPTY-SET (set))
-
-  ;;configuration word -> void
-  ;;Purpose: updates the number of configurations using the given word as a key
-  (define (update-hash a-config a-word)
-    (hash-set! computation-number-hash
-               a-word
-               (set-add (hash-ref computation-number-hash
-                                  a-word
-                                  EMPTY-SET)
-                        a-config)))
-
   ;;set
   ;;the set of final states
   (define finals-set (list->seteq finals))
@@ -183,9 +146,7 @@ destination -> the rest of a mttm rule | half-rule
                [current-lotc (mttm-config-lotc current-config)])
           (if (or (> (treelist-length (computation-LoC (qfirst QoC))) max-cmps)
                   (member? current-state finals eq?))
-              (begin
-                ;(update-hash current-config current-lotc)
-                (make-computations (dequeue QoC) (treelist-add path (qfirst QoC))))
+              (make-computations (dequeue QoC) (treelist-add path (qfirst QoC)))
               (let* (;;(listof rules)
                      ;;Purpose: Filters all the rules that can be applied to the configuration by reading the element in the rule
                      [connected-read-rules (treelist-filter (λ (rule)
@@ -196,11 +157,9 @@ destination -> the rest of a mttm rule | half-rule
                      [new-configs (treelist-filter (λ (new-c) 
                                             (not (set-member? (computation-visited (qfirst QoC)) (treelist-last (computation-LoC new-c)))))
                                           (treelist-map connected-read-rules (λ (rule) (apply-rule (qfirst QoC) rule))))])
-                (begin
-                  ;(update-hash current-config current-lotc)
-                  (if (treelist-empty? new-configs)
-                      (make-computations (dequeue QoC) (treelist-add path (qfirst QoC)))
-                      (make-computations (enqueue new-configs (dequeue QoC)) path))))))))
+                (if (treelist-empty? new-configs)
+                    (make-computations (dequeue QoC) (treelist-add path (qfirst QoC)))
+                    (make-computations (enqueue new-configs (dequeue QoC)) path)))))))
   (let (;;computation
         ;;Purpose: The starting computation
         [starting-computation (computation (treelist (mttm-config start (make-init-tape-config) 0))
@@ -258,10 +217,7 @@ destination -> the rest of a mttm rule | half-rule
 (define (get-next-traces LoT)
   (filter-map-acc empty? rest not id LoT))
 
-
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 
 ;;graph machine -> graph
 ;;Purpose: Creates the nodes for the given graph
@@ -906,7 +862,7 @@ destination -> the rest of a mttm rule | half-rule
               (cons inv-config-result
                     (get-inv-config-results-helper (treelist-rest computations)))))))
   (append-map (λ (comp)
-                (get-inv-config-results-helper comp #;(computation-LoC comp)))
+                (get-inv-config-results-helper comp))
               computations))
 
   ;;(listof configurations) (listof sybmols) -> (listof configurations)
@@ -917,8 +873,6 @@ destination -> the rest of a mttm rule | half-rule
   (let* (;;tm-struct
          [M (remake-mttm M)]
          ;;(listof computations) ;;Purpose: All computations that the machine can have
-         ;[computations (get-computations a-word (tm-rules M) (tm-start M) (tm-finals M) cut-off head-pos)]
-
          [computations (treelist->list (get-computations a-word (mttm-tape-amount M) (mttm-rules M) (mttm-start M) (mttm-finals M) cut-off head-pos))]
          ;;(listof configurations) ;;Purpose: Extracts the configurations from the computation
          [LoC (map computation-LoC computations)]
@@ -939,17 +893,9 @@ destination -> the rest of a mttm rule | half-rule
          ;;boolean ;;Purpose: Determines if any computation reaches the cuts off treshold
          [computation-has-cut-off? (ormap (λ (comp-length)
                                             (>= comp-length cut-off))
-                                          (if (empty? accepting-traces)  ;;<- if empty then no word is accepted -> the cut off threshold was reached
+                                          (if (empty? accepting-traces) ;;<- if empty then no word is accepted -> the cut off threshold could reached
                                               (map treelist-length LoC)
                                               '()))]
-         ;;(listof trace) ;;Purpose: Gets the cut off trace if the the word length is greater than the cut
-         [accept-cmps accepting-traces
-                      #;(if (empty? cut-accept-traces)
-                            accepting-traces
-                            (map (λ (configs last-reject)
-                                   (append configs (list last-reject)))
-                                 accepting-traces
-                                 cut-accept-traces))]
          ;;(listof computation) ;;Purpose: Extracts all rejecting computations
          [rejecting-computations (filter (λ (config)
                                            (not (member? config accepting-computations equal?)))
@@ -961,8 +907,8 @@ destination -> the rest of a mttm rule | half-rule
                                               '()))
                                 rejecting-computations)]
          ;;(listof rules) ;;Purpose: Returns the first accepting computations (listof rules)
-         [accepting-trace (if (empty? accept-cmps) '() (first accept-cmps))]
-         [rejecting-trace (if (empty? accept-cmps) (find-longest-computation rejecting-traces '()) '())]
+         [accepting-trace (if (empty? accepting-traces) '() (first accepting-traces))]
+         [rejecting-trace (if (empty? accepting-traces) (find-longest-computation rejecting-traces '()) '())]
          [all-tapes (map (λ (trace) (mttm-config-lotc (trace-config trace)))
                               (cond [(and (empty? accepting-trace)
                                           (not computation-has-cut-off?)
@@ -992,21 +938,19 @@ destination -> the rest of a mttm rule | half-rule
                                                             (list rejecting-trace)
                                                             (list accepting-trace))]
                               [else '()])]
-         ;;(listof number) ;;Purpose: Gets all the invariant configurations
+         ;;(listof (list config boolean)) ;;Purpose: Gets all the invariant configurations
          [all-inv-configs (if (empty? invs)
                               '()
                               (reverse (get-inv-config-results
-                                        (if (and reached-final? (eq? (mttm-type M) 'mttm)) LoC accepting-computations)
+                                        (if (and reached-final? (eq? (mttm-type M) 'mttm)) LoC (map computation-LoC accepting-computations))
                                         invs)))]
+         ;;;;(listof (list config boolean)) ;;Purpose: Gets all the failed invariant configurations
          [failed-inv-configs (return-brk-inv-configs all-inv-configs)]
-         
-         
-         
          ;;building-state struct
          [building-state (building-viz-state all-displayed-tape
                                              LoC
                                              tracked-trace
-                                             (if (empty? accept-cmps) '() (rest accept-cmps))
+                                             (if (empty? accepting-traces) '() (rest accepting-traces))
                                              rejecting-traces
                                              M
                                              all-inv-configs
@@ -1018,10 +962,6 @@ destination -> the rest of a mttm rule | half-rule
          [graphs (create-graph-thunks building-state '())]
          ;;(listof number) ;;Purpose: Gets the number of computations for each step
          [cut-off-computations-lengths (take (count-computations LoC '()) (length tracked-head-pos))])
-    ;displayed-tape
-    ;tracked-head-pos
-    ;accepting-computations
-    failed-inv-configs
     (run-viz graphs
                (lambda () (graph->bitmap (first graphs)))
                (posn (/ E-SCENE-WIDTH 2) (/ TM-E-SCENE-HEIGHT 2))
@@ -1103,9 +1043,9 @@ destination -> the rest of a mttm rule | half-rule
                                           [ J-KEY-DIMS tm-jump-prev j-key-pressed]
                                           [ L-KEY-DIMS tm-jump-next l-key-pressed]))
                'mttm-viz)))
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 
 
@@ -1179,7 +1119,7 @@ destination -> the rest of a mttm rule | half-rule
                                  (list (list 'B (list 'b 'b))
                                        (list 'W (list RIGHT RIGHT)))
                                  (list (list 'W (list BLANK BLANK))
-                                       (list 'M (list BLANK BLANK)))                                    
+                                       (list 'M (list BLANK BLANK)))
                                  )        
                                 2))
 

@@ -132,7 +132,7 @@
   ;;     that are within the bounds of the max computation limit
   (define (make-computations QoC path)
     (if (qempty? QoC)
-        (list path)
+        path #;(list path)
         (let* ([current-config (treelist-last (computation-LoC (qfirst QoC)))]
                [current-state (tm-config-state current-config)]
                [current-tape (tm-config-tape current-config)]
@@ -182,30 +182,30 @@
 ;;(listof configurations) (listof (listof symbol ((listof sybmols) -> boolean))) -> (listof configurations)
 ;;Purpose: Adds the results of each invariant oredicate to its corresponding invariant configuration 
 (define (get-inv-config-results computations invs)
+  ;;(listof configurations) (listof (listof symbol ((listof sybmols) -> boolean))) -> (listof configurations)
+  ;;Purpose: Adds the results of each invariant oredicate to its corresponding invariant configuration
+  (define (get-inv-config-results-helper computations)
+    (if (or (empty? invs) (treelist-empty? computations))
+        '()
+        (let* ([get-inv-for-inv-config (filter (λ (inv)
+                                                 (equal? (first inv) (tm-config-state (treelist-first computations))))
+                                               invs)]
+               [inv-for-inv-config (if (empty? get-inv-for-inv-config)
+                                       '()
+                                       (second (first get-inv-for-inv-config)))]
+               [inv-config-result (if (empty? inv-for-inv-config)
+                                      '()
+                                      (list (treelist-first computations)
+                                            (inv-for-inv-config (tm-config-tape (treelist-first computations))
+                                                                (tm-config-head-position (treelist-first computations)))))])
+          (if (empty? inv-config-result)
+              (get-inv-config-results-helper (treelist-rest computations))
+              (cons inv-config-result
+                    (get-inv-config-results-helper (treelist-rest computations)))))))
   (append-map (λ (comp)
-                (get-inv-config-results-helper (computation-LoC comp) invs))
+                (get-inv-config-results-helper comp #;(computation-LoC comp)))
               computations))
 
-;;(listof configurations) (listof (listof symbol ((listof sybmols) -> boolean))) -> (listof configurations)
-;;Purpose: Adds the results of each invariant oredicate to its corresponding invariant configuration
-(define (get-inv-config-results-helper computations invs)
-  (if (or (empty? invs) (treelist-empty? computations))
-      '()
-      (let* ([get-inv-for-inv-config (filter (λ (inv)
-                                               (equal? (first inv) (tm-config-state (treelist-first computations))))
-                                             invs)]
-             [inv-for-inv-config (if (empty? get-inv-for-inv-config)
-                                     '()
-                                     (second (first get-inv-for-inv-config)))]
-             [inv-config-result (if (empty? inv-for-inv-config)
-                                    '()
-                                    (list (treelist-first computations)
-                                          (inv-for-inv-config (tm-config-tape (treelist-first computations))
-                                                                            (tm-config-head-position (treelist-first computations)))))])
-        (if (empty? inv-config-result)
-            (get-inv-config-results-helper (treelist-rest computations) invs)
-            (cons inv-config-result
-                (get-inv-config-results-helper (treelist-rest computations) invs))))))
 
 ;;(listof configurations) (listof sybmols) -> (listof configurations)
 ;;Purpose: Extracts all the invariant configurations that failed
@@ -460,8 +460,6 @@
                                       [all-accept-traces (get-next-traces (building-viz-state-all-accept-traces a-vs))]
                                       [all-reject-traces (get-next-traces (building-viz-state-all-reject-traces a-vs))])
                                      (cons next-graph acc)))]))
-
-
 
 ;;viz-state -> viz-state
 ;;Purpose: Progresses the visualization forward by one step
@@ -850,13 +848,6 @@
                                               '()))]
          ;;(listof trace) ;;Purpose: Gets the cut off trace if the the word length is greater than the cut
          [cut-accept-traces '()]
-         ;;(listof trace) ;;Purpose: Gets the cut off trace if the the word length is greater than the cut
-         [accept-cmps (if (empty? cut-accept-traces)
-                          accepting-traces
-                          (map (λ (configs last-reject)
-                                 (append configs (list last-reject)))
-                               accepting-traces
-                               cut-accept-traces))]
          ;;(listof computation) ;;Purpose: Extracts all rejecting computations
          [rejecting-computations (filter (λ (config)
                                            (not (member? config accepting-computations equal?)))
@@ -869,8 +860,8 @@
                                 rejecting-computations)]
          
          ;;(listof rules) ;;Purpose: Returns the first accepting computations (listof rules)
-         [accepting-trace (if (empty? accept-cmps) '() (first accept-cmps))]
-         [rejecting-trace (if (empty? accept-cmps) (find-longest-computation rejecting-traces '()) '())]
+         [accepting-trace (if (empty? accepting-traces) '() (first accepting-traces))]
+         [rejecting-trace (if (empty? accepting-traces) (find-longest-computation rejecting-traces '()) '())]
          [displayed-tape (map (λ (trace) (tm-config-tape (trace-config trace)))
                               (cond [(and (empty? accepting-trace)
                                           (not computation-has-cut-off?)
@@ -901,7 +892,12 @@
                                                             (list accepting-trace))]
                               [else '()])]
          ;;(listof number) ;;Purpose: Gets all the invariant configurations
-         [all-inv-configs (reverse (get-inv-config-results accepting-computations invs))]
+         [all-inv-configs (if (empty? invs)
+                              '()
+                              (reverse (get-inv-config-results (if (and reached-final? (eq? (tm-type M) 'tm))
+                                                                   LoC
+                                                                   (map computation-LoC accepting-computations))
+                                                               invs)))]
          [failed-inv-configs (return-brk-inv-configs all-inv-configs)]
          
          
@@ -910,7 +906,7 @@
          [building-state (building-viz-state all-displayed-tape
                                              LoC
                                              tracked-trace
-                                             (if (empty? accept-cmps) '() (rest accept-cmps))
+                                             (if (empty? accepting-traces) '() (rest accepting-traces))
                                              rejecting-traces
                                              M
                                              all-inv-configs

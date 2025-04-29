@@ -35,11 +35,28 @@ rules are a (listof rule-structs)
 (struct pda-config (state word stack index) #:transparent)
 (struct ndfa-config (state word index) #:transparent)
 (struct tm-config (state head-position tape index) #:transparent)
+;;state -> the state that the ocnfiguration is in                               | symbol
+;;lotc  -> all of the tape configurations associated with current configuration | (listof tape-config)
+;;index -> the number associated with the configuration                         | natnum
 (struct mttm-config (state lotc index) #:transparent)
+;;state -> all of the states that the tm has    | (listof symbol
+;;sigma -> all of letters the tm can read/write | (listof symbol)
+;;rules -> the transition rules for the tm      | (treelistof tm-rule)
+;;start -> the starting state                   | symbol
+;;finals -> the final states                    | (listof symbol)
+;;accepting-final -> the accepting final state  | symbol
+;;type -> the type of tm                        | symbol
 (struct tm (states sigma rules start finals accepting-final type) #:transparent)
+;;state -> all of the states that the mttm has    | (listof symbol
+;;sigma -> all of letters the mttm can read/write | (listof symbol)
+;;start -> the starting state                     | symbol
+;;finals -> the final states                      | (listof symbol)
+;;rules -> the transition rules for the mttm      | (treelistof mttm-rule)
+;;tape-amount -> the number of tapes the mttm has | natnum
+;;accepting-final -> the accepting final state    | symbol
+;;type -> the type of mttm                        | symbol
 (struct mttm (states sigma start finals rules tape-amount accepting-final type) #:transparent)
 (struct ci (upci pci) #:transparent)
-(struct pda-ci (upci pci stack) #:transparent)
 
 (define FONT-SIZE 20)
 
