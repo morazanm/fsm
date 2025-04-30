@@ -16,14 +16,12 @@
          "../../fsm-core/private/mtape-tm.rkt" 
          "david-imsg-state.rkt"
          (except-in "david-viz-constants.rkt"
+                    remake-mttm
                     FONT-SIZE)
          "default-informative-messages.rkt")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;;head-position -> the head position of the tape | natnum
-;;tape -> the listof letters being read/written  | (listof symbol)
-(struct tape-config (head-position tape) #:transparent)
 
 #|
 state -> the state at which the actions are applied | symbol
@@ -334,8 +332,8 @@ destination -> the rest of a mttm rule | half-rule
          ;;Purpose: Gets the states where it's computation has cutoff
          [cut-off-states (if cut-off
                              (remove-duplicates (filter (λ (state)
-                                                          (not (equal? state (tm-accepting-final (building-viz-state-M a-vs)))))
-                                                        (map (λ (comp) (tm-config-state (treelist-first comp)))
+                                                          (not (equal? state (mttm-accepting-final (building-viz-state-M a-vs)))))
+                                                        (map (λ (comp) (mttm-config-state (treelist-first comp)))
                                                              (building-viz-state-computations a-vs))))
                              '())]
 
@@ -914,6 +912,9 @@ destination -> the rest of a mttm rule | half-rule
                                           (not computation-has-cut-off?)
                                           (= (length rejecting-computations) 1))
                                      rejecting-trace]
+                                    [computation-has-cut-off? (if (empty? accepting-trace)
+                                                            rejecting-trace
+                                                            accepting-trace)]
                                     [(and (not computation-has-cut-off?) (not (empty? accepting-trace))) accepting-trace]
                                     [else '()]))]
          [displayed-tape (for/list [(lotc all-tapes)]
@@ -921,7 +922,7 @@ destination -> the rest of a mttm rule | half-rule
          [all-displayed-tape (list->zipper displayed-tape)]
          [tracked-head-pos (let ([head-pos (for/list [(lotc all-tapes)]
                                              (for/list [(tc lotc)] (tape-config-head-position tc)))])
-                             (if reached-final? head-pos (append head-pos '(-1))))]
+                             head-pos #;(if reached-final? head-pos (append head-pos '())))]
                                  
                              
          [all-head-pos (list->zipper tracked-head-pos)]
@@ -961,10 +962,22 @@ destination -> the rest of a mttm rule | half-rule
          ;;(listof graph-thunk) ;;Purpose: Gets all the graphs needed to run the viz
          [graphs (create-graph-thunks building-state '())]
          ;;(listof number) ;;Purpose: Gets the number of computations for each step
-         [cut-off-computations-lengths (take (count-computations LoC '()) (length tracked-head-pos))])
+         [cut-off-computations-lengths (take (count-computations LoC '()) (length tracked-head-pos))]
+         [MTTM-E-SCENE-HEIGHT (cond [(= (mttm-tape-amount M) 2) MTTM-2tape-E-SCENE-HEIGHT]
+                                    [(= (mttm-tape-amount M) 3) MTTM-3tape-E-SCENE-HEIGHT]
+                                    [else MTTM->=4tape-E-SCENE-HEIGHT])]
+         [mttm-img-bounding-limit (cond [(= (mttm-tape-amount M) 2) mttm-2tape-img-bounding-limit]
+                                        [(= (mttm-tape-amount M) 3) mttm-3tape-img-bounding-limit]
+                                        [else mttm->=4tape-img-bounding-limit])]
+         [mttm-info-img (cond [(= (mttm-tape-amount M) 2) mttm-2tape-info-img]
+                              [(= (mttm-tape-amount M) 3) mttm-3tape-info-img]
+                              [else mttm->=4tape-info-img])])
+    ;rejecting-computations
+    ;;all-tapes
+    ;tracked-head-pos
     (run-viz graphs
                (lambda () (graph->bitmap (first graphs)))
-               (posn (/ E-SCENE-WIDTH 2) (/ TM-E-SCENE-HEIGHT 2))
+               (posn (/ E-SCENE-WIDTH 2) (/ MTTM-E-SCENE-HEIGHT 2))
                DEFAULT-ZOOM
                DEFAULT-ZOOM-CAP
                DEFAULT-ZOOM-FLOOR
@@ -989,23 +1002,23 @@ destination -> the rest of a mttm rule | half-rule
                                                       cut-off
                                                       machine-decision
                                                       0
-                                                      (let ([offset-cap (- (length a-word) TAPE-SIZE)])
+                                                      (let ([offset-cap (- (length a-word) TM-TAPE-SIZE)])
                                                         (if (> 0 offset-cap) 0 offset-cap))
                                                       0)
-                                     tm-img-bounding-limit)
+                                     mttm-img-bounding-limit)
                (instructions-graphic E-SCENE-TOOLS
                                      (bounding-limits 0
                                                       (image-width E-SCENE-TOOLS)
                                                       (+ EXTRA-HEIGHT-FROM-CURSOR
-                                                         TM-E-SCENE-HEIGHT
-                                                         (image-height tm-info-img)
+                                                         MTTM-E-SCENE-HEIGHT
+                                                         (image-height mttm-info-img)
                                                          INS-TOOLS-BUFFER)
                                                       (+ EXTRA-HEIGHT-FROM-CURSOR
-                                                         TM-E-SCENE-HEIGHT
-                                                         (image-height tm-info-img)
+                                                         MTTM-E-SCENE-HEIGHT
+                                                         (image-height mttm-info-img)
                                                          INS-TOOLS-BUFFER
                                                          (image-height ARROW-UP-KEY))))
-               (create-viz-draw-world E-SCENE-WIDTH TM-E-SCENE-HEIGHT INS-TOOLS-BUFFER)
+               (create-viz-draw-world E-SCENE-WIDTH MTTM-E-SCENE-HEIGHT INS-TOOLS-BUFFER)
                (create-viz-process-key [ "right" viz-go-next right-key-pressed]
                                        [ "left" viz-go-prev left-key-pressed]
                                        [ "up" viz-go-to-begin up-key-pressed]
@@ -1019,16 +1032,38 @@ destination -> the rest of a mttm rule | half-rule
                                        [ "d" identity d-key-pressed]
                                        [ "wheel-down" viz-zoom-in identity]
                                        [ "wheel-up" viz-zoom-out identity]
-                                       [ "j" tm-jump-prev j-key-pressed]
-                                       [ "l" tm-jump-next l-key-pressed]
+                                       [ "j" mttm-jump-prev j-key-pressed]
+                                       [ "l" mttm-jump-next l-key-pressed]
                                        )
-               (create-viz-process-tick TM-E-SCENE-BOUNDING-LIMITS
+               (create-viz-process-tick (cond [(= (mttm-tape-amount M) 2) MTTM-2tape-E-SCENE-BOUNDING-LIMITS]
+                                              [(= (mttm-tape-amount M) 3) MTTM-3tape-E-SCENE-BOUNDING-LIMITS]
+                                              [else MTTM->=4tape-E-SCENE-BOUNDING-LIMITS])
                                         NODE-SIZE
                                         E-SCENE-WIDTH
-                                        TM-E-SCENE-HEIGHT
+                                        MTTM-E-SCENE-HEIGHT
                                         CLICK-BUFFER-SECONDS
-                                        ( [tm-img-bounding-limit
-                                           (lambda (a-imsgs x-diff y-diff) a-imsgs)])
+                                        ( [mttm-img-bounding-limit
+                                           (lambda (a-imsgs x-diff y-diff)
+                                             (let ([new-scroll-accum (+ (imsg-state-mttm-scroll-accum a-imsgs) x-diff)])
+                                               (cond
+                                                 [(and (>= (imsg-state-mttm-word-img-offset-cap a-imsgs)
+                                                           (imsg-state-mttm-word-img-offset a-imsgs))
+                                                       (<= (quotient (+ (imsg-state-mttm-scroll-accum a-imsgs) x-diff) 25) -1))
+                                                  (struct-copy imsg-state-mttm
+                                                               a-imsgs
+                                                               [word-img-offset (+ (imsg-state-mttm-word-img-offset a-imsgs) 1)]
+                                                               [scroll-accum 0])]
+                                                 [(and (> (imsg-state-mttm-word-img-offset a-imsgs) 0)
+                                                       (>= (quotient (+ (imsg-state-mttm-scroll-accum a-imsgs) x-diff) 25) 1))
+                                                  (struct-copy imsg-state-mttm
+                                                               a-imsgs
+                                                               [word-img-offset (- (imsg-state-mttm-word-img-offset a-imsgs) 1)]
+                                                               [scroll-accum 0])]
+                                                 [else
+                                                  (struct-copy imsg-state-mttm
+                                                               a-imsgs
+                                                               [scroll-accum
+                                                                (+ (imsg-state-mttm-scroll-accum a-imsgs) x-diff)])])))])
                                         ( [ ARROW-UP-KEY-DIMS viz-go-to-begin up-key-pressed]
                                           [ ARROW-DOWN-KEY-DIMS viz-go-to-end down-key-pressed]
                                           [ ARROW-LEFT-KEY-DIMS viz-go-prev left-key-pressed]
@@ -1040,8 +1075,8 @@ destination -> the rest of a mttm rule | half-rule
                                           [ F-KEY-DIMS viz-max-zoom-in identity]
                                           [ A-KEY-DIMS identity a-key-pressed]
                                           [ D-KEY-DIMS identity d-key-pressed]
-                                          [ J-KEY-DIMS tm-jump-prev j-key-pressed]
-                                          [ L-KEY-DIMS tm-jump-next l-key-pressed]))
+                                          [ J-KEY-DIMS mttm-jump-prev j-key-pressed]
+                                          [ L-KEY-DIMS mttm-jump-next l-key-pressed]))
                'mttm-viz)))
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

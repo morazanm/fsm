@@ -870,7 +870,28 @@ type -> the type of the ndfa (ndfa/dfa) | symbol
                                       E-SCENE-WIDTH
                                       NDFA-E-SCENE-HEIGHT
                                       CLICK-BUFFER-SECONDS
-                                      ([ndfa-img-bounding-limit (lambda (a-imsgs x-diff y-diff) a-imsgs)])
+                                      ([ndfa-img-bounding-limit
+                                        (lambda (a-imsgs x-diff y-diff)
+                                           (let ([new-scroll-accum (+ (imsg-state-ndfa-scroll-accum a-imsgs) x-diff)])
+                                             (cond
+                                               [(and (>= (imsg-state-ndfa-word-img-offset-cap a-imsgs)
+                                                         (imsg-state-ndfa-word-img-offset a-imsgs))
+                                                     (<= (quotient (+ (imsg-state-ndfa-scroll-accum a-imsgs) x-diff) 25) -1))
+                                                (struct-copy imsg-state-ndfa
+                                                             a-imsgs
+                                                             [word-img-offset (+ (imsg-state-ndfa-word-img-offset a-imsgs) 1)]
+                                                             [scroll-accum 0])]
+                                               [(and (> (imsg-state-ndfa-word-img-offset a-imsgs) 0)
+                                                     (>= (quotient (+ (imsg-state-ndfa-scroll-accum a-imsgs) x-diff) 25) 1))
+                                                (struct-copy imsg-state-ndfa
+                                                             a-imsgs
+                                                             [word-img-offset (- (imsg-state-ndfa-word-img-offset a-imsgs) 1)]
+                                                             [scroll-accum 0])]
+                                               [else
+                                                (struct-copy imsg-state-ndfa
+                                                             a-imsgs
+                                                             [scroll-accum
+                                                              (+ (imsg-state-ndfa-scroll-accum a-imsgs) x-diff)])])))])
                                       ( [ARROW-UP-KEY-DIMS viz-go-to-begin up-key-pressed]
                                         [ARROW-DOWN-KEY-DIMS viz-go-to-end down-key-pressed]
                                         [ARROW-LEFT-KEY-DIMS viz-go-prev left-key-pressed]

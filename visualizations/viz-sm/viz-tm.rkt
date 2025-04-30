@@ -874,7 +874,7 @@
                                                (if (empty? accepting-trace)
                                                    rejecting-trace
                                                    accepting-trace))])
-                             (if reached-final? head-pos (append head-pos '(-1))))]
+                             head-pos #;(if reached-final? head-pos (append head-pos '(-1))))]
                                  
                              
          [all-head-pos (list->zipper tracked-head-pos)]
@@ -945,7 +945,7 @@
                                                   cut-off
                                                   machine-decision
                                                   0
-                                                  (let ([offset-cap (- (length a-word) TAPE-SIZE)])
+                                                  (let ([offset-cap (- (length a-word) TM-TAPE-SIZE)])
                                                     (if (> 0 offset-cap) 0 offset-cap))
                                                   0)
                                    tm-img-bounding-limit)
@@ -984,7 +984,27 @@
                                       TM-E-SCENE-HEIGHT
                                       CLICK-BUFFER-SECONDS
                                       ( [tm-img-bounding-limit
-                                         (lambda (a-imsgs x-diff y-diff) a-imsgs)])
+                                         (lambda (a-imsgs x-diff y-diff)
+                                           (let ([new-scroll-accum (+ (imsg-state-tm-scroll-accum a-imsgs) x-diff)])
+                                             (cond
+                                               [(and (>= (imsg-state-tm-word-img-offset-cap a-imsgs)
+                                                         (imsg-state-tm-word-img-offset a-imsgs))
+                                                     (<= (quotient (+ (imsg-state-tm-scroll-accum a-imsgs) x-diff) 25) -1))
+                                                (struct-copy imsg-state-tm
+                                                             a-imsgs
+                                                             [word-img-offset (+ (imsg-state-tm-word-img-offset a-imsgs) 1)]
+                                                             [scroll-accum 0])]
+                                               [(and (> (imsg-state-tm-word-img-offset a-imsgs) 0)
+                                                     (>= (quotient (+ (imsg-state-tm-scroll-accum a-imsgs) x-diff) 25) 1))
+                                                (struct-copy imsg-state-tm
+                                                             a-imsgs
+                                                             [word-img-offset (- (imsg-state-tm-word-img-offset a-imsgs) 1)]
+                                                             [scroll-accum 0])]
+                                               [else
+                                                (struct-copy imsg-state-tm
+                                                             a-imsgs
+                                                             [scroll-accum
+                                                              (+ (imsg-state-tm-scroll-accum a-imsgs) x-diff)])])))])
                                       ( [ ARROW-UP-KEY-DIMS viz-go-to-begin up-key-pressed]
                                         [ ARROW-DOWN-KEY-DIMS viz-go-to-end down-key-pressed]
                                         [ ARROW-LEFT-KEY-DIMS viz-go-prev left-key-pressed]

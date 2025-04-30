@@ -39,6 +39,7 @@
                        (G b H)
                        (H ,EMP D))))
 
+;; L = ab* U (ab)*b*
 (define L (make-ndfa '(S A B C D E)
                                '(a b)
                                'S
@@ -46,7 +47,7 @@
                                `((S ,EMP A) (S ,EMP C) (A a B) (B b B)
                                  (C a D) (C b E) (D b C) (E b E))))
 
-
+;;L = aa* U ab*
 (define aa*Uab* (make-ndfa '(K B D)
                            '(a b)
                            'K
@@ -55,6 +56,7 @@
                                      (B a B)
                                      (D b D))))
 
+;;L = {w | w in L has a at least an {a b c}}
 (define AT-LEAST-ONE-MISSING
   (make-ndfa '(S A B C)
              '(a b c)
@@ -64,7 +66,7 @@
                           (A b A) (A c A)
                           (B a B) (B c B)
                           (C a C) (C b C))))
-
+;;L = ab* U (ab)*b*
 (define p2-ndfa
   (make-ndfa '(S A B C D E)
              '(a b)
@@ -76,7 +78,7 @@
                           (C b C)
                           (D a E)
                           (E b E))))
-
+;;L = ab* U (ab)*b*
 (define AB*B*UAB*
   (make-ndfa '(S K B C H)
              '(a b)
@@ -87,7 +89,7 @@
                           (B b K)
                           (C ,EMP H)
                           (H b H))))
-
+;;L = a*(ab* U ab*b*) 
 (define AB*B*UAB*2
   (make-ndfa '(S K B C H)
              '(a b)
@@ -98,7 +100,7 @@
                           (B b K)
                           (C ,EMP H)
                           (H b H) (H a S))))
-
+;;L = aa* U ab* U emp
 (define aa-ab
   (make-ndfa `(S A B F)
              '(a b)
@@ -108,6 +110,7 @@
                        (A a A)
                        (B b B))))
 
+;;L = {w | w end with two bs}
 (define ends-with-two-bs
   (make-ndfa `(S A B)
              '(a b)
@@ -116,6 +119,8 @@
              `((S a S) (S b S) (S b A)
                        (A b B)
                        (B b B))))
+
+;;L = {w | w end with two bs}
 (define ENDS-WITH-TWO-Bs
   (make-ndfa `(S A B)
              '(a b)
@@ -125,6 +130,7 @@
                        (A b B) (A a S)
                        (B b B) (B a S))))
 
+;;L = a*
 (define nd-a* (make-ndfa '(K H)
                          '(a b)
                          'K
@@ -132,6 +138,7 @@
                          `((K ,EMP H)
                            (H a H))))
 
+;;L = {w | w in L is missing exactly one {a b c}}
 (define missing-exactly-one
   (make-ndfa '(S A B C D E F G H I J K L M N O P)
              '(a b c)
@@ -155,6 +162,7 @@
                           (O a O) (O c O) (O b P)
                           (P a P) (P b P) (P c P))))
 
+;;L = baa
 (define nd (make-ndfa '(S Z Y A B)
                       '(a b)
                       'S
@@ -165,6 +173,7 @@
                         (Z a A)
                         (A a B))))
 
+;;L = ba
 (define n (make-ndfa '(K H F M I)
                      '(a b)
                      'K
@@ -174,7 +183,7 @@
                        (H ,EMP M)
                        (F a I)
                        (M a I))))
-
+;;L = b
 (define nk (make-ndfa '(K H F M I)
                       '(a b)
                       'K
@@ -184,7 +193,7 @@
                         (F ,EMP M)
                         (M ,EMP I)
                         (I ,EMP H))))
-
+;; L = ab* U ab*b*
 (define ab*-U-ab*b*-ndfa 
        (make-ndfa '(S A B C D E)
                   '(a b)
@@ -192,8 +201,7 @@
                   '(C E)
                   `((S ,EMP A) (S ,EMP D) (A a B) (A ,EMP C)
                                (B b A) (C b C) (D a E) (E b E))))
-
-
+;;L = 0 U 1(0 U 1)*
 (define PROP-BI (make-dfa '(S M N)
                           '(0 1)
                           'S
@@ -203,7 +211,8 @@
                             (M 0 M)
                             (M 1 M))))
 
-(define DNA-SEQUENCE (make-dfa '(K H F M I D B S R) ;C)
+;;L = (CG U AT U TA U GC)*
+(define DNA-SEQUENCE (make-dfa '(K H F M I D B S R)
                                '(a t c g)
                                'K
                                '(K F I B R)
@@ -225,6 +234,7 @@
                        (D ,EMP S)
                        (E ,EMP S))))
 
+;;L = b* U ba(b U a)*
 (define ND2
   (make-ndfa
    '(S A B C D E F)
@@ -237,6 +247,7 @@
                 (B a E) (B b B)
                 (E a E) (E b E) (E ,EMP C))))
 
+;;L = a*b*
 (define ND3
   (make-ndfa '(S A B C D)
              '(a b)
@@ -247,14 +258,14 @@
                           (C ,EMP D)
                           (D ,EMP B)
                           (B b B))))
-
+;;L = a+
 (define ND4 (make-ndfa '(S ds)
                        '(a b)
                        'S
                        '(ds)
                        `((S a ds)
                          (ds a ds))))
-
+;;L = emp
 (define ND5
   (make-ndfa '(S A B C D)
              '(a b)
@@ -266,6 +277,7 @@
                (C ,EMP D)
                (D ,EMP S))))
 
+;;L = {w | w has even # of bs}
 (define EVEN-NUM-Bs
   (make-dfa '(S F)
             '(a b)
@@ -275,6 +287,7 @@
                       (F a F) (F b S))
             'no-dead))
 
+;;L = ab+
 (define M2 (make-dfa `(S A F ,DEAD)
                      '(a b)
                      'S
@@ -303,29 +316,29 @@
 
 ;;word -> boolean
 ;;Purpose: Determines if the given word is empty
-(define (S-INV a-word)
+(define (AB*B*UAB*-S-INV a-word)
   (empty? a-word))
 
 ;;word -> boolean
 ;;Purpose: Determines if the last letter in the given word is an b
-(define (ND-K-INV a-word)
+(define (AB*B*UAB*-K-INV a-word)
   (or (empty? a-word) (equal? (last a-word) 'b)))
 
 ;;word -> boolean
 ;;Purpose: Determines if the last letter in the given word is an a
-(define (B-INV a-word)
+(define (AB*B*UAB*-B-INV a-word)
   (and (not (empty? a-word)) (not
        (equal? (last a-word) 'a))))
 ;)
 
 ;;word -> boolean
 ;;Purpose: Determines if the given word has one a
-(define (C-INV a-word)
+(define (AB*B*UAB*-C-INV a-word)
   (= (length (filter (λ (w) (equal? w 'a)) a-word)) 1))
 
 ;;word -> boolean
 ;;Purpose: Determines if the given word is empty or if the last letter is an a or b
-(define (ND-H-INV a-word)
+(define (AB*B*UAB*-H-INV a-word)
   ;(not
   (or (empty? a-word) (equal? (last a-word) 'a) (equal? (last a-word) 'b)))
 ;)
@@ -340,52 +353,65 @@
 (define (EVEN-NUM-Bs-F-INV a-word)
   (odd? (length (filter (λ (w) (equal? w 'b)) a-word))))
 
-
-(define (s-inv a-word)
+;;word -> boolean
+;;Purpose: determines if w is empty
+(define (ab*-U-ab*b*-ndfa-s-inv a-word)
   (empty? a-word))
 
-(define (a-inv a-word)
+;;word -> boolean
+;;Purpose: determines if w has same # of a's and b's
+(define (ab*-U-ab*b*-ndfa-a-inv a-word)
   (local [(define num-a (length (filter (λ (w) (equal? w 'a)) a-word)))
           (define num-b (length (filter (λ (w) (equal? w 'b)) a-word)))]
     (= num-a num-b)))
 
-(define (b-inv a-word)
+;;word -> boolean
+;;Purpose: determines if w has more of a's and b's
+(define (ab*-U-ab*b*-ndfa-b-inv a-word)
   (local [(define num-a (length (filter (λ (w) (equal? w 'a)) a-word)))
           (define num-b (length (filter (λ (w) (equal? w 'b)) a-word)))]
     (> num-a num-b)))
 
-(define (c-inv a-word)
+;;word -> boolean
+;;Purpose: determines if w has more or equal of a's and b's
+(define (ab*-U-ab*b*-ndfa-c-inv a-word)
   (local [(define num-a (length (filter (λ (w) (equal? w 'a)) a-word)))
           (define num-b (length (filter (λ (w) (equal? w 'b)) a-word)))]
-    (= num-b num-a)))
+    (>= num-b num-a)))
 
-(define (d-inv a-word)
+;;word -> boolean
+;;Purpose: determines if w has same # of a's and b's
+(define (ab*-U-ab*b*-ndfa-d-inv a-word)
   (local [(define num-a (length (filter (λ (w) (equal? w 'a)) a-word)))
           (define num-b (length (filter (λ (w) (equal? w 'b)) a-word)))]
     (= num-a num-b)))
 
-(define (e-inv a-word)
+;;word -> boolean
+;;Purpose: determines if (rest w) only contains bs 
+(define (ab*-U-ab*b*-ndfa-e-inv a-word)
   (andmap (λ (w) (equal? w 'b)) (rest a-word)))
 
-(define (S-INV1 ci)
+;; word -> Boolean
+;; Purpose: To determine whether ci = emp
+(define (aa-ab-S-INV1 ci)
   (not (empty? ci)))
 
 ;; word -> Boolean
 ;; Purpose: To determine whether ci = aa*
-(define (A-INV1 ci)
+(define (aa-ab-A-INV1 ci)
   #f #;(and (not (empty? ci))
             (andmap (λ (w) (eq? w 'a)) ci)))
 
 ;; word -> Boolean
 ;; Purpose: To determine whether ci = ab*
-(define (B-INV1 ci)
+(define (aa-ab-B-INV1 ci)
   (and (not (empty? ci))
        (eq? (first ci) 'a)
        (andmap (λ (el) (eq? el 'b)) ci)))
 
 ;;word -> Boolean
 ;;Purpose: To determine whether ci = emp
-(define (F-INV1 ci)
+(define (aa-ab-F-INV ci)
   (empty? ci))
 
 ;;word -> boolean
@@ -1323,7 +1349,7 @@
 
   ;;Invariant examples
   (sm-viz AT-LEAST-ONE-MISSING '(a b c)
-          (list 'S S-INV)
+          (list 'S AB*B*UAB*-S-INV)
           (list 'A ALON-A-INV)
           (list 'B ALON-B-INV)
           (list 'C ALON-C-INV)) 
@@ -1332,11 +1358,11 @@
           (list 'F EVEN-NUM-Bs-F-INV))
 
   (sm-viz AB*B*UAB* '(a b b b b)
-          (list 'S S-INV)
-          (list 'K ND-K-INV)
-          (list 'B B-INV)
-          (list 'C C-INV)
-          (list 'H ND-H-INV))
+          (list 'S AB*B*UAB*-S-INV)
+          (list 'K AB*B*UAB*-K-INV)
+          (list 'B AB*B*UAB*-B-INV)
+          (list 'C AB*B*UAB*-C-INV)
+          (list 'H AB*B*UAB*-H-INV))
 
 
   (sm-viz n '(b a a))
@@ -1347,7 +1373,7 @@
 
   (sm-viz aa-ab '(a a a a a a a))
   (sm-viz ends-with-two-bs '(a a a a b b a b b b))
-  (sm-viz aa-ab '(a a a a a a a) (list 'S S-INV) (list 'A A-INV1) (list 'B B-INV1) (list 'F F-INV1) #:add-dead #t)
+  (sm-viz aa-ab '(a a a a a a a) (list 'S AB*B*UAB*-S-INV) (list 'A aa-ab-A-INV1) (list 'B aa-ab-B-INV1) (list 'F aa-ab-F-INV) #:add-dead #t)
   (sm-viz DNA-SEQUENCE '(a t c g t a c) (list 'K DNA-K-INV) (list 'H DNA-H-INV) (list 'F DNA-F-INV)
           (list 'M DNA-M-INV) (list 'I DNA-I-INV) (list 'D DNA-D-INV)  (list 'B DNA-B-INV) (list 'S DNA-S-INV) (list 'R DNA-R-INV))
   (sm-viz DNA-SEQUENCE '(c g c g a t a t g c t a g c a t)  (list 'K DNA-K-INV) (list 'H DNA-H-INV) (list 'F DNA-F-INV)

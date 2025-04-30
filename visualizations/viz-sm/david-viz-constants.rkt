@@ -15,6 +15,7 @@
          "../../fsm-core/private/fsa.rkt"
          "../../fsm-core/private/pda.rkt"
          "../../fsm-core/private/tm.rkt"
+         "../../fsm-core/private/mtape-tm.rkt"
          "../../fsm-core/private/misc.rkt")
 
 (define FONT-SIZE 18)
@@ -84,6 +85,24 @@ action is the action to be performed on the tape | TM-ACTION
       (if (eq? (tm-whatami? M) 'tm-language-recognizer) (tm-getaccept M) 'none)
       (tm-whatami? M)))
 
+;;Mttm -> mttm-struct
+;;Purpose: Converts a mttm interface into the mttm structure
+(define (remake-mttm M)
+  ;;(listof rule) -> (treelistof rule-struct)
+  ;;Purose: Converts a rule into a rule-struct
+  (define (remake-rules a-lor)
+    (for/treelist ([mttm-rule a-lor])
+      (rule (first (first mttm-rule)) (second (first mttm-rule))
+            (first (second mttm-rule)) (second (second mttm-rule)))))
+  (mttm (mttm-get-states M)
+        (mttm-get-sigma M)
+        (mttm-get-start M)
+        (mttm-get-finals M)
+        (remake-rules (mttm-get-rules M))
+        (M 'get-numtapes)
+        (if (eq? (mttm-what-am-i M) 'mttm-language-recognizer) (mttm-get-accept M) 'none)
+        (mttm-what-am-i M)))
+
 (define REJECT-COLOR 'violetred)
 (define GRAPHVIZ-CUTOFF-GOLD 'darkgoldenrod2)
 (define SM-VIZ-FONT-SIZE 18)
@@ -130,6 +149,104 @@ action is the action to be performed on the tape | TM-ACTION
                                                    'K
                                                    '(S)
                                                    'S)))
+
+(define ww (remake-mttm (make-unchecked-mttm '(K H T F E B W D M)
+                                '(a b)
+                                'K
+                                '(M)
+                                (list
+                                 (list (list 'K (list BLANK BLANK)) ;;<--- start
+                                       (list 'H (list RIGHT RIGHT))) 
+                                 (list (list 'H (list 'a BLANK)) ;;<---- PHASE 1: read a in w 
+                                       (list 'T (list 'a 'a)))
+                                 (list (list 'T (list 'a 'a))
+                                       (list 'H (list RIGHT RIGHT)))
+                                 (list (list 'H (list 'b BLANK)) ;;<---- PHASE 1: read b in w
+                                       (list 'F (list 'b 'b)))
+                                 (list (list 'F (list 'b 'b))
+                                       (list 'H (list RIGHT RIGHT)))
+                                 (list (list 'H (list BLANK BLANK)) ;;<--- PHASE 2: Go to beginning of t1
+                                       (list 'E (list BLANK LEFT)))
+                                 (list (list 'E (list BLANK 'a))
+                                       (list 'E (list BLANK LEFT)))
+                                 (list (list 'E (list BLANK 'b))
+                                       (list 'E (list BLANK LEFT)))
+                                 (list (list 'E (list BLANK BLANK)) ;;<---- PHASE 3: read w on t1 AND write w on t0
+                                       (list 'W (list BLANK RIGHT)))
+                                 (list (list 'W (list BLANK 'a))
+                                       (list 'D (list 'a 'a)))
+                                 (list (list 'D (list 'a 'a))
+                                       (list 'W (list RIGHT RIGHT)))
+                                 (list (list 'W (list BLANK 'b))
+                                       (list 'B (list 'b 'b)))
+                                 (list (list 'B (list 'b 'b))
+                                       (list 'W (list RIGHT RIGHT)))
+                                 (list (list 'W (list BLANK BLANK))
+                                       (list 'M (list BLANK BLANK)))
+                                 )        
+                                2)))
+
+(define a^nb^n (remake-mttm (make-unchecked-mttm '(K H R E C O M T)
+                                       '(a b)
+                                       'K
+                                       '(T)
+                                       (list
+                                        (list (list 'K (list BLANK BLANK BLANK));; <-- Starting 
+                                              (list 'H (list RIGHT RIGHT RIGHT))) 
+                                        (list (list 'H (list 'a BLANK BLANK)) ;;<-- Phase 1, reads a's
+                                              (list 'R (list 'a 'a BLANK)))
+                                        (list (list 'R (list 'a 'a BLANK))
+                                              (list 'H (list RIGHT RIGHT BLANK))) 
+                                        (list (list 'H (list 'b BLANK BLANK)) ;;<-- phase 2, read b's
+                                              (list 'E (list 'b BLANK 'b)))
+                                        (list (list 'E (list 'b BLANK 'b))
+                                              (list 'C (list RIGHT BLANK RIGHT)))
+                                        (list (list 'C (list 'b BLANK BLANK))
+                                              (list 'E (list 'b BLANK 'b))) 
+                                        (list (list 'C (list 'b BLANK BLANK))
+                                              (list 'O (list RIGHT BLANK BLANK)))
+                                        (list (list 'O (list BLANK BLANK BLANK)) ;;<-- phase 4, matching as, bs, cs
+                                              (list 'M (list BLANK LEFT LEFT)))
+                                        (list (list 'M (list BLANK 'a 'b))
+                                              (list 'M (list BLANK LEFT LEFT)))
+                                        (list (list 'M (list BLANK BLANK BLANK)) ;;<-phase 5, accept (if possible)
+                                              (list 'T (list BLANK BLANK BLANK)))
+                                        )
+                                       3
+                                       'T)))
+
+(define a^nb^nc^n (remake-mttm (make-unchecked-mttm '(K H R E C O M T F)
+                                       '(a b c)
+                                       'K
+                                       '(F)
+                                       (list
+                                        (list (list 'K (list BLANK BLANK BLANK BLANK));; <-- Starting 
+                                              (list 'H (list RIGHT RIGHT RIGHT RIGHT))) 
+                                        (list (list 'H (list 'a BLANK BLANK BLANK)) ;;<-- Phase 1, reads a's
+                                              (list 'R (list 'a 'a BLANK BLANK)))
+                                        (list (list 'R (list 'a 'a BLANK BLANK))
+                                              (list 'H (list RIGHT RIGHT BLANK BLANK))) 
+                                        (list (list 'H (list 'b BLANK BLANK BLANK)) ;;<-- phase 2, read b's
+                                              (list 'E (list 'b BLANK 'b BLANK)))
+                                        (list (list 'E (list 'b BLANK 'b BLANK))
+                                              (list 'C (list RIGHT BLANK RIGHT BLANK)))
+                                        (list (list 'C (list 'b BLANK BLANK BLANK))
+                                              (list 'E (list 'b BLANK 'b BLANK))) 
+                                        (list (list 'C (list 'c BLANK BLANK BLANK)) ;;<-- phase 3, read c's
+                                              (list 'O (list 'c BLANK BLANK 'c)))
+                                        (list (list 'O (list 'c BLANK BLANK 'c))
+                                              (list 'M (list RIGHT BLANK BLANK RIGHT)))
+                                        (list (list 'M (list 'c BLANK BLANK BLANK)) 
+                                              (list 'O (list 'c BLANK BLANK 'c)))
+                                        (list (list 'M (list BLANK BLANK BLANK BLANK)) ;;<-- phase 4, matching as, bs, cs
+                                              (list 'T (list BLANK LEFT LEFT LEFT)))
+                                        (list (list 'T (list BLANK 'a 'b 'c))
+                                              (list 'T (list BLANK LEFT LEFT LEFT)))
+                                        (list (list 'T (list BLANK BLANK BLANK BLANK)) ;;<-phase 5, accept (if possible)
+                                              (list 'F (list BLANK BLANK BLANK BLANK)))
+                                        )
+                                       4
+                                       'F)))
 
 (define qempty? treelist-empty?)
 
@@ -201,20 +318,79 @@ action is the action to be performed on the tape | TM-ACTION
                                       0)))
 
 
-(define tm-info-img (tm-create-draw-informative-message (imsg-state-tm EVEN-AS-&-BS
-                                                                       (list->zipper (list '(@ a a b)))
-                                                                       (list->zipper '(1))
-                                                                       (list->zipper '())
-                                                                       (list->zipper '())
-                                                                       (list->zipper '())
-                                                                       (list->zipper '(1))
-                                                                       1
-                                                                       'accept
-                                                                       0
-                                                                       (let ([offset-cap (- (length '(a b b)) TAPE-SIZE)])
-                                                                         (if (> 0 offset-cap) 0 offset-cap))
-                                                                       0)))
+(define tm-info-img (tm-create-draw-informative-message
+                     (imsg-state-tm EVEN-AS-&-BS
+                                    (list->zipper (list `(,LM b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a c c b a b
+                                                        a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a c)))
+                                    (list->zipper '(1))
+                                    (list->zipper '())
+                                    (list->zipper '())
+                                    (list->zipper '())
+                                    (list->zipper '(1))
+                                    1
+                                    'accept
+                                    0
+                                    (let ([offset-cap (- (length '(a b b)) TM-TAPE-SIZE)])
+                                      (if (> 0 offset-cap) 0 offset-cap))
+                                    0)))
 
+(define mttm-2tape-info-img (mttm-create-draw-informative-message
+                             (imsg-state-mttm ww
+                                              (list->zipper (list (list `(,LM b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b
+                                                                              b a c c b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b
+                                                                              b a b a b a c)
+                                                                        `(,BLANK))))
+                                              (list->zipper (list (list 1 0)))
+                                              (list->zipper (list (trace 'khrecom 'khcom)))
+                                              (list->zipper (list (trace (mttm-config 'K (list (tape-config 1 '(@ _ a)) (tape-config 0 '(_))) 0)
+                                                                         (rule '@ '@ '@ '@))))
+                                              (list->zipper '())
+                                              (list->zipper '(1 2 3 3 4 4 5 5))
+                                              1
+                                              'accept
+                                              0
+                                              (let ([offset-cap (- (length '(a b b)) TM-TAPE-SIZE)])
+                                                (if (> 0 offset-cap) 0 offset-cap))
+                                              0)))
+(define mttm-3tape-info-img (mttm-create-draw-informative-message
+                             (imsg-state-mttm a^nb^n
+                                              (list->zipper (list (list `(,LM b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b
+                                                                              b a c c b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b
+                                                                              b a b a b a c)
+                                                                        `(,BLANK)
+                                                                        `(,BLANK))))
+                                              (list->zipper (list (list 1 0 0)))
+                                              (list->zipper (list (trace 'kh358/2days 'seasalttrio)))
+                                              (list->zipper (list (trace (mttm-config 'K (list (tape-config 1 '(@ _ a)) (tape-config 0 '(_))) 0)
+                                                                         (rule '@ '@ '@ '@))))
+                                              (list->zipper '())
+                                              (list->zipper '(1 2 3 3 4 4 5 5))
+                                              1
+                                              'accept
+                                              0
+                                              (let ([offset-cap (- (length '(a b b)) TM-TAPE-SIZE)])
+                                                (if (> 0 offset-cap) 0 offset-cap))
+                                              0)))
+(define mttm->=4tape-info-img (mttm-create-draw-informative-message
+                               (imsg-state-mttm a^nb^nc^n
+                                                (list->zipper (list (list `(,LM a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b
+                                                                                a c c b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b
+                                                                                b a b a b a c)
+                                                                          `(,BLANK)
+                                                                          `(,BLANK)
+                                                                          `(,BLANK))))
+                                                (list->zipper (list (list 1 0 0 0)))
+                                                (list->zipper (list (trace 'khrecom 'khcom)))
+                                                (list->zipper (list (trace (mttm-config 'K (list (tape-config 1 '(@ _ a)) (tape-config 0 '(_))) 0)
+                                                                         (rule '@ '@ '@ '@))))
+                                                (list->zipper '())
+                                                (list->zipper '(1 2 3 3 4 4 5 5))
+                                                1
+                                                'accept
+                                                0
+                                                (let ([offset-cap (- (length '(a b b)) TM-TAPE-SIZE)])
+                                                  (if (> 0 offset-cap) 0 offset-cap))
+                                                0)))
                                                                    
 (define NDFA-E-SCENE-HEIGHT (- (* 0.9 WINDOW-HEIGHT)
                           (image-height ndfa-info-img)
@@ -227,6 +403,19 @@ action is the action to be performed on the tape | TM-ACTION
 (define TM-E-SCENE-HEIGHT (- (* 0.9 WINDOW-HEIGHT)
                           (image-height tm-info-img)
                           (image-height E-SCENE-TOOLS)))
+
+(define MTTM-2tape-E-SCENE-HEIGHT (- (* 0.9 WINDOW-HEIGHT)
+                          (image-height mttm-2tape-info-img)
+                          (image-height E-SCENE-TOOLS)))
+
+(define MTTM-3tape-E-SCENE-HEIGHT (- (* 0.9 WINDOW-HEIGHT)
+                          (image-height mttm-3tape-info-img)
+                          (image-height E-SCENE-TOOLS)))
+
+(define MTTM->=4tape-E-SCENE-HEIGHT (- (* 0.9 WINDOW-HEIGHT)
+                          (image-height mttm->=4tape-info-img)
+                          (image-height E-SCENE-TOOLS)))
+
 
 (define ndfa-img-bounding-limit
   (bounding-limits 0
@@ -249,9 +438,36 @@ action is the action to be performed on the tape | TM-ACTION
                   TM-E-SCENE-HEIGHT
                   (+ TM-E-SCENE-HEIGHT (image-height tm-info-img)
                      )))
+
+
+(define mttm-2tape-img-bounding-limit
+  (bounding-limits 0
+                  (* MTTM-2tape-E-SCENE-HEIGHT 0.9)
+                  MTTM-2tape-E-SCENE-HEIGHT
+                  (+ MTTM-2tape-E-SCENE-HEIGHT (image-height mttm-2tape-info-img)
+                     )))
+
+(define mttm-3tape-img-bounding-limit
+  (bounding-limits 0
+                  (* MTTM-3tape-E-SCENE-HEIGHT 0.9)
+                  MTTM-3tape-E-SCENE-HEIGHT
+                  (+ MTTM-3tape-E-SCENE-HEIGHT (image-height mttm-3tape-info-img)
+                     )))
+
+(define mttm->=4tape-img-bounding-limit
+  (bounding-limits 0
+                  (* MTTM->=4tape-E-SCENE-HEIGHT 0.9)
+                  MTTM->=4tape-E-SCENE-HEIGHT
+                  (+ MTTM->=4tape-E-SCENE-HEIGHT (image-height mttm->=4tape-info-img)
+                     )))
+
 (define NDFA-E-SCENE-BOUNDING-LIMITS (bounding-limits 0 E-SCENE-WIDTH 0 NDFA-E-SCENE-HEIGHT))
 (define PDA-E-SCENE-BOUNDING-LIMITS (bounding-limits 0 E-SCENE-WIDTH 0 PDA-E-SCENE-HEIGHT))
 (define TM-E-SCENE-BOUNDING-LIMITS (bounding-limits 0 E-SCENE-WIDTH 0 TM-E-SCENE-HEIGHT))
+(define MTTM-2tape-E-SCENE-BOUNDING-LIMITS (bounding-limits 0 E-SCENE-WIDTH 0 MTTM-2tape-E-SCENE-HEIGHT))
+(define MTTM-3tape-E-SCENE-BOUNDING-LIMITS (bounding-limits 0 E-SCENE-WIDTH 0 MTTM-3tape-E-SCENE-HEIGHT))
+(define MTTM->=4tape-E-SCENE-BOUNDING-LIMITS (bounding-limits 0 E-SCENE-WIDTH 0 MTTM->=4tape-E-SCENE-HEIGHT))
+
 
 (define E-SCENE-TOOLS-WIDTH (image-width E-SCENE-TOOLS))
 
@@ -342,6 +558,24 @@ action is the action to be performed on the tape | TM-ACTION
                   DEFAULT-ZOOM-FLOOR
                   PERCENT-BORDER-GAP
                   imsg-state-tm-invs-zipper))
+
+(define mttm-jump-next
+  (jump-next-inv  E-SCENE-WIDTH
+                  NDFA-E-SCENE-HEIGHT
+                  NODE-SIZE
+                  DEFAULT-ZOOM-CAP
+                  DEFAULT-ZOOM-FLOOR
+                  PERCENT-BORDER-GAP
+                  imsg-state-mttm-invs-zipper))
+
+(define mttm-jump-prev
+  (jump-prev-inv  E-SCENE-WIDTH
+                  NDFA-E-SCENE-HEIGHT
+                  NODE-SIZE
+                  DEFAULT-ZOOM-CAP
+                  DEFAULT-ZOOM-FLOOR
+                  PERCENT-BORDER-GAP
+                  imsg-state-mttm-invs-zipper))
 
 (define viz-go-next
   (go-next E-SCENE-WIDTH

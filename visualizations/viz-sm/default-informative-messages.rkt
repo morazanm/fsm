@@ -22,6 +22,7 @@
          tm tm-states tm-sigma tm-rules tm-start tm-finals tm-accepting-final tm-type
          mttm-config mttm-config-state mttm-config-lotc mttm-config-index
          mttm mttm-states mttm-sigma mttm-rules mttm-start mttm-finals mttm-accepting-final mttm-tape-amount mttm-type
+         tape-config tape-config-head-position tape-config-tape
          ci ci-upci ci-pci)
 
 
@@ -35,6 +36,9 @@ rules are a (listof rule-structs)
 (struct pda-config (state word stack index) #:transparent)
 (struct ndfa-config (state word index) #:transparent)
 (struct tm-config (state head-position tape index) #:transparent)
+;;head-position -> the head position of the tape | natnum
+;;tape -> the listof letters being read/written  | (listof symbol)
+(struct tape-config (head-position tape) #:transparent)
 ;;state -> the state that the ocnfiguration is in                               | symbol
 ;;lotc  -> all of the tape configurations associated with current configuration | (listof tape-config)
 ;;index -> the number associated with the configuration                         | natnum
@@ -140,12 +144,13 @@ rules are a (listof rule-structs)
 
 (define (draw-imsg imsg-st)
   (let* [(tape (zipper-current (imsg-state-tm-tape imsg-st)))
-         (start-index 0)
+         (start-index (if (> (length tape) TM-TAPE-SIZE)
+                          (imsg-state-tm-word-img-offset imsg-st)
+                          0))
          (head-pos (if (or (zipper-empty? (imsg-state-tm-shown-accepting-trace imsg-st))
                            (zipper-empty? (imsg-state-tm-rules-used imsg-st)))
                        0
-                       (zipper-current (imsg-state-tm-head-position imsg-st))))
-         (TAPE-SIZE 24)]
+                       (zipper-current (imsg-state-tm-head-position imsg-st))))]
     (define (make-tape-img loi start-index)
       (if (empty? (rest loi))
           (above (first loi)
@@ -155,7 +160,7 @@ rules are a (listof rule-structs)
                          (square 5 'solid BLANK-COLOR)
                          (text (number->string start-index) 10 FONT-COLOR))
                   (make-tape-img (rest loi) (add1 start-index)))))
-    (let [(letter-imgs (build-list TAPE-SIZE
+    (let [(letter-imgs (build-list TM-TAPE-SIZE
                                    (λ (i) (if (< (+ start-index i) (length tape))
                                               (overlay (text (symbol->string (list-ref tape (+ start-index i)))
                                                              24
@@ -173,11 +178,6 @@ rules are a (listof rule-structs)
                                                        (square (add1 50) 'solid
                                                                FONT-COLOR))))))]
       (make-tape-img letter-imgs start-index))))
-
-
-;;X -> X
-;;Purpose: Returns X
-(define (id x) x)
 
 ;;image-state -> image
 ;;Purpose: Determines which informative message is displayed to the user
@@ -445,10 +445,11 @@ rules are a (listof rule-structs)
             [else (text "Word Status: accept " FONT-SIZE BLANK-COLOR)])))
 
 (define (mttm-create-draw-informative-message imsg-st)
-  (define (make-tapes tape-amount tapes head-positions)
+  (define (make-tapes tape-amount tapes head-positions tape-number)
     (define (draw-tape tape head-pos)
-      (let* [(start-index 0)
-             (TAPE-SIZE 24)]
+      (let [(start-index (if (> (length tape) TM-TAPE-SIZE)
+                             (imsg-state-mttm-word-img-offset imsg-st)
+                             0))]
         (define (make-tape-img loi start-index)
           (if (empty? (rest loi))
               (above (first loi)
@@ -458,30 +459,33 @@ rules are a (listof rule-structs)
                              (square 5 'solid BLANK-COLOR)
                              (text (number->string start-index) 10 FONT-COLOR))
                       (make-tape-img (rest loi) (add1 start-index)))))
-        (let [(letter-imgs (build-list TAPE-SIZE
+        (let [(letter-imgs (build-list TM-TAPE-SIZE
                                        (λ (i) (if (< (+ start-index i) (length tape))
                                                   (overlay (text (symbol->string (list-ref tape (+ start-index i)))
-                                                                 24
+                                                                 20 #;24
                                                                  (cond [(= i (- head-pos start-index)) REJECT-COLOR]
                                                                        [else FONT-COLOR]))
-                                                           (overlay (square 50 'solid BLANK-COLOR)
-                                                                    (square (add1 50) 'solid
+                                                           (overlay (square 40 #;50 'solid BLANK-COLOR)
+                                                                    (square (add1 40 #;50) 'solid
                                                                             FONT-COLOR)))
                                                   (overlay (text (symbol->string BLANK)
                                                                  24
                                                                  (cond [(= i (- head-pos start-index)) REJECT-COLOR]
                                                                    
                                                                        [else FONT-COLOR]))
-                                                           (square 50 'solid BLANK-COLOR)
-                                                           (square (add1 50) 'solid
+                                                           (square 40 #;50 'solid BLANK-COLOR)
+                                                           (square (add1 40 #;50) 'solid
                                                                    FONT-COLOR))))))]
           (make-tape-img letter-imgs start-index))))
     (if (= tape-amount 0)
-        (draw-tape (first tapes)
-                   (first head-positions))
-        (above (draw-tape (first tapes)
-                          (first head-positions))
-               (make-tapes (sub1 tape-amount) (rest tapes) (rest head-positions)))))
+        (beside
+         (text (format "t~s: " tape-number) 20 'black)
+         (draw-tape (first tapes) (first head-positions)))
+        (above
+         (beside
+          (text (format "t~s: " tape-number) 20 'black)
+          (draw-tape (first tapes) (first head-positions)))
+          (make-tapes (sub1 tape-amount) (rest tapes) (rest head-positions) (add1 tape-number)))))
   (above/align
    'left
    (if (zipper-empty? (imsg-state-mttm-rules-used imsg-st))
@@ -496,13 +500,14 @@ rules are a (listof rule-structs)
                          ACCEPT-COLOR
                          REJECT-COMPUTATION-COLOR))))
               
-   (text "Tape: " 1 BLANK-COLOR)
+   ;(text "Tape: " 1 BLANK-COLOR)
    (make-tapes (if (or (zipper-empty? (imsg-state-mttm-shown-accepting-trace imsg-st))
                        (zipper-empty? (imsg-state-mttm-rules-used imsg-st)))
                    0
                    (sub1 (mttm-tape-amount (imsg-state-mttm-M imsg-st))))
                (zipper-current (imsg-state-mttm-tapes imsg-st))
-               (zipper-current (imsg-state-mttm-head-positions imsg-st)))
+               (zipper-current (imsg-state-mttm-head-positions imsg-st))
+               0)
    (text (format "The current number of possible computations is: ~a (without repeated configurations)."
                  (number->string (zipper-current (imsg-state-mttm-computation-lengths imsg-st))))
          FONT-SIZE
