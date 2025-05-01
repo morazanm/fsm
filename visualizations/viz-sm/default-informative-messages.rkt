@@ -80,6 +80,8 @@ rules are a (listof rule-structs)
 
 (define DUMMY-TM-RULE '(@ @))
 
+(define MAX-AUX-TAPE-AMOUNT 2)
+
 (define accessor-func (compose tm-config-index (compose trace-config zipper-current)))
 (define mttm-accessor-func (compose mttm-config-index (compose trace-config zipper-current)))
 (define pda-accessor-func (compose pda-config-index (compose trace-config zipper-current)))
@@ -445,7 +447,8 @@ rules are a (listof rule-structs)
             [else (text "Word Status: accept " FONT-SIZE BLANK-COLOR)])))
 
 (define (mttm-create-draw-informative-message imsg-st)
-  (define (make-tapes tape-amount tapes head-positions tape-number)
+
+ ; (define (draw-tapes aux-tape-index tape-number)
     (define (draw-tape tape head-pos)
       (let [(start-index (if (> (length tape) TM-TAPE-SIZE)
                              (imsg-state-mttm-word-img-offset imsg-st)
@@ -477,16 +480,25 @@ rules are a (listof rule-structs)
                                                            (square (add1 40 #;50) 'solid
                                                                    FONT-COLOR))))))]
           (make-tape-img letter-imgs start-index))))
-    (if (= tape-amount 0)
-        (beside
-         (text (format "t~s: " tape-number) 20 'black)
-         (draw-tape (first tapes) (first head-positions)))
-        (above
-         (beside
-          (text (format "t~s: " tape-number) 20 'black)
-          (draw-tape (first tapes) (first head-positions)))
-          (make-tapes (sub1 tape-amount) (rest tapes) (rest head-positions) (add1 tape-number)))))
-  (above/align
+
+  
+  (define (make-tapes aux-tape-index max-aux-tapes-index)
+    (let ([tapes (zipper-current (imsg-state-mttm-tapes imsg-st))]
+          [head-positions (zipper-current (imsg-state-mttm-head-positions imsg-st))])
+      (if (or (= aux-tape-index max-aux-tapes-index) (= aux-tape-index (sub1 (mttm-tape-amount (imsg-state-mttm-M imsg-st)))))
+          (beside
+           (text (format "t~s: " aux-tape-index) 20 'black)
+           (draw-tape (list-ref tapes aux-tape-index) (list-ref head-positions aux-tape-index)))
+          (above
+           (beside
+            (text (format "t~s: " aux-tape-index) 20 'black)
+            (draw-tape (list-ref tapes aux-tape-index) (list-ref head-positions aux-tape-index)))
+           (make-tapes (add1 aux-tape-index) max-aux-tapes-index)))))
+  
+  (let ([main-tape-img (beside (text "t0: " 20 'black)
+                               (draw-tape (first (zipper-current (imsg-state-mttm-tapes imsg-st)))
+                                          (first (zipper-current (imsg-state-mttm-head-positions imsg-st)))))])
+    (above/align
    'left
    (if (zipper-empty? (imsg-state-mttm-rules-used imsg-st))
        (text "Head position is not updated when there are multiple rejecting computations." FONT-SIZE FONT-COLOR)
@@ -501,13 +513,13 @@ rules are a (listof rule-structs)
                          REJECT-COMPUTATION-COLOR))))
               
    ;(text "Tape: " 1 BLANK-COLOR)
-   (make-tapes (if (or (zipper-empty? (imsg-state-mttm-shown-accepting-trace imsg-st))
-                       (zipper-empty? (imsg-state-mttm-rules-used imsg-st)))
-                   0
-                   (sub1 (mttm-tape-amount (imsg-state-mttm-M imsg-st))))
-               (zipper-current (imsg-state-mttm-tapes imsg-st))
-               (zipper-current (imsg-state-mttm-head-positions imsg-st))
-               0)
+   
+   (if (or (zipper-empty? (imsg-state-mttm-shown-accepting-trace imsg-st))
+           (zipper-empty? (imsg-state-mttm-rules-used imsg-st)))
+       main-tape-img
+       (above main-tape-img
+              (make-tapes (imsg-state-mttm-aux-tape-index imsg-st)
+                          (+ (imsg-state-mttm-aux-tape-index imsg-st) MAX-AUX-TAPE-AMOUNT))))
    (text (format "The current number of possible computations is: ~a (without repeated configurations)."
                  (number->string (zipper-current (imsg-state-mttm-computation-lengths imsg-st))))
          FONT-SIZE
@@ -533,7 +545,7 @@ rules are a (listof rule-structs)
                (eq? (imsg-state-mttm-machine-decision imsg-st) 'reject)
                (eq? (mttm-type (imsg-state-mttm-M imsg-st)) 'mttm))
           (text "The machine reaches a final state and halts." FONT-SIZE ACCEPT-COLOR)]
-         [else (text "Word Status: accept " FONT-SIZE BLANK-COLOR)])))
+         [else (text "Word Status: accept " FONT-SIZE BLANK-COLOR)]))))
 
 ;"notes to self:"
 ;"scroll thru word instead of jumping to end"

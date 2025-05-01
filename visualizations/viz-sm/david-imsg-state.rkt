@@ -50,6 +50,7 @@
                          computation-lengths    ;;(zipperof natnum)
                          max-cmps               ;;natnum
                          machine-decision       ;;symbol
+                         aux-tape-index         ;;natnum
                          word-img-offset
                          word-img-offset-cap
                          scroll-accum)

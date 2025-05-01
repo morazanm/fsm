@@ -336,9 +336,7 @@ action is the action to be performed on the tape | TM-ACTION
 
 (define mttm-2tape-info-img (mttm-create-draw-informative-message
                              (imsg-state-mttm ww
-                                              (list->zipper (list (list `(,LM b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b
-                                                                              b a c c b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b
-                                                                              b a b a b a c)
+                                              (list->zipper (list (list `(,LM b a)
                                                                         `(,BLANK))))
                                               (list->zipper (list (list 1 0)))
                                               (list->zipper (list (trace 'khrecom 'khcom)))
@@ -348,15 +346,14 @@ action is the action to be performed on the tape | TM-ACTION
                                               (list->zipper '(1 2 3 3 4 4 5 5))
                                               1
                                               'accept
+                                              1
                                               0
                                               (let ([offset-cap (- (length '(a b b)) TM-TAPE-SIZE)])
                                                 (if (> 0 offset-cap) 0 offset-cap))
                                               0)))
 (define mttm-3tape-info-img (mttm-create-draw-informative-message
                              (imsg-state-mttm a^nb^n
-                                              (list->zipper (list (list `(,LM b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b
-                                                                              b a c c b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b
-                                                                              b a b a b a c)
+                                              (list->zipper (list (list `(,LM b a)
                                                                         `(,BLANK)
                                                                         `(,BLANK))))
                                               (list->zipper (list (list 1 0 0)))
@@ -367,15 +364,14 @@ action is the action to be performed on the tape | TM-ACTION
                                               (list->zipper '(1 2 3 3 4 4 5 5))
                                               1
                                               'accept
+                                              1
                                               0
                                               (let ([offset-cap (- (length '(a b b)) TM-TAPE-SIZE)])
                                                 (if (> 0 offset-cap) 0 offset-cap))
                                               0)))
 (define mttm->=4tape-info-img (mttm-create-draw-informative-message
                                (imsg-state-mttm a^nb^nc^n
-                                                (list->zipper (list (list `(,LM a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b
-                                                                                a c c b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b
-                                                                                b a b a b a c)
+                                                (list->zipper (list (list `(,LM a b)
                                                                           `(,BLANK)
                                                                           `(,BLANK)
                                                                           `(,BLANK))))
@@ -387,6 +383,7 @@ action is the action to be performed on the tape | TM-ACTION
                                                 (list->zipper '(1 2 3 3 4 4 5 5))
                                                 1
                                                 'accept
+                                                1
                                                 0
                                                 (let ([offset-cap (- (length '(a b b)) TM-TAPE-SIZE)])
                                                   (if (> 0 offset-cap) 0 offset-cap))
