@@ -282,7 +282,7 @@
                         replacement-symbols)
                  hedge-nodes)
            ))))
-  (map reverse (generate-levels-helper curr-state rules used-names (list '()) (list '()) (list '()) (list '()))))
+  (map reverse (generate-levels-helper curr-state rules used-names (list '()) (list curr-state) (list '()) (list '()))))
 
 ;; deriv-with-rules -> deriv-with-rules
 ;; Purpose: This is just taking the list received and moving the rules like such:
@@ -320,7 +320,8 @@
 ;; Purpose: To make a node graph
 (define (make-node-graph graph lon hedge-nodes hex-nodes yield-node invariant)
   (let ([invariant-result (if (not (eq? 'NO-INV invariant))
-                              (invariant (map undo-renaming yield-node))
+                              (invariant (filter (lambda (x) (not (eq? x EMP)))
+                                                 (map undo-renaming yield-node)))
                               '())])
     (foldl (λ (state result)
              (add-node result
@@ -461,6 +462,7 @@
               rules
               graphs
               'NO-INV
+              #:first-img-inv (if (empty? invariant) #f (first invariant))
               #:cpu-cores cpu-cores
               #:special-graphs? 'cfg
               #:rank-node-lst (map (lambda (x y) (cons x (map list y)))

@@ -7,6 +7,7 @@
          "../viz-lib/viz.rkt"
          "../viz-lib/viz-state.rkt"
          "../../fsm-gviz/private/lib.rkt"
+         "../../fsm-core/private/grammar-getters.rkt"
          "../viz-lib/viz-constants.rkt"
          "../viz-lib/bounding-limits-macro.rkt"
          "../viz-lib/viz-imgs/keyboard_bitmaps.rkt"
@@ -338,13 +339,28 @@
 
 ;; node -> img
 ;; Creates the first img to be displayed since this is always a special case
-(define (create-first-img node)
+(define (create-first-img node grammar #:first-img-inv [first-inv #f])
+  (let ([inv-color (if first-inv
+                       (if (first-inv (list (grammar-start grammar)))
+                           'green
+                           'red)
+                       #f)])
   (lambda ()
     (graph->bitmap
      (add-node (create-graph 'dgraph #:atb (hash 'rankdir "TB" 'font "Sans" 'ordering "in"))
                node
                #:atb
-               (hash 'color 'black 'shape 'circle 'label node 'fontcolor 'black 'font "Sans")))))
+               (hash 'color 'black
+                     'shape 'circle
+                     'style (if inv-color
+                                'filled
+                                'solid)
+                     'fillcolor (if inv-color
+                                    inv-color
+                                    'black)
+                     'label node
+                     'fontcolor 'black
+                     'font "Sans"))))))
 
 (define viz-go-next
   (go-next E-SCENE-WIDTH
@@ -434,13 +450,14 @@
                   rules
                   graphs
                   broken-invariants
+                  #:first-img-inv [first-inv #f]
                   #:cpu-cores [cpu-cores #f]
                   #:special-graphs? [special-graphs? #f]
                   #:rank-node-lst [rank-node-lst '()])
   (let ()
     (run-viz
      graphs
-     (create-first-img (first (first w-der)))
+     (create-first-img (first (first w-der)) grammar #:first-img-inv first-inv)
      (posn (/ E-SCENE-WIDTH 2) (/ E-SCENE-HEIGHT 2))
      DEFAULT-ZOOM
      DEFAULT-ZOOM-CAP
