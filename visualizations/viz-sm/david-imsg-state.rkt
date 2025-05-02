@@ -46,6 +46,7 @@
                          head-positions         ;;(zipperof (listof natnums))
                          rules-used             ;;(zipperof mttm-rule)
                          shown-accepting-trace  ;;(zipperof trace)
+                         shown-rejecting-trace  ;;(zipperof trace)
                          invs-zipper            ;;(zipperof inv-configs)
                          computation-lengths    ;;(zipperof natnum)
                          max-cmps               ;;natnum

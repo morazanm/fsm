@@ -47,6 +47,7 @@ destination -> the rest of a mttm rule | half-rule
 (struct building-viz-state (tape
                             computations
                             tracked-accept-trace
+                            tracked-reject-trace
                             all-accept-traces
                             all-reject-traces
                             M
@@ -250,7 +251,7 @@ destination -> the rest of a mttm rule | half-rule
 
 ;;graph machine -> graph
 ;;Purpose: Creates the edges for the given graph
-(define (make-edge-graph dgraph rules current-shown-accept-rules current-accept-rules current-reject-rules)
+(define (make-edge-graph dgraph rules current-tracked-rules current-accept-rules current-reject-rules)
   ;;rule symbol (listof rules) -> boolean
   ;;Purpose: Determines if the given rule is a member of the given (listof rules)
   ;;         or similiar to one of the rules in the given (listof rules) 
@@ -260,24 +261,33 @@ destination -> the rest of a mttm rule | half-rule
                  (and (equal? (first rule) (first r))
                       (equal? (third rule) (third r))))
                lor)))
-  
+  (displayln current-tracked-rules)
+  (displayln "")
+  (displayln current-reject-rules)
   (foldl (λ (rule graph)
-           (add-edge graph
+           (let ([found-tracked-rule? (find-rule? rule current-tracked-rules)]
+                 [found-accept-rule? (find-rule? rule current-accept-rules)]
+                 [member-of-accept-rules (member? rule current-accept-rules equal?)]
+                 [member-of-tracked-rules (member? rule current-tracked-rules equal?)])
+             (add-edge graph
                      (second rule)
                      (first rule)
                      (third rule)
-                     #:atb (hash 'color (cond [(and (member? rule current-shown-accept-rules equal?)
-                                                    (member? rule current-accept-rules equal?))
+                     #:atb (hash 'color (cond [(and member-of-tracked-rules member-of-accept-rules)
                                                SPLIT-ACCEPT-COLOR]
-                                              [(find-rule? rule current-shown-accept-rules) TRACKED-ACCEPT-COLOR]
-                                              [(find-rule? rule current-accept-rules) ALL-ACCEPT-COLOR]
+                                              [(and member-of-tracked-rules
+                                                    (member? rule current-reject-rules equal?))
+                                               SPLIT-REJECT-COLOR]
+                                              [(and (not (empty? current-accept-rules))
+                                                    found-tracked-rule?) TRACKED-ACCEPT-COLOR]
+                                              [found-tracked-rule?  (begin
+                                                                          (displayln "here")
+                                                                          TRACKED-REJECT-COLOR)]
+                                              [found-accept-rule? ALL-ACCEPT-COLOR]
                                               [(find-rule? rule current-reject-rules) REJECT-COLOR]
                                               [else 'black])
-                                 'style (if (member? rule current-accept-rules equal?)
-                                            'bold
-                                            'solid)
-                                 ;'labelfloat 'true
-                                 'fontsize 12)))
+                                 'style (if member-of-accept-rules 'bold 'solid)
+                                 'fontsize 12))))
          dgraph
          rules))
 
@@ -340,7 +350,14 @@ destination -> the rest of a mttm rule | half-rule
 
          ;;(listof rule-struct)
          ;;Purpose: Extracts the rules from of shown accepting computation
-         [tracked-accepting-rules (get-trace-X (building-viz-state-tracked-accept-trace a-vs) trace-rules)]
+         [tracked-rules (get-trace-X (if (eq? (building-viz-state-machine-decision a-vs) 'accept)
+                                         (building-viz-state-tracked-accept-trace a-vs)
+                                         (building-viz-state-tracked-reject-trace a-vs))
+                                                   trace-rules)]
+
+         ;;(listof rule-struct)
+         ;;Purpose: Extracts the rules from of shown rejecting computation
+         ;[tracked-rejecting-rules (get-trace-X (building-viz-state-tracked-reject-trace a-vs) trace-rules)]
          
          ;;(listof rule-struct)
          ;;Purpose: Extracts the rules from all of the accepting computations
@@ -360,7 +377,11 @@ destination -> the rest of a mttm rule | half-rule
 
          ;;(listof rules)
          ;;Purpose: Converts the current rules from the accepting computations and makes them usable for graphviz
-         [current-shown-accept-rules (configs->rules tracked-accepting-rules)]
+         [current-tracked-rules (configs->rules tracked-rules)]
+
+         ;;(listof rules)
+         ;;Purpose: Converts the current rules from the rejecting computations and makes them usable for graphviz
+         ;[current-shown-reject-rules (configs->rules tracked-rejecting-rules)]
          
          ;;(listof rules)
          ;;Purpose: All of the pda rules converted to triples
@@ -390,11 +411,13 @@ destination -> the rest of a mttm rule | half-rule
       brkn-invs
       cut-off-states)
      all-rules
-     (if (equal? (building-viz-state-machine-decision a-vs) 'accept)
+     current-tracked-rules
+     #;(if (eq? (building-viz-state-machine-decision a-vs) 'accept)
          current-shown-accept-rules
-         '())
+         current-shown-reject-rules)
      all-current-accept-rules
-     (if (equal? (building-viz-state-machine-decision a-vs) 'accept)
+     current-reject-rules
+     #;(if (eq? (building-viz-state-machine-decision a-vs) 'accept)
          current-reject-rules
          (append current-reject-rules current-shown-accept-rules)))))
 
@@ -420,6 +443,7 @@ destination -> the rest of a mttm rule | half-rule
                                                     (building-viz-state-head-pos a-vs)
                                                     (zipper-next (building-viz-state-head-pos a-vs)))]
                                       [tracked-accept-trace (get-next-traces (building-viz-state-tracked-accept-trace a-vs))]
+                                      [tracked-reject-trace (get-next-traces (building-viz-state-tracked-reject-trace a-vs))]
                                       [all-accept-traces (get-next-traces (building-viz-state-all-accept-traces a-vs))]
                                       [all-reject-traces (get-next-traces (building-viz-state-all-reject-traces a-vs))])
                                      (cons next-graph acc)))]))
@@ -435,6 +459,8 @@ destination -> the rest of a mttm rule | half-rule
         [imsg-state-computation-lengths (imsg-state-mttm-computation-lengths (informative-messages-component-state
                                                                             (viz-state-informative-messages a-vs)))]
         [imsg-state-shown-accepting-trace (imsg-state-mttm-shown-accepting-trace (informative-messages-component-state
+                                                                                   (viz-state-informative-messages a-vs)))]
+        [imsg-state-shown-rejecting-trace (imsg-state-mttm-shown-rejecting-trace (informative-messages-component-state
                                                                                    (viz-state-informative-messages a-vs)))]
         [imsg-state-invs-zipper (imsg-state-mttm-invs-zipper (informative-messages-component-state
                                                             (viz-state-informative-messages a-vs)))])
@@ -469,6 +495,11 @@ destination -> the rest of a mttm rule | half-rule
                                       (zipper-at-end? imsg-state-shown-accepting-trace))
                                   imsg-state-shown-accepting-trace
                                   (zipper-next imsg-state-shown-accepting-trace))]
+
+       [shown-rejecting-trace (if (or (zipper-empty? imsg-state-shown-rejecting-trace)
+                                      (zipper-at-end? imsg-state-shown-rejecting-trace))
+                                  imsg-state-shown-rejecting-trace
+                                  (zipper-next imsg-state-shown-rejecting-trace))]
                      
        [invs-zipper (cond [(zipper-empty? imsg-state-invs-zipper) imsg-state-invs-zipper]
                           [(and (not (zipper-at-end? imsg-state-invs-zipper))
@@ -488,6 +519,8 @@ destination -> the rest of a mttm rule | half-rule
         [imsg-state-computation-lengths (imsg-state-mttm-computation-lengths (informative-messages-component-state
                                                                             (viz-state-informative-messages a-vs)))]
         [imsg-state-shown-accepting-trace (imsg-state-mttm-shown-accepting-trace (informative-messages-component-state
+                                                                                   (viz-state-informative-messages a-vs)))]
+        [imsg-state-shown-rejecting-trace (imsg-state-mttm-shown-rejecting-trace (informative-messages-component-state
                                                                                    (viz-state-informative-messages a-vs)))]
         [imsg-state-invs-zipper (imsg-state-mttm-invs-zipper (informative-messages-component-state
                                                             (viz-state-informative-messages a-vs)))])
@@ -520,6 +553,11 @@ destination -> the rest of a mttm rule | half-rule
                                       (zipper-at-end? imsg-state-shown-accepting-trace))
                                   imsg-state-shown-accepting-trace
                                   (zipper-to-end imsg-state-shown-accepting-trace))]
+       
+       [shown-rejecting-trace (if (or (zipper-empty? imsg-state-shown-rejecting-trace)
+                                      (zipper-at-end? imsg-state-shown-rejecting-trace))
+                                  imsg-state-shown-rejecting-trace
+                                  (zipper-to-end imsg-state-shown-rejecting-trace))]
          
        ;;(zipperof invariant)
        ;;Purpose: The index of the last failed invariant
@@ -539,6 +577,8 @@ destination -> the rest of a mttm rule | half-rule
         [imsg-state-computation-lengths (imsg-state-mttm-computation-lengths (informative-messages-component-state
                                                                             (viz-state-informative-messages a-vs)))]
         [imsg-state-shown-accepting-trace (imsg-state-mttm-shown-accepting-trace (informative-messages-component-state
+                                                                                   (viz-state-informative-messages a-vs)))]
+        [imsg-state-shown-rejecting-trace (imsg-state-mttm-shown-rejecting-trace (informative-messages-component-state
                                                                                    (viz-state-informative-messages a-vs)))]
         [imsg-state-invs-zipper (imsg-state-mttm-invs-zipper (informative-messages-component-state
                                                             (viz-state-informative-messages a-vs)))])
@@ -576,6 +616,12 @@ destination -> the rest of a mttm rule | half-rule
                                       (zipper-at-begin? imsg-state-shown-accepting-trace))
                                   imsg-state-shown-accepting-trace
                                   (zipper-prev imsg-state-shown-accepting-trace))]
+
+       [shown-rejecting-trace (if (or (zipper-empty? imsg-state-shown-rejecting-trace)
+                                      (zipper-at-end? imsg-state-shown-rejecting-trace))
+                                  imsg-state-shown-rejecting-trace
+                                  (zipper-prev imsg-state-shown-rejecting-trace))]
+       
        [invs-zipper (cond [(zipper-empty? imsg-state-invs-zipper) imsg-state-invs-zipper]
                           [(and (not (zipper-at-begin? imsg-state-invs-zipper))
                                 (<= (get-tm-config-index-frm-trace imsg-state-shown-accepting-trace)
@@ -594,6 +640,8 @@ destination -> the rest of a mttm rule | half-rule
         [imsg-state-computation-lengths (imsg-state-mttm-computation-lengths (informative-messages-component-state
                                                                             (viz-state-informative-messages a-vs)))]
         [imsg-state-shown-accepting-trace (imsg-state-mttm-shown-accepting-trace (informative-messages-component-state
+                                                                                   (viz-state-informative-messages a-vs)))]
+        [imsg-state-shown-rejecting-trace (imsg-state-mttm-shown-rejecting-trace (informative-messages-component-state
                                                                                    (viz-state-informative-messages a-vs)))]
         [imsg-state-invs-zipper (imsg-state-mttm-invs-zipper (informative-messages-component-state
                                                             (viz-state-informative-messages a-vs)))])
@@ -634,6 +682,11 @@ destination -> the rest of a mttm rule | half-rule
                                       (zipper-at-begin? imsg-state-shown-accepting-trace))
                                   imsg-state-shown-accepting-trace
                                   (zipper-to-begin imsg-state-shown-accepting-trace))]
+
+       [shown-rejecting-trace (if (or (zipper-empty? imsg-state-shown-rejecting-trace)
+                                      (zipper-at-end? imsg-state-shown-rejecting-trace))
+                                  imsg-state-shown-rejecting-trace
+                                  (zipper-to-begin imsg-state-shown-rejecting-trace))]
        ;;invariant-zipper
        [invs-zipper (if (or (zipper-empty? imsg-state-invs-zipper)
                             (zipper-at-begin? imsg-state-invs-zipper))
@@ -765,6 +818,11 @@ destination -> the rest of a mttm rule | half-rule
              [shown-accepting-trace (if (zipper-empty? imsg-state-shown-accepting-trace)
                                         imsg-state-shown-accepting-trace
                                         (zipper-to-idx imsg-state-shown-accepting-trace (get-tm-config-index-frm-invs zip)))]
+
+             #;[shown-rejecting-trace (if (or (zipper-empty? imsg-state-shown-rejecting-trace)
+                                      (zipper-at-end? imsg-state-shown-rejecting-trace))
+                                  imsg-state-shown-rejecting-trace
+                                  (zipper-to-begin imsg-state-shown-rejecting-trace))]
              ;;invariant-zipper
              [invs-zipper zip])])])))))
 
@@ -772,7 +830,7 @@ destination -> the rest of a mttm rule | half-rule
 ;;viz-state -> viz-state
 ;;Purpose: Jumps to the next failed invariant
 (define (l-key-pressed a-vs)
-  (let ([imsg-state-rules-used (imsg-state-mttm-rules-used (informative-messages-component-state
+  (let* ([imsg-state-rules-used (imsg-state-mttm-rules-used (informative-messages-component-state
                                                           (viz-state-informative-messages a-vs)))]
         [imsg-state-tape (imsg-state-mttm-tapes (informative-messages-component-state (viz-state-informative-messages a-vs)))]
         [imsg-state-head-position (imsg-state-mttm-head-positions (informative-messages-component-state
@@ -781,16 +839,22 @@ destination -> the rest of a mttm rule | half-rule
                                                                             (viz-state-informative-messages a-vs)))]
         [imsg-state-shown-accepting-trace (imsg-state-mttm-shown-accepting-trace (informative-messages-component-state
                                                                                    (viz-state-informative-messages a-vs)))]
+        [imsg-state-shown-rejecting-trace (imsg-state-mttm-shown-rejecting-trace (informative-messages-component-state
+                                                                                   (viz-state-informative-messages a-vs)))]
         [imsg-state-invs-zipper (imsg-state-mttm-invs-zipper (informative-messages-component-state
-                                                            (viz-state-informative-messages a-vs)))])
+                                                            (viz-state-informative-messages a-vs)))]
+        [inv-config-frm-trace (if (eq? (mttm-type (imsg-state-mttm-M (informative-messages-component-state
+                                                            (viz-state-informative-messages a-vs))))
+                                       'mttm-language-recognizer)
+                                  (get-tm-config-index-frm-trace imsg-state-shown-accepting-trace)
+                                  (get-tm-config-index-frm-trace imsg-state-shown-rejecting-trace))])
   (if (or (zipper-empty? imsg-state-invs-zipper)
           (and (zipper-at-end? imsg-state-invs-zipper)
                (not (zipper-at-begin? imsg-state-invs-zipper)))
-          (> (get-tm-config-index-frm-trace imsg-state-shown-accepting-trace)
-                              (get-tm-config-index-frm-invs imsg-state-invs-zipper)))
+          (> inv-config-frm-trace (get-tm-config-index-frm-invs imsg-state-invs-zipper)))
       a-vs
       (let ([zip (if (and (not (zipper-at-end? imsg-state-invs-zipper))
-                          (>= (get-tm-config-index-frm-trace imsg-state-shown-accepting-trace)
+                          (>= inv-config-frm-trace
                               (get-tm-config-index-frm-invs imsg-state-invs-zipper)))
                      (zipper-next imsg-state-invs-zipper)
                      imsg-state-invs-zipper)])
@@ -953,7 +1017,10 @@ destination -> the rest of a mttm rule | half-rule
          [accepting-trace (if (empty? accepting-traces) '() (first accepting-traces))]
          [rejecting-trace (if (empty? accepting-traces) (find-longest-computation rejecting-traces '()) '())]
          [all-tapes (map (λ (trace) (mttm-config-lotc (trace-config trace)))
-                              (cond [(and (empty? accepting-trace)
+                              (if (and (not computation-has-cut-off?) (not (empty? accepting-trace)))
+                                  accepting-trace
+                                  rejecting-trace)
+                                  #;(cond [(and (empty? accepting-trace)
                                           (not computation-has-cut-off?)
                                           (= (length rejecting-computations) 1))
                                      rejecting-trace]
@@ -961,13 +1028,20 @@ destination -> the rest of a mttm rule | half-rule
                                                             rejecting-trace
                                                             accepting-trace)]
                                     [(and (not computation-has-cut-off?) (not (empty? accepting-trace))) accepting-trace]
-                                    [else '()]))]
+                                    [else rejecting-trace
+                                          #;(list (trace (mttm-config 'S (list (tape-config head-pos  a-word)) 0)
+                                                       DUMMY-RULE))]))]
          [displayed-tape (for/list [(lotc all-tapes)]
-                                       (for/list [(tc lotc)] (tape-config-tape tc)))]
+                           (for/list [(tc lotc)] (tape-config-tape tc)))]
          [all-displayed-tape (list->zipper displayed-tape)]
-         [tracked-head-pos (let ([head-pos (for/list [(lotc all-tapes)]
-                                             (for/list [(tc lotc)] (tape-config-head-position tc)))])
-                             head-pos #;(if reached-final? head-pos (append head-pos '())))]
+         [tracked-head-pos (let ([head-positions (for/list [(lotc all-tapes)]
+                                                   (for/list [(tc lotc)] (tape-config-head-position tc)))])
+                             head-positions
+                             #;(if (or (and reached-final? (eq? (mttm-type M) 'mttm))
+                                     (and reached-final? (eq? (mttm-type M) 'mttm-language-recognizer)))
+                                 head-positions
+                                 '()
+                                 #;(if reached-final? head-pos (append head-pos '()))))]
                                  
                              
          [all-head-pos (list->zipper tracked-head-pos)]
@@ -975,7 +1049,11 @@ destination -> the rest of a mttm rule | half-rule
                                'accept
                                'reject)]
          
-         [tracked-trace (cond [(and (empty? accepting-trace)
+         [tracked-trace (list (if (and (not computation-has-cut-off?) (not (empty? accepting-trace)))
+                                  accepting-trace
+                                  rejecting-trace))
+                        
+                                  #;(cond [(and (empty? accepting-trace)
                                     (not computation-has-cut-off?)
                                     (= (length rejecting-computations) 1))
                                (list rejecting-trace)]
@@ -983,7 +1061,7 @@ destination -> the rest of a mttm rule | half-rule
                               [computation-has-cut-off? (if (empty? accepting-trace)
                                                             (list rejecting-trace)
                                                             (list accepting-trace))]
-                              [else '()])]
+                              [else (list rejecting-trace)])]
          ;;(listof (list config boolean)) ;;Purpose: Gets all the invariant configurations
          [all-inv-configs (if (empty? invs)
                               '()
@@ -995,9 +1073,10 @@ destination -> the rest of a mttm rule | half-rule
          ;;building-state struct
          [building-state (building-viz-state all-displayed-tape
                                              LoC
-                                             tracked-trace
+                                             (if (empty? accepting-traces) '() tracked-trace)
+                                             (if (empty? accepting-traces) tracked-trace '())
                                              (if (empty? accepting-traces) '() (rest accepting-traces))
-                                             rejecting-traces
+                                             (if (empty? accepting-traces) (rest rejecting-traces) rejecting-traces)
                                              M
                                              all-inv-configs
                                              cut-off
@@ -1007,7 +1086,7 @@ destination -> the rest of a mttm rule | half-rule
          ;;(listof graph-thunk) ;;Purpose: Gets all the graphs needed to run the viz
          [graphs (create-graph-thunks building-state '())]
          ;;(listof number) ;;Purpose: Gets the number of computations for each step
-         [cut-off-computations-lengths (take (count-computations LoC '()) (length tracked-head-pos))]
+         [cut-off-computations-lengths (take (count-computations LoC '()) (length displayed-tape))]
          [MTTM-E-SCENE-HEIGHT (cond [(= (mttm-tape-amount M) 2) MTTM-2tape-E-SCENE-HEIGHT]
                                     [(= (mttm-tape-amount M) 3) MTTM-3tape-E-SCENE-HEIGHT]
                                     [else MTTM->=4tape-E-SCENE-HEIGHT])]
@@ -1020,6 +1099,8 @@ destination -> the rest of a mttm rule | half-rule
     ;rejecting-computations
     ;;all-tapes
     ;tracked-head-pos
+    #;(zipper-current all-displayed-tape)
+    ;(displayln rejecting-trace)
     (run-viz graphs
                (lambda () (graph->bitmap (first graphs)))
                (posn (/ E-SCENE-WIDTH 2) (/ MTTM-E-SCENE-HEIGHT 2))
@@ -1028,20 +1109,22 @@ destination -> the rest of a mttm rule | half-rule
                DEFAULT-ZOOM-FLOOR
                (informative-messages mttm-create-draw-informative-message
                                      (imsg-state-mttm M
-                                                      (if (zipper-empty? all-displayed-tape) (list->zipper (list a-word)) all-displayed-tape)
+                                                      all-displayed-tape
                                                       all-head-pos
                                                       (list->zipper (map (λ (trace)
                                                                            (list (half-rule-lota (rule-source (trace-rules trace)))
                                                                                  (half-rule-lota (rule-destination (trace-rules trace)))))
-                                                                         (cond [(empty? tracked-trace) tracked-trace]
+                                                                         (first tracked-trace)
+                                                                         #;(if [(empty? tracked-trace) tracked-trace]
                                                                                [(or (and (not computation-has-cut-off?)
                                                                                          (not (empty? accepting-trace)))
                                                                                     (and (empty? accepting-trace)
                                                                                          (not computation-has-cut-off?)
                                                                                          (= (length rejecting-computations) 1)))
                                                                                 (first tracked-trace)]
-                                                                               [else '()])))
-                                                      (list->zipper (if (empty? tracked-trace) tracked-trace (first tracked-trace)))
+                                                                               [else (first tracked-trace)])))
+                                                      (list->zipper (if (empty? accepting-trace) accepting-trace (first tracked-trace)))
+                                                      (list->zipper (if (empty? accepting-trace) (first tracked-trace) rejecting-trace))
                                                       (list->zipper failed-inv-configs) 
                                                       (list->zipper cut-off-computations-lengths)
                                                       cut-off
@@ -1477,3 +1560,49 @@ destination -> the rest of a mttm rule | half-rule
          (eq? (list-ref t0 t0h) BLANK)
          (eq? (list-ref t1 t1h) BLANK)
          (equal? readt0 (append readt1 readt1)))))
+
+(define EQABC-ND
+  (make-unchecked-mttm
+    '(S Y C D G)
+    `(a b c)
+    'S
+    '(Y)
+    (list
+      (list '(S (_ _ _ _))  '(C (R R R R)))
+      (list '(S (_ _ _ _))  '(G (R R R R)))
+
+      ;; copy an a to any tape
+      (list '(C (a _ _ _))  '(D (a a _ _)))
+      (list '(D (a a _ _))  '(C (R R _ _)))
+      (list '(C (a _ _ _))  '(D (a _ a _)))
+      (list '(D (a _ a _))  '(C (R _ R _)))
+      (list '(C (a _ _ _))  '(D (a _ _ a)))
+      (list '(D (a _ _ a))  '(C (R _ _ R)))
+
+      ;; copy a b to any tape
+      (list '(C (b _ _ _))  '(D (b b _ _)))
+      (list '(D (b b _ _))  '(C (R R _ _)))
+      (list '(C (b _ _ _))  '(D (b _ b _)))
+      (list '(D (b _ b _))  '(C (R _ R _)))
+      (list '(C (b _ _ _))  '(D (b _ _ b)))
+      (list '(D (b _ _ b))  '(C (R _ _ R)))
+
+      ;; copy a c to any tape
+      (list '(C (c _ _ _))  '(D (c c _ _)))
+      (list '(D (c c _ _))  '(C (R R _ _)))
+      (list '(C (c _ _ _))  '(D (c _ c _)))
+      (list '(D (c _ c _))  '(C (R _ R _)))
+      (list '(C (c _ _ _))  '(D (c _ _ c)))
+      (list '(D (c _ _ c))  '(C (R _ _ R)))
+
+      ;; match as, bs, and cs
+      (list '(C (_ _ _ _))  '(G (_ L L L)))
+      (list '(G (_ a b c))  '(G (_ L L L)))
+      (list '(G (_ a c b))  '(G (_ L L L)))
+      (list '(G (_ b a c))  '(G (_ L L L)))
+      (list '(G (_ b c a))  '(G (_ L L L)))
+      (list '(G (_ c a b))  '(G (_ L L L)))
+      (list '(G (_ c b a))  '(G (_ L L L)))
+      (list '(G (_ _ _ _))  '(Y (_ _ _ _))))
+    4
+    'Y))

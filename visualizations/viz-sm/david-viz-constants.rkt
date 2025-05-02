@@ -59,14 +59,19 @@ action is the action to be performed on the tape | TM-ACTION
 
 ;; X (listof X) (X -> boolean) -> boolean
 ;;Purpose: Determine if X is in the given list
-(define (member? x lst eq-func) (for/or ([L lst]) (eq-func x L))) 
+(define (member? x lst eq-func) (for/or ([L lst]) (eq-func x L)))
 
+(define GRAPHVIZ-CUTOFF-GOLD 'darkgoldenrod2)
 (define HELD-INV-COLOR 'chartreuse4)
 (define BRKN-INV-COLOR 'red2)
 (define TRACKED-ACCEPT-COLOR 'forestgreen)
+(define TRACKED-REJECT-COLOR 'webmaroon)
 (define ALL-ACCEPT-COLOR 'green)
+(define REJECT-COLOR 'violetred)
 (define SPLIT-ACCEPT-COLOR 
   (string-append (symbol->string TRACKED-ACCEPT-COLOR) ":" (symbol->string ALL-ACCEPT-COLOR)))
+(define SPLIT-REJECT-COLOR
+  (string-append (symbol->string TRACKED-REJECT-COLOR) ":" (symbol->string REJECT-COLOR)))
 
 ;;tm -> tm-struct
 ;;Purpose: Converts the tm into a tm structure
@@ -103,13 +108,12 @@ action is the action to be performed on the tape | TM-ACTION
         (if (eq? (mttm-what-am-i M) 'mttm-language-recognizer) (mttm-get-accept M) 'none)
         (mttm-what-am-i M)))
 
-(define REJECT-COLOR 'violetred)
-(define GRAPHVIZ-CUTOFF-GOLD 'darkgoldenrod2)
 (define SM-VIZ-FONT-SIZE 18)
 (define INS-TOOLS-BUFFER 30)
 
 ;;(X -> Y) :Purpose: A function to retrieve the index for a tm-config from a trace
 (define get-tm-config-index-frm-trace (compose1 tm-config-index trace-config zipper-current))
+
 ;;(X -> Y) :Purpose: A function to retrieve the index for a pda-config from a trace
 (define get-pda-config-index-frm-trace (compose1 pda-config-index trace-config zipper-current))
 ;;(X -> Y) :Purpose: A function to retrieve the index for a ndfa-config from a trace
@@ -342,6 +346,8 @@ action is the action to be performed on the tape | TM-ACTION
                                               (list->zipper (list (trace 'khrecom 'khcom)))
                                               (list->zipper (list (trace (mttm-config 'K (list (tape-config 1 '(@ _ a)) (tape-config 0 '(_))) 0)
                                                                          (rule '@ '@ '@ '@))))
+                                              (list->zipper (list (trace (mttm-config 'K (list (tape-config 1 '(@ _ a)) (tape-config 0 '(_))) 0)
+                                                                         (rule '@ '@ '@ '@))))
                                               (list->zipper '())
                                               (list->zipper '(1 2 3 3 4 4 5 5))
                                               1
@@ -358,6 +364,8 @@ action is the action to be performed on the tape | TM-ACTION
                                                                         `(,BLANK))))
                                               (list->zipper (list (list 1 0 0)))
                                               (list->zipper (list (trace 'kh358/2days 'seasalttrio)))
+                                              (list->zipper (list (trace (mttm-config 'K (list (tape-config 1 '(@ _ a)) (tape-config 0 '(_))) 0)
+                                                                         (rule '@ '@ '@ '@))))
                                               (list->zipper (list (trace (mttm-config 'K (list (tape-config 1 '(@ _ a)) (tape-config 0 '(_))) 0)
                                                                          (rule '@ '@ '@ '@))))
                                               (list->zipper '())
@@ -377,6 +385,8 @@ action is the action to be performed on the tape | TM-ACTION
                                                                           `(,BLANK))))
                                                 (list->zipper (list (list 1 0 0 0)))
                                                 (list->zipper (list (trace 'khrecom 'khcom)))
+                                                (list->zipper (list (trace (mttm-config 'K (list (tape-config 1 '(@ _ a)) (tape-config 0 '(_))) 0)
+                                                                         (rule '@ '@ '@ '@))))
                                                 (list->zipper (list (trace (mttm-config 'K (list (tape-config 1 '(@ _ a)) (tape-config 0 '(_))) 0)
                                                                          (rule '@ '@ '@ '@))))
                                                 (list->zipper '())
