@@ -157,6 +157,7 @@ destination -> the rest of a mttm rule | half-rule
                      [new-configs (treelist-filter (λ (new-c) 
                                             (not (set-member? (computation-visited (qfirst QoC)) (treelist-last (computation-LoC new-c)))))
                                           (treelist-map connected-read-rules (λ (rule) (apply-rule (qfirst QoC) rule))))])
+                ;new-configs
                 (if (treelist-empty? new-configs)
                     (make-computations (dequeue QoC) (treelist-add path (qfirst QoC)))
                     (make-computations (enqueue new-configs (dequeue QoC)) path)))))))
@@ -204,8 +205,7 @@ destination -> the rest of a mttm rule | half-rule
 (define (get-trace-X LoT map-func)
   (filter-map-acc empty? map-func not first LoT))
 
-;(listof symbol ((listof symbol) (listof symbol) -> boolean))) (X -> Y) ->
-;(listof symbol ((listof symbol) (listof symbol) -> boolean)))
+;(listof symbol ((listof symbol) (listof symbol) -> boolean))) (X -> Y) -> (listof symbol ((listof symbol) (listof symbol) -> boolean)))
 ;;Purpose: Extracts the invariants from the (listof symbol ((listof symbols) (listof symbols) -> boolean)))
 (define (get-invariants inv func)
   (if (func (second inv))
@@ -215,7 +215,7 @@ destination -> the rest of a mttm rule | half-rule
 ;;(listof trace) -> (listof trace)
 ;;Purpose: Extracts the empty trace from the (listof trace) and maps rest onto the non-empty trace
 (define (get-next-traces LoT)
-  (filter-map-acc empty? rest not id LoT))
+  (filter-map-acc empty? rest not identity LoT))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -251,7 +251,7 @@ destination -> the rest of a mttm rule | half-rule
 
 ;;graph machine -> graph
 ;;Purpose: Creates the edges for the given graph
-(define (make-edge-graph dgraph rules current-tracked-rules current-accept-rules current-reject-rules)
+(define (make-edge-graph dgraph rules current-tracked-rules current-accept-rules current-reject-rules accepted?)
   ;;rule symbol (listof rules) -> boolean
   ;;Purpose: Determines if the given rule is a member of the given (listof rules)
   ;;         or similiar to one of the rules in the given (listof rules) 
@@ -261,32 +261,37 @@ destination -> the rest of a mttm rule | half-rule
                  (and (equal? (first rule) (first r))
                       (equal? (third rule) (third r))))
                lor)))
-  (displayln current-tracked-rules)
-  (displayln "")
-  (displayln current-reject-rules)
   (foldl (λ (rule graph)
            (let ([found-tracked-rule? (find-rule? rule current-tracked-rules)]
                  [found-accept-rule? (find-rule? rule current-accept-rules)]
-                 [member-of-accept-rules (member? rule current-accept-rules equal?)]
-                 [member-of-tracked-rules (member? rule current-tracked-rules equal?)])
+                 [found-reject-rule? (find-rule? rule current-reject-rules)])
              (add-edge graph
                      (second rule)
                      (first rule)
                      (third rule)
-                     #:atb (hash 'color (cond [(and member-of-tracked-rules member-of-accept-rules)
+                     #:atb (hash 'color (cond [(and found-tracked-rule? found-accept-rule?) ;;<--- watch out if coloring issue
                                                SPLIT-ACCEPT-COLOR]
-                                              [(and member-of-tracked-rules
-                                                    (member? rule current-reject-rules equal?))
-                                               SPLIT-REJECT-COLOR]
-                                              [(and (not (empty? current-accept-rules))
-                                                    found-tracked-rule?) TRACKED-ACCEPT-COLOR]
+                                              [(and found-tracked-rule? found-reject-rule?) ;;<--- watch out if coloring issue
+                                               (begin
+                                                 ;(displayln "split")
+                                                 ;(displayln rule)
+                                                 SPLIT-REJECT-COLOR)]
+                                              [(and accepted? found-tracked-rule?) TRACKED-ACCEPT-COLOR]
                                               [found-tracked-rule?  (begin
-                                                                          (displayln "here")
-                                                                          TRACKED-REJECT-COLOR)]
+                                                                      ;(displayln "tracked")
+                                                                      ;(displayln rule)
+                                                                      TRACKED-REJECT-COLOR)]
                                               [found-accept-rule? ALL-ACCEPT-COLOR]
-                                              [(find-rule? rule current-reject-rules) REJECT-COLOR]
-                                              [else 'black])
-                                 'style (if member-of-accept-rules 'bold 'solid)
+                                              [found-reject-rule?
+                                               (begin
+                                                                      ;(displayln "reject")
+                                                                      ;(displayln rule)
+                                                                      REJECT-COLOR)]
+                                              [else (begin
+                                                                      ;(displayln "other")
+                                                                      ;(displayln rule)
+                                                                      'black)])
+                                 'style (if (and found-tracked-rule? accepted?) 'bold 'solid) ;;<--- watch out if bolding issue
                                  'fontsize 12))))
          dgraph
          rules))
@@ -403,6 +408,13 @@ destination -> the rest of a mttm rule | half-rule
          ;;(listof symbols)
          ;;Purpose: Returns all states whose invariants holds
          [held-invs (map (λ (inv) (get-invariants inv id)) get-invs)])
+    #|(displayln "tracked")
+    (displayln current-tracked-rules)
+    (displayln "accept")
+    (displayln all-current-accept-rules)
+    (displayln "reject")
+   (displayln current-reject-rules)|#
+    ;(displayln "")
     (make-edge-graph
      (make-node-graph
       (create-graph 'mttmgraph #:atb (hash 'rankdir "LR"))
@@ -417,6 +429,7 @@ destination -> the rest of a mttm rule | half-rule
          current-shown-reject-rules)
      all-current-accept-rules
      current-reject-rules
+     (eq? (building-viz-state-machine-decision a-vs) 'accept)
      #;(if (eq? (building-viz-state-machine-decision a-vs) 'accept)
          current-reject-rules
          (append current-reject-rules current-shown-accept-rules)))))
@@ -1049,7 +1062,7 @@ destination -> the rest of a mttm rule | half-rule
                                'accept
                                'reject)]
          
-         [tracked-trace (list (if (and (not computation-has-cut-off?) (not (empty? accepting-trace)))
+         [tracked-trace (list (if (not (empty? accepting-trace))
                                   accepting-trace
                                   rejecting-trace))
                         
@@ -1073,10 +1086,11 @@ destination -> the rest of a mttm rule | half-rule
          ;;building-state struct
          [building-state (building-viz-state all-displayed-tape
                                              LoC
-                                             (if (empty? accepting-traces) '() tracked-trace)
+                                             (if (empty? accepting-traces) accepting-traces tracked-trace)
                                              (if (empty? accepting-traces) tracked-trace '())
-                                             (if (empty? accepting-traces) '() (rest accepting-traces))
-                                             (if (empty? accepting-traces) (rest rejecting-traces) rejecting-traces)
+                                             (if (empty? accepting-traces) accepting-traces (rest accepting-traces))
+                                             (if (empty? accepting-traces) (filter (λ (config) (not (equal? config rejecting-trace)))
+                                                 rejecting-traces) rejecting-traces)
                                              M
                                              all-inv-configs
                                              cut-off
@@ -1101,6 +1115,14 @@ destination -> the rest of a mttm rule | half-rule
     ;tracked-head-pos
     #;(zipper-current all-displayed-tape)
     ;(displayln rejecting-trace)
+    ;tracked-trace
+    ;(rest rejecting-traces)
+    ;cut-off-computations-lengths
+    #;(make-trace (first (map computation-LoC computations))
+                                              (first (map computation-LoR computations))
+                                              '())
+    ;(first (map computation-LoR computations))
+    ;(void)
     (run-viz graphs
                (lambda () (graph->bitmap (first graphs)))
                (posn (/ E-SCENE-WIDTH 2) (/ MTTM-E-SCENE-HEIGHT 2))
