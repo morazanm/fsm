@@ -60,6 +60,15 @@ action is the action to be performed on the tape | TM-ACTION
 ;; X (listof X) (X -> boolean) -> boolean
 ;;Purpose: Determine if X is in the given list
 (define (member? x lst eq-func) (for/or ([L lst]) (eq-func x L)))
+;;(X -> boolean) (listof X) -> boolean
+;;Purpose: Determines if X is is the given list
+(define (ormap f lst) (for/or ([L lst]) (f L)))
+;;(X -> Y) (listof X) -> (listof Y)
+;;Purpose: maps the given functon over the list
+(define (map2 f lst) (for/list ([L lst]) (f L)))
+;;(X -> boolean) (listof X) -> (listof X)
+;;Purpose: filters the list using the given predicate
+(define (filter f lst) (for/list ([L lst] #:when (f L)) L))
 
 (define GRAPHVIZ-CUTOFF-GOLD 'darkgoldenrod2)
 (define HELD-INV-COLOR 'chartreuse4)
@@ -68,6 +77,7 @@ action is the action to be performed on the tape | TM-ACTION
 (define TRACKED-REJECT-COLOR 'webmaroon)
 (define ALL-ACCEPT-COLOR 'green)
 (define REJECT-COLOR 'violetred)
+(define SPLIT-INV-COLOR "red:chartreuse4")
 (define SPLIT-ACCEPT-COLOR 
   (string-append (symbol->string TRACKED-ACCEPT-COLOR) ":" (symbol->string ALL-ACCEPT-COLOR)))
 (define SPLIT-REJECT-COLOR
@@ -112,13 +122,16 @@ action is the action to be performed on the tape | TM-ACTION
 (define INS-TOOLS-BUFFER 30)
 
 ;;(X -> Y) :Purpose: A function to retrieve the index for a tm-config from a trace
+(define get-mttm-config-index-frm-trace (compose1 mttm-config-index trace-config zipper-current))
+;;(X -> Y) :Purpose: A function to retrieve the index for a tm-config from a trace
 (define get-tm-config-index-frm-trace (compose1 tm-config-index trace-config zipper-current))
-
 ;;(X -> Y) :Purpose: A function to retrieve the index for a pda-config from a trace
 (define get-pda-config-index-frm-trace (compose1 pda-config-index trace-config zipper-current))
 ;;(X -> Y) :Purpose: A function to retrieve the index for a ndfa-config from a trace
 (define get-ndfa-config-index-frm-trace (compose1 ndfa-config-index trace-config zipper-current))
 
+;;(X -> Y) :Purpose: A function to retrieve the index for a mttm-config from the invs-zipper
+(define get-mttm-config-index-frm-invs (compose1 mttm-config-index first zipper-current))
 ;;(X -> Y) :Purpose: A function to retrieve the index for a tm-config from the invs-zipper
 (define get-tm-config-index-frm-invs (compose1 tm-config-index first zipper-current))
 ;;(X -> Y) :Purpose: A function to retrieve the index for a pda-config from the invs-zipper

@@ -510,34 +510,16 @@ rules are a (listof rule-structs)
                        FONT-SIZE
                        (if (equal? (imsg-state-mttm-machine-decision imsg-st) 'accept)
                            ACCEPT-COLOR
-                           REJECT-COMPUTATION-COLOR)))
-     #;(if (zipper-empty? (imsg-state-mttm-rules-used imsg-st))
-         (text "Head position is not updated when there are multiple rejecting computations." FONT-SIZE FONT-COLOR)
-         (beside (text "Last rule used: " FONT-SIZE FONT-COLOR)
-                 (text (format "~a" (if (or (equal? (zipper-current (imsg-state-mttm-rules-used imsg-st)) DUMMY-TM-RULE)
-                                            (zipper-empty? (imsg-state-mttm-rules-used imsg-st)))
-                                        ""
-                                        (zipper-current (imsg-state-mttm-rules-used imsg-st))))
-                       FONT-SIZE
-                       (if (equal? (imsg-state-mttm-machine-decision imsg-st) 'accept)
-                           ACCEPT-COLOR
-                           REJECT-COMPUTATION-COLOR))))
-              
+                           REJECT-COMPUTATION-COLOR)))         
      (text "Tape: " 1 BLANK-COLOR)
      (above main-tape-img
                 (make-tapes (imsg-state-mttm-aux-tape-index imsg-st)
-                            (+ (imsg-state-mttm-aux-tape-index imsg-st) MAX-AUX-TAPE-AMOUNT)))
-     #;(if (or (zipper-empty? (imsg-state-mttm-shown-accepting-trace imsg-st))
-             (zipper-empty? (imsg-state-mttm-rules-used imsg-st)))
-         main-tape-img
-         (above main-tape-img
-                (make-tapes (imsg-state-mttm-aux-tape-index imsg-st)
-                            (+ (imsg-state-mttm-aux-tape-index imsg-st) MAX-AUX-TAPE-AMOUNT))))
+                            (+ (imsg-state-mttm-aux-tape-index imsg-st) MAX-AUX-TAPE-AMOUNT))) 
      (text (format "The current number of possible computations is: ~a (without repeated configurations)."
                    (number->string (zipper-current (imsg-state-mttm-computation-lengths imsg-st))))
            FONT-SIZE
            COMPUTATION-LENGTH-COLOR)
-     (cond [(and (zipper-empty? (imsg-state-mttm-shown-accepting-trace imsg-st))
+     (cond [(and (zipper-at-end? (imsg-state-mttm-shown-rejecting-trace imsg-st))
                  (>= (mttm-accessor-func (imsg-state-mttm-shown-rejecting-trace imsg-st)) (imsg-state-mttm-max-cmps imsg-st))
                  (not (equal? (mttm-config-state (trace-config (zipper-current (imsg-state-mttm-shown-rejecting-trace imsg-st))))
                               (mttm-accepting-final (imsg-state-mttm-M imsg-st)))))
