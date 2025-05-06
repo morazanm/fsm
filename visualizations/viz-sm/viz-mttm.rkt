@@ -33,7 +33,7 @@ source -> the first of a mttm rule     | half-rule
 destination -> the rest of a mttm rule | half-rule
 |#
 (struct rule (source destination) #:transparent)
-(struct paths (accepting rejecting reached-final? cut-off?) #:transparent)
+
 ;;tape is the input the tape
 ;;computations is a (listof computation) that attempt to consume the ci
 ;;accepting computations is (listof computation) for all accepting computations
@@ -175,10 +175,10 @@ destination -> the rest of a mttm rule | half-rule
                 ;new-configs
                 (if (treelist-empty? new-configs)
                     (make-computations (dequeue QoC) (if (eq? current-state accepting-final)
-                                                   (struct-copy paths path
-                                                                [accepting (treelist-add (paths-accepting path) (qfirst QoC))])
-                                                   (struct-copy paths path
-                                                                [rejecting (treelist-add (paths-rejecting path) (qfirst QoC))])))
+                                                         (struct-copy paths path
+                                                                      [accepting (treelist-add (paths-accepting path) (qfirst QoC))])
+                                                         (struct-copy paths path
+                                                                      [rejecting (treelist-add (paths-rejecting path) (qfirst QoC))])))
                     (make-computations (enqueue new-configs (dequeue QoC)) path)))))))
   (let (;;computation
         ;;Purpose: The starting computation
@@ -1003,7 +1003,7 @@ destination -> the rest of a mttm rule | half-rule
          ;;(listof computation) ;;Purpose: Extracts all rejecting computations
          [rejecting-computations (treelist->list (paths-rejecting all-paths))]
          ;;(listof configurations) ;;Purpose: Extracts the configurations from the computation
-         [LoC  (map2 computation-LoC (append accepting-computations rejecting-computations))]
+         [LoC (map2 computation-LoC (append accepting-computations rejecting-computations))]
          ;;boolean ;;Purpose: Determines if any computation 
          [reached-final? (paths-reached-final? all-paths)]
          ;;(listof computation) ;;Purpose: Extracts all accepting computations

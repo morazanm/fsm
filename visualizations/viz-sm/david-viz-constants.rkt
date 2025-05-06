@@ -31,6 +31,7 @@ visited is a (hashof configuration)
 |#
 (struct computation (LoC LoR visited) #:transparent)
 
+(struct paths (accepting rejecting reached-final? cut-off?) #:transparent)  
 #|
 A rule is a structure: (rule source read destination action)
 source is the source state                       | symbol
