@@ -480,7 +480,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
- 
+;; L = {w | w has equal # of a's & b's}
 (define SCHIZO-SAME-NUM-AB (make-ndpda '(K H I)
                                        '(a b)
                                        '(a b)
@@ -495,23 +495,48 @@
                                          ((H ,EMP ,EMP)(I ,EMP)))))
 
 
+;; L = {a^m b^n c^p z | m, n, p ≥ 0 and m ≤ n and m ≤ p}
+(define ambncp (make-ndpda '(S A B C D E F G)
+                           '(a b c z)
+                           '(a y)
+                           'S
+                           '(F)
+                           `(((S a ,EMP) (A (a y)))
+                            ((A a ,EMP) (A (a)))
+                            ((A b (a)) (B ,EMP))
+                            ((B b (a)) (B ,EMP))
+                            ((B c (a)) (C ,EMP))
+                            ((C c (a)) (C ,EMP))
+                            ((C z ,EMP) (G ,EMP))
+                            ((C c (y)) (E (y)))
+                            ((B b (y)) (D (y)))
+                            ((D b (y)) (D (y)))
+                            ((D c (y)) (E (y)))
+                            ((E c (y)) (E (y)))
+                            ((E z (y)) (F ,EMP))
+                            ((G ,EMP (a)) (G ,EMP))
+                            ((G ,EMP (y)) (F ,EMP)))))
+
+;;L = a^ib^j i <= j <= 2i buggy
 (define P2 (make-ndpda '(S H)
                        '(a b)
                        '(b)
                        'S
                        '(H)
-                       `(((S ε ε)(H ε))     ((S a ε)(S (b b)))
-                                            ((H b (b b))(H ε)) ((H ε (b))(H ε)))))
-
+                       `(((S ε ε)(H ε))
+                         ((S a ε)(S (b b)))
+                         ((H b (b b))(H ε)) ((H ε (b))(H ε)))))
+;;L = a^ib^j i <= j <= 2i
 (define P3 (make-ndpda '(S H)
                        '(a b)
                        '(b)
                        'S
                        '(H)
-                       `(((S ε ε)(H ε))     ((S a ε)(S (b b)))
-                                            ((H b (b b))(H ε)) ((H b (b))(H ε)))))
+                       `(((S ε ε)(H ε))
+                         ((S a ε)(S (b b)))
+                         ((H b (b b))(H ε)) ((H b (b))(H ε)))))
 
-
+;;L = w c w^r reverse
 (define wcw^r (make-ndpda '(S P Q F)
                           '(a b c)
                           '(a b)
@@ -524,6 +549,7 @@
                             ((Q a (a)) (Q ,EMP))
                             ((Q b (b)) (Q ,EMP))
                             ((Q ,EMP ,EMP) (F ,EMP)))))
+
 
 (define PUW (make-ndpda '(S P Q F  A B X)
                         '(a b c)
@@ -542,6 +568,7 @@
                           ((B ε ε)(A ε))
                           ((X b (b b))(X ε)) ((X b (b))(X ε)))))
 
+;; L = {w | w has equal # of a's & b's} buggy
 (define BUGGY-SAME-NUM-AB (make-ndpda '(K H F M)
                                       '(a b)
                                       '(a b)
@@ -559,7 +586,7 @@
                                         ;((M b    ,EMP) (F ,EMP))
                                         ((M b    ,EMP) (K ,EMP))
                                         )))
-
+;; L = {w | w has equal # of a's & b's}
 (define SAME-NUM-AB (make-ndpda '(K H F M)
                                 '(a b)
                                 '(a b)
@@ -574,6 +601,7 @@
                                   ((F a (a)) (H ,EMP))
                                   ((F ,EMP ,EMP) (M ,EMP)))))
 
+;;L = {w | w contains a^ib^j i <= j <= 2i}
 (define P (make-ndpda '(S A B X)
                       '(a b)
                       '(b)
@@ -583,7 +611,7 @@
                                        ((A b ε)(A ε)) ((A a ε)(A ε)) ((A ε ε)(B ε))
                                        ((B ε ε)(A ε))
                                        ((X b (b b))(X ε)) ((X b (b))(X ε)))))
-
+;;L = {w | w = a^nb^n}
 (define aˆnbˆn (make-ndpda '(S M F)
                            '(a b)
                            '(a)
@@ -594,6 +622,7 @@
                              ((M b (a)) (M ,EMP))
                              ((M ,EMP ,EMP) (F ,EMP)))))
 
+;; L = {w | w = ba}
 (define p (make-ndpda '(K H F M I)
                       '(a b)
                       '(a b)
@@ -605,6 +634,7 @@
                         ((F a ,EMP)(I ,EMP))
                         ((M a ,EMP)(I ,EMP)))))
 
+;; L = {w | w = b}
 (define pk (make-ndpda '(K H F M I)
                        '(a b)
                        '(a b)
@@ -1286,16 +1316,16 @@
 
 
 
-;(sm-viz EVEN-AS-&-BS '(@ a b a b) 0)
+;(sm-viz EVEN-AS-&-BS '(@ a b a b) #:head-pos 0)
 ;(sm-viz anbncn `(,LM ,BLANK a b c) #:head-pos 1 #:cut-off 15)
 
-#;(sm-viz EVEN-AS-&-BS `(,LM b a b a) 0 (list 'K EVEN-K-INV)
+#;(sm-viz EVEN-AS-&-BS `(,LM b a b a) #:head-pos 0 (list 'K EVEN-K-INV)
           (list 'H EVEN-H-INV)
           (list 'I BRK-EVEN-I-INV)
           (list 'B EVEN-B-INV)
           (list 'S EVEN-S-INV))
-;(sm-viz ADD `(,LM ,BLANK d d ,BLANK d d d) 1)
-#;(sm-viz anbncn `(,LM ,BLANK a b c) 1 (list 'S S-INV)
+;(sm-viz ADD `(,LM ,BLANK d d ,BLANK d d d) #:head-pos 1)
+#;(sm-viz anbncn `(,LM ,BLANK a b c) #:head-pos 1 (list 'S S-INV)
           (list 'A A-INV)
           (list 'B B-INV)
           (list 'C C-INV)
@@ -1390,3 +1420,398 @@
           (list 'M DNA-M-INV) (list 'I DNA-I-INV) (list 'D DNA-D-INV)  (list 'B DNA-B-INV) (list 'S DNA-S-INV) (list 'R DNA-R-INV))
 
   (sm-viz DNA-SEQUENCE '(c g c g a t a t g c t a g c a t)))
+
+(define a^nb^n (make-unchecked-mttm '(K H R E C O M T) ;;<--- states
+                                    '(a b) ;;<--- alpha
+                                    'K ;;<-- start
+                                    '(T) ;; final
+                                    (list
+                                     (list (list 'K (list BLANK BLANK BLANK));; <-- Starting 
+                                           (list 'H (list RIGHT RIGHT RIGHT))) 
+                                     (list (list 'H (list 'a BLANK BLANK)) ;;<-- Phase 1, reads a's
+                                           (list 'R (list 'a 'a BLANK)))
+                                     (list (list 'R (list 'a 'a BLANK))
+                                           (list 'H (list RIGHT RIGHT BLANK))) 
+                                     (list (list 'H (list 'b BLANK BLANK)) ;;<-- phase 2, read b's
+                                           (list 'E (list 'b BLANK 'b)))
+                                     (list (list 'E (list 'b BLANK 'b))
+                                           (list 'C (list RIGHT BLANK RIGHT)))
+                                     (list (list 'C (list 'b BLANK BLANK))
+                                           (list 'E (list 'b BLANK 'b))) 
+                                     (list (list 'C (list BLANK BLANK BLANK))
+                                           (list 'O (list RIGHT BLANK BLANK)))
+                                     (list (list 'O (list BLANK BLANK BLANK)) ;;<-- phase 4, matching as, bs, cs
+                                           (list 'M (list BLANK LEFT LEFT)))
+                                     (list (list 'M (list BLANK 'a 'b))
+                                           (list 'M (list BLANK LEFT LEFT)))
+                                     (list (list 'M (list BLANK BLANK BLANK)) ;;<-phase 5, accept (if possible)
+                                           (list 'T (list BLANK BLANK BLANK)))
+                                     ) ;;rules
+                                    3 ;;tape amout
+                                    'T)) ;;accepting final
+
+;;Pre-Condition: '(LM BLANK w) AND t0h = 1 AND tapes 1-3 are empty AND t1h-t3h = 0
+;;L = {w | w ∈ a^nb^nc^n}
+(define a^nb^nc^n (make-unchecked-mttm '(K H R E C O M T F)
+                                       '(a b c)
+                                       'K
+                                       '(F)
+                                       (list
+                                        (list (list 'K (list BLANK BLANK BLANK BLANK));; <-- Starting 
+                                              (list 'H (list RIGHT RIGHT RIGHT RIGHT))) 
+                                        (list (list 'H (list 'a BLANK BLANK BLANK)) ;;<-- Phase 1, reads a's
+                                              (list 'R (list 'a 'a BLANK BLANK)))
+                                        (list (list 'R (list 'a 'a BLANK BLANK))
+                                              (list 'H (list RIGHT RIGHT BLANK BLANK))) 
+                                        (list (list 'H (list 'b BLANK BLANK BLANK)) ;;<-- phase 2, read b's
+                                              (list 'E (list 'b BLANK 'b BLANK)))
+                                        (list (list 'E (list 'b BLANK 'b BLANK))
+                                              (list 'C (list RIGHT BLANK RIGHT BLANK)))
+                                        (list (list 'C (list 'b BLANK BLANK BLANK))
+                                              (list 'E (list 'b BLANK 'b BLANK))) 
+                                        (list (list 'C (list 'c BLANK BLANK BLANK)) ;;<-- phase 3, read c's
+                                              (list 'O (list 'c BLANK BLANK 'c)))
+                                        (list (list 'O (list 'c BLANK BLANK 'c))
+                                              (list 'M (list RIGHT BLANK BLANK RIGHT)))
+                                        (list (list 'M (list 'c BLANK BLANK BLANK)) 
+                                              (list 'O (list 'c BLANK BLANK 'c)))
+                                        (list (list 'M (list BLANK BLANK BLANK BLANK)) ;;<-- phase 4, matching as, bs, cs
+                                              (list 'T (list BLANK LEFT LEFT LEFT)))
+                                        (list (list 'T (list BLANK 'a 'b 'c))
+                                              (list 'T (list BLANK LEFT LEFT LEFT)))
+                                        (list (list 'T (list BLANK BLANK BLANK BLANK)) ;;<-phase 5, accept (if possible)
+                                              (list 'F (list BLANK BLANK BLANK BLANK)))
+                                        )
+                                       4
+                                       'F))
+
+
+(define a^nb^nc^nd^n (make-unchecked-mttm '(K H R E C O M T F D U)
+                                          '(a b c d)
+                                          'K
+                                          '(F)
+                                          (list
+                                           (list (list 'K (list BLANK BLANK BLANK BLANK BLANK));; <-- Starting 
+                                                 (list 'H (list RIGHT RIGHT RIGHT RIGHT RIGHT))) 
+                                           (list (list 'H (list 'a BLANK BLANK BLANK BLANK)) ;;<-- Phase 1, reads a's
+                                                 (list 'R (list 'a 'a BLANK BLANK BLANK)))
+                                           (list (list 'R (list 'a 'a BLANK BLANK BLANK))
+                                                 (list 'H (list RIGHT RIGHT BLANK BLANK BLANK))) 
+                                           (list (list 'H (list 'b BLANK BLANK BLANK BLANK)) ;;<-- phase 2, read b's
+                                                 (list 'E (list 'b BLANK 'b BLANK BLANK)))
+                                           (list (list 'E (list 'b BLANK 'b BLANK BLANK))
+                                                 (list 'C (list RIGHT BLANK RIGHT BLANK BLANK)))
+                                           (list (list 'C (list 'b BLANK BLANK BLANK BLANK))
+                                                 (list 'E (list 'b BLANK 'b BLANK BLANK))) 
+                                           (list (list 'C (list 'c BLANK BLANK BLANK BLANK)) ;;<-- phase 3, read c's
+                                                 (list 'O (list 'c BLANK BLANK 'c BLANK)))
+                                           (list (list 'O (list 'c BLANK BLANK 'c BLANK))
+                                                 (list 'D (list RIGHT BLANK BLANK RIGHT BLANK)))
+                                           (list (list 'D (list 'c BLANK BLANK BLANK BLANK)) 
+                                                 (list 'O (list 'c BLANK BLANK 'c BLANK)))
+                                           (list (list 'D (list 'd BLANK BLANK BLANK BLANK))
+                                                 (list 'U (list 'd BLANK BLANK BLANK 'd)))
+                                           (list (list 'U (list 'd BLANK BLANK BLANK 'd))
+                                                 (list 'M (list RIGHT BLANK BLANK BLANK RIGHT)))
+                                           (list (list 'M (list 'd BLANK BLANK BLANK BLANK))
+                                                 (list 'U (list 'd BLANK BLANK BLANK 'd)))
+                                           (list (list 'M (list BLANK BLANK BLANK BLANK BLANK)) ;;<-- phase 4, matching as, bs, cs
+                                                 (list 'T (list BLANK LEFT LEFT LEFT LEFT)))
+                                           (list (list 'T (list BLANK 'a 'b 'c 'd))
+                                                 (list 'T (list BLANK LEFT LEFT LEFT LEFT)))
+                                           (list (list 'T (list BLANK BLANK BLANK BLANK BLANK)) ;;<-phase 5, accept (if possible)
+                                                 (list 'F (list BLANK BLANK BLANK BLANK BLANK)))
+                                           )
+                                          5
+                                          'F))
+
+(define a^nb^nc^nd^ne^n (make-unchecked-mttm '(K H R E C O M T F D U X B)
+                                             '(a b c d e)
+                                             'K
+                                             '(F)
+                                             (list
+                                              (list (list 'K (list BLANK BLANK BLANK BLANK BLANK BLANK));; <-- Starting 
+                                                    (list 'H (list RIGHT RIGHT RIGHT RIGHT RIGHT RIGHT))) 
+                                              (list (list 'H (list 'a BLANK BLANK BLANK BLANK BLANK)) ;;<-- Phase 1, reads a's
+                                                    (list 'R (list 'a 'a BLANK BLANK BLANK BLANK)))
+                                              (list (list 'R (list 'a 'a BLANK BLANK BLANK BLANK))
+                                                    (list 'H (list RIGHT RIGHT BLANK BLANK BLANK BLANK))) 
+                                              (list (list 'H (list 'b BLANK BLANK BLANK BLANK BLANK)) ;;<-- phase 2, read b's
+                                                    (list 'E (list 'b BLANK 'b BLANK BLANK BLANK)))
+                                              (list (list 'E (list 'b BLANK 'b BLANK BLANK BLANK))
+                                                    (list 'C (list RIGHT BLANK RIGHT BLANK BLANK BLANK)))
+                                              (list (list 'C (list 'b BLANK BLANK BLANK BLANK BLANK))
+                                                    (list 'E (list 'b BLANK 'b BLANK BLANK BLANK))) 
+                                              (list (list 'C (list 'c BLANK BLANK BLANK BLANK BLANK)) ;;<-- phase 3, read c's
+                                                    (list 'O (list 'c BLANK BLANK 'c BLANK BLANK)))
+                                              (list (list 'O (list 'c BLANK BLANK 'c BLANK BLANK))
+                                                    (list 'D (list RIGHT BLANK BLANK RIGHT BLANK BLANK)))
+                                              (list (list 'D (list 'c BLANK BLANK BLANK BLANK BLANK)) 
+                                                    (list 'O (list 'c BLANK BLANK 'c BLANK BLANK)))
+                                              (list (list 'D (list 'd BLANK BLANK BLANK BLANK BLANK))
+                                                    (list 'U (list 'd BLANK BLANK BLANK 'd BLANK)))
+                                              (list (list 'U (list 'd BLANK BLANK BLANK 'd BLANK))
+                                                    (list 'X (list RIGHT BLANK BLANK BLANK RIGHT BLANK)))
+                                              (list (list 'X (list 'd BLANK BLANK BLANK BLANK BLANK))
+                                                    (list 'U (list 'd BLANK BLANK BLANK 'd BLANK)))
+                                              (list (list 'X (list 'e BLANK BLANK BLANK BLANK BLANK))
+                                                    (list 'B (list 'e BLANK BLANK BLANK BLANK 'e)))
+                                              (list (list 'B (list 'e BLANK BLANK BLANK BLANK 'e))
+                                                    (list 'M (list RIGHT BLANK BLANK BLANK BLANK RIGHT)))
+                                              (list (list 'M (list 'e BLANK BLANK BLANK BLANK BLANK))
+                                                    (list 'B (list 'e BLANK BLANK BLANK BLANK 'e)))
+                                              (list (list 'M (list BLANK BLANK BLANK BLANK BLANK BLANK)) ;;<-- phase 4, matching as, bs, cs
+                                                    (list 'T (list BLANK LEFT LEFT LEFT LEFT LEFT)))
+                                              (list (list 'T (list BLANK 'a 'b 'c 'd 'e))
+                                                    (list 'T (list BLANK LEFT LEFT LEFT LEFT LEFT)))
+                                              (list (list 'T (list BLANK BLANK BLANK BLANK BLANK BLANK)) ;;<-phase 5, accept (if possible)
+                                                    (list 'F (list BLANK BLANK BLANK BLANK BLANK BLANK)))
+                                              )
+                                             6
+                                             'F))
+
+(define a^nb^nc^nd^ne^nf^n (make-unchecked-mttm '(K H R E C O M T F D U X B I V) 
+                                                '(a b c d e f)
+                                                'K
+                                                '(F)
+                                                (list
+                                                 (list (list 'K (list BLANK BLANK BLANK BLANK BLANK BLANK BLANK));; <-- Starting 
+                                                       (list 'H (list RIGHT RIGHT RIGHT RIGHT RIGHT RIGHT RIGHT))) 
+                                                 (list (list 'H (list 'a BLANK BLANK BLANK BLANK BLANK BLANK)) ;;<-- Phase 1, reads a's
+                                                       (list 'R (list 'a 'a BLANK BLANK BLANK BLANK BLANK)))
+                                                 (list (list 'R (list 'a 'a BLANK BLANK BLANK BLANK BLANK))
+                                                       (list 'H (list RIGHT RIGHT BLANK BLANK BLANK BLANK BLANK))) 
+                                                 (list (list 'H (list 'b BLANK BLANK BLANK BLANK BLANK BLANK)) ;;<-- phase 2, read b's
+                                                       (list 'E (list 'b BLANK 'b BLANK BLANK BLANK BLANK)))
+                                                 (list (list 'E (list 'b BLANK 'b BLANK BLANK BLANK BLANK))
+                                                       (list 'C (list RIGHT BLANK RIGHT BLANK BLANK BLANK BLANK)))
+                                                 (list (list 'C (list 'b BLANK BLANK BLANK BLANK BLANK BLANK))
+                                                       (list 'E (list 'b BLANK 'b BLANK BLANK BLANK BLANK))) 
+                                                 (list (list 'C (list 'c BLANK BLANK BLANK BLANK BLANK BLANK)) ;;<-- phase 3, read c's
+                                                       (list 'O (list 'c BLANK BLANK 'c BLANK BLANK BLANK)))
+                                                 (list (list 'O (list 'c BLANK BLANK 'c BLANK BLANK BLANK))
+                                                       (list 'D (list RIGHT BLANK BLANK RIGHT BLANK BLANK BLANK)))
+                                                 (list (list 'D (list 'c BLANK BLANK BLANK BLANK BLANK BLANK)) 
+                                                       (list 'O (list 'c BLANK BLANK 'c BLANK BLANK BLANK)))
+                                                 (list (list 'D (list 'd BLANK BLANK BLANK BLANK BLANK BLANK))
+                                                       (list 'U (list 'd BLANK BLANK BLANK 'd BLANK BLANK)))
+                                                 (list (list 'U (list 'd BLANK BLANK BLANK 'd BLANK BLANK))
+                                                       (list 'X (list RIGHT BLANK BLANK BLANK RIGHT BLANK BLANK)))
+                                                 (list (list 'X (list 'd BLANK BLANK BLANK BLANK BLANK BLANK))
+                                                       (list 'U (list 'd BLANK BLANK BLANK 'd BLANK BLANK)))
+                                                 (list (list 'X (list 'e BLANK BLANK BLANK BLANK BLANK BLANK))
+                                                       (list 'B (list 'e BLANK BLANK BLANK BLANK 'e BLANK)))
+                                                 (list (list 'B (list 'e BLANK BLANK BLANK BLANK 'e BLANK))
+                                                       (list 'I (list RIGHT BLANK BLANK BLANK BLANK RIGHT BLANK)))
+                                                 (list (list 'I (list 'e BLANK BLANK BLANK BLANK BLANK BLANK))
+                                                       (list 'B (list 'e BLANK BLANK BLANK BLANK 'e BLANK)))
+                                        
+                                                 (list (list 'I (list 'f BLANK BLANK BLANK BLANK BLANK BLANK))
+                                                       (list 'V (list 'f BLANK BLANK BLANK BLANK BLANK 'f)))
+                                                 (list (list 'V (list 'f BLANK BLANK BLANK BLANK BLANK 'f))
+                                                       (list 'M (list RIGHT BLANK BLANK BLANK BLANK BLANK RIGHT)))
+                                                 (list (list 'M (list 'f BLANK BLANK BLANK BLANK BLANK BLANK))
+                                                       (list 'V (list 'f BLANK BLANK BLANK BLANK BLANK 'f)))
+                                        
+                                                 (list (list 'M (list BLANK BLANK BLANK BLANK BLANK BLANK BLANK)) ;;<-- phase 4, matching as, bs, cs
+                                                       (list 'T (list BLANK LEFT LEFT LEFT LEFT LEFT LEFT)))
+                                                 (list (list 'T (list BLANK 'a 'b 'c 'd 'e 'f))
+                                                       (list 'T (list BLANK LEFT LEFT LEFT LEFT LEFT LEFT)))
+                                                 (list (list 'T (list BLANK BLANK BLANK BLANK BLANK BLANK BLANK)) ;;<-phase 5, accept (if possible)
+                                                       (list 'F (list BLANK BLANK BLANK BLANK BLANK BLANK BLANK)))
+                                                 )
+                                                7
+                                                'F))
+
+;;Pre-Condition: '(LM BLANK w) AND t0h = 1 AND tape 1 is empty AND t1h = 0
+;;compute f(w) = ww
+(define ww (make-unchecked-mttm '(K H T F E B W D M)
+                                '(a b)
+                                'K
+                                '(M)
+                                (list
+                                 (list (list 'K (list BLANK BLANK)) ;;<--- start
+                                       (list 'H (list RIGHT RIGHT))) 
+                                 (list (list 'H (list 'a BLANK)) ;;<---- PHASE 1: read a in w 
+                                       (list 'T (list 'a 'a)))
+                                 (list (list 'T (list 'a 'a))
+                                       (list 'H (list RIGHT RIGHT)))
+                                 (list (list 'H (list 'b BLANK)) ;;<---- PHASE 1: read b in w
+                                       (list 'F (list 'b 'b)))
+                                 (list (list 'F (list 'b 'b))
+                                       (list 'H (list RIGHT RIGHT)))
+                                 (list (list 'H (list BLANK BLANK)) ;;<--- PHASE 2: Go to beginning of t1
+                                       (list 'E (list BLANK LEFT)))
+                                 (list (list 'E (list BLANK 'a))
+                                       (list 'E (list BLANK LEFT)))
+                                 (list (list 'E (list BLANK 'b))
+                                       (list 'E (list BLANK LEFT)))
+                                 (list (list 'E (list BLANK BLANK)) ;;<---- PHASE 3: read w on t1 AND write w on t0
+                                       (list 'W (list BLANK RIGHT)))
+                                 (list (list 'W (list BLANK 'a))
+                                       (list 'D (list 'a 'a)))
+                                 (list (list 'D (list 'a 'a))
+                                       (list 'W (list RIGHT RIGHT)))
+                                 (list (list 'W (list BLANK 'b))
+                                       (list 'B (list 'b 'b)))
+                                 (list (list 'B (list 'b 'b))
+                                       (list 'W (list RIGHT RIGHT)))
+                                 (list (list 'W (list BLANK BLANK))
+                                       (list 'M (list BLANK BLANK)))
+                                 )        
+                                2))
+
+;;(listof tape-configs) -> boolean
+;;Purpose: Determine if K-inv holds
+(define (k-inv tape-config)
+  (let [(t0h (first (first tape-config)))
+        (t0 (second (first tape-config)))
+        (t1h (first (second tape-config)))
+        (t1 (second (second tape-config)))]
+    (and (= t0h 1) (= t1h 0)
+         (eq? (list-ref t0 t0h) BLANK)
+         (equal? t1 (list BLANK)))))
+
+;;(listof tape-configs) -> boolean
+;;Purpose: Determine if H-inv holds
+(define (h-inv tape-config)
+  (let* [(t0h (first (first tape-config)))
+         (t0 (second (first tape-config)))
+         (t1h (first (second tape-config)))
+         (t1 (second (second tape-config)))
+         (readt0 (take (drop t0 2) (- t0h 2)))
+         (readt1 (take (drop t1 1) (- t1h 1)))]
+    (and (>= t0h 2) (>= t1h 1)
+         (= (length readt0) (- t1h 1))
+         (equal? readt0 readt1))))
+
+
+;;(listof tape-configs) -> boolean
+;;Purpose: Determine if T-inv holds
+(define (t-inv tape-config)
+  (let* [(t0h (first (first tape-config)))
+         (t0 (second (first tape-config)))
+         (t1h (first (second tape-config)))
+         (t1 (second (second tape-config)))
+         (readt0 (take (drop t0 2) (- t0h 2)))
+         (readt1 (take (drop t1 1) (- t1h 1)))]
+    (and (>= t0h 2) (>= t1h 1)
+         (eq? (list-ref t0 t0h) 'a)
+         (= (length readt0) (- t1h 1))
+         (equal? readt0 readt1))))
+
+;;(listof tape-configs) -> boolean
+;;Purpose: Determine if F-inv holds
+(define (f-inv tape-config)
+  (let* [(t0h (first (first tape-config)))
+         (t0 (second (first tape-config)))
+         (t1h (first (second tape-config)))
+         (t1 (second (second tape-config)))
+         (readt0 (take (drop t0 2) (- t0h 2)))
+         (readt1 (take (drop t1 1) (- t1h 1)))]
+    (and (>= t0h 2) (>= t1h 1)
+         (eq? (list-ref t0 t0h) 'b)
+         (= (length readt0) (- t1h 1))
+         (equal? readt0 readt1))))
+
+;;(listof tape-configs) -> boolean
+;;Purpose: Determine if E-inv holds
+(define (e-inv tape-config)
+  (let* [(t0h (first (first tape-config)))
+         (t0 (second (first tape-config)))
+         (t1h (first (second tape-config)))
+         (t1 (second (second tape-config)))
+         (readt0 (take (drop t0 1) t0h))]
+    (and (>= t0h 2)
+         (eq? (list-ref t0 t0h) BLANK)
+         (equal? readt0 t1))))
+
+(define (w-inv tape-config)
+  (let* [(t0h (first (first tape-config)))
+         (t0 (second (first tape-config)))
+         (t1h (first (second tape-config)))
+         (t1 (second (second tape-config)))
+         (writet0 (take (drop t0 (length t1)) (- t0h (length t1))))
+         (readt1 (take (drop t1 1) (- t1h 1)))]
+    (and (>= t0h 2) (>= t1h 1)
+         (equal? writet0 readt1))))
+
+(define (b-inv tape-config)
+  (let* [(t0h (first (first tape-config)))
+         (t0 (second (first tape-config)))
+         (t1h (first (second tape-config)))
+         (t1 (second (second tape-config)))
+         (writet0 (take (drop t0 (length t1)) (- t0h (length t1))))
+         (readt1 (take (drop t1 1) (- t1h 1)))]
+    (and (>= t0h 2) (>= t1h 1)
+         (eq? (list-ref t1 t1h) 'b)
+         (equal? writet0 readt1))))
+
+(define (d-inv tape-config)
+  (let* [(t0h (first (first tape-config)))
+         (t0 (second (first tape-config)))
+         (t1h (first (second tape-config)))
+         (t1 (second (second tape-config)))
+         (writet0 (take (drop t0 (length t1)) (- t0h (length t1))))
+         (readt1 (take (drop t1 1) (- t1h 1)))]
+    (and (>= t0h 2) (>= t1h 1)
+         (eq? (list-ref t1 t1h) 'a)
+         (equal? writet0 readt1))))
+
+(define (m-inv tape-config)
+  (let* [(t0h (first (first tape-config)))
+         (t0 (second (first tape-config)))
+         (t1h (first (second tape-config)))
+         (t1 (second (second tape-config)))
+         (readt0 (take (drop t0 2) (- t0h 2)))
+         (readt1 (take (drop t1 1) (- t1h 1)))]
+    (and (>= t0h 2) (>= t1h 1)
+         (eq? (list-ref t0 t0h) BLANK)
+         (eq? (list-ref t1 t1h) BLANK)
+         (equal? readt0 (append readt1 readt1)))))
+
+(define EQABC-ND
+  (make-unchecked-mttm
+   '(S Y C D G)
+   `(a b c)
+   'S
+   '(Y)
+   (list
+    (list '(S (_ _ _ _))  '(C (R R R R)))
+    (list '(S (_ _ _ _))  '(G (R R R R)))
+
+    ;; copy an a to any tape
+    (list '(C (a _ _ _))  '(D (a a _ _)))
+    (list '(D (a a _ _))  '(C (R R _ _)))
+    (list '(C (a _ _ _))  '(D (a _ a _)))
+    (list '(D (a _ a _))  '(C (R _ R _)))
+    (list '(C (a _ _ _))  '(D (a _ _ a)))
+    (list '(D (a _ _ a))  '(C (R _ _ R)))
+
+    ;; copy a b to any tape
+    (list '(C (b _ _ _))  '(D (b b _ _)))
+    (list '(D (b b _ _))  '(C (R R _ _)))
+    (list '(C (b _ _ _))  '(D (b _ b _)))
+    (list '(D (b _ b _))  '(C (R _ R _)))
+    (list '(C (b _ _ _))  '(D (b _ _ b)))
+    (list '(D (b _ _ b))  '(C (R _ _ R)))
+
+    ;; copy a c to any tape
+    (list '(C (c _ _ _))  '(D (c c _ _)))
+    (list '(D (c c _ _))  '(C (R R _ _)))
+    (list '(C (c _ _ _))  '(D (c _ c _)))
+    (list '(D (c _ c _))  '(C (R _ R _)))
+    (list '(C (c _ _ _))  '(D (c _ _ c)))
+    (list '(D (c _ _ c))  '(C (R _ _ R)))
+
+    ;; match as, bs, and cs
+    (list '(C (_ _ _ _))  '(G (_ L L L)))
+    (list '(G (_ a b c))  '(G (_ L L L)))
+    (list '(G (_ a c b))  '(G (_ L L L)))
+    (list '(G (_ b a c))  '(G (_ L L L)))
+    (list '(G (_ b c a))  '(G (_ L L L)))
+    (list '(G (_ c a b))  '(G (_ L L L)))
+    (list '(G (_ c b a))  '(G (_ L L L)))
+    (list '(G (_ _ _ _))  '(Y (_ _ _ _))))
+   4
+   'Y))

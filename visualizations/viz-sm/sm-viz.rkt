@@ -2,7 +2,8 @@
 
 (require "viz-ndfa.rkt"
          "viz-tm.rkt"
-         "viz-pda.rkt")
+         "viz-pda.rkt"
+         "viz-mttm.rkt")
 
 (provide sm-viz)
 
@@ -17,5 +18,5 @@
           [(or (eq? m-type 'tm) (eq? m-type 'tm-language-recognizer))
            (tm-viz M a-word head-pos #:cut-off cut-off invs)]
           [(or (eq? m-type 'mttm) (eq? m-type 'mttm-language-recognizer))
-           (error (format "Stay tuned: sm-viz for mttm and mttm language recognizers is not yet implemented"))]
+           (mttm-viz M a-word head-pos #:cut-off cut-off invs)]
           [else (error "Unknown finite-state machine type given to sm-viz.")])))

@@ -183,7 +183,8 @@
         ;;Purpose: The starting computation
         [starting-computation (computation (treelist (tm-config start head-pos a-word 0))
                                            empty-treelist
-                                           (set))])
+                                           (set)
+                                           1)])
     (make-computations (enqueue (treelist starting-computation) E-QUEUE) (paths empty-treelist empty-treelist #f #f))))
 
 
