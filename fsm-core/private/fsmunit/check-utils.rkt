@@ -1,9 +1,23 @@
 #lang racket/base
 
 (require racket/contract/base
-         racket/list)
+         racket/list
+         "check-accept-reject-failure-strings.rkt"
+         "check-exn.rkt"
+         racket/syntax-srcloc
+         racket/function)
 
 (provide (all-defined-out))
+
+(define (accumulate-invalid-words-final-check contract word-lst word-stx-lst head-pos-lst)
+  (foldr (lambda (word-val word-stx head-pos accum)
+           (if (contract word-val head-pos)
+               accum
+               (cons (list word-val word-stx) accum)))
+         '()
+         word-lst
+         word-stx-lst
+         head-pos-lst))
 
 (define (accumulate-invalid-words contract word-lst word-stx-lst)
   (foldr (lambda (w w-stx accum)
@@ -17,6 +31,19 @@
 (define (accumulate-invalid-words-dep contract-builder word-lst word-stx-lst . deps)
   (let* ([contracts (apply contract-builder deps)])
     (foldr (lambda (w w-stx contract accum)
+           (if (contract w)
+               accum
+               (cons (list w w-stx) accum)))
+         '()
+         word-lst
+         word-stx-lst
+         contracts)))
+
+(define (accumulate-invalid-words-dep2 contracts word-lst word-stx-lst . deps)
+  (let* (#;[contracts (apply contract-builder deps)])
+    (foldr (lambda (w w-stx contract accum)
+             
+             
            (if (contract w)
                accum
                (cons (list w w-stx) accum)))
@@ -48,7 +75,86 @@
 
 (define correct-tm-word-arity/c (list/c any/c any/c))
 (define nan-head-position/c number?)
-(define valid-head-pos/c exact-nonnegative-integer?)
+(define (valid-head-pos/c word-len) (and/c exact-nonnegative-integer? (lambda (num) (< num word-len))))
 (define valid-tm-word/c (cons/c '@ (listof any/c)))
 
 (define valid-tm-test-case/c (list/c valid-tm-word/c valid-head-pos/c))
+
+
+
+
+
+(define (macro-contract contract)
+  (define (zip lst0 lst1)
+    (if (empty? lst0)
+        '()
+        (cons (list (first lst0) (first lst1)) (zip (rest lst0) (rest lst1)))))
+  (lambda (vals stxs)
+    (let* ([error-causing (accumulate-invalid-words contract
+                                                  vals
+                                                  stxs)]
+         [error-causing-vals (map first error-causing)]
+         [error-causing-stxs (map second error-causing)])
+    (if (empty? error-causing)
+        '()
+        (zip error-causing-vals error-causing-stxs)))))
+
+(define (macro-contract-final-check contract)
+  (define (zip lst0 lst1)
+    (if (empty? lst0)
+        '()
+        (cons (list (first lst0) (first lst1)) (zip (rest lst0) (rest lst1)))))
+  (lambda (vals stxs head-pos-lst)
+    (let* ([error-causing (accumulate-invalid-words-final-check  contract
+                                                  vals
+                                                  stxs
+                                                  head-pos-lst)]
+         [error-causing-vals (map first error-causing)]
+         [error-causing-stxs (map second error-causing)])
+    (if (empty? error-causing)
+        '()
+        (zip error-causing-vals error-causing-stxs)))))
+
+(define (macro-contract-dep lst-of-contract)
+  (define (zip lst0 lst1)
+    (if (empty? lst0)
+        '()
+        (cons (list (first lst0) (first lst1)) (zip (rest lst0) (rest lst1)))))
+  (lambda (vals stxs)
+    (let* ([error-causing (accumulate-invalid-words-dep2 lst-of-contract
+                                                  vals
+                                                  stxs)]
+         [error-causing-vals (map first error-causing)]
+         [error-causing-stxs (map second error-causing)])
+    (if (empty? error-causing)
+        '()
+        (zip error-causing-vals error-causing-stxs)))))
+
+(define (create-fsm-fail-str2 m-stx err-type vals)
+  (create-failure-str err-type m-stx vals))
+
+(define (display-fsm-exn str highlight-stx highlight-fmt)
+  (display-exception str (exn:fail:check-failed
+                                    str
+                                    (current-continuation-marks)
+                                    (map syntax-srcloc (highlight-fmt highlight-stx)))))
+
+(define (default-str-vals vals stxs)
+  vals)
+
+(define (fsm-error contract m-stx err-type #:highlight-stx-fmt [highlight-stx-fmt identity] #:str-fmt [fmt default-str-vals])
+  (lambda (vals stx . deps)
+    (let ([errs (apply contract vals stx deps)])
+      (if (empty? errs)
+          #f
+          (begin
+            (display-fsm-exn (create-fsm-fail-str2 m-stx err-type (fmt (map first errs) (map second errs)))
+                           (map second errs)
+                           highlight-stx-fmt)
+            #t)))))
+
+(define (check-syntax . err-types)
+  (for ([a-err (in-list err-types)]
+        #:do [(define result (apply (first a-err) (rest a-err)))]
+        #:break result)
+    (void)))

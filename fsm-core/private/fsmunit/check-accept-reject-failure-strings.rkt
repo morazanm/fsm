@@ -303,9 +303,109 @@
           fsm-val)
       ))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; INVARIANTS ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define (named-single-failure-inv-holds inv-name invalid-word)
+  (format "The design recipe has not been successfully completed. The following test case for the invariant, ~s, fails when it should hold:\n~a"
+          inv-name
+          invalid-word))
+
+(define (named-multi-failure-inv-holds inv-name invalid-words)
+  (foldl (lambda (val accum)
+           (string-append accum (format "\n~a" val)))
+         (format "The design recipe has not been successfully completed. The following test cases for the invariant, ~s, fail when they should hold:"
+          inv-name)
+         invalid-words)
+  #;(format "The design recipe has not been successfully completed. The following test case for the invariant, ~s, fails when it should hold:\n~a"
+          inv-name
+          invalid-word))
+
+(define (named-single-failure-inv-fails inv-name invalid-word)
+  (format "The design recipe has not been successfully completed. The following test case for the invariant, ~s, holds when it should fail:\n~a"
+          inv-name
+          invalid-word))
+
+(define (named-multi-failure-inv-fails inv-name invalid-words)
+  (foldl (lambda (val accum)
+           (string-append accum (format "\n~a" val)))
+         (format "The design recipe has not been successfully completed. The following test cases for the invariant, ~s, hold when they should fail:"
+          inv-name)
+         invalid-words)
+  #;(format "The design recipe has not been successfully completed. The following test case for the invariant, ~s, fails when it should hold:\n~a"
+          inv-name
+          invalid-word))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; FAILURE STRING GENERATOR MACRO ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define named-multi-func-ht (hash 'machine-accept named-multi-failure-machine-accept
+                                  'machine-reject named-multi-failure-machine-reject
+                                  'machine-invalid-nonterminal named-multi-failure-machine-invalid-nonterminal
+                                  'machine-invalid-word named-multi-failure-machine-invalid-word
+                                  'machine-invalid-arity named-multi-failure-machine-invalid-arity
+                                  'machine-invalid-head-pos named-multi-failure-machine-invalid-head-pos
+                                  'machine-no-left-hand-marker named-multi-failure-machine-no-left-hand-marker
+                                  'grammar-accept named-multi-failure-grammar-accept
+                                  'grammar-rejct named-multi-failure-grammar-reject
+                                  'grammar-invalid-nonterminal named-multi-failure-grammar-invalid-nonterminal
+                                  'grammar-invalid-expression named-multi-failure-grammar-invalid-expression
+                                  'inv-holds named-multi-failure-inv-holds
+                                  'inv-fails named-multi-failure-inv-fails))
+
+(define named-single-func-ht (hash 'machine-accept named-single-failure-machine-accept
+                                  'machine-reject named-single-failure-machine-reject
+                                  'machine-invalid-nonterminal named-single-failure-machine-invalid-nonterminal
+                                  'machine-invalid-word named-single-failure-machine-invalid-word
+                                  'machine-invalid-arity named-single-failure-machine-invalid-arity
+                                  'machine-invalid-head-pos named-single-failure-machine-invalid-head-pos
+                                  'machine-no-left-hand-marker named-single-failure-machine-no-left-hand-marker
+                                  'grammar-accept named-single-failure-grammar-accept
+                                  'grammar-rejct named-single-failure-grammar-reject
+                                  'grammar-invalid-nonterminal named-single-failure-grammar-invalid-nonterminal
+                                  'grammar-invalid-expression named-single-failure-grammar-invalid-expression
+                                  'inv-holds named-single-failure-inv-holds
+                                  'inv-fails named-single-failure-inv-fails))
+
+(define anon-multi-func-ht (hash 'machine-accept anonymous-multi-failure-machine-accept
+                                  'machine-reject anonymous-multi-failure-machine-reject
+                                  'machine-invalid-nonterminal anonymous-multi-failure-machine-invalid-nonterminal
+                                  'machine-invalid-word anonymous-multi-failure-machine-invalid-word
+                                  'machine-invalid-arity anonymous-multi-failure-machine-invalid-arity
+                                  'machine-invalid-head-pos anonymous-multi-failure-machine-invalid-head-pos
+                                  'machine-no-left-hand-marker anonymous-multi-failure-machine-no-left-hand-marker
+                                  'grammar-accept anonymous-multi-failure-grammar-accept
+                                  'grammar-rejct anonymous-multi-failure-grammar-reject
+                                  'grammar-invalid-nonterminal anonymous-multi-failure-grammar-invalid-nonterminal
+                                  'grammar-invalid-expression anonymous-multi-failure-grammar-invalid-expression))
+
+(define anon-single-func-ht (hash 'machine-accept anonymous-single-failure-machine-accept
+                                  'machine-reject anonymous-single-failure-machine-reject
+                                  'machine-invalid-nonterminal anonymous-single-failure-machine-invalid-nonterminal
+                                  'machine-invalid-word anonymous-single-failure-machine-invalid-word
+                                  'machine-invalid-arity anonymous-single-failure-machine-invalid-arity
+                                  'machine-invalid-head-pos anonymous-single-failure-machine-invalid-head-pos
+                                  'machine-no-left-hand-marker anonymous-single-failure-machine-no-left-hand-marker
+                                  'grammar-accept anonymous-single-failure-grammar-accept
+                                  'grammar-rejct anonymous-single-failure-grammar-reject
+                                  'grammar-invalid-nonterminal anonymous-single-failure-grammar-invalid-nonterminal
+                                  'grammar-invalid-expression anonymous-single-failure-grammar-invalid-expression))
+
 (define-syntax (create-failure-str stx)
+  (syntax-parse stx
+    [(_ error-type fsm-value invalid-exprs)
+     #'(if (identifier? fsm-value)
+             (if (= (length invalid-exprs) 1)
+                 ((hash-ref named-single-func-ht error-type) (syntax-e fsm-value) (car invalid-exprs))
+                 ((hash-ref named-multi-func-ht error-type)(syntax-e fsm-value) invalid-exprs))
+             (if (= (length (first invalid-exprs)) 1)
+                 ((hash-ref anon-single-func-ht error-type) (car invalid-exprs))
+                 ((hash-ref anon-multi-func-ht error-type) invalid-exprs)))]
+    [(_ error-type fsm-value)
+     #'(if (identifier? fsm-value)
+             (named-no-test-cases fsm-value (whatami? fsm-value))
+             (anonymous-no-test-cases (whatami? fsm-value)))]))
+  
+
+#;(define-syntax (create-failure-str stx)
   (syntax-parse stx
     [(_ error-type (~var fsm-value) invalid-exprs)
      #:with named-single-failure
