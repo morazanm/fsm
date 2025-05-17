@@ -102,6 +102,9 @@ farthest-consumed-input | is the portion the ci that the machine consumed the mo
        (eq? (triple-pop  (rule-triple a-rule)) EMP)
        (eq? (pair-push   (rule-pair a-rule))   EMP)))
 
+(define (accepting-configuration? state word stack finals-set)
+  (and (empty? word) (empty? stack) (set-member? finals-set state)))
+
 
 ;;word (listof rule) symbol number -> (list (treelistof computation) hashtable)
 ;;Purpose: Returns all possible computations using the given word, (listof rule) and start symbol
@@ -143,7 +146,8 @@ farthest-consumed-input | is the portion the ci that the machine consumed the mo
     (struct-copy computation a-comp
                  [LoC (treelist-add (computation-LoC a-comp) (apply-rule-helper (treelist-last (computation-LoC a-comp))))]
                  [LoR (treelist-add (computation-LoR a-comp) a-rule)]
-                 [visited (set-add (computation-visited a-comp) (treelist-last (computation-LoC a-comp)))]))
+                 [visited (set-add (computation-visited a-comp) (treelist-last (computation-LoC a-comp)))]
+                 [length (add1 (computation-length a-comp))]))
 
   ;;hash-set
   ;;Purpose: accumulates the number of computations in a hashset
@@ -186,14 +190,28 @@ farthest-consumed-input | is the portion the ci that the machine consumed the mo
                  [curr-stack (pda-config-stack curr-config)]
                  ;;state
                  ;;the current state of the current configuration
-                 [curr-state (pda-config-state curr-config)])
-            (if (or (and (empty? curr-word)
-                         (empty? curr-stack)
-                         (set-member? finals-set curr-state))
-                    (> (treelist-length (computation-LoC (qfirst QoC))) max-cmps))
+                 [curr-state (pda-config-state curr-config)]
+                 ;;boolean
+                 ;;determines if the pda-config is in an accepting ocnfiguration
+                 [accepted? (accepting-configuration? curr-state curr-word curr-stack finals-set)]
+                 ;;boolean
+                 ;;determines if the computation has exceeded the cutoff threshold
+                 [reached-cut-off-threshold? (> (treelist-length (computation-LoC (qfirst QoC))) max-cmps)])
+            (if (or accepted? reached-cut-off-threshold?)
                 (begin
                   (update-hash curr-config curr-word)
-                  (make-computations-helper (dequeue QoC) (treelist-add path (qfirst QoC))))
+                  (make-computations-helper (dequeue QoC)
+                                            (if accepted?
+                                                (struct-copy paths path
+                                                             [accepting (treelist-add (paths-accepting path) (qfirst QoC))]
+                                                             [cut-off? (cond [(paths-cut-off? path) (paths-cut-off? path)]
+                                                                             [reached-cut-off-threshold? #t]
+                                                                             [else (paths-cut-off? path)])])
+                                                (struct-copy paths path
+                                                             [rejecting (treelist-add (paths-rejecting path) (qfirst QoC))]
+                                                             [cut-off? (cond [(paths-cut-off? path) (paths-cut-off? path)]
+                                                                             [reached-cut-off-threshold? #t]
+                                                                             [else (paths-cut-off? path)])]))))
                 (let* (;;(listof rules)
                        ;;Purpose: Filters the rules that match the current state 
                        [curr-rules (treelist-filter (λ (rule) (eq? (triple-source (rule-triple rule))
@@ -233,15 +251,20 @@ farthest-consumed-input | is the portion the ci that the machine consumed the mo
                   (begin
                     (update-hash curr-config curr-word)
                     (if (treelist-empty? new-configs)
-                        (make-computations-helper (dequeue QoC) (treelist-add path (qfirst QoC)))
+                        (make-computations-helper (dequeue QoC) (if accepted?
+                                                                    (struct-copy paths path
+                                                                                 [accepting (treelist-add (paths-accepting path) (qfirst QoC))])
+                                                                    (struct-copy paths path
+                                                                                 [rejecting (treelist-add (paths-rejecting path) (qfirst QoC))])))
                         (make-computations-helper (enqueue new-configs (dequeue QoC)) path))))))))
-    (make-computations-helper (enqueue (treelist starting-computation) E-QUEUE) empty-treelist))
-
+    (make-computations-helper (enqueue (treelist starting-computation) E-QUEUE) (paths empty-treelist empty-treelist #f #f)))
+ 
   (let (;;computation
         ;;Purpose: The starting computation
         [starting-computation (computation (treelist (pda-config start a-word '() 0))
                                            empty-treelist
-                                           (set))])
+                                           (set)
+                                           1)])
     (make-computations starting-computation)))
 
 ;;(X -> Y) (X -> Y) (X -> Y) (X -> Y) (listof (listof X)) -> (listof (listof X))
@@ -297,7 +320,7 @@ farthest-consumed-input | is the portion the ci that the machine consumed the mo
 
 ;;graph machine -> graph
 ;;Purpose: Creates the edges for the given graph
-(define (make-edge-graph dgraph rules current-shown-accept-rules current-accept-rules current-reject-rules dead)
+(define (make-edge-graph dgraph rules current-tracked-rules current-accept-rules current-reject-rules accepted? dead)
 
   ;;rule symbol (listof rules) -> boolean
   ;;Purpose: Determines if the given rule is a member of the given (listof rules)
@@ -311,20 +334,23 @@ farthest-consumed-input | is the portion the ci that the machine consumed the mo
                         (eq? (triple-pop rule) dead)))))))
 
   (foldl (λ (rule graph)
-           (let ([member-of-current-accept-rules? (member? rule current-accept-rules equal?)])
+           (let ([found-tracked-rule? (find-rule? rule dead current-tracked-rules)]
+                 [found-accept-rule? (find-rule? rule dead current-accept-rules)]
+                 [found-reject-rule? (find-rule? rule dead current-reject-rules)])             
              (add-edge graph
                        (triple-read rule)
                        (triple-source rule)
                        (triple-pop rule)
-                       #:atb (hash 'color (cond [(and (member? rule current-shown-accept-rules equal?)
-                                                      member-of-current-accept-rules?)
-                                                 SPLIT-ACCEPT-COLOR]
-                                                [(find-rule? rule dead current-shown-accept-rules) TRACKED-ACCEPT-COLOR]
-                                                [(find-rule? rule dead current-accept-rules)       ALL-ACCEPT-COLOR]
-                                                [(find-rule? rule dead current-reject-rules)       REJECT-COLOR]
-                                                [else 'black])
+                       #:atb (hash 'color
+                                   (cond [(and found-tracked-rule? found-accept-rule?) SPLIT-ACCEPT-COLOR] ;;<--- watch out if coloring issue
+                                         [(and found-tracked-rule? found-reject-rule? (not accepted?)) SPLIT-REJECT-COLOR] ;;<-- may cause issue
+                                         [(and accepted? found-tracked-rule?) TRACKED-ACCEPT-COLOR]
+                                         [found-tracked-rule?  TRACKED-REJECT-COLOR]
+                                         [found-accept-rule?   ALL-ACCEPT-COLOR]
+                                         [found-reject-rule?   REJECT-COLOR]
+                                         [else 'black])
                                    'style (cond [(eq? (triple-pop rule) dead) 'dashed]
-                                                [member-of-current-accept-rules? 'bold]
+                                                [(and found-tracked-rule? accepted?) 'bold]
                                                 [else 'solid])
                                    'fontsize FONT-SIZE))))
          dgraph
@@ -448,6 +474,7 @@ farthest-consumed-input | is the portion the ci that the machine consumed the mo
      current-shown-accept-rules
      current-accept-rules
      current-reject-rules
+     (not (empty? (building-viz-state-acc-comp a-vs)))
      (building-viz-state-dead a-vs))))
 
 ;;viz-state -> (listof graph-thunks)
@@ -488,8 +515,7 @@ farthest-consumed-input | is the portion the ci that the machine consumed the mo
                                                                         #:do [(define rest-of-computation (rest computation))]
                                                                         #:unless (empty? rest-of-computation))
                                                                rest-of-computation)]
-                                               [tracked-accept-trace
-                                                (get-next-traces (building-viz-state-tracked-accept-trace a-vs))]
+                                               [tracked-accept-trace (get-next-traces (building-viz-state-tracked-accept-trace a-vs))]
                                                [accept-traces (get-next-traces (building-viz-state-accept-traces a-vs))]
                                                [reject-traces (get-next-traces (building-viz-state-reject-traces a-vs))])
                                               (cons next-graph acc)))]))
@@ -504,7 +530,8 @@ farthest-consumed-input | is the portion the ci that the machine consumed the mo
                                                                                       (viz-state-informative-messages a-vs)))]
          [imsg-state-shown-accepting-trace (imsg-state-pda-shown-accepting-trace (informative-messages-component-state
                                                                                   (viz-state-informative-messages a-vs)))]
-         [shown-accepting-trace (if (or (zipper-empty? imsg-state-shown-accepting-trace)
+         [shown-accepting-trace (if (zipper-at-end? imsg-state-shown-accepting-trace)
+                                    #;(or (zipper-empty? imsg-state-shown-accepting-trace)
                                         (zipper-at-end? imsg-state-shown-accepting-trace))
                                     imsg-state-shown-accepting-trace
                                     (zipper-next imsg-state-shown-accepting-trace))]
@@ -533,7 +560,8 @@ farthest-consumed-input | is the portion the ci that the machine consumed the mo
                              imsg-state-ci
                              (zipper-next imsg-state-ci))]
                      [shown-accepting-trace shown-accepting-trace]
-                     [stack (if (or (zipper-empty? imsg-state-stack)
+                     [stack (if (zipper-at-end? imsg-state-stack)
+                                #;(or (zipper-empty? imsg-state-stack)
                                     (zipper-at-end? imsg-state-stack))
                                 imsg-state-stack
                                 (zipper-next imsg-state-stack))]
@@ -553,7 +581,7 @@ farthest-consumed-input | is the portion the ci that the machine consumed the mo
         [imsg-state-shown-accepting-trace (imsg-state-pda-shown-accepting-trace (informative-messages-component-state
                                                                                  (viz-state-informative-messages a-vs)))]
         [imsg-state-stack (imsg-state-pda-stack (informative-messages-component-state (viz-state-informative-messages a-vs)))]
-        [imsg-state-invs-zipper (imsg-state-pda-invs-zipper (informative-messages-component-state (viz-state-informative-messages a-vs)))])
+        [imsg-state-invs-zipper (imsg-state-pda-invs-zipper (informative-messages-component-state (viz-state-informative-messages a-vs)))])    
     (struct-copy
      viz-state
      a-vs
@@ -923,14 +951,7 @@ farthest-consumed-input | is the portion the ci that the machine consumed the mo
       (remove-duplicates (filter (λ (config) (not (second config))) inv-config-results)))
     (return-brk-inv-configs (get-inv-config-results (make-inv-configs LoC))))
   
-  ;; (listof computation) (listof symbol) -> (listof symbol)
-  ;; Purpose: Returns the most consumed input
-  ;;acc = the word with smallest unconsumed input
-  (define (get-farthest-consumed LoC acc)
-    (cond [(empty? LoC) acc]
-          [(< (length (pda-config-word (treelist-last (first LoC)))) (length (pda-config-word acc)))
-           (get-farthest-consumed (rest LoC) (treelist-last (first LoC)))]
-          [else (get-farthest-consumed (rest LoC) acc)]))
+ 
 
   ;;computation -> computation 
   ;;Purpose: removes any empty transitions from given computation
@@ -945,6 +966,27 @@ farthest-consumed-input | is the portion the ci that the machine consumed the mo
              (remove-empty-helper (rest computation) acc)]
             [else (remove-empty-helper (rest computation) (cons (first computation) acc))]))
     (remove-empty-helper a-computation '()))
+
+  ;;(listof computation) (listof computatuon) -> computation
+  ;;Purpose: Finds the longest computation for rejecting traces
+  (define (find-longest-computation a-LoRT acc)
+
+    ;; (listof computation) (listof symbol) -> (listof symbol)
+    ;; Purpose: Returns the most consumed input
+    ;;acc = the word with smallest unconsumed input
+    (define (get-farthest-consumed LoC acc)
+      (cond [(empty? LoC) acc]
+            [(< (length (pda-config-word (treelist-last (computation-LoC (first LoC)))))
+                (length (pda-config-word (treelist-last (computation-LoC acc)))))
+             (get-farthest-consumed (rest LoC) (first LoC))]
+            [else (get-farthest-consumed (rest LoC) acc)]))
+    
+    (cond [(empty? a-LoRT) (get-farthest-consumed (rest acc) (first acc))]
+          [(> (computation-length (first a-LoRT)) (computation-length (first acc)))
+           (find-longest-computation (rest a-LoRT) (list (first a-LoRT)))]
+          [(= (computation-length (first a-LoRT)) (computation-length (first acc)))
+           (find-longest-computation (rest a-LoRT) (cons (first a-LoRT) acc))]
+          [(find-longest-computation (rest a-LoRT) acc)]))
   
   (let* (;;pda ;;Purpose: A pda (structure) with the dead state if add-dead is true
          [new-M (if add-dead (make-new-M M)
@@ -954,43 +996,45 @@ farthest-consumed-input | is the portion the ci that the machine consumed the mo
                          (pda-getstart M)
                          (pda-getfinals M)
                          (remake-rules (pda-getrules M))))]
+         
          ;;symbol ;;Purpose: The name of the dead state
          [dead-state (if add-dead (first (pda-states new-M)) 'no-dead)]
-         ;;(listof computations) ;;Purpose: All computations that the machine can have
+         ;;(list paths hash) ;;Purpose: All computations that the machine can have
          [computations+hash (get-computations a-word (pda-rules new-M) (pda-start new-M) (pda-finals new-M) cut-off)]
-
-         [computations (treelist->list (first computations+hash))]
-
-         ;;(listof configurations) ;;Purpose: Extracts the configurations from the computation
-         [LoC (map computation-LoC computations)]
-         ;;number ;;Purpose: The length of the word
-         ;[word-len (length a-word)]
+          ;;paths ;;Purpose: All computations that the machine can have
+         [all-paths (first computations+hash)]
          ;;(listof computation) ;;Purpose: Extracts all accepting computations
-         [accepting-computations (filter (λ (comp)
-                                           (and (member? (pda-config-state (treelist-last (computation-LoC comp)))
-                                                         (pda-finals new-M) eq?)
-                                                (empty? (pda-config-word (treelist-last (computation-LoC comp))))
-                                                (empty? (pda-config-stack (treelist-last (computation-LoC comp))))))
-                                         computations)]
+         [accepting-computations (treelist->list (paths-accepting all-paths))]
+         ;;(listof computation) ;;Purpose: Extracts all rejecting computations
+         [rejecting-computations (treelist->list (paths-rejecting all-paths))]
+         ;;(listof computation) ;;Purpose: Extracts the configurations from the computation
+         [LoC (map2 computation-LoC (append accepting-computations rejecting-computations))]
+
+         
+         
          ;;(listof trace) ;;Purpose: Makes traces from the accepting computations
-         [accept-cmps (map (λ (acc-comp)
+         [accepting-traces (map2 (λ (acc-comp)
                              (make-trace (treelist->list (computation-LoC acc-comp))
                                          (treelist->list (computation-LoR acc-comp))
                                          '()))
                            accepting-computations)]
          ;;(listof computation) ;;Purpose: Extracts all rejecting computations
-         [rejecting-computations (filter (λ (config)
+         #;[rejecting-computations (filter (λ (config)
                                            (not (member? config accepting-computations equal?)))
                                          computations)]
          ;;(listof trace) ;;Purpose: Makes traces from the rejecting computations
-         [rejecting-traces (map (λ (computation)
+         [rejecting-traces (map2 (λ (computation)
                                   (make-trace (treelist->list (computation-LoC computation))
                                               (treelist->list (computation-LoR computation))
                                               '()))
                                 rejecting-computations)]
+         
+         [longest-rejecting-compution (if (empty? accepting-computations)
+                                          (find-longest-computation (rest rejecting-computations) (list (first rejecting-computations)))
+                                          '())]
          ;;(zipperof computation) ;;Purpose: Gets the stack of the first accepting computation
-         [stack (remove-empty (if (empty? accepting-computations)
-                                  '()
+         [pre-stack (remove-empty (if (empty? accepting-computations)
+                                  (treelist->list (computation-LoC longest-rejecting-compution))
                                   (treelist->list (computation-LoC (first accepting-computations)))))]
 
          [computation-lens (begin
@@ -1001,9 +1045,16 @@ farthest-consumed-input | is the portion the ci that the machine consumed the mo
                              (second computations+hash))]
 
          ;;(listof rules) ;;Purpose: Returns the first accepting computations (listof rules)
-         [accepting-trace (if (empty? accept-cmps) '() (first accept-cmps))]
+         [accepting-trace (if (empty? accepting-traces) '() (first accepting-traces))]
+         [rejecting-trace (if (empty? accepting-traces) (make-trace (treelist->list (computation-LoC longest-rejecting-compution))
+                                                              (treelist->list (computation-LoR longest-rejecting-compution))
+                                                              '())
+                              '())]
          ;;(listof symbol) ;;Purpose: The portion of the ci that the machine can conusme the most 
-         [most-consumed-word (let* ([farthest-consumed (get-farthest-consumed LoC (pda-config (pda-start new-M) a-word '() 0))]
+         [most-consumed-word #;(if (empty? accepting-traces)
+                                 (treelist-last (computation-LoC longest-rejecting-compution))
+                                 (pda-config (pda-start new-M) FULLY-CONSUMED '() 0))
+                             (let* ([farthest-consumed (treelist-last (computation-LoC longest-rejecting-compution))]
                                     [last-word (if (and (empty? accepting-trace) (not (empty? (pda-config-word farthest-consumed))))
                                                    farthest-consumed
                                                    (pda-config (pda-start new-M) FULLY-CONSUMED '() 0))])
@@ -1013,11 +1064,11 @@ farthest-consumed-input | is the portion the ci that the machine consumed the mo
                                                 last-word
                                                 [state 'most-consumed]
                                                 [word (rest (pda-config-word last-word))]
-                                                [index (add1 (pda-config-index last-word))])))]
+                                                #;[index (add1 (pda-config-index last-word))])))]
+
+         [stack (if (eq? (pda-config-word most-consumed-word) FULLY-CONSUMED) pre-stack (append pre-stack (list (last pre-stack))))]
          [CIs (remake-ci a-word)]
-         [computation-has-cut-off? (and (empty? accepting-trace)
-                                        (for/or ([computation LoC])
-                                          (>= (treelist-length computation) cut-off)))]
+         [computation-has-cut-off? (paths-cut-off? all-paths)]
          ;;(listof computation)
          ;;Purpose: Gets all the cut off computations if the length of the word is greater than max computations
          [get-cut-off-trace (if computation-has-cut-off? (map last rejecting-traces) '())]
@@ -1029,24 +1080,43 @@ farthest-consumed-input | is the portion the ci that the machine consumed the mo
                                     (append configs (list last-reject)))
                                   rejecting-traces
                                   get-cut-off-trace))]
+         #;(struct building-viz-state (CI
+                                       computations 
+                                       acc-comp 
+                                       stack 
+                                       tracked-accept-trace 
+                                       accept-traces
+                                       reject-traces
+                                       M    
+                                       inv
+                                       dead
+                                       has-cut-off? 
+                                       farthest-consumed-input))
          ;;building-state struct
          [building-state (building-viz-state CIs
                                              (for/list ([computation LoC]) (treelist->list computation))
                                              accepting-computations
                                              (list->zipper stack)
-                                             (list accepting-trace)
-                                             (if (empty? accept-cmps) '() (rest accept-cmps))
+                                             (list (if (empty? accepting-traces) rejecting-trace accepting-trace))
+                                             (if (empty? accepting-traces) '() (rest accepting-traces))
                                              cut-off-traces
                                              new-M
                                              (if (and add-dead (not (empty? invs))) (cons (list dead-state (λ (w s) #t)) invs) invs)
                                              dead-state
                                              computation-has-cut-off? 
                                              most-consumed-word)]
+         
 
          ;;(listof graph-thunk) ;;Purpose: Gets all the graphs needed to run the viz
          [graphs (create-graph-thunks building-state)]
          ;;(listof number) ;;Purpose: Gets the index of image where an invariant failed
-         [inv-configs (get-failed-invariants a-word accepting-computations invs)])
+         [inv-configs (get-failed-invariants a-word accepting-computations invs)]
+         )
+    
+    ;all-paths
+    ;longest-rejecting-compution
+    ;(void)
+    ;most-consumed-word
     (run-viz graphs
              (lambda () (graph->bitmap (first graphs)))
              (posn (/ E-SCENE-WIDTH 2) (/ PDA-E-SCENE-HEIGHT 2))
@@ -1056,12 +1126,13 @@ farthest-consumed-input | is the portion the ci that the machine consumed the mo
              (informative-messages pda-create-draw-informative-message
                                    (imsg-state-pda new-M
                                                    CIs
-                                                   (list->zipper accepting-trace)
+                                                   (list->zipper (if (empty? accepting-traces) rejecting-trace accepting-trace) #;accepting-trace)
                                                    (list->zipper stack) 
                                                    most-consumed-word 
                                                    (list->zipper inv-configs)
                                                    computation-lens 
-                                                   computation-has-cut-off? 
+                                                   computation-has-cut-off?
+                                                   (not (empty? accepting-traces))
                                                    cut-off
                                                    0
                                                    (let ([offset-cap (- (length a-word) TAPE-SIZE)])

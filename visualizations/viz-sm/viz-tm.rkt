@@ -374,7 +374,7 @@
                                                 [(find-rule? rule current-reject-rules) REJECT-COLOR]
                                                 [else 'black])
                                    (cond [(and found-tracked-rule? found-accept-rule?) SPLIT-ACCEPT-COLOR] ;;<--- watch out if coloring issue
-                                         [(and found-tracked-rule? found-reject-rule? (not accepted?)) SPLIT-REJECT-COLOR] ;;<--- watch out if coloring issue
+                                         [(and found-tracked-rule? found-reject-rule? (not accepted?)) SPLIT-REJECT-COLOR] ;;<-- may cause issue
                                          [(and accepted? found-tracked-rule?) TRACKED-ACCEPT-COLOR]
                                          [found-tracked-rule?  TRACKED-REJECT-COLOR]
                                          [found-accept-rule? ALL-ACCEPT-COLOR]

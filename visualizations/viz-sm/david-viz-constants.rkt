@@ -29,7 +29,7 @@ LoC is a (listof configuration)
 LoR is a (listof rule)
 visited is a (hashof configuration)
 |#
-(struct computation (LoC LoR visited) #:transparent)
+(struct computation (LoC LoR visited length) #:transparent)
 
 (struct paths (accepting rejecting reached-final? cut-off?) #:transparent)  
 #|
@@ -308,6 +308,22 @@ action is the action to be performed on the tape | TM-ACTION
                                                          (list J-KEY "Prv not inv")
                                                          (list L-KEY "Nxt not inv"))))
 
+(define MTTM-E-SCENE-TOOLS (e-scene-tools-generator HEIGHT-BUFFER LETTER-KEY-WIDTH-BUFFER SM-VIZ-FONT-SIZE
+                                                    (list (list ARROW-UP-KEY "Restart")
+                                                          (list ARROW-RIGHT-KEY "Forward")
+                                                          (list ARROW-LEFT-KEY "Backward")
+                                                          (list ARROW-DOWN-KEY "Finish")
+                                                          (list CURSOR "Hold to drag")
+                                                          (list W-KEY "Zoom in")
+                                                          (list S-KEY "Zoom out")
+                                                          (list R-KEY "Min zoom")
+                                                          (list E-KEY "Tape up")
+                                                          (list F-KEY "Tape down")
+                                                          (list A-KEY "Word start")
+                                                          (list D-KEY "Word end")
+                                                          (list J-KEY "Prv not inv")
+                                                          (list L-KEY "Nxt not inv"))))
+
 (define ndfa-info-img (ndfa-create-draw-informative-message
                        (imsg-state-ndfa AB*B*UAB*
                                         (list->zipper (list (ci '() '())))
@@ -324,11 +340,12 @@ action is the action to be performed on the tape | TM-ACTION
                       (imsg-state-pda a*
                                       (list->zipper (list (ci '() '())))
                                       (list->zipper '())
-                                      (list->zipper '())
+                                      (list->zipper (list (pda-config 'S '() '() 0)))
                                       (pda-config 'S '() '() 0)
                                       (list->zipper '())
                                       (hash) 
-                                      #f 
+                                      #f
+                                      #f
                                       1
                                       0
                                       (let ([offset-cap (- (length '(a b b)) TAPE-SIZE)])

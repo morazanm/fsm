@@ -1,3 +1,4 @@
+
 #lang racket
 
 (require "../2htdp/image.rkt"
@@ -277,16 +278,13 @@ rules are a (listof rule-structs)
          [entire-word (append pci upci)]
          ;;(listof symbols)
          ;;Purpose: Holds what needs to displayed for the stack based off the upci
-         [current-stack (if (zipper-empty? (imsg-state-pda-stack imsg-st)) 
-                            (imsg-state-pda-stack imsg-st)
-                            (pda-config-stack (zipper-current (imsg-state-pda-stack imsg-st))))]
-         [machine-decision (if (not (zipper-empty? (imsg-state-pda-shown-accepting-trace imsg-st)))
-                               'accept
-                               'reject)]
+         [current-stack (pda-config-stack (zipper-current (imsg-state-pda-stack imsg-st)))]
+         [machine-decision (if (imsg-state-pda-accepted? imsg-st) 'accept 'reject)]
          [farthest-consumed-input (pda-config-word (imsg-state-pda-farthest-consumed-input imsg-st))]
          [computation-has-cut-off? (imsg-state-pda-computation-has-cut-off? imsg-st)]
          
          [FONT-SIZE 20])
+    ;(displayln 
     (above/align
       'left
       (cond [(and (empty? pci)
@@ -397,7 +395,7 @@ rules are a (listof rule-structs)
                   (equal? machine-decision 'reject))
              (text "All computations do not consume the entire word and the machine rejects." FONT-SIZE REJECT-COLOR)]
             [(and (empty? upci)
-                  (zipper-empty? (imsg-state-pda-stack imsg-st))
+                  (zipper-at-end? (imsg-state-pda-stack imsg-st)) #;(zipper-empty? (imsg-state-pda-stack imsg-st))
                   (equal? machine-decision 'reject))
              (text "All computations end in a non-final configuration and the machine rejects." FONT-SIZE REJECT-COLOR)]
             [else (text "Word Status: accept " FONT-SIZE BLANK-COLOR)]))))
@@ -520,7 +518,8 @@ rules are a (listof rule-structs)
                    (number->string (zipper-current (imsg-state-mttm-computation-lengths imsg-st))))
            FONT-SIZE
            COMPUTATION-LENGTH-COLOR)
-     (cond [(and (zipper-at-end? (imsg-state-mttm-shown-rejecting-trace imsg-st))
+     (cond [(and (not (zipper-empty? (imsg-state-mttm-shown-rejecting-trace imsg-st)))
+                 (zipper-at-end? (imsg-state-mttm-shown-rejecting-trace imsg-st))
                  (>= (mttm-accessor-func (imsg-state-mttm-shown-rejecting-trace imsg-st)) (imsg-state-mttm-max-cmps imsg-st))
                  (not (equal? (mttm-config-state (trace-config (zipper-current (imsg-state-mttm-shown-rejecting-trace imsg-st))))
                               (mttm-accepting-final (imsg-state-mttm-M imsg-st)))))

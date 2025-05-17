@@ -20,6 +20,7 @@
                         invs-zipper              ;;(zipperof inv-config)
                         computation-lengths      ;;natnum
                         computation-has-cut-off? ;;boolean
+                        accepted?                ;;boolean
                         max-cmps                 ;;natnum
                         word-img-offset
                         word-img-offset-cap

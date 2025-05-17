@@ -1030,7 +1030,7 @@ destination -> the rest of a mttm rule | half-rule
          [accepting-trace (if (empty? accepting-traces) '() (first accepting-traces))]
          [rejecting-trace (if (empty? accepting-traces) (find-longest-computation rejecting-traces '()) '())]
          [all-tapes (map2 (λ (trace) (mttm-config-lotc (trace-config trace)))
-                         (if (and (not computation-has-cut-off?) (not (empty? accepting-trace)))
+                         (if (not (empty? accepting-trace)) #;(and (not computation-has-cut-off?) (not (empty? accepting-trace)))
                              accepting-trace
                              rejecting-trace))]
          [displayed-tape (for/list [(lotc all-tapes)]
@@ -1109,7 +1109,7 @@ destination -> the rest of a mttm rule | half-rule
                                                       (if (> 0 offset-cap) 0 offset-cap))
                                                     0)
                                    mttm-img-bounding-limit)
-             (instructions-graphic E-SCENE-TOOLS
+             (instructions-graphic MTTM-E-SCENE-TOOLS
                                    (bounding-limits 0
                                                     (image-width E-SCENE-TOOLS)
                                                     (+ EXTRA-HEIGHT-FROM-CURSOR
@@ -1181,11 +1181,3 @@ destination -> the rest of a mttm rule | half-rule
                                         [ J-KEY-DIMS mttm-jump-prev j-key-pressed]
                                         [ L-KEY-DIMS mttm-jump-next l-key-pressed]))
              'mttm-viz)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-
-
-"change key names for E and F"

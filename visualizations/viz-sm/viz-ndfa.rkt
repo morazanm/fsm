@@ -154,7 +154,8 @@ type -> the type of the ndfa (ndfa/dfa) | symbol
         ;;Purpose: The starting configuration
         [starting-config (computation (treelist (ndfa-config start word 0))
                                       empty-treelist
-                                      (set))])
+                                      (set)
+                                      1)])
     (make-computations (enqueue (treelist starting-config) E-QUEUE) empty-treelist)))
 
   
