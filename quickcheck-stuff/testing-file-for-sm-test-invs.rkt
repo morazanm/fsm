@@ -1,5 +1,22 @@
 #lang fsm
-(require sm-test-invs-wip.rkt)
+(require "sm-test-invs-wip.rkt")
+
+;; USEFUL FUNCTIONS
+
+;; word word -> Boolean
+;; Purpose: Determine if the second given word appears in
+;;          the first given word
+(define (contains? w pattern)
+  (cond [(< (length w) (length pattern)) #f]
+        [(equal? (take w (length pattern)) pattern) #t]
+        [else (contains? (rest w) pattern)]))
+
+
+;; X loX -> Boolean
+;; Purpose: To determine if the given item is a member of the given list
+(define (member? x lox)
+  (ormap (λ (y) (equal? x y)) lox))
+
 
 ;                                      
 ;                                      
