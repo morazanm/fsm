@@ -747,8 +747,12 @@
            (if (qempty? a-qop) paths
                (local [(define next-rules-first-path (get-next-rules (last (qfirst a-qop))
                                                                      (filter
-                                                                      (λ (x)
-                                                                        (not (member? x (qfirst a-qop))))
+                                                                      (λ (rule)
+                                                                        (< (count (λ (rl) (equal? rule rl))
+                                                                                  (qfirst a-qop))
+                                                                           2)
+                                                                        #;(not (member? x (qfirst a-qop)))
+                                                                        )
                                                                       rules)))
                        (define paths-with-qfirst (cons (qfirst a-qop) paths))]
                  (if (empty? next-rules-first-path)
@@ -886,7 +890,92 @@
                              (list (list '() (sm-start a-machine)))))))
 
 
-(define M
+(define CONTAINS-aabab 
+  (make-dfa '(S A B C D E)
+            '(a b)
+            'S
+            '(E)
+            '((S a A) (S b S) (A a B) (A b S)
+                      (B a B) (B b C) (C a D) (C b S)
+                      (D a B) (D b E) (E a E) (E b E))
+            'no-dead))
+
+(check-accept? CONTAINS-aabab  '(a a b a b) '(b b a a a b a b b))
+(check-reject? CONTAINS-aabab  '() '(b b a a a b a) '(a a b a a))
+
+;; word --> Boolean
+;; Purpose: Determine of word contains aabab
+(define (contains-aabab? w)
+  (and (>= (length w) 5)
+       (or (equal? (take w 5) '(a a b a b))
+           (contains-aabab? (rest w)))))
+
+;; word word --> Boolean
+;; Purpose: Determine if second word ends with first word
+(define (end-with? suffix w)
+  (and (>= (length w) (length suffix))
+       (equal? suffix (take-right w (length suffix)))))
+
+;; word -> Boolean
+;; Purpose: Determine that none of aabab is detected
+(define (S2-INV ci)
+  (and (not (end-with? '(a) ci))
+       (not (end-with? '(a a) ci))
+       (not (end-with? '(a a b) ci))
+       (not (end-with? '(a a b a) ci))
+       (not (contains-aabab? ci))))
+
+;; word -> Boolean
+;; Purpose: Determine that only a is detected
+(define (A2-INV ci)
+  (and (end-with? '(a) ci)
+       (not (end-with? '(a a) ci))
+       (not (end-with? '(a a b a) ci))
+       (not (contains-aabab? ci))))
+
+;; word -> Boolean
+;; Purpose: Determine that only aa is detected
+(define (B2-INV ci)
+  (and (end-with? '(a a) ci)
+       (not (contains-aabab? ci))))
+
+;; word -> Boolean
+;; Purpose: Determine that only aab is detected
+(define (C2-INV ci)
+  (and (end-with? '(a a b) ci)
+       (not (contains-aabab? ci))))
+
+;; word -> Boolean
+;; Purpose: Determine that only aaba is detected
+(define (D2-INV ci)
+  (and (end-with? '(a a b a) ci)
+       (not (contains-aabab? ci))))
+
+;; word -> Boolean
+;; Purpose: Determine that only aabab is detected
+(define E2-INV contains-aabab?)
+
+(define RES (sm-test-invs CONTAINS-aabab
+                          (list (list 'S S2-INV)
+                                (list 'A A2-INV)
+                                (list 'B B2-INV)
+                                (list 'C C2-INV)
+                                (list 'D D2-INV)
+                                (list 'E E2-INV))))
+
+(define RES-WORDS (sm-all-possible-words CONTAINS-aabab
+                                         (list (list 'S S2-INV)
+                                               (list 'A A2-INV)
+                                               (list 'B B2-INV)
+                                               (list 'C C2-INV)
+                                               (list 'D D2-INV)
+                                               (list 'E E2-INV))))
+
+(define TOTAL-WORDS (foldl (λ (pair acc) (+ (length (second pair)) acc))
+                           0
+                           RES-WORDS))
+
+(define M3
   (make-ndfa '(S A B C D E F)
              '(a b c)
              'S
@@ -895,45 +984,58 @@
                           (B b C) (C b B) (C c D) (D c E)
                           (E c F) (F c D))))
 
-(define S2-INV empty?)
+(define S3-INV empty?)
 
-(define (A2-INV ci)
+(define (A3-INV ci)
   (andmap (λ (s) (eq? s 'a)) ci))
 
-(define (B2-INV ci)
+(define (B3-INV ci)
   (and (even? (length ci))
        (andmap (λ (s) (eq? s 'b)) ci)))
 
-(define (C2-INV ci)
+(define (C3-INV ci)
   (and (odd? (length ci))
        (andmap (λ (s) (eq? s 'b)) ci)))
 
-(define (D2-INV ci)
+(define (D3-INV ci)
   (let* [(bcs (takef ci (λ (s) (not (eq? s 'c)))))
          (cs (drop ci (length bcs)))]
-    (and (or (C2-INV bcs) (A2-INV bcs))
+    (and (or (C3-INV bcs) (A3-INV bcs))
          (andmap (λ (s) (eq? s 'c)) cs)
          (= (remainder (length cs) 3) 1))))
 
-(define (E2-INV ci)
+(define (E3-INV ci)
   (let* [(bcs (takef ci (λ (s) (not (eq? s 'c)))))
          (cs (drop ci (length bcs)))]
-    (and (or (C2-INV bcs) (A2-INV bcs))
+    (and (or (C3-INV bcs) (A3-INV bcs))
          (andmap (λ (s) (eq? s 'c)) cs)
          (= (remainder (length cs) 3) 2))))
 
-(define (F2-INV ci)
+(define (F3-INV ci)
   (let* [(bcs (takef ci (λ (s) (not (eq? s 'c)))))
          (cs (drop ci (length bcs)))]
-    (and (or (C2-INV bcs) (A2-INV bcs))
+    (and (or (C3-INV bcs) (A3-INV bcs))
          (andmap (λ (s) (eq? s 'c)) cs)
          (= (remainder (length cs) 3) 0))))
 
-(sm-all-possible-words M
-              (list (list 'S S2-INV)
-                    (list 'A A2-INV)
-                    (list 'B B2-INV)
-                    (list 'C C2-INV)
-                    (list 'D D2-INV)
-                    (list 'E E2-INV)
-                    (list 'F F2-INV)))
+(define RES2 (sm-test-invs M3
+                           (list (list 'S S3-INV)
+                                 (list 'A A3-INV)
+                                 (list 'B B3-INV)
+                                 (list 'C C3-INV)
+                                 (list 'D D3-INV)
+                                 (list 'E E3-INV)
+                                 (list 'F F3-INV))))
+
+(define RES2-WORDS (sm-all-possible-words M3
+                                          (list (list 'S S3-INV)
+                                                (list 'A A3-INV)
+                                                (list 'B B3-INV)
+                                                (list 'C C3-INV)
+                                                (list 'D D3-INV)
+                                                (list 'E E3-INV)
+                                                (list 'F F3-INV))))
+
+(define TOTAL-WORDS2 (foldl (λ (pair acc) (+ (length (second pair)) acc))
+                            0
+                            RES2-WORDS))
