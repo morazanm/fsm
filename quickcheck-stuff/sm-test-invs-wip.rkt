@@ -1,5 +1,7 @@
 #lang fsm
 
+(provide sm-all-possible-words sm-test-invs)
+
 ;; USEFUL FUNCTIONS
 
 ;; word word -> Boolean
