@@ -1050,6 +1050,8 @@ farthest-consumed-input | is the portion the ci that the machine consumed the mo
                                                               (treelist->list (computation-LoR longest-rejecting-compution))
                                                               '())
                               '())]
+         ;;boolean ;;Determines if the computation has reached the cut-off threshold
+         [computation-has-cut-off? (paths-cut-off? all-paths)]
          ;;(listof symbol) ;;Purpose: The portion of the ci that the machine can conusme the most 
          [most-consumed-word #;(if (empty? accepting-traces)
                                  (treelist-last (computation-LoC longest-rejecting-compution))
@@ -1064,11 +1066,12 @@ farthest-consumed-input | is the portion the ci that the machine consumed the mo
                                                 last-word
                                                 [state 'most-consumed]
                                                 [word (rest (pda-config-word last-word))]
-                                                #;[index (add1 (pda-config-index last-word))])))]
+                                                [index (if computation-has-cut-off?
+                                                           (add1 (pda-config-index last-word))
+                                                           (pda-config-index last-word))])))]
 
          [stack (if (eq? (pda-config-word most-consumed-word) FULLY-CONSUMED) pre-stack (append pre-stack (list (last pre-stack))))]
          [CIs (remake-ci a-word)]
-         [computation-has-cut-off? (paths-cut-off? all-paths)]
          ;;(listof computation)
          ;;Purpose: Gets all the cut off computations if the length of the word is greater than max computations
          [get-cut-off-trace (if computation-has-cut-off? (map last rejecting-traces) '())]

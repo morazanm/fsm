@@ -300,7 +300,7 @@ rules are a (listof rule-structs)
                       (if (equal? machine-decision 'accept)
                           (text (format "~a" EMP) FONT-SIZE FONT-COLOR)
                           (text (format "~a" EMP) FONT-SIZE BLANK-COLOR))))]
-            [(and (zipper-empty? (imsg-state-pda-shown-accepting-trace imsg-st))
+            [(and (zipper-at-end? (imsg-state-pda-shown-accepting-trace imsg-st))
                   (equal? upci farthest-consumed-input)
                   computation-has-cut-off?)
              (let* ([pci-length (length pci)]
@@ -379,7 +379,7 @@ rules are a (listof rule-structs)
                                               0)))
             FONT-SIZE
             COMPUTATION-LENGTH-COLOR)
-      (cond [(and (zipper-empty? (imsg-state-pda-shown-accepting-trace imsg-st))
+      (cond [(and (zipper-at-end? (imsg-state-pda-shown-accepting-trace imsg-st))
                   (equal? upci farthest-consumed-input)
                   computation-has-cut-off?)
              (text (format "There are computations that exceed the cut-off limit (~a)."
