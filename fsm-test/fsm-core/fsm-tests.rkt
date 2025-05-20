@@ -815,14 +815,14 @@
 
   ;;; csg tests
 
-  (define CSG-an-bn (make-csg '(S) 
+  (define CSG-an-bn (make-grammar '(S) 
                               '(a b) 
                               (list (list 'S ARROW EMP) 
                                     (list 'aSb ARROW 'aaSbb) 
                                     (list 'S ARROW 'aSb)) 
                               'S))
 
-  (define CSG-an-bn-cn (make-csg '(S A B C G H I) 
+  (define CSG-an-bn-cn (make-grammar '(S A B C G H I) 
                                  '(a b c) 
                                  `( (S -> ABCS) (S -> G)
                                                 (BA -> AB) (CA -> AC) (CB -> BC)
