@@ -71,7 +71,8 @@
  combine-tms ctm-run
 
  ; grammar constructors
- make-rg make-cfg make-csg 
+ make-rg make-cfg make-csg
+ make-grammar ;; a rename for make-csg
  sm->grammar grammar-rename-nts 
  grammar-union grammar-concat grammar-kleenestar
    
@@ -539,6 +540,18 @@
                            #:accepts [accepts '()]
                            #:rejects [rejects '()])
   make-csg/c
+  (begin
+    (displayln "Warning: This constructor is deprecated. Use make-grammar.")
+    (make-unchecked-csg nts sigma delta state))
+  )
+
+;;make-grammar V sigma R S), where V and sigma are a (listof symbol), R
+;; is a (listof csg-rule), and S is a symbol
+;; This is just a renaming for make-csg.
+(define/contract (make-grammar nts sigma delta state
+                               #:accepts [accepts '()]
+                               #:rejects [rejects '()])
+  make-csg/c
   (make-unchecked-csg nts sigma delta state)
   )
   
@@ -603,3 +616,5 @@
                   )
   kleenestar-regexp/c
   (make-unchecked-kleenestar a))
+
+
