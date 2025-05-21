@@ -118,11 +118,16 @@ type -> the type of the ndfa (ndfa/dfa) | symbol
         (list path computation-number-hash)
         (let* ([current-config (treelist-last (computation-LoC (qfirst QoC)))]
                [current-state (ndfa-config-state current-config)]
-               [current-word (ndfa-config-word current-config)])
-          (if (and (set-member? finals current-state) (empty? current-word))
+               [current-word (ndfa-config-word current-config)]
+               [member-of-finals? (set-member? finals current-state)])
+          (if (and member-of-finals? (empty? current-word))
               (begin
                 (update-hash current-config current-word)
-                (make-computations (dequeue QoC) (treelist-add path (qfirst QoC))))
+                (make-computations (dequeue QoC) (struct-copy paths path
+                                                              [accepting (treelist-add (paths-accepting path) (qfirst QoC))]
+                                                              [reached-final? (cond [(paths-reached-final? path) (paths-reached-final? path)]
+                                                                                    [member-of-finals? #t]
+                                                                                    [else (paths-reached-final? path)])])))
               (let* (;;(treelistof rules)
                      ;;Purpose: Filters the rules that match the current state 
                      [curr-rules (treelist-filter (λ (rule) (eq? (triple-source rule) current-state)) lor)]
@@ -147,7 +152,7 @@ type -> the type of the ndfa (ndfa/dfa) | symbol
                 (begin
                   (update-hash current-config current-word)
                   (if (treelist-empty? new-configs)
-                      (make-computations (dequeue QoC) (treelist-add path (qfirst QoC)))
+                      (make-computations (dequeue QoC) (struct-copy paths path [rejecting (treelist-add (paths-rejecting path) (qfirst QoC))]))
                       (make-computations (enqueue new-configs (dequeue QoC)) path))))))))
 
   (let (;;configuration
@@ -156,7 +161,7 @@ type -> the type of the ndfa (ndfa/dfa) | symbol
                                       empty-treelist
                                       (set)
                                       1)])
-    (make-computations (enqueue (treelist starting-config) E-QUEUE) empty-treelist)))
+    (make-computations (enqueue (treelist starting-config) E-QUEUE) (paths empty-treelist empty-treelist #f #f))))
 
   
 ;;(listof configurations) (listof rules) (listof configurations) -> (listof configurations)
@@ -431,6 +436,8 @@ type -> the type of the ndfa (ndfa/dfa) | symbol
          ;;(listof symbols)
          ;;Purpose: Returns all states whose invariants fail
          [brkn-invs (get-invariants get-invs not)])
+    ;(displayln (building-viz-state-inv a-vs))
+    
     (edge-graph
      (node-graph
       (create-graph 'ndfagraph #:atb (hash 'rankdir "LR"))
@@ -756,27 +763,23 @@ type -> the type of the ndfa (ndfa/dfa) | symbol
          ;;(list (listof computations) hash) ;;Purpose: All computations that the machine can have and the length of computations
          [computations+hash (trace-computations a-word (ndfa-rules new-M) (ndfa-start new-M) (ndfa-finals new-M))]
          ;;(listof computations) ;;Purpose: All computations that the machine can have
-         [computations (treelist->list (first computations+hash))]
-         ;;(listof configurations) ;;Purpose: Extracts the configurations from the computation
-         [LoC (map computation-LoC computations)]
+         [computations (first computations+hash)]
          ;;(listof computation) ;;Purpose: Extracts all accepting computations
-         [accepting-computations (filter (λ (comp)
-                                           (and (set-member? (ndfa-finals new-M)
-                                                             (ndfa-config-state (treelist-last (computation-LoC comp))))
-                                                (empty? (ndfa-config-word (treelist-last (computation-LoC comp))))))
-                                         computations)]
+         [accepting-computations (treelist->list (paths-accepting computations))]
+         ;;(listof computation) ;;Purpose: Extracts all rejecting computations
+         [rejecting-computations (treelist->list (paths-rejecting computations))]
+         ;;(listof computations) ;;Combination of rejecting and accepting computations
+         [pre-loc (append accepting-computations rejecting-computations)]
+         ;;(listof configurations) ;;Purpose: Extracts the configurations from the computation
+         [LoC (map2 computation-LoC pre-loc)]
          ;;(listof trace) ;;Purpose: Makes traces from the accepting computations
-         [accepting-traces (map (λ (accept-comp)
+         [accepting-traces (map2 (λ (accept-comp)
                                   (make-trace (treelist->list (computation-LoC accept-comp))
                                               (treelist->list (computation-LoR accept-comp))
                                               '()))
                                 accepting-computations)]
-         ;;(listof computation) ;;Purpose: Extracts all rejecting computations
-         [rejecting-computations (filter (λ (config)
-                                           (not (member? config accepting-computations equal?)))
-                                         computations)]
          ;;(listof trace) ;;Purpose: Makes traces from the rejecting computations
-         [rejecting-traces (map (λ (reject-comp)
+         [rejecting-traces (map2 (λ (reject-comp)
                                   (make-trace (treelist->list (computation-LoC reject-comp))
                                               (treelist->list (computation-LoR reject-comp))
                                               '()))
@@ -801,7 +804,7 @@ type -> the type of the ndfa (ndfa/dfa) | symbol
                                              (if (and add-dead (not (empty? invs))) (cons (list dead-state (λ (w) #t)) invs) invs) 
                                              dead-state
                                              (if (empty? accepting-traces) accepting-traces (list (first accepting-traces)))
-                                             accepting-computations
+                                             (if (eq? (ndfa-type new-M) 'ndfa) accepting-computations pre-loc)
                                              (if (empty? accepting-traces) accepting-traces (rest accepting-traces))
                                              rejecting-traces
                                              most-consumed-word)]
@@ -817,8 +820,11 @@ type -> the type of the ndfa (ndfa/dfa) | symbol
          ;;(listof number) ;;Purpose: Gets the index of image where an invariant failed
          [inv-configs (if (empty? invs)
                           '()
-                          (let ([accepting-LoC (map (λ (comp) (treelist->list (computation-LoC comp))) accepting-computations)])
-                            (get-failed-invariants a-word accepting-LoC invs)))])
+                          (let ([computations (if (eq? (ndfa-type new-M) 'ndfa)
+                                                  (map2 (λ (comp) (treelist->list (computation-LoC comp))) accepting-computations)
+                                                  (map2 treelist->list LoC))])
+                            (get-failed-invariants a-word computations invs)))])
+    
     (run-viz graphs
              (lambda () (graph->bitmap (first graphs)))
              (posn (/ E-SCENE-WIDTH 2) (/ NDFA-E-SCENE-HEIGHT 2))
@@ -828,10 +834,11 @@ type -> the type of the ndfa (ndfa/dfa) | symbol
              (informative-messages ndfa-create-draw-informative-message
                                    (imsg-state-ndfa new-M
                                                     CIs
-                                                    (list->zipper (if (empty? accepting-traces) '() (first accepting-traces)))
+                                                    (list->zipper (if (empty? accepting-traces) (first rejecting-traces) (first accepting-traces)))
                                                     most-consumed-word
                                                     (list->zipper inv-configs)
                                                     computation-lens
+                                                    (not (empty? accepting-traces))
                                                     0
                                                     (let ([offset-cap (- (length a-word) TAPE-SIZE)])
                                                       (if (> 0 offset-cap) 0 offset-cap))

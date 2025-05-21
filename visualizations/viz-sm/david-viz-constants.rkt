@@ -331,6 +331,7 @@ action is the action to be performed on the tape | TM-ACTION
                                         (ndfa-config 'S '() 0)
                                         (list->zipper '())
                                         (hash)
+                                        #f
                                         0
                                         (let ([offset-cap (- (length '(a b b)) TAPE-SIZE)])
                                           (if (> 0 offset-cap) 0 offset-cap))

@@ -7,6 +7,7 @@
                          farthest-consumed-input ;;(listof symbol)
                          invs-zipper             ;;(zipperof inv-configs)
                          computation-lengths     ;;natnum
+                         accepted?               ;;boolean
                          word-img-offset
                          word-img-offset-cap
                          scroll-accum)

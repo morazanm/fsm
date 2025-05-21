@@ -3,7 +3,7 @@
 (require ;"testing-parameter.rkt"
          "../../fsm-core/interface.rkt"
          "sm-viz.rkt")
-#|
+
 (define (ndfa->pda M)
   (let [(states (sm-states M))
         (sigma (sm-sigma M))
@@ -475,7 +475,7 @@
         [num-c (length (filter (λ (w) (equal? w 'c)) a-word))])
     (= num-g num-c)))
 
-|#
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -806,7 +806,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 
-#|
+
 ;;States (i = head's position)
 ;; K - tape[1..i-1] contains an even amount of a's and even bs
 ;; H - tape[1..i-1] contains an odd amount of a's and even bs
@@ -957,6 +957,13 @@
              (back (takef (drop t (add1 (length front)))
                           (λ (s) (not (eq? s BLANK)))))]
         (equal? back '(b)))))
+
+(define (tm-Y-INV1 t i)
+  (let ([num-as (length (filter (λ (w) (eq? w 'a)) t))]
+        [num-bs (length (filter (λ (w) (eq? w 'b)) t))]
+        [num-cs (length (filter (λ (w) (eq? w 'c)) t))])
+    (and (= num-as num-bs num-cs)
+         (eq? (list-ref t i) BLANK))))
 
 ;; tape natnum → Boolean
 ;; Purpose: Determine that tape[1..i-1] != a* or a*b
@@ -1818,5 +1825,5 @@
           (list 'M DNA-M-INV) (list 'I DNA-I-INV) (list 'D DNA-D-INV)  (list 'B DNA-B-INV) (list 'S DNA-S-INV) (list 'R DNA-R-INV))
 
   (sm-viz DNA-SEQUENCE '(c g c g a t a t g c t a g c a t)))
-|#
+
 

@@ -194,9 +194,7 @@ rules are a (listof rule-structs)
          [sub1-pci-length (sub1 pci-length)]
          
          
-         [machine-decision (if (not (zipper-empty? (imsg-state-ndfa-shown-accepting-trace imsg-st)))
-                               'accept
-                               'reject)])
+         [machine-decision (if (imsg-state-ndfa-accepted? imsg-st) 'accept 'reject)])
    (above/align
       'left
       (cond [(and (empty? pci)
@@ -249,7 +247,7 @@ rules are a (listof rule-structs)
                                                       (if (> (length pci) TAPE-SIZE)
                                                           (imsg-state-ndfa-word-img-offset imsg-st)
                                                           0) 
-                                                      (if (zipper-empty? (imsg-state-ndfa-shown-accepting-trace imsg-st))
+                                                      (if (eq? machine-decision 'reject)
                                                           '()
                                                           (list (list (length pci) ACCEPT-COLOR)
                                                                 '())))))])
@@ -259,9 +257,9 @@ rules are a (listof rule-structs)
                                               0)))
              FONT-SIZE
              COMPUTATION-LENGTH-COLOR)
-      (cond [(and (empty? upci) (equal? machine-decision 'accept))
+      (cond [(and (empty? upci) (eq? machine-decision 'accept))
               (text "There is a computation that accepts." FONT-SIZE ACCEPT-COLOR)]
-             [(and (empty? upci) (equal? machine-decision 'reject)
+             [(and (empty? upci) (eq? machine-decision 'reject)
                    (not (empty? (ndfa-config-word (imsg-state-ndfa-farthest-consumed-input imsg-st)))))
               (text "All computations end in a non-final state and the machine rejects." FONT-SIZE REJECT-COLOR)]
              [(and (eq? machine-decision 'reject) 
