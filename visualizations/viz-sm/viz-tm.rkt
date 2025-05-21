@@ -132,7 +132,7 @@
   ;;     that are within the bounds of the max computation limit
   (define (make-computations QoC path)
     (if (qempty? QoC)
-        path #;(list path)
+        path
         (let* ([current-config (treelist-last (computation-LoC (qfirst QoC)))]
                [current-state (tm-config-state current-config)]
                [current-tape (tm-config-tape current-config)]
@@ -173,11 +173,7 @@
                 (begin
                   ;(update-hash current-config current-tape)
                   (if (treelist-empty? new-configs)
-                      (make-computations (dequeue QoC) (if (eq? current-state accepting-final)
-                                                           (struct-copy paths path
-                                                                        [accepting (treelist-add (paths-accepting path) (qfirst QoC))])
-                                                           (struct-copy paths path
-                                                                        [rejecting (treelist-add (paths-rejecting path) (qfirst QoC))])))
+                      (make-computations (dequeue QoC) (struct-copy paths path [rejecting (treelist-add (paths-rejecting path) (qfirst QoC))]))
                       (make-computations (enqueue new-configs (dequeue QoC)) path))))))))
   (let (;;computation
         ;;Purpose: The starting computation
@@ -225,14 +221,15 @@
               (cons inv-config-result
                     (get-inv-config-results-helper (treelist-rest computations)))))))
   (append-map (λ (comp)
-                (get-inv-config-results-helper comp #;(computation-LoC comp)))
+                (get-inv-config-results-helper comp))
               computations))
 
 
 ;;(listof configurations) (listof sybmols) -> (listof configurations)
 ;;Purpose: Extracts all the invariant configurations that failed
 (define (return-brk-inv-configs inv-config-results)
-  (remove-duplicates (filter (λ (config) (not (second config))) inv-config-results)))
+  (remove-duplicates (filter-map (λ (config) (and (not (second config))
+                                                  (first config))) inv-config-results)))
 
 ;;(listof rules)
 ;;Purpose: Transforms the pda rules into triples similiar to an ndfa 
@@ -366,13 +363,7 @@
                        (second rule)
                        (first rule)
                        (third rule)                     
-                       #:atb (hash 'color #;(cond [(and (member? rule current-shown-accept-rules equal?)
-                                                      (member? rule current-accept-rules equal?))
-                                                 SPLIT-ACCEPT-COLOR]
-                                                [(find-rule? rule current-shown-accept-rules) TRACKED-ACCEPT-COLOR]
-                                                [(find-rule? rule current-accept-rules) ALL-ACCEPT-COLOR]
-                                                [(find-rule? rule current-reject-rules) REJECT-COLOR]
-                                                [else 'black])
+                       #:atb (hash 'color 
                                    (cond [(and found-tracked-rule? found-accept-rule?) SPLIT-ACCEPT-COLOR] ;;<--- watch out if coloring issue
                                          [(and found-tracked-rule? found-reject-rule? (not accepted?)) SPLIT-REJECT-COLOR] ;;<-- may cause issue
                                          [(and accepted? found-tracked-rule?) TRACKED-ACCEPT-COLOR]
@@ -540,7 +531,7 @@
        [invs-zipper (cond [(zipper-empty? imsg-state-invs-zipper) imsg-state-invs-zipper]
                           [(and (not (zipper-at-end? imsg-state-invs-zipper))
                                 (>= (get-tm-config-index-frm-trace imsg-state-shown-accepting-trace)
-                                    (fourth (first (zipper-unprocessed imsg-state-invs-zipper)))))
+                                    (tm-config-index (first (zipper-unprocessed imsg-state-invs-zipper)))))
                            (zipper-next imsg-state-invs-zipper)]
                           [else imsg-state-invs-zipper])])])])))
 
@@ -646,7 +637,7 @@
        [invs-zipper (cond [(zipper-empty? imsg-state-invs-zipper) imsg-state-invs-zipper]
                           [(and (not (zipper-at-begin? imsg-state-invs-zipper))
                                 (<= (get-tm-config-index-frm-trace imsg-state-shown-accepting-trace)
-                                    (fourth (first (zipper-processed imsg-state-invs-zipper)))))
+                                    (tm-config-index (first (zipper-processed imsg-state-invs-zipper)))))
                            (zipper-prev imsg-state-invs-zipper)]
                           [else imsg-state-invs-zipper])])])])))
 
@@ -881,7 +872,7 @@
          [accepting-trace (if (empty? accepting-traces) '() (first accepting-traces))]
          [rejecting-trace (if (empty? accepting-traces) (find-longest-computation rejecting-traces '()) '())]
          [displayed-tape (map (λ (trace) (tm-config-tape (trace-config trace)))
-                              (if (and (not computation-has-cut-off?) (not (empty? accepting-trace)))
+                              (if (not (empty? accepting-trace)) #;(and (not computation-has-cut-off?) (not (empty? accepting-trace)))
                              accepting-trace
                              rejecting-trace)
                               #;(cond [(and (empty? accepting-trace)
@@ -933,7 +924,10 @@
          [graphs (create-graph-thunks building-state '())]
          ;;(listof number) ;;Purpose: Gets the number of computations for each step
          [cut-off-computations-lengths (take (count-computations LoC '()) (length tracked-head-pos))])
-    (run-viz graphs
+    ;failed-inv-configs
+    ;all-inv-configs
+    ;all-displayed-tape
+   (run-viz graphs
              (lambda () (graph->bitmap (first graphs)))
              (posn (/ E-SCENE-WIDTH 2) (/ TM-E-SCENE-HEIGHT 2))
              DEFAULT-ZOOM

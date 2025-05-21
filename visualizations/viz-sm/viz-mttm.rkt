@@ -26,7 +26,7 @@
 
 #|
 state -> the state at which the actions are applied | symbol
-lota -> all the actions to applied to each tape      | (listof TM-actions)
+lota -> all the actions to applied to each tape     | (listof TM-actions)
 |#
 (struct half-rule (state lota) #:transparent)
 #|
@@ -175,11 +175,7 @@ destination -> the rest of a mttm rule | half-rule
                                                    (treelist-map connected-read-rules (λ (rule) (apply-rule (qfirst QoC) rule))))])
                 ;new-configs
                 (if (treelist-empty? new-configs)
-                    (make-computations (dequeue QoC) (if (eq? current-state accepting-final)
-                                                         (struct-copy paths path
-                                                                      [accepting (treelist-add (paths-accepting path) (qfirst QoC))])
-                                                         (struct-copy paths path
-                                                                      [rejecting (treelist-add (paths-rejecting path) (qfirst QoC))])))
+                    (make-computations (dequeue QoC) (struct-copy paths path [rejecting (treelist-add (paths-rejecting path) (qfirst QoC))]))
                     (make-computations (enqueue new-configs (dequeue QoC)) path)))))))
   (let (;;computation
         ;;Purpose: The starting computation

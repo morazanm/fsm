@@ -251,11 +251,8 @@ farthest-consumed-input | is the portion the ci that the machine consumed the mo
                   (begin
                     (update-hash curr-config curr-word)
                     (if (treelist-empty? new-configs)
-                        (make-computations-helper (dequeue QoC) (if accepted?
-                                                                    (struct-copy paths path
-                                                                                 [accepting (treelist-add (paths-accepting path) (qfirst QoC))])
-                                                                    (struct-copy paths path
-                                                                                 [rejecting (treelist-add (paths-rejecting path) (qfirst QoC))])))
+                        (make-computations-helper (dequeue QoC) (struct-copy paths path
+                                                                             [rejecting (treelist-add (paths-rejecting path) (qfirst QoC))]))
                         (make-computations-helper (enqueue new-configs (dequeue QoC)) path))))))))
     (make-computations-helper (enqueue (treelist starting-computation) E-QUEUE) (paths empty-treelist empty-treelist #f #f)))
  
@@ -560,11 +557,7 @@ farthest-consumed-input | is the portion the ci that the machine consumed the mo
                              imsg-state-ci
                              (zipper-next imsg-state-ci))]
                      [shown-accepting-trace shown-accepting-trace]
-                     [stack (if (zipper-at-end? imsg-state-stack)
-                                #;(or (zipper-empty? imsg-state-stack)
-                                    (zipper-at-end? imsg-state-stack))
-                                imsg-state-stack
-                                (zipper-next imsg-state-stack))]
+                     [stack (if (zipper-at-end? imsg-state-stack) imsg-state-stack (zipper-next imsg-state-stack))]
                      [invs-zipper (cond [(zipper-empty? imsg-state-invs-zipper) imsg-state-invs-zipper]
                                         [(and (not (zipper-at-end? imsg-state-invs-zipper))
                                               (>= (get-pda-config-index-frm-trace imsg-state-shown-accepting-trace)
@@ -1009,19 +1002,12 @@ farthest-consumed-input | is the portion the ci that the machine consumed the mo
          [rejecting-computations (treelist->list (paths-rejecting all-paths))]
          ;;(listof computation) ;;Purpose: Extracts the configurations from the computation
          [LoC (map2 computation-LoC (append accepting-computations rejecting-computations))]
-
-         
-         
          ;;(listof trace) ;;Purpose: Makes traces from the accepting computations
          [accepting-traces (map2 (λ (acc-comp)
                              (make-trace (treelist->list (computation-LoC acc-comp))
                                          (treelist->list (computation-LoR acc-comp))
                                          '()))
-                           accepting-computations)]
-         ;;(listof computation) ;;Purpose: Extracts all rejecting computations
-         #;[rejecting-computations (filter (λ (config)
-                                           (not (member? config accepting-computations equal?)))
-                                         computations)]
+                           accepting-computations)]         
          ;;(listof trace) ;;Purpose: Makes traces from the rejecting computations
          [rejecting-traces (map2 (λ (computation)
                                   (make-trace (treelist->list (computation-LoC computation))
