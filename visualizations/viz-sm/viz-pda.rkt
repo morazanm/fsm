@@ -548,14 +548,17 @@ farthest-consumed-input | is the portion the ci that the machine consumed the mo
        [component-state
         (struct-copy imsg-state-pda
                      (informative-messages-component-state (viz-state-informative-messages a-vs))
-                     [ci (if (or (zipper-at-end? imsg-state-ci)
-                                 (equal? (ci-upci (zipper-current imsg-state-ci)) (pda-config-word imsg-state-farthest-consumed-input))
-                                 (and (eq? (triple-read (rule-triple rule)) EMP)
-                                      (not (zipper-at-end? imsg-state-shown-accepting-trace))
-                                      (or (equal? DUMMY-RULE rule)
-                                          (not (empty-rule? rule)))))
-                             imsg-state-ci
-                             (zipper-next imsg-state-ci))]
+                     [ci (cond [(or (zipper-at-end? imsg-state-ci)
+                                    (equal? (ci-upci (zipper-current imsg-state-ci))
+                                            (pda-config-word imsg-state-farthest-consumed-input)))
+                                imsg-state-ci]
+                               [(eq? (pda-config-state imsg-state-farthest-consumed-input) 'none-consumed) (zipper-next imsg-state-ci)]
+                               [(and (eq? (triple-read (rule-triple rule)) EMP)
+                                         (not (zipper-at-end? imsg-state-shown-accepting-trace))
+                                         (or (equal? DUMMY-RULE rule)
+                                             (not (empty-rule? rule))))
+                                imsg-state-ci]
+                             [else (zipper-next imsg-state-ci)])]
                      [shown-accepting-trace shown-accepting-trace]
                      [stack (if (zipper-at-end? imsg-state-stack) imsg-state-stack (zipper-next imsg-state-stack))]
                      [invs-zipper (cond [(zipper-empty? imsg-state-invs-zipper) imsg-state-invs-zipper]
@@ -1036,13 +1039,13 @@ farthest-consumed-input | is the portion the ci that the machine consumed the mo
                                                               (treelist->list (computation-LoR longest-rejecting-compution))
                                                               '())
                               '())]
+         [any-consumed? (not (equal? (pda-config-word (last pre-stack)) a-word))]
          ;;boolean ;;Determines if the computation has reached the cut-off threshold
          [computation-has-cut-off? (paths-cut-off? all-paths)]
          ;;(listof symbol) ;;Purpose: The portion of the ci that the machine can conusme the most 
-         [most-consumed-word #;(if (empty? accepting-traces)
-                                 (treelist-last (computation-LoC longest-rejecting-compution))
-                                 (pda-config (pda-start new-M) FULLY-CONSUMED '() 0))
-                             (let* ([farthest-consumed (treelist-last (computation-LoC longest-rejecting-compution))]
+         [most-consumed-word (let* ([farthest-consumed (if (not (empty? accepting-traces))
+                                                           (pda-config (pda-start new-M) FULLY-CONSUMED '() 0)
+                                                           (treelist-last (computation-LoC longest-rejecting-compution)))]
                                     [last-word (if (and (empty? accepting-trace) (not (empty? (pda-config-word farthest-consumed))))
                                                    farthest-consumed
                                                    (pda-config (pda-start new-M) FULLY-CONSUMED '() 0))])
@@ -1050,13 +1053,15 @@ farthest-consumed-input | is the portion the ci that the machine consumed the mo
                                    last-word
                                    (struct-copy pda-config
                                                 last-word
-                                                [state 'most-consumed]
+                                                [state (if any-consumed? 'most-consumed 'none-consumed)]
                                                 [word (rest (pda-config-word last-word))]
-                                                [index (if computation-has-cut-off?
+                                                [index (if (or (not any-consumed?) computation-has-cut-off?)
                                                            (add1 (pda-config-index last-word))
                                                            (pda-config-index last-word))])))]
 
-         [stack (if (eq? (pda-config-word most-consumed-word) FULLY-CONSUMED) pre-stack (append pre-stack (list (last pre-stack))))]
+         [stack (if (or #;(not any-consumed?) (eq? (pda-config-word most-consumed-word) FULLY-CONSUMED))
+                    pre-stack
+                    (append pre-stack (list (last pre-stack))))]
          [CIs (remake-ci a-word)]
          ;;(listof computation)
          ;;Purpose: Gets all the cut off computations if the length of the word is greater than max computations

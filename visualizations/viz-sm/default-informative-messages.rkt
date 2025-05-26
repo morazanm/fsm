@@ -360,7 +360,9 @@ rules are a (listof rule-structs)
                                                       (if (> (length pci) TAPE-SIZE)
                                                           (imsg-state-pda-word-img-offset imsg-st)
                                                           0)
-                                                      '())))])
+                                                      (if (eq? machine-decision 'reject)
+                                                          '()
+                                                          (list (list (length pci) ACCEPT-COLOR) '())))))])
       (cond [(zipper-empty? (imsg-state-pda-stack imsg-st)) (text "aaaC" FONT-SIZE BLANK-COLOR)]
             [(empty? current-stack) (beside (text "aaak" FONT-SIZE BLANK-COLOR)
                                             (text "Stack: " FONT-SIZE FONT-COLOR))]
@@ -370,7 +372,9 @@ rules are a (listof rule-structs)
                                          (if (> (length current-stack) TAPE-SIZE)
                                              (imsg-state-pda-word-img-offset imsg-st)
                                              0)
-                                         '()))])
+                                         (if (eq? machine-decision 'reject)
+                                             '()
+                                             (list (list (length pci) ACCEPT-COLOR) '()))))])
       (text (format "The current number of possible computations is: ~a (without repeated configurations)."
                     (number->string (hash-ref (imsg-state-pda-computation-lengths imsg-st)
                                               upci

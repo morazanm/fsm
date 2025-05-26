@@ -533,6 +533,7 @@ type -> the type of the ndfa (ndfa/dfa) | symbol
                                     imsg-state-shown-accepting-trace
                                     (zipper-to-end imsg-state-shown-accepting-trace))]
          [invs-zipper (if (or (zipper-empty? imsg-state-invs-zipper)
+                              (zipper-at-end? imsg-state-invs-zipper)
                               (= (zipper-length imsg-state-invs-zipper) 1))
                           imsg-state-invs-zipper
                           (zipper-to-end imsg-state-invs-zipper))])])])))
