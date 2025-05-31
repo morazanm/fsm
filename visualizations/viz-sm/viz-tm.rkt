@@ -102,7 +102,8 @@
   (struct-copy computation a-comp
                [LoC (treelist-add (computation-LoC a-comp) (apply-rule-helper (treelist-last (computation-LoC a-comp))))]
                [LoR (treelist-add (computation-LoR a-comp) a-rule)]
-               [visited (set-add (computation-visited a-comp) (treelist-last (computation-LoC a-comp)))]))
+               [visited (set-add (computation-visited a-comp) (treelist-last (computation-LoC a-comp)))]
+               [length (add1 (computation-length a-comp))]))
 
   ;;hash-set
   ;;Purpose: accumulates the number of computations in a hashset
@@ -138,7 +139,7 @@
                [current-tape (tm-config-tape current-config)]
                [current-head-position (tm-config-head-position current-config)]
                [member-of-finals? (member? current-state finals eq?)]
-               [reached-threshold? (> (treelist-length (computation-LoC (qfirst QoC))) max-cmps)])
+               [reached-threshold? (> (computation-length (qfirst QoC)) max-cmps)])
           (if (or reached-threshold? (member? current-state finals eq?))
               (begin
                 ;(update-hash current-config current-tape)
@@ -162,7 +163,7 @@
               (let* (;;(listof rules)
                      ;;Purpose: Filters all the rules that can be applied to the configuration by reading the element in the rule
                      [connected-read-rules (treelist-filter (λ (rule)
-                                                     (and (< current-head-position (length current-tape))
+                                                     (and (< current-head-position(length current-tape))
                                                           (eq? (rule-source rule) current-state)
                                                           (eq? (rule-read rule) (list-ref current-tape current-head-position))))
                                                    lor)]
@@ -451,10 +452,7 @@
      current-shown-tracked-rules
      all-current-accept-rules
      current-reject-rules
-     (equal? (building-viz-state-machine-decision a-vs) 'accept)
-     #;(if (equal? (building-viz-state-machine-decision a-vs) 'accept)
-         current-reject-rules
-         (append current-reject-rules current-shown-accept-rules)))))
+     (equal? (building-viz-state-machine-decision a-vs) 'accept))))
 
 ;;viz-state (listof graph-thunks) -> (listof graph-thunks)
 ;;Purpose: Creates all the graphs needed for the visualization
@@ -874,13 +872,7 @@
          [displayed-tape (map (λ (trace) (tm-config-tape (trace-config trace)))
                               (if (not (empty? accepting-trace)) #;(and (not computation-has-cut-off?) (not (empty? accepting-trace)))
                              accepting-trace
-                             rejecting-trace)
-                              #;(cond [(and (empty? accepting-trace)
-                                          (not computation-has-cut-off?)
-                                          (= (length rejecting-computations) 1))
-                                     rejecting-trace]
-                                    [(and (not computation-has-cut-off?) (not (empty? accepting-trace))) accepting-trace]
-                                    [else '()]))]
+                             rejecting-trace))]
          [all-displayed-tape (list->zipper displayed-tape)]
          [tracked-head-pos (let ([head-pos (map (λ (trace) (tm-config-head-position (trace-config trace)))
                                                 (if (empty? accepting-trace)
@@ -898,14 +890,15 @@
          ;;(listof number) ;;Purpose: Gets all the invariant configurations
          [all-inv-configs (if (empty? invs)
                               '()
-                              (reverse (get-inv-config-results (if (and reached-final? (eq? (tm-type M) 'tm))
+                              (get-inv-config-results (if (and reached-final? (eq? (tm-type M) 'tm))
+                                                                   LoC
+                                                                   (map computation-LoC accepting-computations))
+                                                               invs)
+                              #;(reverse (get-inv-config-results (if (and reached-final? (eq? (tm-type M) 'tm))
                                                                    LoC
                                                                    (map computation-LoC accepting-computations))
                                                                invs)))]
          [failed-inv-configs (return-brk-inv-configs all-inv-configs)]
-         
-         
-         
          ;;building-state struct
          [building-state (building-viz-state all-displayed-tape
                                              LoC
@@ -924,9 +917,6 @@
          [graphs (create-graph-thunks building-state '())]
          ;;(listof number) ;;Purpose: Gets the number of computations for each step
          [cut-off-computations-lengths (take (count-computations LoC '()) (length tracked-head-pos))])
-    ;failed-inv-configs
-    ;all-inv-configs
-    ;all-displayed-tape
    (run-viz graphs
              (lambda () (graph->bitmap (first graphs)))
              (posn (/ E-SCENE-WIDTH 2) (/ TM-E-SCENE-HEIGHT 2))

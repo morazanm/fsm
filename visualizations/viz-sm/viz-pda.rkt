@@ -5,7 +5,6 @@
          "../viz-lib/viz.rkt"
          racket/treelist
          "../viz-lib/zipper.rkt"
-         "../viz-lib/tl-zipper.rkt"
          "../viz-lib/bounding-limits.rkt"
          "../viz-lib/viz-state.rkt"
          "../viz-lib/viz-macros.rkt"
@@ -13,10 +12,8 @@
          "../viz-lib/viz-imgs/keyboard_bitmaps.rkt"
          "../../fsm-core/private/constants.rkt"
          "../../fsm-core/private/pda.rkt"
-         "../../fsm-core/private/cfg.rkt"
          "../../fsm-core/private/misc.rkt"
          "default-informative-messages.rkt"
-         "testing-parameter.rkt"
          ;profile-flame-graph
          (except-in "../viz-lib/viz-constants.rkt"
                     INS-TOOLS-BUFFER)
@@ -196,7 +193,7 @@ farthest-consumed-input | is the portion the ci that the machine consumed the mo
                  [accepted? (accepting-configuration? curr-state curr-word curr-stack finals-set)]
                  ;;boolean
                  ;;determines if the computation has exceeded the cutoff threshold
-                 [reached-cut-off-threshold? (> (treelist-length (computation-LoC (qfirst QoC))) max-cmps)])
+                 [reached-cut-off-threshold? (> (computation-length (qfirst QoC)) max-cmps)])
             (if (or accepted? reached-cut-off-threshold?)
                 (begin
                   (update-hash curr-config curr-word)
@@ -341,6 +338,7 @@ farthest-consumed-input | is the portion the ci that the machine consumed the mo
                        #:atb (hash 'color
                                    (cond [(and found-tracked-rule? found-accept-rule?) SPLIT-ACCEPT-COLOR] ;;<--- watch out if coloring issue
                                          [(and found-tracked-rule? found-reject-rule? (not accepted?)) SPLIT-REJECT-COLOR] ;;<-- may cause issue
+                                         [(and found-tracked-rule? found-reject-rule? accepted?) SPLIT-ACCEPT-REJECT-COLOR] ;;<-- may cause issue
                                          [(and accepted? found-tracked-rule?) TRACKED-ACCEPT-COLOR]
                                          [found-tracked-rule?  TRACKED-REJECT-COLOR]
                                          [found-accept-rule?   ALL-ACCEPT-COLOR]
@@ -528,8 +526,6 @@ farthest-consumed-input | is the portion the ci that the machine consumed the mo
          [imsg-state-shown-accepting-trace (imsg-state-pda-shown-accepting-trace (informative-messages-component-state
                                                                                   (viz-state-informative-messages a-vs)))]
          [shown-accepting-trace (if (zipper-at-end? imsg-state-shown-accepting-trace)
-                                    #;(or (zipper-empty? imsg-state-shown-accepting-trace)
-                                        (zipper-at-end? imsg-state-shown-accepting-trace))
                                     imsg-state-shown-accepting-trace
                                     (zipper-next imsg-state-shown-accepting-trace))]
          [imsg-state-stack (imsg-state-pda-stack (informative-messages-component-state (viz-state-informative-messages a-vs)))]
@@ -538,6 +534,7 @@ farthest-consumed-input | is the portion the ci that the machine consumed the mo
                         shown-accepting-trace
                         (first (trace-rules (zipper-current shown-accepting-trace))))]
          [rule (if (zipper-empty? imsg-state-shown-accepting-trace) DUMMY-RULE next-rule)])
+    
     (struct-copy
      viz-state
      a-vs
@@ -563,6 +560,10 @@ farthest-consumed-input | is the portion the ci that the machine consumed the mo
                      [stack (if (zipper-at-end? imsg-state-stack) imsg-state-stack (zipper-next imsg-state-stack))]
                      [invs-zipper (cond [(zipper-empty? imsg-state-invs-zipper) imsg-state-invs-zipper]
                                         [(and (not (zipper-at-end? imsg-state-invs-zipper))
+                                              (>= (add1 (get-pda-config-index-frm-trace imsg-state-shown-accepting-trace))
+                                                  (pda-config-index (first (zipper-current imsg-state-invs-zipper)
+                                                                            #;(first (zipper-unprocessed imsg-state-invs-zipper))))))
+                                         #;(and (not (zipper-at-end? imsg-state-invs-zipper))
                                               (>= (get-pda-config-index-frm-trace imsg-state-shown-accepting-trace)
                                                   (pda-config-index (first (first (zipper-unprocessed imsg-state-invs-zipper))))))
                                          (zipper-next imsg-state-invs-zipper)]
@@ -648,6 +649,10 @@ farthest-consumed-input | is the portion the ci that the machine consumed the mo
 
                      [invs-zipper (cond [(zipper-empty? imsg-state-invs-zipper) imsg-state-invs-zipper]
                                         [(and (not (zipper-at-begin? imsg-state-invs-zipper))
+                                              (<= (sub1 (get-pda-config-index-frm-trace imsg-state-shown-accepting-trace))
+                                                  (pda-config-index (first (zipper-current imsg-state-invs-zipper)
+                                                                            #;(first (zipper-processed imsg-state-invs-zipper))))))
+                                         #;(and (not (zipper-at-begin? imsg-state-invs-zipper))
                                               (<= (get-pda-config-index-frm-trace imsg-state-shown-accepting-trace)
                                                   (pda-config-index (first (first (zipper-processed imsg-state-invs-zipper))))))
                                          (zipper-prev imsg-state-invs-zipper)]
@@ -727,7 +732,7 @@ farthest-consumed-input | is the portion the ci that the machine consumed the mo
         [imsg-state-stack (imsg-state-pda-stack (informative-messages-component-state (viz-state-informative-messages a-vs)))]
         [imsg-state-invs-zipper (imsg-state-pda-invs-zipper (informative-messages-component-state (viz-state-informative-messages a-vs)))])
     (if (or (zipper-empty? imsg-state-invs-zipper)
-            (and (zipper-at-begin? imsg-state-invs-zipper)
+            #;(and (zipper-at-begin? imsg-state-invs-zipper)
                  (not (zipper-at-end? imsg-state-invs-zipper)))
             (< (get-index imsg-state-stack)
                (get-pda-config-index-frm-invs imsg-state-invs-zipper)))
@@ -775,7 +780,7 @@ farthest-consumed-input | is the portion the ci that the machine consumed the mo
         [imsg-state-stack (imsg-state-pda-stack (informative-messages-component-state (viz-state-informative-messages a-vs)))]
         [imsg-state-invs-zipper (imsg-state-pda-invs-zipper (informative-messages-component-state (viz-state-informative-messages a-vs)))])
     (if (or (zipper-empty? imsg-state-invs-zipper)
-            (and (zipper-at-end? imsg-state-invs-zipper)
+            #;(and (zipper-at-end? imsg-state-invs-zipper)
                  (not (zipper-at-begin? imsg-state-invs-zipper)))
             (> (get-index imsg-state-stack)
                (get-pda-config-index-frm-invs imsg-state-invs-zipper)))
@@ -1074,18 +1079,6 @@ farthest-consumed-input | is the portion the ci that the machine consumed the mo
                                     (append configs (list last-reject)))
                                   rejecting-traces
                                   get-cut-off-trace))]
-         #;(struct building-viz-state (CI
-                                       computations 
-                                       acc-comp 
-                                       stack 
-                                       tracked-accept-trace 
-                                       accept-traces
-                                       reject-traces
-                                       M    
-                                       inv
-                                       dead
-                                       has-cut-off? 
-                                       farthest-consumed-input))
          ;;building-state struct
          [building-state (building-viz-state CIs
                                              (for/list ([computation LoC]) (treelist->list computation))
@@ -1106,11 +1099,6 @@ farthest-consumed-input | is the portion the ci that the machine consumed the mo
          ;;(listof number) ;;Purpose: Gets the index of image where an invariant failed
          [inv-configs (get-failed-invariants a-word accepting-computations invs)]
          )
-    
-    ;all-paths
-    ;longest-rejecting-compution
-    ;(void)
-    ;most-consumed-word
     (run-viz graphs
              (lambda () (graph->bitmap (first graphs)))
              (posn (/ E-SCENE-WIDTH 2) (/ PDA-E-SCENE-HEIGHT 2))
@@ -1120,7 +1108,7 @@ farthest-consumed-input | is the portion the ci that the machine consumed the mo
              (informative-messages pda-create-draw-informative-message
                                    (imsg-state-pda new-M
                                                    CIs
-                                                   (list->zipper (if (empty? accepting-traces) rejecting-trace accepting-trace) #;accepting-trace)
+                                                   (list->zipper (if (empty? accepting-traces) rejecting-trace accepting-trace))
                                                    (list->zipper stack) 
                                                    most-consumed-word 
                                                    (list->zipper inv-configs)

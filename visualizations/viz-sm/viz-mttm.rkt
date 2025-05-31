@@ -128,7 +128,8 @@ destination -> the rest of a mttm rule | half-rule
     (struct-copy computation a-comp
                  [LoC (treelist-add (computation-LoC a-comp) (apply-rule-helper (treelist-last (computation-LoC a-comp))))]
                  [LoR (treelist-add (computation-LoR a-comp) a-rule)]
-                 [visited (set-add (computation-visited a-comp) (treelist-last (computation-LoC a-comp)))]))
+                 [visited (set-add (computation-visited a-comp) (treelist-last (computation-LoC a-comp)))]
+                 [length (add1 (computation-length a-comp))]))
 
   ;;set
   ;;the set of final states
@@ -144,7 +145,7 @@ destination -> the rest of a mttm rule | half-rule
                [current-state (mttm-config-state current-config)]
                [current-lotc (mttm-config-lotc current-config)]
                [member-of-finals? (member? current-state finals eq?)]
-               [reached-threshold? (> (treelist-length (computation-LoC (qfirst QoC))) max-cmps)])
+               [reached-threshold? (> (computation-length (qfirst QoC)) max-cmps)])
           (if (or reached-threshold? member-of-finals?)
               (make-computations (dequeue QoC) (if (eq? current-state accepting-final)
                                                    (struct-copy paths path
@@ -457,6 +458,7 @@ destination -> the rest of a mttm rule | half-rule
                                                                                   (viz-state-informative-messages a-vs)))]
         [imsg-state-invs-zipper (imsg-state-mttm-invs-zipper (informative-messages-component-state
                                                               (viz-state-informative-messages a-vs)))])
+    ;(displayln (first (zipper-unprocessed imsg-state-invs-zipper)))
     (struct-copy
      viz-state
      a-vs
@@ -497,8 +499,11 @@ destination -> the rest of a mttm rule | half-rule
          ;;invs-zipper
          [invs-zipper (cond [(zipper-empty? imsg-state-invs-zipper) imsg-state-invs-zipper]
                             [(and (not (zipper-at-end? imsg-state-invs-zipper))
-                                  (>= (get-mttm-config-index-frm-trace imsg-state-shown-accepting-trace)
-                                      (fourth (first (zipper-unprocessed imsg-state-invs-zipper)))))
+                                  (>= (get-mttm-config-index-frm-trace
+                                       (if (zipper-empty? imsg-state-shown-accepting-trace)
+                                           imsg-state-shown-rejecting-trace
+                                           imsg-state-shown-accepting-trace))
+                                      (mttm-config-index (first (zipper-unprocessed imsg-state-invs-zipper)))))
                              (zipper-next imsg-state-invs-zipper)]
                             [else imsg-state-invs-zipper])])])])))
 
@@ -623,8 +628,11 @@ destination -> the rest of a mttm rule | half-rule
          ;;invs-zipper
          [invs-zipper (cond [(zipper-empty? imsg-state-invs-zipper) imsg-state-invs-zipper]
                             [(and (not (zipper-at-begin? imsg-state-invs-zipper))
-                                  (<= (get-mttm-config-index-frm-trace imsg-state-shown-accepting-trace)
-                                      (fourth (first (zipper-processed imsg-state-invs-zipper)))))
+                                  (<= (get-mttm-config-index-frm-trace
+                                       (if (zipper-empty? imsg-state-shown-accepting-trace)
+                                           imsg-state-shown-rejecting-trace
+                                           imsg-state-shown-accepting-trace))
+                                      (mttm-config-index (first (zipper-processed imsg-state-invs-zipper)))))
                              (zipper-prev imsg-state-invs-zipper)]
                             [else imsg-state-invs-zipper])])])])))
 
@@ -788,6 +796,10 @@ destination -> the rest of a mttm rule | half-rule
                                                                          'mttm-language-recognizer)
                                                                     imsg-state-shown-accepting-trace
                                                                     imsg-state-shown-rejecting-trace))])
+    (displayln (and (zipper-at-begin? imsg-state-invs-zipper)
+                 (not (zipper-at-end? imsg-state-invs-zipper))))
+    (displayln (zipper-at-begin? imsg-state-invs-zipper))
+    (displayln (not (zipper-at-end? imsg-state-invs-zipper))) 
     (if (or (zipper-empty? imsg-state-invs-zipper)
             (and (zipper-at-begin? imsg-state-invs-zipper)
                  (not (zipper-at-end? imsg-state-invs-zipper)))
@@ -983,7 +995,7 @@ destination -> the rest of a mttm rule | half-rule
   ;;(listof configurations) (listof sybmols) -> (listof configurations)
   ;;Purpose: Extracts all the invariant configurations that failed
   (define (return-brk-inv-configs inv-config-results)
-    (remove-duplicates (filter (λ (config) (not (second config))) inv-config-results)))
+    (remove-duplicates (filter-map (λ (config) (and (not (second config)) (first config))) inv-config-results)))
   
   (let* (;;tm-struct
          [M (remake-mttm M)]
@@ -1004,10 +1016,6 @@ destination -> the rest of a mttm rule | half-rule
          [LoC (map2 computation-LoC (append accepting-computations rejecting-computations))]
          ;;boolean ;;Purpose: Determines if any computation 
          [reached-final? (paths-reached-final? all-paths)]
-         ;;(listof computation) ;;Purpose: Extracts all accepting computations
-         [accepting-computations (treelist->list (paths-accepting all-paths))]
-         ;;(listof computation) ;;Purpose: Extracts all rejecting computations
-         [rejecting-computations (treelist->list (paths-rejecting all-paths))]
          ;;(listof trace) ;;Purpose: Makes traces from the accepting computations
          [accepting-traces (map2 (λ (acc-comp)
                                   (make-trace (computation-LoC acc-comp)
@@ -1026,7 +1034,7 @@ destination -> the rest of a mttm rule | half-rule
          [accepting-trace (if (empty? accepting-traces) '() (first accepting-traces))]
          [rejecting-trace (if (empty? accepting-traces) (find-longest-computation rejecting-traces '()) '())]
          [all-tapes (map2 (λ (trace) (mttm-config-lotc (trace-config trace)))
-                         (if (not (empty? accepting-trace)) #;(and (not computation-has-cut-off?) (not (empty? accepting-trace)))
+                         (if (not (empty? accepting-trace))
                              accepting-trace
                              rejecting-trace))]
          [displayed-tape (for/list [(lotc all-tapes)]
@@ -1046,7 +1054,10 @@ destination -> the rest of a mttm rule | half-rule
          ;;(listof (list config boolean)) ;;Purpose: Gets all the invariant configurations
          [all-inv-configs (if (empty? invs)
                               '()
-                              (reverse (get-inv-config-results
+                              (get-inv-config-results
+                                        (if (and reached-final? (eq? (mttm-type M) 'mttm)) LoC (map2 computation-LoC accepting-computations))
+                                        invs)
+                              #;(reverse (get-inv-config-results
                                         (if (and reached-final? (eq? (mttm-type M) 'mttm)) LoC (map2 computation-LoC accepting-computations))
                                         invs)))]
          ;;;;(listof (list config boolean)) ;;Purpose: Gets all the failed invariant configurations
@@ -1079,6 +1090,8 @@ destination -> the rest of a mttm rule | half-rule
          [mttm-info-img (cond [(= (mttm-tape-amount M) 2) mttm-2tape-info-img]
                               [(= (mttm-tape-amount M) 3) mttm-3tape-info-img]
                               [else mttm->=4tape-info-img])])
+    ;all-inv-configs
+    ;(list->zipper failed-inv-configs)
     (run-viz graphs
              (lambda () (graph->bitmap (first graphs)))
              (posn (/ E-SCENE-WIDTH 2) (/ MTTM-E-SCENE-HEIGHT 2))

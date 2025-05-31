@@ -3,28 +3,23 @@
 
 (require "../2htdp/image.rkt"
          "../viz-lib/zipper.rkt"
-         "../viz-lib/tl-zipper.rkt"
          "../viz-lib/viz-constants.rkt"
-         racket/treelist
          "david-imsg-state.rkt"
-         "../../fsm-core/private/fsa.rkt"
-         "../../fsm-core/private/pda.rkt"
-         "../../fsm-core/private/tm.rkt"
          "../../fsm-core/private/constants.rkt")
 
 (provide ndfa-create-draw-informative-message
          pda-create-draw-informative-message
          tm-create-draw-informative-message
          mttm-create-draw-informative-message
-         trace trace-config trace-rules
-         ndfa-config ndfa-config-state ndfa-config-word ndfa-config-index
-         pda-config pda-config-state pda-config-word pda-config-stack pda-config-index
-         tm-config tm-config-state tm-config-head-position tm-config-tape tm-config-index
-         tm tm-states tm-sigma tm-rules tm-start tm-finals tm-accepting-final tm-type
-         mttm-config mttm-config-state mttm-config-lotc mttm-config-index
-         mttm mttm-states mttm-sigma mttm-rules mttm-start mttm-finals mttm-accepting-final mttm-tape-amount mttm-type
-         tape-config tape-config-head-position tape-config-tape
-         ci ci-upci ci-pci)
+         (struct-out trace)
+         (struct-out ndfa-config)
+         (struct-out pda-config)
+         (struct-out tm-config)
+         (struct-out tm)
+         (struct-out mttm-config)
+         (struct-out mttm)
+         (struct-out tape-config)
+         (struct-out ci))
 
 
 #|
@@ -34,6 +29,8 @@ config is a single configuration
 rules are a (listof rule-structs)
 |#
 (struct trace (config rules) #:transparent)
+;;state -> the state the configuration is in | symbol
+
 (struct pda-config (state word stack index) #:transparent)
 (struct ndfa-config (state word index) #:transparent)
 (struct tm-config (state head-position tape index) #:transparent)
@@ -68,7 +65,7 @@ rules are a (listof rule-structs)
 (define DARKGOLDENROD2 (make-color 238 173 14))
 
 (define ACCEPT-COLOR (make-color 34 139 34)) ;;forestgreen
-
+(define TRACKED-REJECT-COLOR (make-color 255 127 36))
 (define REJECT-COLOR 'red)
 
 (define REJECT-COMPUTATION-COLOR 'violetred)
@@ -247,7 +244,8 @@ rules are a (listof rule-structs)
                                                       (if (> (length pci) TAPE-SIZE)
                                                           (imsg-state-ndfa-word-img-offset imsg-st)
                                                           0) 
-                                                      (if (eq? machine-decision 'reject)
+                                                      '()
+                                                      #;(if (eq? machine-decision 'reject)
                                                           '()
                                                           (list (list (length pci) ACCEPT-COLOR)
                                                                 '())))))])
@@ -360,7 +358,8 @@ rules are a (listof rule-structs)
                                                       (if (> (length pci) TAPE-SIZE)
                                                           (imsg-state-pda-word-img-offset imsg-st)
                                                           0)
-                                                      (if (eq? machine-decision 'reject)
+                                                      '()
+                                                      #;(if (eq? machine-decision 'reject)
                                                           '()
                                                           (list (list (length pci) ACCEPT-COLOR) '())))))])
       (cond [(zipper-empty? (imsg-state-pda-stack imsg-st)) (text "aaaC" FONT-SIZE BLANK-COLOR)]
@@ -372,7 +371,8 @@ rules are a (listof rule-structs)
                                          (if (> (length current-stack) TAPE-SIZE)
                                              (imsg-state-pda-word-img-offset imsg-st)
                                              0)
-                                         (if (eq? machine-decision 'reject)
+                                         '()
+                                         #;(if (eq? machine-decision 'reject)
                                              '()
                                              (list (list (length pci) ACCEPT-COLOR) '()))))])
       (text (format "The current number of possible computations is: ~a (without repeated configurations)."
@@ -415,7 +415,7 @@ rules are a (listof rule-structs)
                         FONT-SIZE
                         (if (equal? (imsg-state-tm-machine-decision imsg-st) 'accept)
                             ACCEPT-COLOR
-                            REJECT-COMPUTATION-COLOR))))
+                            TRACKED-REJECT-COLOR))))
               
       (text "Tape: " 1 BLANK-COLOR)
       (draw-imsg imsg-st)  
@@ -511,7 +511,7 @@ rules are a (listof rule-structs)
                        FONT-SIZE
                        (if (equal? (imsg-state-mttm-machine-decision imsg-st) 'accept)
                            ACCEPT-COLOR
-                           REJECT-COMPUTATION-COLOR)))         
+                           TRACKED-REJECT-COLOR)))         
      (text "Tape: " 1 BLANK-COLOR)
      (above main-tape-img
                 (make-tapes (imsg-state-mttm-aux-tape-index imsg-st)

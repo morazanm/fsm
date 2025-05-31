@@ -8,15 +8,13 @@
          "../../fsm-core/private/constants.rkt"
          "default-informative-messages.rkt"
          "../viz-lib/zipper.rkt"
-         "../viz-lib/tl-zipper.rkt"
          racket/treelist
          "david-imsg-state.rkt"
          "../viz-lib/viz-constants.rkt"
          "../../fsm-core/private/fsa.rkt"
          "../../fsm-core/private/pda.rkt"
          "../../fsm-core/private/tm.rkt"
-         "../../fsm-core/private/mtape-tm.rkt"
-         "../../fsm-core/private/misc.rkt")
+         "../../fsm-core/private/mtape-tm.rkt")
 
 (define FONT-SIZE 18)
 (provide (all-defined-out))
@@ -75,12 +73,16 @@ action is the action to be performed on the tape | TM-ACTION
 (define HELD-INV-COLOR 'chartreuse4)
 (define BRKN-INV-COLOR 'red2)
 (define TRACKED-ACCEPT-COLOR 'forestgreen)
-(define TRACKED-REJECT-COLOR 'webmaroon)
+(define TRACKED-REJECT-COLOR 'chocolate1)
 (define ALL-ACCEPT-COLOR 'green)
 (define REJECT-COLOR 'violetred)
 (define SPLIT-INV-COLOR "red:chartreuse4")
 (define SPLIT-ACCEPT-COLOR 
   (string-append (symbol->string TRACKED-ACCEPT-COLOR) ":" (symbol->string ALL-ACCEPT-COLOR)))
+(define SPLIT-ACCEPT-REJECT-COLOR
+  (string-append (symbol->string TRACKED-ACCEPT-COLOR) ":" (symbol->string REJECT-COLOR)))
+(define BI-ACCEPT-REJECT-COLOR
+  (string-append (symbol->string TRACKED-ACCEPT-COLOR) ":" (symbol->string ALL-ACCEPT-COLOR) ":" (symbol->string REJECT-COLOR)))
 (define SPLIT-REJECT-COLOR
   (string-append (symbol->string TRACKED-REJECT-COLOR) ":" (symbol->string REJECT-COLOR)))
 
@@ -132,9 +134,9 @@ action is the action to be performed on the tape | TM-ACTION
 (define get-ndfa-config-index-frm-trace (compose1 ndfa-config-index trace-config zipper-current))
 
 ;;(X -> Y) :Purpose: A function to retrieve the index for a mttm-config from the invs-zipper
-(define get-mttm-config-index-frm-invs (compose1 mttm-config-index first zipper-current))
+(define get-mttm-config-index-frm-invs (compose1 mttm-config-index #;first zipper-current))
 ;;(X -> Y) :Purpose: A function to retrieve the index for a tm-config from the invs-zipper
-(define get-tm-config-index-frm-invs (compose1 tm-config-index first zipper-current))
+(define get-tm-config-index-frm-invs (compose1 tm-config-index zipper-current))
 ;;(X -> Y) :Purpose: A function to retrieve the index for a pda-config from the invs-zipper
 (define get-pda-config-index-frm-invs (compose1 pda-config-index first zipper-current))
 ;;(X -> Y) :Purpose: A function to retrieve the index for a ndfa-config from the invs-zipper
