@@ -15,6 +15,7 @@
          "../../fsm-core/private/constants.rkt"
          "../../fsm-core/private/tm.rkt"
          "david-imsg-state.rkt"
+         "david-viz-constant.rkt"
          (except-in "david-viz-constants.rkt"
                     FONT-SIZE)
          "default-informative-messages.rkt")
@@ -43,7 +44,8 @@
                             inv
                             max-cmps
                             head-pos
-                            machine-decision)
+                            machine-decision
+                            pallete)
   #:transparent)
 
 (define DUMMY-RULE (list (list BLANK BLANK) (list BLANK BLANK)))
@@ -281,7 +283,7 @@
 ;;(listof trace) -> (listof trace)
 ;;Purpose: Extracts the empty trace from the (listof trace) and maps rest onto the non-empty trace
 (define (get-next-traces LoT)
-  (filter-map-acc empty? rest not id LoT))
+  (filter-map-acc empty? rest not identity LoT))
 
 ;;(listof rules) -> (listof rules)
 ;;Purpose: Converts the given (listof configurations)s to rules
@@ -325,13 +327,15 @@
 
 ;;graph machine -> graph
 ;;Purpose: Creates the nodes for the given graph
-(define (make-node-graph dgraph M held-inv fail-inv cut-off)
+(define (make-node-graph dgraph M held-inv fail-inv cut-off color-scheme)
   (foldl (λ (state graph)
            (let ([member-of-held-inv? (member? state held-inv eq?)]
                  [member-of-fail-inv? (member? state fail-inv eq?)])
              (add-node graph
                        state
-                       #:atb (hash 'color (if (eq? (tm-start M) state) 'green 'black)
+                       #:atb (hash 'color (if (eq? (tm-start M) state)
+                                              (color-pallete-start-state-color color-scheme)
+                                              (color-pallete-font-color color-scheme))
                                    'style (cond [(and member-of-held-inv? member-of-fail-inv?) 'wedged]
                                                 [(or member-of-held-inv? member-of-fail-inv?
                                                      (member? state cut-off equal?)) 'filled]
@@ -339,14 +343,14 @@
                                    'shape (cond [(eq? state (tm-accepting-final M)) 'doubleoctagon]
                                                 [(member? state (tm-finals M) equal?) 'doublecircle]
                                                 [else 'circle])
-                                   'fillcolor (cond [(member? state cut-off equal?) GRAPHVIZ-CUTOFF-GOLD]
+                                   'fillcolor (cond [(member? state cut-off equal?) (color-pallete-cut-off-color color-scheme)]
                                                     [(and member-of-held-inv? member-of-fail-inv?)
-                                                     "red:chartreuse4"]
-                                                    [member-of-held-inv? HELD-INV-COLOR ]
-                                                    [member-of-fail-inv? BRKN-INV-COLOR]
-                                                    [else 'white])
+                                                     (color-pallete-split-inv-color color-scheme)]
+                                                    [member-of-held-inv? (color-pallete-inv-hold-color color-scheme)]
+                                                    [member-of-fail-inv? (color-pallete-inv-fail-color color-scheme)]
+                                                    [else (color-pallete-blank-color color-scheme)])
                                    'label state
-                                   'fontcolor 'black
+                                   'fontcolor (color-pallete-font-color color-scheme)
                                    'fontname (if (and (member? state held-inv equal?) (member? state fail-inv equal?))
                                                  "times-bold"
                                                  "Times-Roman")))))
@@ -355,7 +359,7 @@
 
 ;;graph machine -> graph
 ;;Purpose: Creates the edges for the given graph
-(define (make-edge-graph dgraph rules current-tracked-rules current-accept-rules current-reject-rules accepted?)
+(define (make-edge-graph dgraph rules current-tracked-rules current-accept-rules current-reject-rules accepted? color-scheme)
   (foldl (λ (rule graph)
            (let ([found-tracked-rule? (find-rule? rule current-tracked-rules)]
                  [found-accept-rule? (find-rule? rule current-accept-rules)]
@@ -364,14 +368,20 @@
                        (second rule)
                        (first rule)
                        (third rule)                     
-                       #:atb (hash 'color 
-                                   (cond [(and found-tracked-rule? found-accept-rule?) SPLIT-ACCEPT-COLOR] ;;<--- watch out if coloring issue
-                                         [(and found-tracked-rule? found-reject-rule? (not accepted?)) SPLIT-REJECT-COLOR] ;;<-- may cause issue
-                                         [(and accepted? found-tracked-rule?) TRACKED-ACCEPT-COLOR]
-                                         [found-tracked-rule?  TRACKED-REJECT-COLOR]
-                                         [found-accept-rule? ALL-ACCEPT-COLOR]
-                                         [found-reject-rule? REJECT-COLOR]
-                                         [else 'black])
+                       #:atb (hash 'color
+                                   (cond [(and found-tracked-rule? found-accept-rule?)
+                                          (color-pallete-split-accept-color color-scheme)] ;;<--- watch out if coloring issue
+                                         [(and found-tracked-rule? found-reject-rule? (not accepted?))
+                                          (color-pallete-split-reject-color color-scheme)] ;;<-- may cause issue
+                                         [(and found-tracked-rule? found-reject-rule? accepted?)
+                                          (color-pallete-split-accept-reject-color color-scheme)] ;;<-- may cause issue
+                                         [(and found-tracked-rule? found-accept-rule? found-reject-rule? accepted?)
+                                          (color-pallete-bi-accept-reject-color color-scheme)]
+                                         [(and accepted? found-tracked-rule?) (color-pallete-shown-accept-color color-scheme)] 
+                                         [found-tracked-rule?  (color-pallete-shown-reject-color color-scheme)]
+                                         [found-accept-rule?   (color-pallete-other-accept-color color-scheme)]
+                                         [found-reject-rule?   (color-pallete-other-reject-color color-scheme)]
+                                         [else (color-pallete-font-color color-scheme)])
                                    'style (if (and found-tracked-rule? accepted?) 'bold 'solid)
                                    ;'labelfloat 'true
                                    'fontsize 12))))
@@ -447,12 +457,14 @@
       (building-viz-state-M a-vs)
       held-invs
       brkn-invs
-      cut-off-states)
+      cut-off-states
+      (building-viz-state-pallete a-vs))
      all-rules
      current-shown-tracked-rules
      all-current-accept-rules
      current-reject-rules
-     (equal? (building-viz-state-machine-decision a-vs) 'accept))))
+     (equal? (building-viz-state-machine-decision a-vs) 'accept)
+     (building-viz-state-pallete a-vs))))
 
 ;;viz-state (listof graph-thunks) -> (listof graph-thunks)
 ;;Purpose: Creates all the graphs needed for the visualization
@@ -840,6 +852,8 @@
 (define (tm-viz M a-word head-pos #:cut-off [cut-off 100] invs) ;;GET RID OF . FOR TESTING
   (let* (;;tm-struct
          [M (remake-tm M)]
+         ;;color-pallete ;;
+         [color-scheme standard-color-scheme]
          ;;(listof computations) ;;Purpose: All computations that the machine can have
          ;[computations (get-computations a-word (tm-rules M) (tm-start M) (tm-finals M) cut-off head-pos)]
          [all-paths (get-computations a-word (tm-rules M) (tm-start M) (tm-finals M) (tm-accepting-final M) cut-off head-pos)]
@@ -911,7 +925,8 @@
                                              all-inv-configs
                                              cut-off
                                              all-head-pos
-                                             machine-decision)]
+                                             machine-decision
+                                             color-scheme)]
                      
          ;;(listof graph-thunk) ;;Purpose: Gets all the graphs needed to run the viz
          [graphs (create-graph-thunks building-state '())]
@@ -939,7 +954,8 @@
                                                   0
                                                   (let ([offset-cap (- (length a-word) TM-TAPE-SIZE)])
                                                     (if (> 0 offset-cap) 0 offset-cap))
-                                                  0)
+                                                  0
+                                                  color-scheme)
                                    tm-img-bounding-limit)
              (instructions-graphic E-SCENE-TOOLS
                                    (bounding-limits 0

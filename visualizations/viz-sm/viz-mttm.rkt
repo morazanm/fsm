@@ -15,8 +15,9 @@
          "../../fsm-core/private/constants.rkt"
          "../../fsm-core/private/mtape-tm.rkt" 
          "david-imsg-state.rkt"
+         (except-in "david-viz-constant.rkt"
+                    remake-mttm)
          (except-in "david-viz-constants.rkt"
-                    remake-mttm
                     FONT-SIZE)
          "default-informative-messages.rkt")
 
@@ -54,7 +55,8 @@ destination -> the rest of a mttm rule | half-rule
                             inv
                             max-cmps
                             head-pos
-                            machine-decision)
+                            machine-decision
+                            pallete)
   #:transparent)
 
 (define DUMMY-RULE (rule (half-rule LM LM) (half-rule LM LM)))
@@ -239,13 +241,15 @@ destination -> the rest of a mttm rule | half-rule
 
 ;;graph machine -> graph
 ;;Purpose: Creates the nodes for the given graph
-(define (make-node-graph dgraph M held-inv fail-inv cut-off)
+(define (make-node-graph dgraph M held-inv fail-inv cut-off color-scheme)
   (foldl (λ (state graph)
            (let ([member-of-held-inv? (member? state held-inv eq?)]
                  [member-of-fail-inv? (member? state fail-inv eq?)])
              (add-node graph
                        state
-                       #:atb (hash 'color (if (eq? (mttm-start M) state) 'green 'black)
+                       #:atb (hash 'color (if (eq? (mttm-start M) state)
+                                              (color-pallete-start-state-color color-scheme)
+                                              (color-pallete-font-color color-scheme))
                                    'style (cond [(and member-of-held-inv? member-of-fail-inv?) 'wedged]
                                                 [(or member-of-held-inv? member-of-fail-inv?
                                                      (member? state cut-off equal?)) 'filled]
@@ -253,13 +257,13 @@ destination -> the rest of a mttm rule | half-rule
                                    'shape (cond [(eq? state (mttm-accepting-final M)) 'doubleoctagon]
                                                 [(member? state (mttm-finals M) equal?) 'doublecircle]
                                                 [else 'circle])
-                                   'fillcolor (cond [(member? state cut-off equal?) GRAPHVIZ-CUTOFF-GOLD]
-                                                    [(and member-of-held-inv? member-of-fail-inv?) SPLIT-INV-COLOR]
-                                                    [member-of-held-inv? HELD-INV-COLOR ]
-                                                    [member-of-fail-inv? BRKN-INV-COLOR]
-                                                    [else 'white])
+                                   'fillcolor (cond [(member? state cut-off equal?) (color-pallete-cut-off-color color-scheme)]
+                                                    [(and member-of-held-inv? member-of-fail-inv?) (color-pallete-split-inv-color color-scheme)]
+                                                    [member-of-held-inv? (color-pallete-inv-hold-color color-scheme)]
+                                                    [member-of-fail-inv? (color-pallete-inv-fail-color color-scheme)]
+                                                    [else (color-pallete-blank-color color-scheme)])
                                    'label state
-                                   'fontcolor 'black
+                                   'fontcolor (color-pallete-font-color color-scheme)
                                    'fontname (if (and (member? state held-inv equal?) (member? state fail-inv equal?))
                                                  "times-bold"
                                                  "Times-Roman")))))
@@ -268,7 +272,7 @@ destination -> the rest of a mttm rule | half-rule
 
 ;;graph machine -> graph
 ;;Purpose: Creates the edges for the given graph
-(define (make-edge-graph dgraph rules current-tracked-rules current-accept-rules current-reject-rules accepted?)
+(define (make-edge-graph dgraph rules current-tracked-rules current-accept-rules current-reject-rules accepted? color-scheme)
   ;;rule symbol (listof rules) -> boolean
   ;;Purpose: Determines if the given rule is a member of the given (listof rules)
   ;;         or similiar to one of the rules in the given (listof rules) 
@@ -286,13 +290,19 @@ destination -> the rest of a mttm rule | half-rule
                        (second rule)
                        (first rule)
                        (third rule)
-                       #:atb (hash 'color (cond [(and found-tracked-rule? found-accept-rule?) SPLIT-ACCEPT-COLOR] ;;<--- watch out if coloring issue
-                                                [(and found-tracked-rule? found-reject-rule?) SPLIT-REJECT-COLOR] ;;<--- watch out if coloring issue
-                                                [(and accepted? found-tracked-rule?) TRACKED-ACCEPT-COLOR]
-                                                [found-tracked-rule?  TRACKED-REJECT-COLOR]
-                                                [found-accept-rule? ALL-ACCEPT-COLOR]
-                                                [found-reject-rule? REJECT-COLOR]
-                                                [else 'black])
+                       #:atb (hash 'color (cond [(and found-tracked-rule? found-accept-rule?)
+                                                 (color-pallete-split-accept-color color-scheme)] ;;<--- watch out if coloring issue
+                                                [(and found-tracked-rule? found-reject-rule? (not accepted?))
+                                                 (color-pallete-split-reject-color color-scheme)] ;;<-- may cause issue
+                                                [(and found-tracked-rule? found-reject-rule? accepted?)
+                                                 (color-pallete-split-accept-reject-color color-scheme)] ;;<-- may cause issue
+                                                [(and found-tracked-rule? found-accept-rule? found-reject-rule? accepted?)
+                                                 (color-pallete-bi-accept-reject-color color-scheme)]
+                                                [(and accepted? found-tracked-rule?) (color-pallete-shown-accept-color color-scheme)] 
+                                                [found-tracked-rule?  (color-pallete-shown-reject-color color-scheme)]
+                                                [found-accept-rule?   (color-pallete-other-accept-color color-scheme)]
+                                                [found-reject-rule?   (color-pallete-other-reject-color color-scheme)]
+                                                [else (color-pallete-font-color color-scheme)])
                                    'style (if (and found-tracked-rule? accepted?) 'bold 'solid) ;;<--- watch out if bolding issue
                                    'fontsize 12))))
          dgraph
@@ -401,19 +411,21 @@ destination -> the rest of a mttm rule | half-rule
          
          ;;(listof symbols)
          ;;Purpose: Returns all states whose invariants holds
-         [held-invs (map2 (λ (inv) (get-invariants inv id)) get-invs)])
+         [held-invs (map2 (λ (inv) (get-invariants inv identity)) get-invs)])
     (make-edge-graph
      (make-node-graph
       (create-graph 'mttmgraph #:atb (hash 'rankdir "LR"))
       (building-viz-state-M a-vs)
       held-invs
       brkn-invs
-      cut-off-states)
+      cut-off-states
+      (building-viz-state-pallete a-vs))
      all-rules
      current-tracked-rules
      all-current-accept-rules
      current-reject-rules
-     (eq? (building-viz-state-machine-decision a-vs) 'accept))))
+     (eq? (building-viz-state-machine-decision a-vs) 'accept)
+     (building-viz-state-pallete a-vs))))
 
 ;;viz-state (listof graph-thunks) -> (listof graph-thunks)
 ;;Purpose: Creates all the graphs needed for the visualization
@@ -1008,6 +1020,8 @@ destination -> the rest of a mttm rule | half-rule
                                       (mttm-accepting-final M)
                                       cut-off
                                       head-pos)]
+         ;;color-pallete ;;
+         [color-scheme standard-color-scheme]
          ;;(listof computation) ;;Purpose: Extracts all accepting computations
          [accepting-computations (treelist->list (paths-accepting all-paths))]
          ;;(listof computation) ;;Purpose: Extracts all rejecting computations
@@ -1075,7 +1089,8 @@ destination -> the rest of a mttm rule | half-rule
                                              all-inv-configs
                                              cut-off
                                              all-head-pos
-                                             machine-decision)]
+                                             machine-decision
+                                             color-scheme)]
                      
          ;;(listof graph-thunk) ;;Purpose: Gets all the graphs needed to run the viz
          [graphs (create-graph-thunks building-state '())]
@@ -1116,7 +1131,8 @@ destination -> the rest of a mttm rule | half-rule
                                                     0
                                                     (let ([offset-cap (- (length a-word) TM-TAPE-SIZE)])
                                                       (if (> 0 offset-cap) 0 offset-cap))
-                                                    0)
+                                                    0
+                                                    color-scheme)
                                    mttm-img-bounding-limit)
              (instructions-graphic MTTM-E-SCENE-TOOLS
                                    (bounding-limits 0

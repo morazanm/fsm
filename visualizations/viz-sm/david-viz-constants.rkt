@@ -8,323 +8,14 @@
          "../../fsm-core/private/constants.rkt"
          "default-informative-messages.rkt"
          "../viz-lib/zipper.rkt"
-         racket/treelist
          "david-imsg-state.rkt"
-         "../viz-lib/viz-constants.rkt"
-         "../../fsm-core/private/fsa.rkt"
-         "../../fsm-core/private/pda.rkt"
-         "../../fsm-core/private/tm.rkt"
-         "../../fsm-core/private/mtape-tm.rkt")
+         "david-viz-constant.rkt"
+         "../viz-lib/viz-constants.rkt")
 
 (define FONT-SIZE 18)
 (provide (all-defined-out))
 
-
-
-#|
-A computation is a structure: (computation LoC LoR LoT visited)
-LoC is a (listof configuration)
-LoR is a (listof rule)
-visited is a (hashof configuration)
-|#
-(struct computation (LoC LoR visited length) #:transparent)
-
-(struct paths (accepting rejecting reached-final? cut-off?) #:transparent)  
-#|
-A rule is a structure: (rule source read destination action)
-source is the source state                       | symbol
-read is the element to be read on the tape       | symbol
-destination is the destination state             | symbol
-action is the action to be performed on the tape | TM-ACTION
-|#
-(struct rule (source read destination action) #:transparent)
-
-
-(define (tm-getalphabet m) (m '() 0 'get-alphabet)) 
-  
-(define (tm-getstates m) (m '() 0 'get-states))
-  
-(define (tm-getfinals m) (m '() 0 'get-finals))
-
-(define (tm-getdelta m) (m '() 0 'get-delta)) ;;; parsed rules
-
-(define (tm-getrules m) (m '() 0 'get-rules))  ;;; unparsed rules
-
-(define (tm-getstart m) (m '() 0 'get-start))
-  
-(define (tm-getaccept m) (m '() 0 'get-accept))
-
-(define (tm-whatami? m) (m 'whatami 0 'whatami))
-
-;; X (listof X) (X -> boolean) -> boolean
-;;Purpose: Determine if X is in the given list
-(define (member? x lst eq-func) (for/or ([L lst]) (eq-func x L)))
-;;(X -> boolean) (listof X) -> boolean
-;;Purpose: Determines if X is is the given list
-(define (ormap f lst) (for/or ([L lst]) (f L)))
-;;(X -> Y) (listof X) -> (listof Y)
-;;Purpose: maps the given functon over the list
-(define (map2 f lst) (for/list ([L lst]) (f L)))
-;;(X -> boolean) (listof X) -> (listof X)
-;;Purpose: filters the list using the given predicate
-(define (filter f lst) (for/list ([L lst] #:when (f L)) L))
-
-(define GRAPHVIZ-CUTOFF-GOLD 'darkgoldenrod2)
-(define HELD-INV-COLOR 'chartreuse4)
-(define BRKN-INV-COLOR 'red2)
-(define TRACKED-ACCEPT-COLOR 'forestgreen)
-(define TRACKED-REJECT-COLOR 'chocolate1)
-(define ALL-ACCEPT-COLOR 'green)
-(define REJECT-COLOR 'violetred)
-(define SPLIT-INV-COLOR "red:chartreuse4")
-(define SPLIT-ACCEPT-COLOR 
-  (string-append (symbol->string TRACKED-ACCEPT-COLOR) ":" (symbol->string ALL-ACCEPT-COLOR)))
-(define SPLIT-ACCEPT-REJECT-COLOR
-  (string-append (symbol->string TRACKED-ACCEPT-COLOR) ":" (symbol->string REJECT-COLOR)))
-(define BI-ACCEPT-REJECT-COLOR
-  (string-append (symbol->string TRACKED-ACCEPT-COLOR) ":" (symbol->string ALL-ACCEPT-COLOR) ":" (symbol->string REJECT-COLOR)))
-(define SPLIT-REJECT-COLOR
-  (string-append (symbol->string TRACKED-REJECT-COLOR) ":" (symbol->string REJECT-COLOR)))
-
-;;tm -> tm-struct
-;;Purpose: Converts the tm into a tm structure
-(define (remake-tm M)
-  ;;(listof rules) -> (treelistof rule-struct)
-  ;;Purpose: Converts the rules from the given tm to rule-structs
-  (define (remake-rules a-lor)
-    (for/treelist ([tm-rule a-lor])
-      (rule (first (first tm-rule)) (second (first tm-rule))
-            (first (second tm-rule)) (second (second tm-rule)))))
-  (tm (tm-getstates M)
-      (tm-getalphabet M)
-      (remake-rules (tm-getrules M))
-      (tm-getstart M)
-      (tm-getfinals M)
-      (if (eq? (tm-whatami? M) 'tm-language-recognizer) (tm-getaccept M) 'none)
-      (tm-whatami? M)))
-
-;;Mttm -> mttm-struct
-;;Purpose: Converts a mttm interface into the mttm structure
-(define (remake-mttm M)
-  ;;(listof rule) -> (treelistof rule-struct)
-  ;;Purose: Converts a rule into a rule-struct
-  (define (remake-rules a-lor)
-    (for/treelist ([mttm-rule a-lor])
-      (rule (first (first mttm-rule)) (second (first mttm-rule))
-            (first (second mttm-rule)) (second (second mttm-rule)))))
-  (mttm (mttm-get-states M)
-        (mttm-get-sigma M)
-        (mttm-get-start M)
-        (mttm-get-finals M)
-        (remake-rules (mttm-get-rules M))
-        (M 'get-numtapes)
-        (if (eq? (mttm-what-am-i M) 'mttm-language-recognizer) (mttm-get-accept M) 'none)
-        (mttm-what-am-i M)))
-
-(define SM-VIZ-FONT-SIZE 18)
 (define INS-TOOLS-BUFFER 30)
-
-;;(X -> Y) :Purpose: A function to retrieve the index for a tm-config from a trace
-(define get-mttm-config-index-frm-trace (compose1 mttm-config-index trace-config zipper-current))
-;;(X -> Y) :Purpose: A function to retrieve the index for a tm-config from a trace
-(define get-tm-config-index-frm-trace (compose1 tm-config-index trace-config zipper-current))
-;;(X -> Y) :Purpose: A function to retrieve the index for a pda-config from a trace
-(define get-pda-config-index-frm-trace (compose1 pda-config-index trace-config zipper-current))
-;;(X -> Y) :Purpose: A function to retrieve the index for a ndfa-config from a trace
-(define get-ndfa-config-index-frm-trace (compose1 ndfa-config-index trace-config zipper-current))
-
-;;(X -> Y) :Purpose: A function to retrieve the index for a mttm-config from the invs-zipper
-(define get-mttm-config-index-frm-invs (compose1 mttm-config-index #;first zipper-current))
-;;(X -> Y) :Purpose: A function to retrieve the index for a tm-config from the invs-zipper
-(define get-tm-config-index-frm-invs (compose1 tm-config-index zipper-current))
-;;(X -> Y) :Purpose: A function to retrieve the index for a pda-config from the invs-zipper
-(define get-pda-config-index-frm-invs (compose1 pda-config-index first zipper-current))
-;;(X -> Y) :Purpose: A function to retrieve the index for a ndfa-config from the invs-zipper
-(define get-ndfa-config-index-frm-invs (compose1 ndfa-config-index first zipper-current))
-
-(define AB*B*UAB*
-  (make-unchecked-ndfa '(S K B C H)
-             '(a b)
-             'S
-             '(H)
-             `((S ,EMP K) (S a C)
-                          (K a B) (K ,EMP H)
-                          (B b K)
-                          (C ,EMP H)
-                          (H b H))))
-
-(define a* (make-unchecked-ndpda '(K H)
-                                 '(a b)
-                                 '(a)
-                                 'K
-                                 '(H)
-                                 `(((K ,EMP ,EMP)(H ,EMP))
-                                   ((H a ,EMP)(H ,EMP)))))
-
-(define EVEN-AS-&-BS (remake-tm (make-unchecked-tm '(K H I B S)
-                                                   '(a b)
-                                                   `(((K ,BLANK) (S ,BLANK))
-                                                     ((K a) (H ,RIGHT)) ((H a) (K ,RIGHT)) ((H b) (B ,RIGHT)) ((B b) (H ,RIGHT))
-                                                     ((K b) (I ,RIGHT)) ((I b) (K ,RIGHT)) ((I a) (B ,RIGHT)) ((B a) (I ,RIGHT)))
-                                                   'K
-                                                   '(S)
-                                                   'S)))
-
-(define ww (remake-mttm (make-unchecked-mttm '(K H T F E B W D M)
-                                '(a b)
-                                'K
-                                '(M)
-                                (list
-                                 (list (list 'K (list BLANK BLANK)) ;;<--- start
-                                       (list 'H (list RIGHT RIGHT))) 
-                                 (list (list 'H (list 'a BLANK)) ;;<---- PHASE 1: read a in w 
-                                       (list 'T (list 'a 'a)))
-                                 (list (list 'T (list 'a 'a))
-                                       (list 'H (list RIGHT RIGHT)))
-                                 (list (list 'H (list 'b BLANK)) ;;<---- PHASE 1: read b in w
-                                       (list 'F (list 'b 'b)))
-                                 (list (list 'F (list 'b 'b))
-                                       (list 'H (list RIGHT RIGHT)))
-                                 (list (list 'H (list BLANK BLANK)) ;;<--- PHASE 2: Go to beginning of t1
-                                       (list 'E (list BLANK LEFT)))
-                                 (list (list 'E (list BLANK 'a))
-                                       (list 'E (list BLANK LEFT)))
-                                 (list (list 'E (list BLANK 'b))
-                                       (list 'E (list BLANK LEFT)))
-                                 (list (list 'E (list BLANK BLANK)) ;;<---- PHASE 3: read w on t1 AND write w on t0
-                                       (list 'W (list BLANK RIGHT)))
-                                 (list (list 'W (list BLANK 'a))
-                                       (list 'D (list 'a 'a)))
-                                 (list (list 'D (list 'a 'a))
-                                       (list 'W (list RIGHT RIGHT)))
-                                 (list (list 'W (list BLANK 'b))
-                                       (list 'B (list 'b 'b)))
-                                 (list (list 'B (list 'b 'b))
-                                       (list 'W (list RIGHT RIGHT)))
-                                 (list (list 'W (list BLANK BLANK))
-                                       (list 'M (list BLANK BLANK)))
-                                 )        
-                                2)))
-
-(define a^nb^n (remake-mttm (make-unchecked-mttm '(K H R E C O M T)
-                                       '(a b)
-                                       'K
-                                       '(T)
-                                       (list
-                                        (list (list 'K (list BLANK BLANK BLANK));; <-- Starting 
-                                              (list 'H (list RIGHT RIGHT RIGHT))) 
-                                        (list (list 'H (list 'a BLANK BLANK)) ;;<-- Phase 1, reads a's
-                                              (list 'R (list 'a 'a BLANK)))
-                                        (list (list 'R (list 'a 'a BLANK))
-                                              (list 'H (list RIGHT RIGHT BLANK))) 
-                                        (list (list 'H (list 'b BLANK BLANK)) ;;<-- phase 2, read b's
-                                              (list 'E (list 'b BLANK 'b)))
-                                        (list (list 'E (list 'b BLANK 'b))
-                                              (list 'C (list RIGHT BLANK RIGHT)))
-                                        (list (list 'C (list 'b BLANK BLANK))
-                                              (list 'E (list 'b BLANK 'b))) 
-                                        (list (list 'C (list 'b BLANK BLANK))
-                                              (list 'O (list RIGHT BLANK BLANK)))
-                                        (list (list 'O (list BLANK BLANK BLANK)) ;;<-- phase 4, matching as, bs, cs
-                                              (list 'M (list BLANK LEFT LEFT)))
-                                        (list (list 'M (list BLANK 'a 'b))
-                                              (list 'M (list BLANK LEFT LEFT)))
-                                        (list (list 'M (list BLANK BLANK BLANK)) ;;<-phase 5, accept (if possible)
-                                              (list 'T (list BLANK BLANK BLANK)))
-                                        )
-                                       3
-                                       'T)))
-
-(define a^nb^nc^n (remake-mttm (make-unchecked-mttm '(K H R E C O M T F)
-                                       '(a b c)
-                                       'K
-                                       '(F)
-                                       (list
-                                        (list (list 'K (list BLANK BLANK BLANK BLANK));; <-- Starting 
-                                              (list 'H (list RIGHT RIGHT RIGHT RIGHT))) 
-                                        (list (list 'H (list 'a BLANK BLANK BLANK)) ;;<-- Phase 1, reads a's
-                                              (list 'R (list 'a 'a BLANK BLANK)))
-                                        (list (list 'R (list 'a 'a BLANK BLANK))
-                                              (list 'H (list RIGHT RIGHT BLANK BLANK))) 
-                                        (list (list 'H (list 'b BLANK BLANK BLANK)) ;;<-- phase 2, read b's
-                                              (list 'E (list 'b BLANK 'b BLANK)))
-                                        (list (list 'E (list 'b BLANK 'b BLANK))
-                                              (list 'C (list RIGHT BLANK RIGHT BLANK)))
-                                        (list (list 'C (list 'b BLANK BLANK BLANK))
-                                              (list 'E (list 'b BLANK 'b BLANK))) 
-                                        (list (list 'C (list 'c BLANK BLANK BLANK)) ;;<-- phase 3, read c's
-                                              (list 'O (list 'c BLANK BLANK 'c)))
-                                        (list (list 'O (list 'c BLANK BLANK 'c))
-                                              (list 'M (list RIGHT BLANK BLANK RIGHT)))
-                                        (list (list 'M (list 'c BLANK BLANK BLANK)) 
-                                              (list 'O (list 'c BLANK BLANK 'c)))
-                                        (list (list 'M (list BLANK BLANK BLANK BLANK)) ;;<-- phase 4, matching as, bs, cs
-                                              (list 'T (list BLANK LEFT LEFT LEFT)))
-                                        (list (list 'T (list BLANK 'a 'b 'c))
-                                              (list 'T (list BLANK LEFT LEFT LEFT)))
-                                        (list (list 'T (list BLANK BLANK BLANK BLANK)) ;;<-phase 5, accept (if possible)
-                                              (list 'F (list BLANK BLANK BLANK BLANK)))
-                                        )
-                                       4
-                                       'F)))
-
-(define qempty? treelist-empty?)
-
-(define E-QUEUE empty-treelist) 
-
-;; (qof X) → X throws error
-;; Purpose: Return first X of the given queue
-(define (qfirst a-qox)
-  (if (qempty? a-qox)
-      (error "qfirst applied to an empty queue")
-      (treelist-first a-qox)))
-
-;; (listof X) (qof X) → (qof X)
-;; Purpose: Add the given list of X to the given queue of X
-(define (enqueue a-lox a-qox) (treelist-append a-qox a-lox))
-
-;; (qof X) → (qof X) throws error
-;; Purpose: Return the rest of the given queue
-(define (dequeue a-qox)
-  (if (qempty? a-qox)
-      (error "dequeue applied to an empty queue")
-      (treelist-rest a-qox)))
-
-(define INFORMATIVE-MSG-HEIGHT 50)
-
-(define (id x) x)
-
-(define E-SCENE-TOOLS (e-scene-tools-generator HEIGHT-BUFFER LETTER-KEY-WIDTH-BUFFER SM-VIZ-FONT-SIZE
-                                                   (list (list ARROW-UP-KEY "Restart")
-                                                         (list ARROW-RIGHT-KEY "Forward")
-                                                         (list ARROW-LEFT-KEY "Backward")
-                                                         (list ARROW-DOWN-KEY "Finish")
-                                                         (list CURSOR "Hold to drag")
-                                                         (list W-KEY "Zoom in")
-                                                         (list S-KEY "Zoom out")
-                                                         (list R-KEY "Min zoom")
-                                                         (list E-KEY "Mid zoom")
-                                                         (list F-KEY "Max zoom")
-                                                         (list A-KEY "Word start")
-                                                         (list D-KEY "Word end")
-                                                         (list J-KEY "Prv not inv")
-                                                         (list L-KEY "Nxt not inv"))))
-
-(define MTTM-E-SCENE-TOOLS (e-scene-tools-generator HEIGHT-BUFFER LETTER-KEY-WIDTH-BUFFER SM-VIZ-FONT-SIZE
-                                                    (list (list ARROW-UP-KEY "Restart")
-                                                          (list ARROW-RIGHT-KEY "Forward")
-                                                          (list ARROW-LEFT-KEY "Backward")
-                                                          (list ARROW-DOWN-KEY "Finish")
-                                                          (list CURSOR "Hold to drag")
-                                                          (list W-KEY "Zoom in")
-                                                          (list S-KEY "Zoom out")
-                                                          (list R-KEY "Min zoom")
-                                                          (list E-KEY "Tape up")
-                                                          (list F-KEY "Tape down")
-                                                          (list A-KEY "Word start")
-                                                          (list D-KEY "Word end")
-                                                          (list J-KEY "Prv not inv")
-                                                          (list L-KEY "Nxt not inv"))))
 
 (define ndfa-info-img (ndfa-create-draw-informative-message
                        (imsg-state-ndfa AB*B*UAB*
@@ -337,7 +28,8 @@ action is the action to be performed on the tape | TM-ACTION
                                         0
                                         (let ([offset-cap (- (length '(a b b)) TAPE-SIZE)])
                                           (if (> 0 offset-cap) 0 offset-cap))
-                                        0)))
+                                        0
+                                        standard-color-scheme)))
 
 (define pda-info-img (pda-create-draw-informative-message
                       (imsg-state-pda a*
@@ -353,7 +45,8 @@ action is the action to be performed on the tape | TM-ACTION
                                       0
                                       (let ([offset-cap (- (length '(a b b)) TAPE-SIZE)])
                                         (if (> 0 offset-cap) 0 offset-cap))
-                                      0)))
+                                      0
+                                      standard-color-scheme)))
 
 
 (define tm-info-img (tm-create-draw-informative-message
@@ -370,7 +63,8 @@ action is the action to be performed on the tape | TM-ACTION
                                     0
                                     (let ([offset-cap (- (length '(a b b)) TM-TAPE-SIZE)])
                                       (if (> 0 offset-cap) 0 offset-cap))
-                                    0)))
+                                    0
+                                    standard-color-scheme)))
 
 (define mttm-2tape-info-img (mttm-create-draw-informative-message
                              (imsg-state-mttm ww
@@ -390,7 +84,8 @@ action is the action to be performed on the tape | TM-ACTION
                                               0
                                               (let ([offset-cap (- (length '(a b b)) TM-TAPE-SIZE)])
                                                 (if (> 0 offset-cap) 0 offset-cap))
-                                              0)))
+                                              0
+                                              standard-color-scheme)))
 (define mttm-3tape-info-img (mttm-create-draw-informative-message
                              (imsg-state-mttm a^nb^n
                                               (list->zipper (list (list `(,LM b a)
@@ -410,7 +105,8 @@ action is the action to be performed on the tape | TM-ACTION
                                               0
                                               (let ([offset-cap (- (length '(a b b)) TM-TAPE-SIZE)])
                                                 (if (> 0 offset-cap) 0 offset-cap))
-                                              0)))
+                                              0
+                                              standard-color-scheme)))
 (define mttm->=4tape-info-img (mttm-create-draw-informative-message
                                (imsg-state-mttm a^nb^nc^n
                                                 (list->zipper (list (list `(,LM a b)
@@ -431,7 +127,8 @@ action is the action to be performed on the tape | TM-ACTION
                                                 0
                                                 (let ([offset-cap (- (length '(a b b)) TM-TAPE-SIZE)])
                                                   (if (> 0 offset-cap) 0 offset-cap))
-                                                0)))
+                                                0
+                                                standard-color-scheme)))
                                                                    
 (define NDFA-E-SCENE-HEIGHT (- (* 0.9 WINDOW-HEIGHT)
                           (image-height ndfa-info-img)

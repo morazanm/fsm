@@ -10,7 +10,8 @@
                          accepted?               ;;boolean
                          word-img-offset
                          word-img-offset-cap
-                         scroll-accum)
+                         scroll-accum
+                         color-pallete)
   #:transparent)
 
 (struct imsg-state-pda (M                        ;;PDA
@@ -25,7 +26,8 @@
                         max-cmps                 ;;natnum
                         word-img-offset
                         word-img-offset-cap
-                        scroll-accum)
+                        scroll-accum
+                        color-pallete)
   #:transparent)
 
 (struct imsg-state-tm (M                     ;;TM
@@ -39,7 +41,8 @@
                        machine-decision      ;;symbol
                        word-img-offset
                        word-img-offset-cap
-                       scroll-accum)
+                       scroll-accum
+                       color-pallete)
   #:transparent)
 
 
@@ -56,5 +59,6 @@
                          aux-tape-index         ;;natnum
                          word-img-offset
                          word-img-offset-cap
-                         scroll-accum)
+                         scroll-accum
+                         color-pallete)
   #:transparent)
