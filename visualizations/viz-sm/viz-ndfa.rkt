@@ -11,10 +11,10 @@
          (except-in "../viz-lib/viz-constants.rkt" INS-TOOLS-BUFFER)
          "../viz-lib/viz-imgs/keyboard_bitmaps.rkt"
          "david-imsg-state.rkt"
-         "testing-parameter.rkt"
+         ;"testing-parameter.rkt"
          racket/treelist
-         (except-in "david-viz-constants.rkt" FONT-SIZE)
-         "david-viz-constant.rkt"
+         (except-in "david-imsg-dimensions.rkt" FONT-SIZE)
+         "david-viz-constants.rkt"
          "../../fsm-core/private/constants.rkt"
          "../../fsm-core/private/fsa.rkt"
          "../../fsm-core/private/misc.rkt"

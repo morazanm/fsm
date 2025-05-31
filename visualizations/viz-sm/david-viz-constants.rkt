@@ -1,398 +1,363 @@
 #lang racket
 
 (require "../2htdp/image.rkt"
-         "../viz-lib/bounding-limits.rkt"
-         "../viz-lib/bounding-limits-macro.rkt"
+         "../viz-lib/zipper.rkt"
          "../viz-lib/viz-imgs/keyboard_bitmaps.rkt"
          "../viz-lib/default-viz-function-generators.rkt"
          "../../fsm-core/private/constants.rkt"
-         "default-informative-messages.rkt"
          "../viz-lib/zipper.rkt"
-         "david-imsg-state.rkt"
-         "david-viz-constant.rkt"
-         "../viz-lib/viz-constants.rkt")
+         racket/treelist
+         "../viz-lib/viz-constants.rkt"
+         "../../fsm-core/private/fsa.rkt"
+         "../../fsm-core/private/pda.rkt"
+         "../../fsm-core/private/tm.rkt"
+         "../../fsm-core/private/mtape-tm.rkt")
 
-(define FONT-SIZE 18)
 (provide (all-defined-out))
 
-(define INS-TOOLS-BUFFER 30)
-
-(define ndfa-info-img (ndfa-create-draw-informative-message
-                       (imsg-state-ndfa AB*B*UAB*
-                                        (list->zipper (list (ci '() '())))
-                                        (list->zipper '())
-                                        (ndfa-config 'S '() 0)
-                                        (list->zipper '())
-                                        (hash)
-                                        #f
-                                        0
-                                        (let ([offset-cap (- (length '(a b b)) TAPE-SIZE)])
-                                          (if (> 0 offset-cap) 0 offset-cap))
-                                        0
-                                        standard-color-scheme)))
-
-(define pda-info-img (pda-create-draw-informative-message
-                      (imsg-state-pda a*
-                                      (list->zipper (list (ci '() '())))
-                                      (list->zipper '())
-                                      (list->zipper (list (pda-config 'S '() '() 0)))
-                                      (pda-config 'S '() '() 0)
-                                      (list->zipper '())
-                                      (hash) 
-                                      #f
-                                      #f
-                                      1
-                                      0
-                                      (let ([offset-cap (- (length '(a b b)) TAPE-SIZE)])
-                                        (if (> 0 offset-cap) 0 offset-cap))
-                                      0
-                                      standard-color-scheme)))
-
-
-(define tm-info-img (tm-create-draw-informative-message
-                     (imsg-state-tm EVEN-AS-&-BS
-                                    (list->zipper (list `(,LM b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a c c b a b
-                                                        a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a c)))
-                                    (list->zipper '(1))
-                                    (list->zipper '())
-                                    (list->zipper '())
-                                    (list->zipper '())
-                                    (list->zipper '(1))
-                                    1
-                                    'accept
-                                    0
-                                    (let ([offset-cap (- (length '(a b b)) TM-TAPE-SIZE)])
-                                      (if (> 0 offset-cap) 0 offset-cap))
-                                    0
-                                    standard-color-scheme)))
-
-(define mttm-2tape-info-img (mttm-create-draw-informative-message
-                             (imsg-state-mttm ww
-                                              (list->zipper (list (list `(,LM b a)
-                                                                        `(,BLANK))))
-                                              (list->zipper (list (list 1 0)))
-                                              (list->zipper (list (trace 'khrecom 'khcom)))
-                                              (list->zipper (list (trace (mttm-config 'K (list (tape-config 1 '(@ _ a)) (tape-config 0 '(_))) 0)
-                                                                         (rule '@ '@ '@ '@))))
-                                              (list->zipper (list (trace (mttm-config 'K (list (tape-config 1 '(@ _ a)) (tape-config 0 '(_))) 0)
-                                                                         (rule '@ '@ '@ '@))))
-                                              (list->zipper '())
-                                              (list->zipper '(1 2 3 3 4 4 5 5))
-                                              1
-                                              'accept
-                                              1
-                                              0
-                                              (let ([offset-cap (- (length '(a b b)) TM-TAPE-SIZE)])
-                                                (if (> 0 offset-cap) 0 offset-cap))
-                                              0
-                                              standard-color-scheme)))
-(define mttm-3tape-info-img (mttm-create-draw-informative-message
-                             (imsg-state-mttm a^nb^n
-                                              (list->zipper (list (list `(,LM b a)
-                                                                        `(,BLANK)
-                                                                        `(,BLANK))))
-                                              (list->zipper (list (list 1 0 0)))
-                                              (list->zipper (list (trace 'kh358/2days 'seasalttrio)))
-                                              (list->zipper (list (trace (mttm-config 'K (list (tape-config 1 '(@ _ a)) (tape-config 0 '(_))) 0)
-                                                                         (rule '@ '@ '@ '@))))
-                                              (list->zipper (list (trace (mttm-config 'K (list (tape-config 1 '(@ _ a)) (tape-config 0 '(_))) 0)
-                                                                         (rule '@ '@ '@ '@))))
-                                              (list->zipper '())
-                                              (list->zipper '(1 2 3 3 4 4 5 5))
-                                              1
-                                              'accept
-                                              1
-                                              0
-                                              (let ([offset-cap (- (length '(a b b)) TM-TAPE-SIZE)])
-                                                (if (> 0 offset-cap) 0 offset-cap))
-                                              0
-                                              standard-color-scheme)))
-(define mttm->=4tape-info-img (mttm-create-draw-informative-message
-                               (imsg-state-mttm a^nb^nc^n
-                                                (list->zipper (list (list `(,LM a b)
-                                                                          `(,BLANK)
-                                                                          `(,BLANK)
-                                                                          `(,BLANK))))
-                                                (list->zipper (list (list 1 0 0 0)))
-                                                (list->zipper (list (trace 'khrecom 'khcom)))
-                                                (list->zipper (list (trace (mttm-config 'K (list (tape-config 1 '(@ _ a)) (tape-config 0 '(_))) 0)
-                                                                         (rule '@ '@ '@ '@))))
-                                                (list->zipper (list (trace (mttm-config 'K (list (tape-config 1 '(@ _ a)) (tape-config 0 '(_))) 0)
-                                                                         (rule '@ '@ '@ '@))))
-                                                (list->zipper '())
-                                                (list->zipper '(1 2 3 3 4 4 5 5))
-                                                1
-                                                'accept
-                                                1
-                                                0
-                                                (let ([offset-cap (- (length '(a b b)) TM-TAPE-SIZE)])
-                                                  (if (> 0 offset-cap) 0 offset-cap))
-                                                0
-                                                standard-color-scheme)))
-                                                                   
-(define NDFA-E-SCENE-HEIGHT (- (* 0.9 WINDOW-HEIGHT)
-                          (image-height ndfa-info-img)
-                          (image-height E-SCENE-TOOLS)))
-
-(define PDA-E-SCENE-HEIGHT (- (* 0.9 WINDOW-HEIGHT)
-                          (image-height pda-info-img)
-                          (image-height E-SCENE-TOOLS)))
-
-(define TM-E-SCENE-HEIGHT (- (* 0.9 WINDOW-HEIGHT)
-                          (image-height tm-info-img)
-                          (image-height E-SCENE-TOOLS)))
-
-(define MTTM-2tape-E-SCENE-HEIGHT (- (* 0.9 WINDOW-HEIGHT)
-                          (image-height mttm-2tape-info-img)
-                          (image-height E-SCENE-TOOLS)))
-
-(define MTTM-3tape-E-SCENE-HEIGHT (- (* 0.9 WINDOW-HEIGHT)
-                          (image-height mttm-3tape-info-img)
-                          (image-height E-SCENE-TOOLS)))
-
-(define MTTM->=4tape-E-SCENE-HEIGHT (- (* 0.9 WINDOW-HEIGHT)
-                          (image-height mttm->=4tape-info-img)
-                          (image-height E-SCENE-TOOLS)))
+#|
+A trace is a structure:
+(make-trace config rules)
+config is a single configuration
+rules are a (listof rule-structs)
+|#
+(struct trace (config rules) #:transparent)
+;;state -> the state the configuration is in                | symbol
+;;word  -> the consumed input once reaching the given state | (listof symbol)
+;;stack -> the stack once reaching the given state          | (listof symbol)
+;;index -> the number associated with the configuration     | natnum
+(struct pda-config (state word stack index) #:transparent)
+;;state -> the state the configuration is in                | symbol
+;;word  -> the consumed input once reaching the given state | (listof symbol)
+;;index -> the number associated with the configuration     | natnum
+(struct ndfa-config (state word index) #:transparent)
+;;state -> the state that the configuration is in                                | symbol
+;;head-position -> the current head position under the tape at the configuration | natnum
+;;tape -> the turing machine's tape                                              | (listof symbol)
+;;index -> the number associated with the configuration                          | natnum
+(struct tm-config (state head-position tape index) #:transparent)
+;;head-position -> the head position of the tape | natnum
+;;tape -> the listof letters being read/written  | (listof symbol)
+(struct tape-config (head-position tape) #:transparent)
+;;state -> the state that the configuration is in                               | symbol
+;;lotc  -> all of the tape configurations associated with current configuration | (listof tape-config)
+;;index -> the number associated with the configuration                         | natnum
+(struct mttm-config (state lotc index) #:transparent)
+;;state -> all of the states that the tm has    | (listof symbol
+;;sigma -> all of letters the tm can read/write | (listof symbol)
+;;rules -> the transition rules for the tm      | (treelistof tm-rule)
+;;start -> the starting state                   | symbol
+;;finals -> the final states                    | (listof symbol)
+;;accepting-final -> the accepting final state  | symbol
+;;type -> the type of tm                        | symbol
+(struct tm (states sigma rules start finals accepting-final type) #:transparent)
+;;state -> all of the states that the mttm has    | (listof symbol
+;;sigma -> all of letters the mttm can read/write | (listof symbol)
+;;start -> the starting state                     | symbol
+;;finals -> the final states                      | (listof symbol)
+;;rules -> the transition rules for the mttm      | (treelistof mttm-rule)
+;;tape-amount -> the number of tapes the mttm has | natnum
+;;accepting-final -> the accepting final state    | symbol
+;;type -> the type of mttm                        | symbol
+(struct mttm (states sigma start finals rules tape-amount accepting-final type) #:transparent)
+;;upci -> the unprocessed consumed input | (listof symbol)
+;;pci  -> the processed consumed input   | (listof symbol)
+(struct ci (upci pci) #:transparent)
 
 
-(define ndfa-img-bounding-limit
-  (bounding-limits 0
-                  (* NDFA-E-SCENE-HEIGHT 0.9)
-                  NDFA-E-SCENE-HEIGHT
-                  (+ NDFA-E-SCENE-HEIGHT (image-height ndfa-info-img)
-                     )))
+(struct color-pallete (shown-accept-color other-accept-color shown-reject-color other-reject-color cut-off-color inv-hold-color inv-fail-color
+                       split-inv-color split-accept-color split-accept-reject-color split-reject-color bi-accept-reject-color
+                       font-color blank-color computation-length-color imsg-accept-color imsg-reject-color ismg-cut-off-color start-state-color
+                       faded-word-color))
 
-(define pda-img-bounding-limit
-  (bounding-limits 0
-                  (* PDA-E-SCENE-HEIGHT 0.9)
-                  PDA-E-SCENE-HEIGHT
-                  (+ PDA-E-SCENE-HEIGHT (image-height pda-info-img)
-                     )))
+(define standard-color-scheme (color-pallete 'forestgreen 'green 'chocolate1 'violetred 'darkgoldenrod2 'chartreuse4 'red2
+                                "red:chartreuse4" "forestgreen:green" "forestgreen:violetred"  "chocolate1:violetred" "forestgreen:green:violetred"
+                                'black 'white 'brown (make-color 34 139 34) 'red (make-color 238 173 14) 'green 'gray))
 
-
-(define tm-img-bounding-limit
-  (bounding-limits 0
-                  (* TM-E-SCENE-HEIGHT 0.9)
-                  TM-E-SCENE-HEIGHT
-                  (+ TM-E-SCENE-HEIGHT (image-height tm-info-img)
-                     )))
-
-
-(define mttm-2tape-img-bounding-limit
-  (bounding-limits 0
-                  (* MTTM-2tape-E-SCENE-HEIGHT 0.9)
-                  MTTM-2tape-E-SCENE-HEIGHT
-                  (+ MTTM-2tape-E-SCENE-HEIGHT (image-height mttm-2tape-info-img)
-                     )))
-
-(define mttm-3tape-img-bounding-limit
-  (bounding-limits 0
-                  (* MTTM-3tape-E-SCENE-HEIGHT 0.9)
-                  MTTM-3tape-E-SCENE-HEIGHT
-                  (+ MTTM-3tape-E-SCENE-HEIGHT (image-height mttm-3tape-info-img)
-                     )))
-
-(define mttm->=4tape-img-bounding-limit
-  (bounding-limits 0
-                  (* MTTM->=4tape-E-SCENE-HEIGHT 0.9)
-                  MTTM->=4tape-E-SCENE-HEIGHT
-                  (+ MTTM->=4tape-E-SCENE-HEIGHT (image-height mttm->=4tape-info-img)
-                     )))
-
-(define NDFA-E-SCENE-BOUNDING-LIMITS (bounding-limits 0 E-SCENE-WIDTH 0 NDFA-E-SCENE-HEIGHT))
-(define PDA-E-SCENE-BOUNDING-LIMITS (bounding-limits 0 E-SCENE-WIDTH 0 PDA-E-SCENE-HEIGHT))
-(define TM-E-SCENE-BOUNDING-LIMITS (bounding-limits 0 E-SCENE-WIDTH 0 TM-E-SCENE-HEIGHT))
-(define MTTM-2tape-E-SCENE-BOUNDING-LIMITS (bounding-limits 0 E-SCENE-WIDTH 0 MTTM-2tape-E-SCENE-HEIGHT))
-(define MTTM-3tape-E-SCENE-BOUNDING-LIMITS (bounding-limits 0 E-SCENE-WIDTH 0 MTTM-3tape-E-SCENE-HEIGHT))
-(define MTTM->=4tape-E-SCENE-BOUNDING-LIMITS (bounding-limits 0 E-SCENE-WIDTH 0 MTTM->=4tape-E-SCENE-HEIGHT))
+#|
+A computation is a structure: (computation LoC LoR visited length)
+LoC -> all of the configurations that make up this computation              | (treelistof configuration)
+LoR -> all of the rules used to reach the current configuration             | (treelistof rule)
+visited -> all of previously visited configurations for this comptuation    | (hashof configuration)
+length -> the current number of configurations visited for this computation | positive integer
+|#
+(struct computation (LoC LoR visited length) #:transparent)
+;;accepting -> all of the computations that the machine accepts      | (treelistof computation)
+;;rejecting -> all of the computations that the machine rejects      | (treelistof computation)
+;;reached-final? -> has any of the computations reached a final state| boolean
+;;cut-off? -> has any of the computations been cut off               | boolean 
+(struct paths (accepting rejecting reached-final? cut-off?) #:transparent)  
+#|
+A rule is a structure: (rule source read destination action)
+source is the source state                       | symbol
+read is the element to be read on the tape       | symbol
+destination is the destination state             | symbol
+action is the action to be performed on the tape | TM-ACTION
+|#
+(struct rule (source read destination action) #:transparent)
 
 
-(define E-SCENE-TOOLS-WIDTH (image-width E-SCENE-TOOLS))
+(define (tm-getalphabet m) (m '() 0 'get-alphabet)) 
+  
+(define (tm-getstates m) (m '() 0 'get-states))
+  
+(define (tm-getfinals m) (m '() 0 'get-finals))
 
-(create-bounding-limits E-SCENE-WIDTH NDFA-E-SCENE-HEIGHT E-SCENE-TOOLS-WIDTH
-                        ndfa-img-bounding-limit SM-VIZ-FONT-SIZE LETTER-KEY-WIDTH-BUFFER INS-TOOLS-BUFFER
-                        ((ARROW-UP-KEY "Restart")
-                         (ARROW-RIGHT-KEY "Forward")
-                         (ARROW-LEFT-KEY "Backward")
-                         (ARROW-DOWN-KEY "Finish")
-                         (CURSOR "Hold to drag")
-                         (W-KEY "Zoom in")
-                         (S-KEY "Zoom out")
-                         (R-KEY "Min zoom")
-                         (E-KEY "Mid zoom")
-                         (F-KEY "Max zoom")
-                         (A-KEY "Word start")
-                         (D-KEY "Word end")
-                         (J-KEY "Prv not inv")
-                         (L-KEY "Nxt not inv")))
+(define (tm-getdelta m) (m '() 0 'get-delta)) ;;; parsed rules
 
-#;(define pda-bounding-limits (create-bounding-limits E-SCENE-WIDTH PDA-E-SCENE-HEIGHT E-SCENE-TOOLS-WIDTH
-                                                    pda-img-bounding-limit SM-VIZ-FONT-SIZE LETTER-KEY-WIDTH-BUFFER INS-TOOLS-BUFFER
-((ARROW-UP-KEY "Restart")
- (ARROW-RIGHT-KEY "Forward")
- (ARROW-LEFT-KEY "Backward")
- (ARROW-DOWN-KEY "Finish")
- (CURSOR "Hold to drag")
- (W-KEY "Zoom in")
- (S-KEY "Zoom out")
- (R-KEY "Min zoom")
- (E-KEY "Mid zoom")
- (F-KEY "Max zoom")
- (A-KEY "Word start")
- (D-KEY "Word end")
- (J-KEY "Prv not inv")
- (L-KEY "Nxt not inv"))))
+(define (tm-getrules m) (m '() 0 'get-rules))  ;;; unparsed rules
 
-(define pda-jump-next
-  (jump-next-inv  E-SCENE-WIDTH
-                  NDFA-E-SCENE-HEIGHT
-                  NODE-SIZE
-                  DEFAULT-ZOOM-CAP
-                  DEFAULT-ZOOM-FLOOR
-                  PERCENT-BORDER-GAP
-                  imsg-state-pda-invs-zipper))
+(define (tm-getstart m) (m '() 0 'get-start))
+  
+(define (tm-getaccept m) (m '() 0 'get-accept))
 
-(define pda-jump-prev
-  (jump-prev-inv  E-SCENE-WIDTH
-                  NDFA-E-SCENE-HEIGHT
-                  NODE-SIZE
-                  DEFAULT-ZOOM-CAP
-                  DEFAULT-ZOOM-FLOOR
-                  PERCENT-BORDER-GAP
-                  imsg-state-pda-invs-zipper))
+(define (tm-whatami? m) (m 'whatami 0 'whatami))
 
-(define ndfa-jump-next
-  (jump-next-inv  E-SCENE-WIDTH
-                  NDFA-E-SCENE-HEIGHT
-                  NODE-SIZE
-                  DEFAULT-ZOOM-CAP
-                  DEFAULT-ZOOM-FLOOR
-                  PERCENT-BORDER-GAP
-                  imsg-state-ndfa-invs-zipper))
+;; X (listof X) (X -> boolean) -> boolean
+;;Purpose: Determine if X is in the given list
+(define (member? x lst eq-func) (for/or ([L lst]) (eq-func x L)))
+;;(X -> boolean) (listof X) -> boolean
+;;Purpose: Determines if X is is the given list
+(define (ormap f lst) (for/or ([L lst]) (f L)))
+;;(X -> Y) (listof X) -> (listof Y)
+;;Purpose: maps the given functon over the list
+(define (map2 f lst) (for/list ([L lst]) (f L)))
+;;(X -> boolean) (listof X) -> (listof X)
+;;Purpose: filters the list using the given predicate
+(define (filter f lst) (for/list ([L lst] #:when (f L)) L))
 
-(define ndfa-jump-prev
-  (jump-prev-inv  E-SCENE-WIDTH
-                  NDFA-E-SCENE-HEIGHT
-                  NODE-SIZE
-                  DEFAULT-ZOOM-CAP
-                  DEFAULT-ZOOM-FLOOR
-                  PERCENT-BORDER-GAP
-                  imsg-state-ndfa-invs-zipper))
+;;(X -> Y) :Purpose: A function to retrieve the index for a tm-config from a trace
+(define get-mttm-config-index-frm-trace (compose1 mttm-config-index trace-config zipper-current))
+;;(X -> Y) :Purpose: A function to retrieve the index for a tm-config from a trace
+(define get-tm-config-index-frm-trace (compose1 tm-config-index trace-config zipper-current))
+;;(X -> Y) :Purpose: A function to retrieve the index for a pda-config from a trace
+(define get-pda-config-index-frm-trace (compose1 pda-config-index trace-config zipper-current))
+;;(X -> Y) :Purpose: A function to retrieve the index for a ndfa-config from a trace
+(define get-ndfa-config-index-frm-trace (compose1 ndfa-config-index trace-config zipper-current))
 
-(define tm-jump-next
-  (jump-next-inv  E-SCENE-WIDTH
-                  NDFA-E-SCENE-HEIGHT
-                  NODE-SIZE
-                  DEFAULT-ZOOM-CAP
-                  DEFAULT-ZOOM-FLOOR
-                  PERCENT-BORDER-GAP
-                  imsg-state-tm-invs-zipper))
+;;(X -> Y) :Purpose: A function to retrieve the index for a mttm-config from the invs-zipper
+(define get-mttm-config-index-frm-invs (compose1 mttm-config-index #;first zipper-current))
+;;(X -> Y) :Purpose: A function to retrieve the index for a tm-config from the invs-zipper
+(define get-tm-config-index-frm-invs (compose1 tm-config-index zipper-current))
+;;(X -> Y) :Purpose: A function to retrieve the index for a pda-config from the invs-zipper
+(define get-pda-config-index-frm-invs (compose1 pda-config-index first zipper-current))
+;;(X -> Y) :Purpose: A function to retrieve the index for a ndfa-config from the invs-zipper
+(define get-ndfa-config-index-frm-invs (compose1 ndfa-config-index first zipper-current))
 
-(define tm-jump-prev
-  (jump-prev-inv  E-SCENE-WIDTH
-                  NDFA-E-SCENE-HEIGHT
-                  NODE-SIZE
-                  DEFAULT-ZOOM-CAP
-                  DEFAULT-ZOOM-FLOOR
-                  PERCENT-BORDER-GAP
-                  imsg-state-tm-invs-zipper))
+(define SM-VIZ-FONT-SIZE 18)
 
-(define mttm-jump-next
-  (jump-next-inv  E-SCENE-WIDTH
-                  NDFA-E-SCENE-HEIGHT
-                  NODE-SIZE
-                  DEFAULT-ZOOM-CAP
-                  DEFAULT-ZOOM-FLOOR
-                  PERCENT-BORDER-GAP
-                  imsg-state-mttm-invs-zipper))
 
-(define mttm-jump-prev
-  (jump-prev-inv  E-SCENE-WIDTH
-                  NDFA-E-SCENE-HEIGHT
-                  NODE-SIZE
-                  DEFAULT-ZOOM-CAP
-                  DEFAULT-ZOOM-FLOOR
-                  PERCENT-BORDER-GAP
-                  imsg-state-mttm-invs-zipper))
+(define qempty? treelist-empty?)
 
-(define viz-go-next
-  (go-next E-SCENE-WIDTH
-           NDFA-E-SCENE-HEIGHT
-           NODE-SIZE
-           DEFAULT-ZOOM-CAP
-           DEFAULT-ZOOM-FLOOR
-           PERCENT-BORDER-GAP))
+(define E-QUEUE empty-treelist) 
 
-(define viz-go-prev
-  (go-prev E-SCENE-WIDTH
-           NDFA-E-SCENE-HEIGHT
-           NODE-SIZE
-           DEFAULT-ZOOM-CAP
-           DEFAULT-ZOOM-FLOOR
-           PERCENT-BORDER-GAP))
+;; (qof X) → X throws error
+;; Purpose: Return first X of the given queue
+(define (qfirst a-qox)
+  (if (qempty? a-qox)
+      (error "qfirst applied to an empty queue")
+      (treelist-first a-qox)))
 
-(define viz-go-to-begin
-  (go-to-begin E-SCENE-WIDTH
-               NDFA-E-SCENE-HEIGHT
-               NODE-SIZE
-               DEFAULT-ZOOM-CAP
-               DEFAULT-ZOOM-FLOOR
-               PERCENT-BORDER-GAP))
+;; (listof X) (qof X) → (qof X)
+;; Purpose: Add the given list of X to the given queue of X
+(define (enqueue a-lox a-qox) (treelist-append a-qox a-lox))
 
-(define viz-go-to-end
-  (go-to-end E-SCENE-WIDTH
-             NDFA-E-SCENE-HEIGHT
-             NODE-SIZE
-             DEFAULT-ZOOM-CAP
-             DEFAULT-ZOOM-FLOOR
-             PERCENT-BORDER-GAP))
+;; (qof X) → (qof X) throws error
+;; Purpose: Return the rest of the given queue
+(define (dequeue a-qox)
+  (if (qempty? a-qox)
+      (error "dequeue applied to an empty queue")
+      (treelist-rest a-qox)))
+;;tm -> tm-struct
+;;Purpose: Converts the tm into a tm structure
+(define (remake-tm M)
+  ;;(listof rules) -> (treelistof rule-struct)
+  ;;Purpose: Converts the rules from the given tm to rule-structs
+  (define (remake-rules a-lor)
+    (for/treelist ([tm-rule a-lor])
+      (rule (first (first tm-rule)) (second (first tm-rule))
+            (first (second tm-rule)) (second (second tm-rule)))))
+  (tm (tm-getstates M)
+      (tm-getalphabet M)
+      (remake-rules (tm-getrules M))
+      (tm-getstart M)
+      (tm-getfinals M)
+      (if (eq? (tm-whatami? M) 'tm-language-recognizer) (tm-getaccept M) 'none)
+      (tm-whatami? M)))
 
-(define viz-zoom-in
-  (zoom-in E-SCENE-WIDTH
-           NDFA-E-SCENE-HEIGHT
-           ZOOM-INCREASE
-           ZOOM-DECREASE
-           NODE-SIZE
-           PERCENT-BORDER-GAP
-           DEFAULT-ZOOM-CAP
-           DEFAULT-ZOOM))
+;;Mttm -> mttm-struct
+;;Purpose: Converts a mttm interface into the mttm structure
+(define (remake-mttm M)
+  ;;(listof rule) -> (treelistof rule-struct)
+  ;;Purose: Converts a rule into a rule-struct
+  (define (remake-rules a-lor)
+    (for/treelist ([mttm-rule a-lor])
+      (rule (first (first mttm-rule)) (second (first mttm-rule))
+            (first (second mttm-rule)) (second (second mttm-rule)))))
+  (mttm (mttm-get-states M)
+        (mttm-get-sigma M)
+        (mttm-get-start M)
+        (mttm-get-finals M)
+        (remake-rules (mttm-get-rules M))
+        (M 'get-numtapes)
+        (if (eq? (mttm-what-am-i M) 'mttm-language-recognizer) (mttm-get-accept M) 'none)
+        (mttm-what-am-i M)))
 
-(define viz-zoom-out
-  (zoom-out E-SCENE-WIDTH
-            NDFA-E-SCENE-HEIGHT
-            ZOOM-INCREASE
-            ZOOM-DECREASE
-            NODE-SIZE
-            PERCENT-BORDER-GAP
-            DEFAULT-ZOOM-CAP
-            DEFAULT-ZOOM))
 
-(define viz-max-zoom-out
-  (max-zoom-out E-SCENE-WIDTH
-                NDFA-E-SCENE-HEIGHT
-                ZOOM-INCREASE
-                ZOOM-DECREASE
-                NODE-SIZE
-                PERCENT-BORDER-GAP
-                DEFAULT-ZOOM-CAP
-                DEFAULT-ZOOM))
+(define AB*B*UAB*
+  (make-unchecked-ndfa '(S K B C H)
+             '(a b)
+             'S
+             '(H)
+             `((S ,EMP K) (S a C)
+                          (K a B) (K ,EMP H)
+                          (B b K)
+                          (C ,EMP H)
+                          (H b H))))
 
-(define viz-max-zoom-in
-  (max-zoom-in E-SCENE-WIDTH
-               NDFA-E-SCENE-HEIGHT
-               ZOOM-INCREASE
-               ZOOM-DECREASE
-               NODE-SIZE
-               PERCENT-BORDER-GAP
-               DEFAULT-ZOOM-CAP
-               DEFAULT-ZOOM))
+(define a* (make-unchecked-ndpda '(K H)
+                                 '(a b)
+                                 '(a)
+                                 'K
+                                 '(H)
+                                 `(((K ,EMP ,EMP)(H ,EMP))
+                                   ((H a ,EMP)(H ,EMP)))))
 
-(define viz-reset-zoom
-  (reset-zoom E-SCENE-WIDTH
-              NDFA-E-SCENE-HEIGHT
-              ZOOM-INCREASE
-              ZOOM-DECREASE
-              NODE-SIZE
-              PERCENT-BORDER-GAP
-              DEFAULT-ZOOM-CAP
-              DEFAULT-ZOOM))
+(define EVEN-AS-&-BS (remake-tm (make-unchecked-tm '(K H I B S)
+                                                   '(a b)
+                                                   `(((K ,BLANK) (S ,BLANK))
+                                                     ((K a) (H ,RIGHT)) ((H a) (K ,RIGHT)) ((H b) (B ,RIGHT)) ((B b) (H ,RIGHT))
+                                                     ((K b) (I ,RIGHT)) ((I b) (K ,RIGHT)) ((I a) (B ,RIGHT)) ((B a) (I ,RIGHT)))
+                                                   'K
+                                                   '(S)
+                                                   'S)))
+
+(define ww (remake-mttm (make-unchecked-mttm '(K H T F E B W D M)
+                                '(a b)
+                                'K
+                                '(M)
+                                (list
+                                 (list (list 'K (list BLANK BLANK)) ;;<--- start
+                                       (list 'H (list RIGHT RIGHT))) 
+                                 (list (list 'H (list 'a BLANK)) ;;<---- PHASE 1: read a in w 
+                                       (list 'T (list 'a 'a)))
+                                 (list (list 'T (list 'a 'a))
+                                       (list 'H (list RIGHT RIGHT)))
+                                 (list (list 'H (list 'b BLANK)) ;;<---- PHASE 1: read b in w
+                                       (list 'F (list 'b 'b)))
+                                 (list (list 'F (list 'b 'b))
+                                       (list 'H (list RIGHT RIGHT)))
+                                 (list (list 'H (list BLANK BLANK)) ;;<--- PHASE 2: Go to beginning of t1
+                                       (list 'E (list BLANK LEFT)))
+                                 (list (list 'E (list BLANK 'a))
+                                       (list 'E (list BLANK LEFT)))
+                                 (list (list 'E (list BLANK 'b))
+                                       (list 'E (list BLANK LEFT)))
+                                 (list (list 'E (list BLANK BLANK)) ;;<---- PHASE 3: read w on t1 AND write w on t0
+                                       (list 'W (list BLANK RIGHT)))
+                                 (list (list 'W (list BLANK 'a))
+                                       (list 'D (list 'a 'a)))
+                                 (list (list 'D (list 'a 'a))
+                                       (list 'W (list RIGHT RIGHT)))
+                                 (list (list 'W (list BLANK 'b))
+                                       (list 'B (list 'b 'b)))
+                                 (list (list 'B (list 'b 'b))
+                                       (list 'W (list RIGHT RIGHT)))
+                                 (list (list 'W (list BLANK BLANK))
+                                       (list 'M (list BLANK BLANK)))
+                                 )        
+                                2)))
+
+(define a^nb^n (remake-mttm (make-unchecked-mttm '(K H R E C O M T)
+                                       '(a b)
+                                       'K
+                                       '(T)
+                                       (list
+                                        (list (list 'K (list BLANK BLANK BLANK));; <-- Starting 
+                                              (list 'H (list RIGHT RIGHT RIGHT))) 
+                                        (list (list 'H (list 'a BLANK BLANK)) ;;<-- Phase 1, reads a's
+                                              (list 'R (list 'a 'a BLANK)))
+                                        (list (list 'R (list 'a 'a BLANK))
+                                              (list 'H (list RIGHT RIGHT BLANK))) 
+                                        (list (list 'H (list 'b BLANK BLANK)) ;;<-- phase 2, read b's
+                                              (list 'E (list 'b BLANK 'b)))
+                                        (list (list 'E (list 'b BLANK 'b))
+                                              (list 'C (list RIGHT BLANK RIGHT)))
+                                        (list (list 'C (list 'b BLANK BLANK))
+                                              (list 'E (list 'b BLANK 'b))) 
+                                        (list (list 'C (list 'b BLANK BLANK))
+                                              (list 'O (list RIGHT BLANK BLANK)))
+                                        (list (list 'O (list BLANK BLANK BLANK)) ;;<-- phase 4, matching as, bs, cs
+                                              (list 'M (list BLANK LEFT LEFT)))
+                                        (list (list 'M (list BLANK 'a 'b))
+                                              (list 'M (list BLANK LEFT LEFT)))
+                                        (list (list 'M (list BLANK BLANK BLANK)) ;;<-phase 5, accept (if possible)
+                                              (list 'T (list BLANK BLANK BLANK)))
+                                        )
+                                       3
+                                       'T)))
+
+(define a^nb^nc^n (remake-mttm (make-unchecked-mttm '(K H R E C O M T F)
+                                       '(a b c)
+                                       'K
+                                       '(F)
+                                       (list
+                                        (list (list 'K (list BLANK BLANK BLANK BLANK));; <-- Starting 
+                                              (list 'H (list RIGHT RIGHT RIGHT RIGHT))) 
+                                        (list (list 'H (list 'a BLANK BLANK BLANK)) ;;<-- Phase 1, reads a's
+                                              (list 'R (list 'a 'a BLANK BLANK)))
+                                        (list (list 'R (list 'a 'a BLANK BLANK))
+                                              (list 'H (list RIGHT RIGHT BLANK BLANK))) 
+                                        (list (list 'H (list 'b BLANK BLANK BLANK)) ;;<-- phase 2, read b's
+                                              (list 'E (list 'b BLANK 'b BLANK)))
+                                        (list (list 'E (list 'b BLANK 'b BLANK))
+                                              (list 'C (list RIGHT BLANK RIGHT BLANK)))
+                                        (list (list 'C (list 'b BLANK BLANK BLANK))
+                                              (list 'E (list 'b BLANK 'b BLANK))) 
+                                        (list (list 'C (list 'c BLANK BLANK BLANK)) ;;<-- phase 3, read c's
+                                              (list 'O (list 'c BLANK BLANK 'c)))
+                                        (list (list 'O (list 'c BLANK BLANK 'c))
+                                              (list 'M (list RIGHT BLANK BLANK RIGHT)))
+                                        (list (list 'M (list 'c BLANK BLANK BLANK)) 
+                                              (list 'O (list 'c BLANK BLANK 'c)))
+                                        (list (list 'M (list BLANK BLANK BLANK BLANK)) ;;<-- phase 4, matching as, bs, cs
+                                              (list 'T (list BLANK LEFT LEFT LEFT)))
+                                        (list (list 'T (list BLANK 'a 'b 'c))
+                                              (list 'T (list BLANK LEFT LEFT LEFT)))
+                                        (list (list 'T (list BLANK BLANK BLANK BLANK)) ;;<-phase 5, accept (if possible)
+                                              (list 'F (list BLANK BLANK BLANK BLANK)))
+                                        )
+                                       4
+                                       'F)))
+
+(define E-SCENE-TOOLS (e-scene-tools-generator HEIGHT-BUFFER LETTER-KEY-WIDTH-BUFFER SM-VIZ-FONT-SIZE
+                                                   (list (list ARROW-UP-KEY "Restart")
+                                                         (list ARROW-RIGHT-KEY "Forward")
+                                                         (list ARROW-LEFT-KEY "Backward")
+                                                         (list ARROW-DOWN-KEY "Finish")
+                                                         (list CURSOR "Hold to drag")
+                                                         (list W-KEY "Zoom in")
+                                                         (list S-KEY "Zoom out")
+                                                         (list R-KEY "Min zoom")
+                                                         (list E-KEY "Mid zoom")
+                                                         (list F-KEY "Max zoom")
+                                                         (list A-KEY "Word start")
+                                                         (list D-KEY "Word end")
+                                                         (list J-KEY "Prv not inv")
+                                                         (list L-KEY "Nxt not inv"))))
+
+(define MTTM-E-SCENE-TOOLS (e-scene-tools-generator HEIGHT-BUFFER LETTER-KEY-WIDTH-BUFFER SM-VIZ-FONT-SIZE
+                                                    (list (list ARROW-UP-KEY "Restart")
+                                                          (list ARROW-RIGHT-KEY "Forward")
+                                                          (list ARROW-LEFT-KEY "Backward")
+                                                          (list ARROW-DOWN-KEY "Finish")
+                                                          (list CURSOR "Hold to drag")
+                                                          (list W-KEY "Zoom in")
+                                                          (list S-KEY "Zoom out")
+                                                          (list R-KEY "Min zoom")
+                                                          (list E-KEY "Tape up")
+                                                          (list F-KEY "Tape down")
+                                                          (list A-KEY "Word start")
+                                                          (list D-KEY "Word end")
+                                                          (list J-KEY "Prv not inv")
+                                                          (list L-KEY "Nxt not inv"))))

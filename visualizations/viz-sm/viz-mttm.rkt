@@ -15,9 +15,9 @@
          "../../fsm-core/private/constants.rkt"
          "../../fsm-core/private/mtape-tm.rkt" 
          "david-imsg-state.rkt"
-         (except-in "david-viz-constant.rkt"
-                    remake-mttm)
          (except-in "david-viz-constants.rkt"
+                    remake-mttm)
+         (except-in "david-imsg-dimensions.rkt"
                     FONT-SIZE)
          "default-informative-messages.rkt")
 

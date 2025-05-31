@@ -5,7 +5,7 @@
          "../viz-lib/zipper.rkt"
          "../viz-lib/viz-constants.rkt"
          "david-imsg-state.rkt"
-         "david-viz-constant.rkt"
+         "david-viz-constants.rkt"
          "../../fsm-core/private/constants.rkt")
 
 (provide ndfa-create-draw-informative-message

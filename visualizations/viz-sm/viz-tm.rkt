@@ -15,8 +15,8 @@
          "../../fsm-core/private/constants.rkt"
          "../../fsm-core/private/tm.rkt"
          "david-imsg-state.rkt"
-         "david-viz-constant.rkt"
-         (except-in "david-viz-constants.rkt"
+         "david-viz-constants.rkt"
+         (except-in "david-imsg-dimensions.rkt"
                     FONT-SIZE)
          "default-informative-messages.rkt")
 

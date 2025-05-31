@@ -14,12 +14,11 @@
          "../../fsm-core/private/pda.rkt"
          "../../fsm-core/private/misc.rkt"
          "default-informative-messages.rkt"
-         "david-viz-constant.rkt"
-         ;profile-flame-graph
+         "david-viz-constants.rkt"
          (except-in "../viz-lib/viz-constants.rkt"
                     INS-TOOLS-BUFFER)
          "david-imsg-state.rkt"
-         (except-in "david-viz-constants.rkt"
+         (except-in "david-imsg-dimensions.rkt"
                     FONT-SIZE))
 
 (provide pda-viz)
