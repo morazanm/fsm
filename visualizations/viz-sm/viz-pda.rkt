@@ -23,6 +23,7 @@
 
 (provide pda-viz)
 
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define FONT-SIZE 18)
 (define get-index (compose1 pda-config-index zipper-current))
@@ -260,15 +261,7 @@ farthest-consumed-input | is the portion the ci that the machine consumed the mo
                                            empty-treelist
                                            (set)
                                            1)])
-    (make-computations starting-computation)))
-
-;;(X -> Y) (X -> Y) (X -> Y) (X -> Y) (listof (listof X)) -> (listof (listof X))
-;;Purpose: filtermaps the given f-on-x on the given (listof (listof X))
-(define (filter-map-acc filter-func map-func bool-func accessor a-lolox)
-  (filter-map (λ (x)
-                (and (bool-func (filter-func x))
-                     (map-func (accessor x))))
-              a-lolox))
+    (make-computations starting-computation)))  
 
 ;;(listof rules) -> (treelistof rule-struct)
 ;;Purpose: Converts the (listof rules) into a (treelistof rule-struct)
@@ -288,36 +281,38 @@ farthest-consumed-input | is the portion the ci that the machine consumed the mo
   (foldl (λ (state graph)
            (let ([member-of-held-inv? (member? state held-inv eq?)]
                  [member-of-fail-inv? (member? state fail-inv eq?)]
-                 [member-of-cut-off?  (member? state cut-off eq?)])
+                 [member-of-cut-off?  (member? state cut-off eq?)]
+                 [graph-attributes (graph-attributes-node-attributes default-graph-attributes)])
              (add-node graph
                        state
                        #:atb (hash 'color (if (eq? (pda-start M) state)
-                                              (color-pallete-start-state-color color-scheme)
-                                              (color-pallete-font-color color-scheme))
-                                   'style (cond [(and member-of-held-inv? member-of-fail-inv?) 'wedged]
-                                                [(or member-of-held-inv?
-                                                     member-of-fail-inv?
-                                                     member-of-cut-off?) 'filled]
-                                                [(eq? state dead) 'dashed]
-                                                [else 'solid])
-                                   'shape (if (member? state (pda-finals M) eq?) 'doublecircle 'circle)
-                                   'fillcolor (cond [member-of-cut-off? (color-pallete-cut-off-color color-scheme)]
-                                                    [(and member-of-held-inv? member-of-fail-inv?) (color-pallete-split-inv-color color-scheme)]
-                                                    [member-of-held-inv? (color-pallete-inv-hold-color color-scheme)]
-                                                    [member-of-fail-inv? (color-pallete-inv-fail-color color-scheme)]
-                                                    [else (color-pallete-blank-color color-scheme)])
+                                              (color-palette-start-state-color color-scheme)
+                                              (color-palette-font-color color-scheme))
+                                   'style (cond [(and member-of-held-inv? member-of-fail-inv?)
+                                                 (node-data-bi-inv-node graph-attributes)]
+                                                [(or member-of-held-inv? member-of-fail-inv? member-of-cut-off?)
+                                                 (node-data-inv-node graph-attributes)]
+                                                [(eq? state dead) (node-data-dead-node graph-attributes)]
+                                                [else (node-data-regular-node graph-attributes)])
+                                   'shape (if (member? state (pda-finals M) eq?)
+                                              (node-data-final-state graph-attributes)
+                                              (node-data-regular-state graph-attributes))
+                                   'fillcolor (cond [member-of-cut-off? (color-palette-cut-off-color color-scheme)]
+                                                    [(and member-of-held-inv? member-of-fail-inv?) (color-palette-split-inv-color color-scheme)]
+                                                    [member-of-held-inv? (color-palette-inv-hold-color color-scheme)]
+                                                    [member-of-fail-inv? (color-palette-inv-fail-color color-scheme)]
+                                                    [else (color-palette-blank-color color-scheme)])
                                    'label state
-                                   'fontcolor (color-pallete-font-color color-scheme)
+                                   'fontcolor (color-palette-font-color color-scheme)
                                    'fontname (if (and member-of-held-inv? member-of-fail-inv?)
-                                                 "times-bold"
-                                                 "Times-Roman")))))
+                                                 (node-data-bi-inv-font graph-attributes)
+                                                 (node-data-regular-font graph-attributes))))))
          dgraph
          (pda-states M)))
 
 ;;graph machine -> graph
 ;;Purpose: Creates the edges for the given graph
-(define (make-edge-graph dgraph rules current-tracked-rules current-accept-rules current-reject-rules accepted? dead color-scheme)
-
+(define (make-edge-graph dgraph rules current-tracked-rules current-accept-rules current-reject-rules accepted? dead color-scheme) 
   ;;rule symbol (listof rules) -> boolean
   ;;Purpose: Determines if the given rule is a member of the given (listof rules)
   ;;         or similiar to one of the rules in the given (listof rules) 
@@ -332,28 +327,33 @@ farthest-consumed-input | is the portion the ci that the machine consumed the mo
   (foldl (λ (rule graph)
            (let ([found-tracked-rule? (find-rule? rule dead current-tracked-rules)]
                  [found-accept-rule? (find-rule? rule dead current-accept-rules)]
-                 [found-reject-rule? (find-rule? rule dead current-reject-rules)])             
+                 [found-reject-rule? (find-rule? rule dead current-reject-rules)]
+                 [graph-attributes (graph-attributes-edge-attributes default-graph-attributes)])             
              (add-edge graph
                        (triple-read rule)
                        (triple-source rule)
                        (triple-pop rule)
                        #:atb (hash 'color
                                    (cond [(and found-tracked-rule? found-accept-rule?)
-                                          (color-pallete-split-accept-color color-scheme)] ;;<--- watch out if coloring issue
+                                          (color-palette-split-accept-color color-scheme)] ;;<--- watch out if coloring issue
                                          [(and found-tracked-rule? found-reject-rule? (not accepted?))
-                                          (color-pallete-split-reject-color color-scheme)] ;;<-- may cause issue
+                                          (color-palette-split-reject-color color-scheme)] ;;<-- may cause issue
                                          [(and found-tracked-rule? found-reject-rule? accepted?)
-                                          (color-pallete-split-accept-reject-color color-scheme)] ;;<-- may cause issue
+                                          (color-palette-split-accept-reject-color color-scheme)] ;;<-- may cause issue
                                          [(and found-tracked-rule? found-accept-rule? found-reject-rule? accepted?)
-                                          (color-pallete-bi-accept-reject-color color-scheme)]
-                                         [(and accepted? found-tracked-rule?) (color-pallete-shown-accept-color color-scheme)] 
-                                         [found-tracked-rule?  (color-pallete-shown-reject-color color-scheme)]
-                                         [found-accept-rule?   (color-pallete-other-accept-color color-scheme)]
-                                         [found-reject-rule?   (color-pallete-other-reject-color color-scheme)]
-                                         [else (color-pallete-font-color color-scheme)])
-                                   'style (cond [(eq? (triple-pop rule) dead) 'dashed]
-                                                [(and found-tracked-rule? accepted?) 'bold]
-                                                [else 'solid])
+                                          (color-palette-bi-accept-reject-color color-scheme)]
+                                         [(and accepted? found-tracked-rule?) (color-palette-shown-accept-color color-scheme)] 
+                                         [found-tracked-rule?  (color-palette-shown-reject-color color-scheme)]
+                                         [found-accept-rule?   (color-palette-other-accept-color color-scheme)]
+                                         [found-reject-rule?   (color-palette-other-reject-color color-scheme)]
+                                         [else (color-palette-font-color color-scheme)])
+                                   'style (cond [(and found-tracked-rule? accepted?)
+                                                 (edge-data-accept-edge graph-attributes)]
+                                                [(and (or found-tracked-rule? found-reject-rule?) (not accepted?))
+                                                 (edge-data-reject-edge graph-attributes)]
+                                                [(eq? (triple-pop rule) dead)
+                                                 (edge-data-dead-edge graph-attributes)]
+                                                [else (edge-data-regular-edge graph-attributes)])
                                    'fontsize FONT-SIZE))))
          dgraph
          rules))
@@ -570,11 +570,7 @@ farthest-consumed-input | is the portion the ci that the machine consumed the mo
                      [invs-zipper (cond [(zipper-empty? imsg-state-invs-zipper) imsg-state-invs-zipper]
                                         [(and (not (zipper-at-end? imsg-state-invs-zipper))
                                               (>= (add1 (get-pda-config-index-frm-trace imsg-state-shown-accepting-trace))
-                                                  (pda-config-index (first (zipper-current imsg-state-invs-zipper)
-                                                                            #;(first (zipper-unprocessed imsg-state-invs-zipper))))))
-                                         #;(and (not (zipper-at-end? imsg-state-invs-zipper))
-                                              (>= (get-pda-config-index-frm-trace imsg-state-shown-accepting-trace)
-                                                  (pda-config-index (first (first (zipper-unprocessed imsg-state-invs-zipper))))))
+                                                  (pda-config-index (first (zipper-current imsg-state-invs-zipper)))))
                                          (zipper-next imsg-state-invs-zipper)]
                                         [else imsg-state-invs-zipper])])])])))
 
@@ -659,11 +655,7 @@ farthest-consumed-input | is the portion the ci that the machine consumed the mo
                      [invs-zipper (cond [(zipper-empty? imsg-state-invs-zipper) imsg-state-invs-zipper]
                                         [(and (not (zipper-at-begin? imsg-state-invs-zipper))
                                               (<= (sub1 (get-pda-config-index-frm-trace imsg-state-shown-accepting-trace))
-                                                  (pda-config-index (first (zipper-current imsg-state-invs-zipper)
-                                                                            #;(first (zipper-processed imsg-state-invs-zipper))))))
-                                         #;(and (not (zipper-at-begin? imsg-state-invs-zipper))
-                                              (<= (get-pda-config-index-frm-trace imsg-state-shown-accepting-trace)
-                                                  (pda-config-index (first (first (zipper-processed imsg-state-invs-zipper))))))
+                                                  (pda-config-index (first (zipper-current imsg-state-invs-zipper)))))
                                          (zipper-prev imsg-state-invs-zipper)]
                                         [else imsg-state-invs-zipper])])])])))
 
@@ -741,8 +733,6 @@ farthest-consumed-input | is the portion the ci that the machine consumed the mo
         [imsg-state-stack (imsg-state-pda-stack (informative-messages-component-state (viz-state-informative-messages a-vs)))]
         [imsg-state-invs-zipper (imsg-state-pda-invs-zipper (informative-messages-component-state (viz-state-informative-messages a-vs)))])
     (if (or (zipper-empty? imsg-state-invs-zipper)
-            #;(and (zipper-at-begin? imsg-state-invs-zipper)
-                 (not (zipper-at-end? imsg-state-invs-zipper)))
             (< (get-index imsg-state-stack)
                (get-pda-config-index-frm-invs imsg-state-invs-zipper)))
         a-vs
@@ -789,8 +779,6 @@ farthest-consumed-input | is the portion the ci that the machine consumed the mo
         [imsg-state-stack (imsg-state-pda-stack (informative-messages-component-state (viz-state-informative-messages a-vs)))]
         [imsg-state-invs-zipper (imsg-state-pda-invs-zipper (informative-messages-component-state (viz-state-informative-messages a-vs)))])
     (if (or (zipper-empty? imsg-state-invs-zipper)
-            #;(and (zipper-at-end? imsg-state-invs-zipper)
-                 (not (zipper-at-begin? imsg-state-invs-zipper)))
             (> (get-index imsg-state-stack)
                (get-pda-config-index-frm-invs imsg-state-invs-zipper)))
         a-vs
@@ -875,9 +863,9 @@ farthest-consumed-input | is the portion the ci that the machine consumed the mo
          (pda-getfinals M)
          (remake-rules (append (pda-getrules M) rules-to-dead dead-read-rules dead-pop-rules)))))
 
-;;pda word [boolean] [natnum] . -> (void)
+;;pda word [boolean] [natnum] [symbol] . (listof (list state (w s -> boolean))) -> (void)
 ;;Purpose: Visualizes the given pda processing the given word
-(define (pda-viz M a-word #:add-dead [add-dead #f] #:cut-off [cut-off 100] invs)
+(define (pda-viz M a-word #:add-dead [add-dead #f] #:cut-off [cut-off 100] #:palette [palette 'default] invs)
   ;;(listof configuration) (listof rules) (listof configurations) -> (listof configurations)
   ;;Purpose: Returns a propers trace for the given (listof configurations) that accurately
   ;;         tracks each transition
@@ -980,7 +968,6 @@ farthest-consumed-input | is the portion the ci that the machine consumed the mo
   ;;(listof computation) (listof computatuon) -> computation
   ;;Purpose: Finds the longest computation for rejecting traces
   (define (find-longest-computation a-LoRT acc)
-
     ;; (listof computation) (listof symbol) -> (listof symbol)
     ;; Purpose: Returns the most consumed input
     ;;acc = the word with smallest unconsumed input
@@ -990,8 +977,7 @@ farthest-consumed-input | is the portion the ci that the machine consumed the mo
                 (length (pda-config-word (treelist-last (computation-LoC acc)))))
              (get-farthest-consumed (rest LoC) (first LoC))]
             [else (get-farthest-consumed (rest LoC) acc)]))
-    
-    (cond [(empty? a-LoRT) (get-farthest-consumed (rest acc) (first acc))]
+       (cond [(empty? a-LoRT) (get-farthest-consumed (rest acc) (first acc))]
           [(> (computation-length (first a-LoRT)) (computation-length (first acc)))
            (find-longest-computation (rest a-LoRT) (list (first a-LoRT)))]
           [(= (computation-length (first a-LoRT)) (computation-length (first acc)))
@@ -1074,7 +1060,7 @@ farthest-consumed-input | is the portion the ci that the machine consumed the mo
                                                            (add1 (pda-config-index last-word))
                                                            (pda-config-index last-word))])))]
 
-         [stack (if (or #;(not any-consumed?) (eq? (pda-config-word most-consumed-word) FULLY-CONSUMED))
+         [stack (if (eq? (pda-config-word most-consumed-word) FULLY-CONSUMED)
                     pre-stack
                     (append pre-stack (list (last pre-stack))))]
          [CIs (remake-ci a-word)]

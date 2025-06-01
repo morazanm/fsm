@@ -63,16 +63,28 @@ rules are a (listof rule-structs)
 ;;upci -> the unprocessed consumed input | (listof symbol)
 ;;pci  -> the processed consumed input   | (listof symbol)
 (struct ci (upci pci) #:transparent)
-
-
-(struct color-pallete (shown-accept-color other-accept-color shown-reject-color other-reject-color cut-off-color inv-hold-color inv-fail-color
+;; a structure containing the color scheme used in the vizs 
+(struct color-palette (shown-accept-color other-accept-color shown-reject-color other-reject-color cut-off-color inv-hold-color inv-fail-color
                        split-inv-color split-accept-color split-accept-reject-color split-reject-color bi-accept-reject-color
                        font-color blank-color computation-length-color imsg-accept-color imsg-reject-color ismg-cut-off-color start-state-color
                        faded-word-color))
 
-(define standard-color-scheme (color-pallete 'forestgreen 'green 'chocolate1 'violetred 'darkgoldenrod2 'chartreuse4 'red2
+(define standard-color-scheme (color-palette 'forestgreen 'green 'chocolate1 'violetred 'darkgoldenrod2 'chartreuse4 'red2
                                 "red:chartreuse4" "forestgreen:green" "forestgreen:violetred"  "chocolate1:violetred" "forestgreen:green:violetred"
                                 'black 'white 'brown (make-color 34 139 34) 'red (make-color 238 173 14) 'green 'gray))
+;;node-attributes -> all the attributes needed to create the node graphs for the viz | node-data
+;;edge-attributes -> all the attributes needed to create the edge graphs for the viz | edge-data
+(struct graph-attributes (node-attributes edge-attributes))
+
+(struct node-data (inv-node bi-inv-node dead-node regular-node final-state accepting-final-state regular-state bi-inv-font regular-font))
+
+(define default-node-attributes (node-data 'filled 'wedged 'dashed 'solid 'doublecirlce 'doubleoctagon 'circle "times-bold" "Times-Roman"))
+
+(struct edge-data (accept-edge reject-edge dead-edge regular-edge))
+
+(define default-edge-attributes (edge-data 'bold 'dashed 'dotted 'solid))
+
+(define default-graph-attributes (graph-attributes default-node-attributes default-edge-attributes))
 
 #|
 A computation is a structure: (computation LoC LoR visited length)
@@ -96,7 +108,7 @@ action is the action to be performed on the tape | TM-ACTION
 |#
 (struct rule (source read destination action) #:transparent)
 
-
+;; TM observers
 (define (tm-getalphabet m) (m '() 0 'get-alphabet)) 
   
 (define (tm-getstates m) (m '() 0 'get-states))
@@ -126,6 +138,14 @@ action is the action to be performed on the tape | TM-ACTION
 ;;Purpose: filters the list using the given predicate
 (define (filter f lst) (for/list ([L lst] #:when (f L)) L))
 
+;;(X -> Y) (X -> Y) (X -> Y) (X -> Y) (listof (listof X)) -> (listof (listof X))
+;;Purpose: filtermaps the given f-on-x on the given (listof (listof X))
+(define (filter-map-acc filter-func map-func bool-func accessor a-lolox)
+  (filter-map (λ (x)
+                (and (bool-func (filter-func x))
+                     (map-func (accessor x))))
+              a-lolox))
+
 ;;(X -> Y) :Purpose: A function to retrieve the index for a tm-config from a trace
 (define get-mttm-config-index-frm-trace (compose1 mttm-config-index trace-config zipper-current))
 ;;(X -> Y) :Purpose: A function to retrieve the index for a tm-config from a trace
@@ -136,7 +156,7 @@ action is the action to be performed on the tape | TM-ACTION
 (define get-ndfa-config-index-frm-trace (compose1 ndfa-config-index trace-config zipper-current))
 
 ;;(X -> Y) :Purpose: A function to retrieve the index for a mttm-config from the invs-zipper
-(define get-mttm-config-index-frm-invs (compose1 mttm-config-index #;first zipper-current))
+(define get-mttm-config-index-frm-invs (compose1 mttm-config-index zipper-current))
 ;;(X -> Y) :Purpose: A function to retrieve the index for a tm-config from the invs-zipper
 (define get-tm-config-index-frm-invs (compose1 tm-config-index zipper-current))
 ;;(X -> Y) :Purpose: A function to retrieve the index for a pda-config from the invs-zipper
@@ -145,7 +165,6 @@ action is the action to be performed on the tape | TM-ACTION
 (define get-ndfa-config-index-frm-invs (compose1 ndfa-config-index first zipper-current))
 
 (define SM-VIZ-FONT-SIZE 18)
-
 
 (define qempty? treelist-empty?)
 

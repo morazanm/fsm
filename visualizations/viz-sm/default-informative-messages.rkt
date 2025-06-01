@@ -26,19 +26,19 @@
     (if (empty? (rest loi))
         (first loi)
         (beside (first loi) (make-tape-img (rest loi) (add1 start-index)))))
-  (let* ([BLANK-COLOR (color-pallete-blank-color color-scheme)]
+  (let* ([BLANK-COLOR (color-palette-blank-color color-scheme)]
          [letter-imgs
           (build-list
            TAPE-SIZE
            (λ (i)
              (if (< (+ start-index i) (length tape))
                  (let [(tape-element (list-ref tape (+ start-index i)))
-                       (FONT-COLOR (color-pallete-font-color color-scheme))]
+                       (FONT-COLOR (color-palette-font-color color-scheme))]
                    (overlay (text (if (symbol? tape-element)
                                       (symbol->string tape-element)
                                       (number->string tape-element))
                                   FONT-SIZE
-                                  (cond [(empty? color-pair) (color-pallete-font-color color-scheme)]
+                                  (cond [(empty? color-pair) (color-palette-font-color color-scheme)]
                                         [(and (not (empty? (first color-pair)))
                                               (< (+ start-index i) (first (first color-pair))))
                                          (second (first color-pair))]
@@ -60,9 +60,9 @@
                            (zipper-empty? (imsg-state-tm-rules-used imsg-st)))
                        0
                        (zipper-current (imsg-state-tm-head-position imsg-st))))
-         (FONT-COLOR (color-pallete-font-color (imsg-state-tm-color-pallete imsg-st)))
-         (BLANK-COLOR (color-pallete-blank-color (imsg-state-tm-color-pallete imsg-st)))
-         (REJECT-COLOR (color-pallete-imsg-reject-color (imsg-state-tm-color-pallete imsg-st)))]
+         (FONT-COLOR (color-palette-font-color (imsg-state-tm-color-pallete imsg-st)))
+         (BLANK-COLOR (color-palette-blank-color (imsg-state-tm-color-pallete imsg-st)))
+         (REJECT-COLOR (color-palette-imsg-reject-color (imsg-state-tm-color-pallete imsg-st)))]
     (define (make-tape-img loi start-index)
       (if (empty? (rest loi))
           (above (first loi)
@@ -101,12 +101,12 @@
          [entire-word (append pci upci)]
          [pci-length (length pci)]
          [sub1-pci-length (sub1 pci-length)]
-         [FONT-COLOR (color-pallete-font-color (imsg-state-ndfa-color-pallete imsg-st))]
-         [BLANK-COLOR (color-pallete-blank-color (imsg-state-ndfa-color-pallete imsg-st))]
-         [REJECT-COLOR (color-pallete-imsg-reject-color (imsg-state-ndfa-color-pallete imsg-st))]
-         [ACCEPT-COLOR (color-pallete-imsg-accept-color (imsg-state-ndfa-color-pallete imsg-st))]
-         [FADED-WORD-COLOR (color-pallete-faded-word-color (imsg-state-ndfa-color-pallete imsg-st))]
-         [COMPUTATION-LENGTH-COLOR (color-pallete-computation-length-color (imsg-state-ndfa-color-pallete imsg-st))]
+         [FONT-COLOR (color-palette-font-color (imsg-state-ndfa-color-pallete imsg-st))]
+         [BLANK-COLOR (color-palette-blank-color (imsg-state-ndfa-color-pallete imsg-st))]
+         [REJECT-COLOR (color-palette-imsg-reject-color (imsg-state-ndfa-color-pallete imsg-st))]
+         [ACCEPT-COLOR (color-palette-imsg-accept-color (imsg-state-ndfa-color-pallete imsg-st))]
+         [FADED-WORD-COLOR (color-palette-faded-word-color (imsg-state-ndfa-color-pallete imsg-st))]
+         [COMPUTATION-LENGTH-COLOR (color-palette-computation-length-color (imsg-state-ndfa-color-pallete imsg-st))]
          [machine-decision (if (imsg-state-ndfa-accepted? imsg-st) 'accept 'reject)])
    (above/align
       'left
@@ -160,11 +160,7 @@
                                                       (if (> (length pci) TAPE-SIZE)
                                                           (imsg-state-ndfa-word-img-offset imsg-st)
                                                           0) 
-                                                      '()
-                                                      #;(if (eq? machine-decision 'reject)
-                                                          '()
-                                                          (list (list (length pci) ACCEPT-COLOR)
-                                                                '())))))])
+                                                      '())))])
       (text (format "The current number of possible computations is ~a (without repeated configurations). "
                      (number->string (hash-ref (imsg-state-ndfa-computation-lengths imsg-st)
                                               upci
@@ -194,13 +190,13 @@
          [machine-decision (if (imsg-state-pda-accepted? imsg-st) 'accept 'reject)]
          [farthest-consumed-input (pda-config-word (imsg-state-pda-farthest-consumed-input imsg-st))]
          [computation-has-cut-off? (imsg-state-pda-computation-has-cut-off? imsg-st)]
-         [FONT-COLOR (color-pallete-font-color (imsg-state-pda-color-pallete imsg-st))]
-         [BLANK-COLOR (color-pallete-blank-color (imsg-state-pda-color-pallete imsg-st))]
-         [REJECT-COLOR (color-pallete-imsg-reject-color (imsg-state-pda-color-pallete imsg-st))]
-         [ACCEPT-COLOR (color-pallete-imsg-accept-color (imsg-state-pda-color-pallete imsg-st))]
-         [FADED-WORD-COLOR (color-pallete-faded-word-color (imsg-state-pda-color-pallete imsg-st))]
-         [COMPUTATION-LENGTH-COLOR (color-pallete-computation-length-color (imsg-state-pda-color-pallete imsg-st))]
-         [CUT-OFF-COLOR (color-pallete-ismg-cut-off-color (imsg-state-pda-color-pallete imsg-st))]
+         [FONT-COLOR (color-palette-font-color (imsg-state-pda-color-pallete imsg-st))]
+         [BLANK-COLOR (color-palette-blank-color (imsg-state-pda-color-pallete imsg-st))]
+         [REJECT-COLOR (color-palette-imsg-reject-color (imsg-state-pda-color-pallete imsg-st))]
+         [ACCEPT-COLOR (color-palette-imsg-accept-color (imsg-state-pda-color-pallete imsg-st))]
+         [FADED-WORD-COLOR (color-palette-faded-word-color (imsg-state-pda-color-pallete imsg-st))]
+         [COMPUTATION-LENGTH-COLOR (color-palette-computation-length-color (imsg-state-pda-color-pallete imsg-st))]
+         [CUT-OFF-COLOR (color-palette-ismg-cut-off-color (imsg-state-pda-color-pallete imsg-st))]
          [FONT-SIZE 20])
     ;(displayln 
     (above/align
@@ -280,10 +276,7 @@
                                                       (if (> (length pci) TAPE-SIZE)
                                                           (imsg-state-pda-word-img-offset imsg-st)
                                                           0)
-                                                      '()
-                                                      #;(if (eq? machine-decision 'reject)
-                                                          '()
-                                                          (list (list (length pci) ACCEPT-COLOR) '())))))])
+                                                      '())))])
       (cond [(zipper-empty? (imsg-state-pda-stack imsg-st)) (text "aaaC" FONT-SIZE BLANK-COLOR)]
             [(empty? current-stack) (beside (text "aaak" FONT-SIZE BLANK-COLOR)
                                             (text "Stack: " FONT-SIZE FONT-COLOR))]
@@ -293,10 +286,7 @@
                                          (if (> (length current-stack) TAPE-SIZE)
                                              (imsg-state-pda-word-img-offset imsg-st)
                                              0)
-                                         '()
-                                         #;(if (eq? machine-decision 'reject)
-                                             '()
-                                             (list (list (length pci) ACCEPT-COLOR) '()))))])
+                                         '()))])
       (text (format "The current number of possible computations is: ~a (without repeated configurations)."
                     (number->string (hash-ref (imsg-state-pda-computation-lengths imsg-st)
                                               upci
@@ -319,19 +309,19 @@
                   (equal? machine-decision 'reject))
              (text "All computations do not consume the entire word and the machine rejects." FONT-SIZE REJECT-COLOR)]
             [(and (empty? upci)
-                  (zipper-at-end? (imsg-state-pda-stack imsg-st)) #;(zipper-empty? (imsg-state-pda-stack imsg-st))
+                  (zipper-at-end? (imsg-state-pda-stack imsg-st))
                   (equal? machine-decision 'reject))
              (text "All computations end in a non-final configuration and the machine rejects." FONT-SIZE REJECT-COLOR)]
             [else (text "Word Status: accept " FONT-SIZE BLANK-COLOR)]))))
 
 (define (tm-create-draw-informative-message imsg-st)
-  (let ([FONT-COLOR (color-pallete-font-color (imsg-state-tm-color-pallete imsg-st))]
-        [BLANK-COLOR (color-pallete-blank-color (imsg-state-tm-color-pallete imsg-st))]
-        [REJECT-COLOR (color-pallete-imsg-reject-color (imsg-state-tm-color-pallete imsg-st))]
-        [ACCEPT-COLOR (color-pallete-imsg-accept-color (imsg-state-tm-color-pallete imsg-st))]
-        [FADED-WORD-COLOR (color-pallete-faded-word-color (imsg-state-tm-color-pallete imsg-st))]
-        [COMPUTATION-LENGTH-COLOR (color-pallete-computation-length-color (imsg-state-tm-color-pallete imsg-st))]
-        [CUT-OFF-COLOR (color-pallete-ismg-cut-off-color (imsg-state-tm-color-pallete imsg-st))])
+  (let ([FONT-COLOR (color-palette-font-color (imsg-state-tm-color-pallete imsg-st))]
+        [BLANK-COLOR (color-palette-blank-color (imsg-state-tm-color-pallete imsg-st))]
+        [REJECT-COLOR (color-palette-imsg-reject-color (imsg-state-tm-color-pallete imsg-st))]
+        [ACCEPT-COLOR (color-palette-imsg-accept-color (imsg-state-tm-color-pallete imsg-st))]
+        [FADED-WORD-COLOR (color-palette-faded-word-color (imsg-state-tm-color-pallete imsg-st))]
+        [COMPUTATION-LENGTH-COLOR (color-palette-computation-length-color (imsg-state-tm-color-pallete imsg-st))]
+        [CUT-OFF-COLOR (color-palette-ismg-cut-off-color (imsg-state-tm-color-pallete imsg-st))])
     (above/align
       'left
       (if (zipper-empty? (imsg-state-tm-rules-used imsg-st))
@@ -377,13 +367,13 @@
             [else (text "Word Status: accept " FONT-SIZE BLANK-COLOR)]))))
 
 (define (mttm-create-draw-informative-message imsg-st)
-  (let ([FONT-COLOR (color-pallete-font-color (imsg-state-mttm-color-pallete imsg-st))]
-        [BLANK-COLOR (color-pallete-blank-color (imsg-state-mttm-color-pallete imsg-st))]
-        [REJECT-COLOR (color-pallete-imsg-reject-color (imsg-state-mttm-color-pallete imsg-st))]
-        [ACCEPT-COLOR (color-pallete-imsg-accept-color (imsg-state-mttm-color-pallete imsg-st))]
-        [FADED-WORD-COLOR (color-pallete-faded-word-color (imsg-state-mttm-color-pallete imsg-st))]
-        [COMPUTATION-LENGTH-COLOR (color-pallete-computation-length-color (imsg-state-mttm-color-pallete imsg-st))]
-        [CUT-OFF-COLOR (color-pallete-ismg-cut-off-color (imsg-state-mttm-color-pallete imsg-st))])
+  (let ([FONT-COLOR (color-palette-font-color (imsg-state-mttm-color-pallete imsg-st))]
+        [BLANK-COLOR (color-palette-blank-color (imsg-state-mttm-color-pallete imsg-st))]
+        [REJECT-COLOR (color-palette-imsg-reject-color (imsg-state-mttm-color-pallete imsg-st))]
+        [ACCEPT-COLOR (color-palette-imsg-accept-color (imsg-state-mttm-color-pallete imsg-st))]
+        [FADED-WORD-COLOR (color-palette-faded-word-color (imsg-state-mttm-color-pallete imsg-st))]
+        [COMPUTATION-LENGTH-COLOR (color-palette-computation-length-color (imsg-state-mttm-color-pallete imsg-st))]
+        [CUT-OFF-COLOR (color-palette-ismg-cut-off-color (imsg-state-mttm-color-pallete imsg-st))])
     (define (draw-tape tape head-pos)
       (let [(start-index (if (> (length tape) TM-TAPE-SIZE)
                              (imsg-state-mttm-word-img-offset imsg-st)

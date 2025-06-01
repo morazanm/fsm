@@ -23,8 +23,9 @@
 
 (provide tm-viz)
 
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define FONT-SIZE 12)
 
 ;;tape is the input the tape
 ;;computations is a (listof computation) that attempt to consume the ci
@@ -259,14 +260,6 @@
                     (equal? (third rule) (third r))))
              lor)))
 
-;;(X -> Y) (X -> Y) (X -> Y) (X -> Y) (listof (listof X)) -> (listof (listof X))
-;;Purpose: filtermaps the given f-on-x on the given (listof (listof X))
-(define (filter-map-acc filter-func map-func bool-func accessor a-lolox)
-  (filter-map (λ (x)
-                (and (bool-func (filter-func x))
-                     (map-func (accessor x))))
-              a-lolox))
-
 ;;(listof trace) (X -> Y) -> (listof rule)
 ;;Purpose: Extracts the rule from the first trace in a (listof trace)
 (define (get-trace-X LoT map-func)
@@ -330,30 +323,35 @@
 (define (make-node-graph dgraph M held-inv fail-inv cut-off color-scheme)
   (foldl (λ (state graph)
            (let ([member-of-held-inv? (member? state held-inv eq?)]
-                 [member-of-fail-inv? (member? state fail-inv eq?)])
+                 [member-of-fail-inv? (member? state fail-inv eq?)]
+                 [member-of-cut-off?  (member? state cut-off eq?)]
+                 [graph-attributes (graph-attributes-node-attributes default-graph-attributes)])
              (add-node graph
                        state
                        #:atb (hash 'color (if (eq? (tm-start M) state)
-                                              (color-pallete-start-state-color color-scheme)
-                                              (color-pallete-font-color color-scheme))
-                                   'style (cond [(and member-of-held-inv? member-of-fail-inv?) 'wedged]
-                                                [(or member-of-held-inv? member-of-fail-inv?
-                                                     (member? state cut-off equal?)) 'filled]
-                                                [else 'solid])
-                                   'shape (cond [(eq? state (tm-accepting-final M)) 'doubleoctagon]
-                                                [(member? state (tm-finals M) equal?) 'doublecircle]
-                                                [else 'circle])
-                                   'fillcolor (cond [(member? state cut-off equal?) (color-pallete-cut-off-color color-scheme)]
+                                              (color-palette-start-state-color color-scheme)
+                                              (color-palette-font-color color-scheme))
+                                   'style (cond [(and member-of-held-inv? member-of-fail-inv?)
+                                                 (node-data-bi-inv-node graph-attributes)]
+                                                [(or member-of-held-inv? member-of-fail-inv? member-of-cut-off?)
+                                                 (node-data-inv-node graph-attributes)]
+                                                [else (node-data-regular-node graph-attributes)])
+                                   'shape (cond [(eq? state (tm-accepting-final M))
+                                                 (node-data-accepting-final-state graph-attributes)]
+                                                [(member? state (tm-finals M) eq?)
+                                                 (node-data-final-state graph-attributes)]
+                                                [else (node-data-regular-state graph-attributes)])
+                                   'fillcolor (cond [member-of-cut-off? (color-palette-cut-off-color color-scheme)]
                                                     [(and member-of-held-inv? member-of-fail-inv?)
-                                                     (color-pallete-split-inv-color color-scheme)]
-                                                    [member-of-held-inv? (color-pallete-inv-hold-color color-scheme)]
-                                                    [member-of-fail-inv? (color-pallete-inv-fail-color color-scheme)]
-                                                    [else (color-pallete-blank-color color-scheme)])
+                                                     (color-palette-split-inv-color color-scheme)]
+                                                    [member-of-held-inv? (color-palette-inv-hold-color color-scheme)]
+                                                    [member-of-fail-inv? (color-palette-inv-fail-color color-scheme)]
+                                                    [else (color-palette-blank-color color-scheme)])
                                    'label state
-                                   'fontcolor (color-pallete-font-color color-scheme)
-                                   'fontname (if (and (member? state held-inv equal?) (member? state fail-inv equal?))
-                                                 "times-bold"
-                                                 "Times-Roman")))))
+                                   'fontcolor (color-palette-font-color color-scheme)
+                                   'fontname (if (and member-of-held-inv? member-of-fail-inv?)
+                                                 (node-data-bi-inv-font graph-attributes)
+                                                 (node-data-regular-font graph-attributes))))))
          dgraph
          (tm-states M)))
 
@@ -363,28 +361,32 @@
   (foldl (λ (rule graph)
            (let ([found-tracked-rule? (find-rule? rule current-tracked-rules)]
                  [found-accept-rule? (find-rule? rule current-accept-rules)]
-                 [found-reject-rule? (find-rule? rule current-reject-rules)])
+                 [found-reject-rule? (find-rule? rule current-reject-rules)]
+                 [graph-attributes (graph-attributes-edge-attributes default-graph-attributes)])
              (add-edge graph
                        (second rule)
                        (first rule)
                        (third rule)                     
                        #:atb (hash 'color
                                    (cond [(and found-tracked-rule? found-accept-rule?)
-                                          (color-pallete-split-accept-color color-scheme)] ;;<--- watch out if coloring issue
+                                          (color-palette-split-accept-color color-scheme)] ;;<--- watch out if coloring issue
                                          [(and found-tracked-rule? found-reject-rule? (not accepted?))
-                                          (color-pallete-split-reject-color color-scheme)] ;;<-- may cause issue
+                                          (color-palette-split-reject-color color-scheme)] ;;<-- may cause issue
                                          [(and found-tracked-rule? found-reject-rule? accepted?)
-                                          (color-pallete-split-accept-reject-color color-scheme)] ;;<-- may cause issue
+                                          (color-palette-split-accept-reject-color color-scheme)] ;;<-- may cause issue
                                          [(and found-tracked-rule? found-accept-rule? found-reject-rule? accepted?)
-                                          (color-pallete-bi-accept-reject-color color-scheme)]
-                                         [(and accepted? found-tracked-rule?) (color-pallete-shown-accept-color color-scheme)] 
-                                         [found-tracked-rule?  (color-pallete-shown-reject-color color-scheme)]
-                                         [found-accept-rule?   (color-pallete-other-accept-color color-scheme)]
-                                         [found-reject-rule?   (color-pallete-other-reject-color color-scheme)]
-                                         [else (color-pallete-font-color color-scheme)])
-                                   'style (if (and found-tracked-rule? accepted?) 'bold 'solid)
-                                   ;'labelfloat 'true
-                                   'fontsize 12))))
+                                          (color-palette-bi-accept-reject-color color-scheme)]
+                                         [(and accepted? found-tracked-rule?) (color-palette-shown-accept-color color-scheme)] 
+                                         [found-tracked-rule?  (color-palette-shown-reject-color color-scheme)]
+                                         [found-accept-rule?   (color-palette-other-accept-color color-scheme)]
+                                         [found-reject-rule?   (color-palette-other-reject-color color-scheme)]
+                                         [else (color-palette-font-color color-scheme)])
+                                   'style (cond [(and found-tracked-rule? accepted?)
+                                                 (edge-data-accept-edge graph-attributes)]
+                                                [(and (or found-tracked-rule? found-reject-rule?) (not accepted?))
+                                                 (edge-data-reject-edge graph-attributes)]
+                                                [else (edge-data-regular-edge graph-attributes)])
+                                   'fontsize FONT-SIZE))))
          dgraph
          rules))
 
@@ -450,7 +452,7 @@
          
          ;;(listof symbols)
          ;;Purpose: Returns all states whose invariants holds
-         [held-invs (map (λ (inv) (get-invariants inv id)) get-invs)])
+         [held-invs (map (λ (inv) (get-invariants inv identity)) get-invs)])
     (make-edge-graph
      (make-node-graph
       (create-graph 'tmgraph #:atb (hash 'rankdir "LR"))
@@ -846,10 +848,10 @@
              [invs-zipper zip])])])))))
 
 
-;;tm tape [natnum] [natnum] . -> (void) Throws error
-;;Purpose: Visualizes the given ndfa processing the given word
-;;Assumption: The given machine is a ndfa or dfa
-(define (tm-viz M a-word head-pos #:cut-off [cut-off 100] invs) ;;GET RID OF . FOR TESTING
+;;tm tape natnum [natnum] [symbol] . (listof (list state (t i -> boolean))) -> (void) 
+;;Purpose: Visualizes the given tm processing the given word
+;;Assumption: The given machine is tm
+(define (tm-viz M a-word head-pos #:cut-off [cut-off 100] #:palette [palette 'default] invs) ;;GET RID OF . FOR TESTING
   (let* (;;tm-struct
          [M (remake-tm M)]
          ;;color-pallete ;;
@@ -884,7 +886,7 @@
          [accepting-trace (if (empty? accepting-traces) '() (first accepting-traces))]
          [rejecting-trace (if (empty? accepting-traces) (find-longest-computation rejecting-traces '()) '())]
          [displayed-tape (map (λ (trace) (tm-config-tape (trace-config trace)))
-                              (if (not (empty? accepting-trace)) #;(and (not computation-has-cut-off?) (not (empty? accepting-trace)))
+                              (if (not (empty? accepting-trace))
                              accepting-trace
                              rejecting-trace))]
          [all-displayed-tape (list->zipper displayed-tape)]
@@ -892,9 +894,7 @@
                                                 (if (empty? accepting-trace)
                                                     rejecting-trace
                                                     accepting-trace))])
-                             head-pos #;(if reached-final? head-pos (append head-pos '(-1))))]
-                                 
-                             
+                             head-pos)]
          [all-head-pos (list->zipper tracked-head-pos)]
          [machine-decision (if (not (empty? accepting-computations))
                                'accept
@@ -907,11 +907,7 @@
                               (get-inv-config-results (if (and reached-final? (eq? (tm-type M) 'tm))
                                                                    LoC
                                                                    (map computation-LoC accepting-computations))
-                                                               invs)
-                              #;(reverse (get-inv-config-results (if (and reached-final? (eq? (tm-type M) 'tm))
-                                                                   LoC
-                                                                   (map computation-LoC accepting-computations))
-                                                               invs)))]
+                                                               invs))]
          [failed-inv-configs (return-brk-inv-configs all-inv-configs)]
          ;;building-state struct
          [building-state (building-viz-state all-displayed-tape

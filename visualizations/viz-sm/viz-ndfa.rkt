@@ -11,7 +11,6 @@
          (except-in "../viz-lib/viz-constants.rkt" INS-TOOLS-BUFFER)
          "../viz-lib/viz-imgs/keyboard_bitmaps.rkt"
          "david-imsg-state.rkt"
-         ;"testing-parameter.rkt"
          racket/treelist
          (except-in "david-imsg-dimensions.rkt" FONT-SIZE)
          "david-viz-constants.rkt"
@@ -175,11 +174,6 @@ type -> the type of the ndfa (ndfa/dfa) | symbol
            (reverse (cons res acc)))]
          [(or (empty? rules)
               (empty? configs)) (reverse acc)]
-        #;[(and (empty? acc)
-              (not (equal? (triple-read (first rules)) EMP)))
-         (let* ([rle (rule (triple EMP EMP EMP))]
-                [res (trace (first configs) (list rle))])
-           (make-trace (rest configs) rules (cons res acc)))]
         [(and (not (empty? acc))
               (equal? (triple-read (first rules)) EMP))
          (let* ([rle (rule (first rules))]
@@ -274,14 +268,6 @@ type -> the type of the ndfa (ndfa/dfa) | symbol
          (rule-triple rule))
        trace-rules))
 
-;;(X -> Y) (X -> Y) (X -> Y) (X -> Y) (listof (listof X)) -> (listof (listof X))
-;;Purpose: filtermaps the given f-on-x on the given (listof (listof X))
-(define (filter-map-acc filter-func map-func bool-func accessor a-lolox)
-  (filter-map (λ (x)
-                (and (bool-func (filter-func x))
-                     (map-func (accessor x))))
-              a-lolox))
-
 ;;(listof trace) -> (listof rule)
 ;;Purpose: Extracts the rule from the first trace in a (listof trace)
 (define (get-trace-rule LoT)
@@ -305,11 +291,9 @@ type -> the type of the ndfa (ndfa/dfa) | symbol
          (get-farthest-consumed (rest LoC) (treelist-last (first LoC)))]
         [else (get-farthest-consumed (rest LoC) acc)]))
 
-
 ;;fsa -> ndfa(structure)
 ;;Purpose: Converts the fsa into an ndfa
 (define (remake-machine M)
-
   ;;(listof rule) -> (treelistof rule)
   ;;Purpose: Converts the ndfa rules into an ndfa rule (structure)
   (define (remake-rules lor)
@@ -317,7 +301,6 @@ type -> the type of the ndfa (ndfa/dfa) | symbol
       (triple (first ndfa-rule)
               (second ndfa-rule)
               (third ndfa-rule))))
-  
   (ndfa (fsa-getstates M)
         (fsa-getalphabet M)
         (fsa-getstart M)
@@ -325,7 +308,6 @@ type -> the type of the ndfa (ndfa/dfa) | symbol
         (remake-rules (fsa-getrules M))
         (M 'whatami)))
   
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; graph machine (listof symbols) symbol (listof symbols) (listof symbols) -> graph
@@ -333,21 +315,24 @@ type -> the type of the ndfa (ndfa/dfa) | symbol
 (define (node-graph cgraph M dead held-inv fail-inv color-scheme)
   (foldl (λ (state result)
            (let ([member-of-held-inv? (member? state held-inv eq?)]
-                 [member-of-fail-inv? (member? state fail-inv eq?)])
+                 [member-of-fail-inv? (member? state fail-inv eq?)]
+                 [graph-attributes (graph-attributes-node-attributes default-graph-attributes)])
              (add-node result
                        state
                        #:atb (hash 'color (if (eq? state (ndfa-start M))
-                                              (color-pallete-start-state-color color-scheme)
-                                              (color-pallete-font-color color-scheme))
-                                   'style (cond [(or member-of-held-inv? member-of-fail-inv?) 'filled]
-                                                [(eq? state dead) 'dashed]
-                                                [else 'solid])
-                                   'shape (if (set-member? (ndfa-finals M) state) 'doublecircle 'circle)
-                                   'fillcolor (cond [member-of-held-inv? (color-pallete-inv-hold-color color-scheme)]
-                                                    [member-of-fail-inv? (color-pallete-inv-fail-color color-scheme)]
-                                                    [else (color-pallete-blank-color color-scheme)])
+                                              (color-palette-start-state-color color-scheme)
+                                              (color-palette-font-color color-scheme))
+                                   'style (cond [(or member-of-held-inv? member-of-fail-inv?) (node-data-inv-node graph-attributes)]
+                                                [(eq? state dead) (node-data-dead-node graph-attributes)]
+                                                [else (node-data-regular-node graph-attributes)])
+                                   'shape (if (set-member? (ndfa-finals M) state)
+                                              (node-data-final-state graph-attributes)
+                                              (node-data-regular-state graph-attributes))
+                                   'fillcolor (cond [member-of-held-inv? (color-palette-inv-hold-color color-scheme)]
+                                                    [member-of-fail-inv? (color-palette-inv-fail-color color-scheme)]
+                                                    [else (color-palette-blank-color color-scheme)])
                                    'label state
-                                   'fontcolor (color-pallete-font-color color-scheme)))))
+                                   'fontcolor (color-palette-font-color color-scheme)))))
          cgraph
          (ndfa-states M)))
 
@@ -357,29 +342,28 @@ type -> the type of the ndfa (ndfa/dfa) | symbol
   (foldl (λ (rule result)
            (let ([other-current-accept-rule-find-rule? (find-rule? rule dead other-current-accept-rules)]
                  [current-shown-accept-rule-find-rule? (find-rule? rule dead current-shown-accept-rules)]
-                 [found-current-reject-rule? (find-rule? rule dead current-reject-rules)])
+                 [found-current-reject-rule? (find-rule? rule dead current-reject-rules)]
+                 [graph-attributes (graph-attributes-edge-attributes default-graph-attributes)])
              (add-edge result
                        (triple-read rule)
                        (triple-source rule)
                        (triple-destination rule)
                        #:atb (hash 'color (cond [(and current-shown-accept-rule-find-rule? other-current-accept-rule-find-rule?)
-                                                 (color-pallete-split-accept-color color-scheme)]
+                                                 (color-palette-split-accept-color color-scheme)]
                                                 [(and current-shown-accept-rule-find-rule? found-current-reject-rule?)
-                                                 (color-pallete-split-accept-reject-color color-scheme)]
+                                                 (color-palette-split-accept-reject-color color-scheme)]
                                                 [(and current-shown-accept-rule-find-rule? other-current-accept-rule-find-rule?
                                                       found-current-reject-rule?)
-                                                 (color-pallete-bi-accept-reject-color color-scheme)]
-                                                [current-shown-accept-rule-find-rule? (color-pallete-shown-accept-color color-scheme)]
-                                                [other-current-accept-rule-find-rule? (color-pallete-other-accept-color color-scheme)]
-                                                [found-current-reject-rule? (color-pallete-other-reject-color color-scheme)]
-                                                [else (color-pallete-font-color color-scheme)])
+                                                 (color-palette-bi-accept-reject-color color-scheme)]
+                                                [current-shown-accept-rule-find-rule? (color-palette-shown-accept-color color-scheme)]
+                                                [other-current-accept-rule-find-rule? (color-palette-other-accept-color color-scheme)]
+                                                [found-current-reject-rule? (color-palette-other-reject-color color-scheme)]
+                                                [else (color-palette-font-color color-scheme)])
                                    'fontsize FONT-SIZE
-                                   'style (cond [current-shown-accept-rule-find-rule? 'bold]
-                                                [found-current-reject-rule? 'dashed]
-                                                [(equal? (triple-destination rule) dead) 'dotted]
-                                                #;[current-shown-accept-rule-find-rule? 'bold]
-                                                #;[(find-rule? rule dead current-reject-rules) 'dashed]
-                                                [else 'solid])))))
+                                   'style (cond [current-shown-accept-rule-find-rule? (edge-data-accept-edge graph-attributes)]
+                                                [found-current-reject-rule? (edge-data-reject-edge graph-attributes)]
+                                                [(equal? (triple-destination rule) dead) (edge-data-dead-edge graph-attributes)]
+                                                [else (edge-data-regular-edge graph-attributes)])))))
          cgraph
          (treelist->list (ndfa-rules M))))
 
@@ -394,7 +378,8 @@ type -> the type of the ndfa (ndfa/dfa) | symbol
 ;;accept-traces -> The OTHER accepting computations that are showned but not explictly followed            | (listof trace)
 ;;reject-traces -> All of the computations that machine rejects                                            | (listof trace) 
 ;;farthest-consumed -> the portion of the word that machine can consume the most of                        | word
-(struct building-viz-state (CI M inv dead tracked-accept-trace accepting-computations accept-traces reject-traces farthest-consumed pallete)
+;;palette -> the color scheme used for the transition diagrams in the visualization                        | (color-palette-struct)
+(struct building-viz-state (CI M inv dead tracked-accept-trace accepting-computations accept-traces reject-traces farthest-consumed palette)
   #:transparent)
 
 ;;viz-state -> (list graph-thunk computation-length)
@@ -455,13 +440,13 @@ type -> the type of the ndfa (ndfa/dfa) | symbol
       (building-viz-state-dead a-vs)
       held-invs
       brkn-invs
-      (building-viz-state-pallete a-vs))
+      (building-viz-state-palette a-vs))
      (building-viz-state-M a-vs)
      current-shown-accept-rules
      current-a-rules
      current-rules
      (building-viz-state-dead a-vs)
-     (building-viz-state-pallete a-vs))))
+     (building-viz-state-palette a-vs))))
 
 ;;viz-state (listof graph-thunks) -> (listof graph-thunks)
 ;;Purpose: Creates all the graphs needed for the visualization
@@ -498,24 +483,20 @@ type -> the type of the ndfa (ndfa/dfa) | symbol
        [component-state
         (struct-copy imsg-state-ndfa
                      (informative-messages-component-state (viz-state-informative-messages a-vs))
+                     ;;ci
                      [ci (if (or (zipper-at-end? imsg-state-ci)
                                  (equal? (ci-upci (zipper-current imsg-state-ci)) (ndfa-config-word imsg-state-farthest-consumed-input)))
                              imsg-state-ci
                              (zipper-next imsg-state-ci))]
-                     
-                     [shown-accepting-trace (if (or (zipper-at-end? imsg-state-shown-accepting-trace)
-                                                    (zipper-empty? imsg-state-shown-accepting-trace))
+                     ;;shown-accepting-trace
+                     [shown-accepting-trace (if (zipper-at-end? imsg-state-shown-accepting-trace) 
                                                 imsg-state-shown-accepting-trace
                                                 (zipper-next imsg-state-shown-accepting-trace))]
-                     
+                     ;;invs-zipper
                      [invs-zipper (cond [(zipper-empty? imsg-state-invs-zipper) imsg-state-invs-zipper]
                                         [(and (not (zipper-at-end? imsg-state-invs-zipper))
                                               (>= (add1 (get-ndfa-config-index-frm-trace imsg-state-shown-accepting-trace))
-                                                  (ndfa-config-index (first (zipper-current imsg-state-invs-zipper)
-                                                                            #;(first (zipper-unprocessed imsg-state-invs-zipper))))))
-                                         #;(and (not (zipper-at-end? imsg-state-invs-zipper))
-                                              (>= (get-ndfa-config-index-frm-trace imsg-state-shown-accepting-trace)
-                                                  (ndfa-config-index (first (first (zipper-unprocessed imsg-state-invs-zipper))))))
+                                                  (ndfa-config-index (first (zipper-current imsg-state-invs-zipper)))))
                                          (zipper-next imsg-state-invs-zipper)]
                                         [else imsg-state-invs-zipper])])])])))
 
@@ -540,14 +521,16 @@ type -> the type of the ndfa (ndfa/dfa) | symbol
          imsg-state-ndfa
          (informative-messages-component-state
           (viz-state-informative-messages a-vs))
+         ;;ci
          [ci (cond [(zipper-at-end? imsg-state-ci) imsg-state-ci]
                    [(list? (ndfa-config-word imsg-state-farthest-consumed-input))
                     (zipper-to-idx imsg-state-ci (ndfa-config-index imsg-state-farthest-consumed-input))]
                    [else (zipper-to-end imsg-state-ci)])]
-         [shown-accepting-trace (if (or (zipper-at-end? imsg-state-shown-accepting-trace)
-                                        (zipper-empty? imsg-state-shown-accepting-trace))
+         ;;shown-accepting-trace
+         [shown-accepting-trace (if (zipper-at-end? imsg-state-shown-accepting-trace)
                                     imsg-state-shown-accepting-trace
                                     (zipper-to-end imsg-state-shown-accepting-trace))]
+         ;;invs-zipper
          [invs-zipper (if (or (zipper-empty? imsg-state-invs-zipper)
                               (zipper-at-end? imsg-state-invs-zipper)
                               (= (zipper-length imsg-state-invs-zipper) 1))
@@ -572,23 +555,17 @@ type -> the type of the ndfa (ndfa/dfa) | symbol
         (struct-copy imsg-state-ndfa
                      (informative-messages-component-state
                       (viz-state-informative-messages a-vs))
-                     [ci (if (zipper-at-begin? imsg-state-ci) imsg-state-ci (zipper-prev imsg-state-ci))]
-                     
-                     
-                     [shown-accepting-trace (if (or (zipper-at-begin? imsg-state-shown-accepting-trace)
-                                                    (zipper-empty? imsg-state-shown-accepting-trace))
+                     ;;ci
+                     [ci (if (zipper-at-begin? imsg-state-ci) imsg-state-ci (zipper-prev imsg-state-ci))]                     
+                     ;;shown-accepting-trace
+                     [shown-accepting-trace (if (zipper-at-begin? imsg-state-shown-accepting-trace)
                                                 imsg-state-shown-accepting-trace
-                                                (zipper-prev imsg-state-shown-accepting-trace))]
-                     
-                     
+                                                (zipper-prev imsg-state-shown-accepting-trace))]                     
+                     ;;invariant-zipper
                      [invs-zipper (cond [(zipper-empty? imsg-state-invs-zipper) imsg-state-invs-zipper]
-                                        [#;(and (not (zipper-at-begin? imsg-state-invs-zipper))
-                                              (<= (get-ndfa-config-index-frm-trace imsg-state-shown-accepting-trace)
-                                                  (ndfa-config-index (first (first (zipper-processed imsg-state-invs-zipper))))))
-                                         (and (not (zipper-at-begin? imsg-state-invs-zipper))
+                                        [(and (not (zipper-at-begin? imsg-state-invs-zipper))
                                               (<= (sub1 (get-ndfa-config-index-frm-trace imsg-state-shown-accepting-trace))
-                                                  (ndfa-config-index (first (zipper-current imsg-state-invs-zipper)
-                                                                            #;(first (zipper-processed imsg-state-invs-zipper))))))
+                                                  (ndfa-config-index (first (zipper-current imsg-state-invs-zipper)))))
                                          (zipper-prev imsg-state-invs-zipper)]
                                         [else imsg-state-invs-zipper])])])])))
 
@@ -610,14 +587,14 @@ type -> the type of the ndfa (ndfa/dfa) | symbol
         (struct-copy imsg-state-ndfa
                      (informative-messages-component-state
                       (viz-state-informative-messages a-vs))
-                     [ci (if (zipper-at-begin? imsg-state-ci) imsg-state-ci (zipper-to-begin imsg-state-ci))]
-                   
-                  
+                     ;;ci
+                     [ci (if (zipper-at-begin? imsg-state-ci) imsg-state-ci (zipper-to-begin imsg-state-ci))]                   
+                     ;;invariant-zipper
                      [invs-zipper (if (zipper-empty? imsg-state-invs-zipper)
                                       imsg-state-invs-zipper
                                       (zipper-to-idx imsg-state-invs-zipper 0))]
-                     [shown-accepting-trace (if (or (zipper-at-begin? imsg-state-shown-accepting-trace)
-                                                    (zipper-empty? imsg-state-shown-accepting-trace))
+                     ;;shown-accepting-trace
+                     [shown-accepting-trace (if (zipper-at-begin? imsg-state-shown-accepting-trace)
                                                 imsg-state-shown-accepting-trace
                                                 (zipper-to-begin imsg-state-shown-accepting-trace))])])])))
 
@@ -632,7 +609,10 @@ type -> the type of the ndfa (ndfa/dfa) | symbol
       (struct-copy informative-messages
                    (viz-state-informative-messages a-vs)
                    [component-state
-                    (struct-copy imsg-state-ndfa a-imsgs [word-img-offset 0] [scroll-accum 0])])])))
+                    (struct-copy imsg-state-ndfa
+                                 a-imsgs
+                                 [word-img-offset 0]
+                                 [scroll-accum 0])])])))
 
 ;; viz-state -> viz-state
 ;; Purpose: Moves the deriving and current yield to the end of their current words
@@ -647,20 +627,16 @@ type -> the type of the ndfa (ndfa/dfa) | symbol
                                 (struct-copy imsg-state-ndfa
                                              a-imsgs
                                              [scroll-accum 0]
-                                             [word-img-offset
-                                              (imsg-state-ndfa-word-img-offset-cap a-imsgs)])])])))
+                                             [word-img-offset (imsg-state-ndfa-word-img-offset-cap a-imsgs)])])])))
 
 ;;viz-state -> viz-state
 ;;Purpose: Jumps to the previous broken invariant
 (define (j-key-pressed a-vs)
   (let ([imsg-state-invs-zipper (imsg-state-ndfa-invs-zipper (informative-messages-component-state (viz-state-informative-messages a-vs)))]
-        [imsg-state-ci (imsg-state-ndfa-ci (informative-messages-component-state (viz-state-informative-messages a-vs)))]
-        
+        [imsg-state-ci (imsg-state-ndfa-ci (informative-messages-component-state (viz-state-informative-messages a-vs)))]        
         [imsg-state-shown-accepting-trace (imsg-state-ndfa-shown-accepting-trace (informative-messages-component-state
                                                                                   (viz-state-informative-messages a-vs)))])
     (if (or (zipper-empty? imsg-state-invs-zipper)
-            #;(and (zipper-at-begin? imsg-state-invs-zipper)
-                 (not (zipper-at-end? imsg-state-invs-zipper)))
             (< (get-ndfa-config-index-frm-trace imsg-state-shown-accepting-trace)
                (get-ndfa-config-index-frm-invs imsg-state-invs-zipper)))
         a-vs
@@ -681,24 +657,21 @@ type -> the type of the ndfa (ndfa/dfa) | symbol
               (struct-copy imsg-state-ndfa
                            (informative-messages-component-state
                             (viz-state-informative-messages a-vs))
+                           ;;ci
                            [ci (zipper-to-idx imsg-state-ci (get-ndfa-config-index-frm-invs zip))]
-                           
-                           [shown-accepting-trace (if (zipper-empty? imsg-state-shown-accepting-trace)
-                                                      imsg-state-shown-accepting-trace
-                                                      (zipper-to-idx imsg-state-shown-accepting-trace (get-ndfa-config-index-frm-invs zip)))]
+                           ;;shown-accepting-trace
+                           [shown-accepting-trace (zipper-to-idx imsg-state-shown-accepting-trace (get-ndfa-config-index-frm-invs zip))]
+                           ;;invariant-zipper
                            [invs-zipper zip])])])))))
 
 ;;viz-state -> viz-state
 ;;Purpose: Jumps to the next failed invariant
 (define (l-key-pressed a-vs)  
   (let ([imsg-state-invs-zipper (imsg-state-ndfa-invs-zipper (informative-messages-component-state (viz-state-informative-messages a-vs)))]
-        [imsg-state-ci (imsg-state-ndfa-ci (informative-messages-component-state (viz-state-informative-messages a-vs)))]
-        
+        [imsg-state-ci (imsg-state-ndfa-ci (informative-messages-component-state (viz-state-informative-messages a-vs)))]        
         [imsg-state-shown-accepting-trace (imsg-state-ndfa-shown-accepting-trace (informative-messages-component-state
                                                                                   (viz-state-informative-messages a-vs)))])
     (if (or (zipper-empty? imsg-state-invs-zipper)
-            #;(and (not (zipper-at-begin? imsg-state-invs-zipper))
-                 (zipper-at-end? imsg-state-invs-zipper))
             (> (get-ndfa-config-index-frm-trace imsg-state-shown-accepting-trace)
                (get-ndfa-config-index-frm-invs imsg-state-invs-zipper)))
         a-vs
@@ -719,12 +692,11 @@ type -> the type of the ndfa (ndfa/dfa) | symbol
               (struct-copy imsg-state-ndfa
                            (informative-messages-component-state
                             (viz-state-informative-messages a-vs))
-                           [ci (zipper-to-idx imsg-state-ci (get-ndfa-config-index-frm-invs zip))]
-                         
-                         
-                           [shown-accepting-trace (if (zipper-empty? imsg-state-shown-accepting-trace)
-                                                      imsg-state-shown-accepting-trace
-                                                      (zipper-to-idx imsg-state-shown-accepting-trace (get-ndfa-config-index-frm-invs zip)))]
+                           ;;ci
+                           [ci (zipper-to-idx imsg-state-ci (get-ndfa-config-index-frm-invs zip))]                         
+                           ;;shown-accepting-trace
+                           [shown-accepting-trace (zipper-to-idx imsg-state-shown-accepting-trace (get-ndfa-config-index-frm-invs zip))]
+                           ;;invariant zip
                            [invs-zipper zip])])])))))
 
 ;;machine -> machine
@@ -770,11 +742,10 @@ type -> the type of the ndfa (ndfa/dfa) | symbol
         [else M]))
 
 
-
-;;ndfa word [boolean] . -> (void) Throws error
+;;ndfa word [boolean] [symbol] . (listof (list state (w -> boolean))) -> (void)
 ;;Purpose: Visualizes the given ndfa processing the given word
 ;;Assumption: The given machine is a ndfa or dfa
-(define (ndfa-viz M a-word #:add-dead [add-dead #f] invs)
+(define (ndfa-viz M a-word #:add-dead [add-dead #f] #:palette [palette 'default] invs)
   (let* (;;M ;;Purpose: A new machine with the dead state if add-dead is true
          [new-M (remake-machine (if add-dead (make-new-M M) M))]
          ;;color-pallete ;;

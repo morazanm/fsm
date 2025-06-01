@@ -7,7 +7,8 @@
 
 (provide sm-viz)
 
-(define (sm-viz M a-word #:add-dead [add-dead #f] #:cut-off [cut-off 100] #:head-pos [head-pos 0] . invs)
+;; M tape [boolean] [natnum] [natnum] [symbol] . (listof (list state (X -> boolean))) -> void
+(define (sm-viz M a-word #:add-dead [add-dead #f] #:cut-off [cut-off 100] #:head-pos [head-pos 0] #:palette [palette 'default] . invs)
   (let ([m-type (with-handlers ([exn:fail:contract:arity?
                                  (λ (e) (M 'whatami 0 'whatami))])
                   (M 'whatami))])
