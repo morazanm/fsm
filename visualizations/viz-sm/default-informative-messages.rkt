@@ -423,11 +423,11 @@
             [head-positions (zipper-current (imsg-state-mttm-head-positions imsg-st))])
         (if (or (= aux-tape-index max-aux-tapes-index) (= aux-tape-index (sub1 (mttm-tape-amount (imsg-state-mttm-M imsg-st)))))
             (beside
-             (text (format "T~s: " aux-tape-index) 20 'black)
+             (text (format "T~s: " aux-tape-index) 20 FONT-COLOR)
              (draw-tape (list-ref tapes aux-tape-index) (list-ref head-positions aux-tape-index)))
             (above
              (beside
-              (text (format "T~s: " aux-tape-index) 20 'black)
+              (text (format "T~s: " aux-tape-index) 20 FONT-COLOR)
               (draw-tape (list-ref tapes aux-tape-index) (list-ref head-positions aux-tape-index)))
              (make-tapes (add1 aux-tape-index) max-aux-tapes-index)))))
   

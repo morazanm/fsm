@@ -69,9 +69,27 @@ rules are a (listof rule-structs)
                        font-color blank-color computation-length-color imsg-accept-color imsg-reject-color ismg-cut-off-color start-state-color
                        faded-word-color))
 
-(define standard-color-scheme (color-palette 'forestgreen 'green 'chocolate1 'violetred 'darkgoldenrod2 'chartreuse4 'red2
-                                "red:chartreuse4" "forestgreen:green" "forestgreen:violetred"  "chocolate1:violetred" "forestgreen:green:violetred"
-                                'black 'white 'brown (make-color 34 139 34) 'red (make-color 238 173 14) 'green 'gray))
+(define DARKGOLDENROD2 (make-color 238 173 14))
+(define DEEPBLUE (make-color 6 77 115))
+
+;;no color blind color sheme
+(define standard-color-scheme (color-palette
+                               'forestgreen 'green 'chocolate1 'violetred 'darkgoldenrod2 'chartreuse4 'red2
+                               "red:chartreuse4" "forestgreen:green" "forestgreen:violetred"  "chocolate1:violetred" "forestgreen:green:violetred"
+                               'black 'white 'brown (make-color 34 139 34) 'red DARKGOLDENROD2 'green 'gray))
+;;green color blind color scheme
+(define deuteranopia-color-scheme (color-palette
+                                   "#56B4E9" "#208FCD" "#999AA7" "#057F5E" 'darkgoldenrod2 "#064D73" "#585A5E"
+                                   "#585A5E:#064D73" "#56B4E9:#208FCD" "#56B4E9:#057F5E" "#999AA7:#057F5E"  "#585A5E:#064D73:#057F5E"
+                                   'black 'white 'brown DEEPBLUE (make-color 88 90 94) DARKGOLDENROD2 "#208FCD" 'gray))
+;;red color blind color scheme
+(define protanopia-color-scheme (color-palette
+                                 "#56B4E9" "#208FCD" "#417360" "#1CBB90" 'darkgoldenrod2 "#064D73" "#057F5E"
+                                 "#057F5E:#064D73" "#56B4E9:#208FCD" "#56B4E9:#1CBB90" "#417360:#1CBB90" "#56B4E9:#208FCD:#1CBB90"
+                                 'black 'white 'brown DEEPBLUE (make-color 5 127 94) DARKGOLDENROD2 "#208FCD" 'gray))
+;;blue color blind color scheme
+(define tritanopia-color-scheme standard-color-scheme)
+
 ;;node-attributes -> all the attributes needed to create the node graphs for the viz | node-data
 ;;edge-attributes -> all the attributes needed to create the edge graphs for the viz | edge-data
 (struct graph-attributes (node-attributes edge-attributes))

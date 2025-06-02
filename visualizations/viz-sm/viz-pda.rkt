@@ -349,7 +349,7 @@ farthest-consumed-input | is the portion the ci that the machine consumed the mo
                                          [else (color-palette-font-color color-scheme)])
                                    'style (cond [(and found-tracked-rule? accepted?)
                                                  (edge-data-accept-edge graph-attributes)]
-                                                [(and (or found-tracked-rule? found-reject-rule?) (not accepted?))
+                                                [(or found-tracked-rule? found-reject-rule?)
                                                  (edge-data-reject-edge graph-attributes)]
                                                 [(eq? (triple-pop rule) dead)
                                                  (edge-data-dead-edge graph-attributes)]
@@ -992,8 +992,11 @@ farthest-consumed-input | is the portion the ci that the machine consumed the mo
                          (pda-getstart M)
                          (pda-getfinals M)
                          (remake-rules (pda-getrules M))))]
-         ;;color-pallete ;;
-         [color-scheme standard-color-scheme]
+         ;;color-pallete ;;The corresponding color scheme to used in the viz
+         [color-scheme (cond [(eq? palette 'prot) protanopia-color-scheme] ;;red color blind
+                             [(eq? palette 'deut) deuteranopia-color-scheme] ;;green color blind 
+                             [(eq? palette 'trit) tritanopia-color-scheme] ;;blue color blind
+                             [else standard-color-scheme])]
          ;;symbol ;;Purpose: The name of the dead state
          [dead-state (if add-dead (first (pda-states new-M)) 'no-dead)]
          ;;(list paths hash) ;;Purpose: All computations that the machine can have

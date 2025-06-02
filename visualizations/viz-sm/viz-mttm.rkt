@@ -304,7 +304,7 @@ destination -> the rest of a mttm rule | half-rule
                                                 [else (color-palette-font-color color-scheme)])
                                    'style (cond [(and found-tracked-rule? accepted?)
                                                  (edge-data-accept-edge graph-attributes)]
-                                                [(and (or found-tracked-rule? found-reject-rule?) (not accepted?))
+                                                [(or found-tracked-rule? found-reject-rule?)                                                 
                                                  (edge-data-reject-edge graph-attributes)]
                                                 [else (edge-data-regular-edge graph-attributes)])
                                    'fontsize FONT-SIZE))))
@@ -720,7 +720,7 @@ destination -> the rest of a mttm rule | half-rule
 (define (f-key-pressed a-vs)
   (let ([imsg-state-aux-tape-index (imsg-state-mttm-aux-tape-index (informative-messages-component-state (viz-state-informative-messages a-vs)))]
         [imsg-state-M (imsg-state-mttm-M (informative-messages-component-state (viz-state-informative-messages a-vs)))])
-    (if (and (> (mttm-tape-amount imsg-state-M) 4)
+    (if (and (>= (mttm-tape-amount imsg-state-M) 4)
              (= imsg-state-aux-tape-index (- (mttm-tape-amount imsg-state-M) 3)))
         a-vs
         (struct-copy
@@ -742,7 +742,7 @@ destination -> the rest of a mttm rule | half-rule
 (define (e-key-pressed a-vs)
   (let ([imsg-state-aux-tape-index (imsg-state-mttm-aux-tape-index (informative-messages-component-state (viz-state-informative-messages a-vs)))]
         [imsg-state-M (imsg-state-mttm-M (informative-messages-component-state (viz-state-informative-messages a-vs)))])
-    (if (and (> (mttm-tape-amount imsg-state-M) 4) (= imsg-state-aux-tape-index MIN-AUX-TAPE-INDEX))
+    (if (and (>= (mttm-tape-amount imsg-state-M) 4) (= imsg-state-aux-tape-index MIN-AUX-TAPE-INDEX))
         a-vs
         (struct-copy
          viz-state
@@ -1023,8 +1023,11 @@ destination -> the rest of a mttm rule | half-rule
                                       (mttm-accepting-final M)
                                       cut-off
                                       head-pos)]
-         ;;color-pallete ;;
-         [color-scheme standard-color-scheme]
+        ;;color-pallete ;;The corresponding color scheme to used in the viz
+         [color-scheme (cond [(eq? palette 'prot) protanopia-color-scheme] ;;red color blind
+                             [(eq? palette 'deut) deuteranopia-color-scheme] ;;green color blind 
+                             [(eq? palette 'trit) tritanopia-color-scheme] ;;blue color blind
+                             [else standard-color-scheme])]
          ;;(listof computation) ;;Purpose: Extracts all accepting computations
          [accepting-computations (treelist->list (paths-accepting all-paths))]
          ;;(listof computation) ;;Purpose: Extracts all rejecting computations

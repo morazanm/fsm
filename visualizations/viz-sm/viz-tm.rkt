@@ -383,7 +383,7 @@
                                          [else (color-palette-font-color color-scheme)])
                                    'style (cond [(and found-tracked-rule? accepted?)
                                                  (edge-data-accept-edge graph-attributes)]
-                                                [(and (or found-tracked-rule? found-reject-rule?) (not accepted?))
+                                                [(or found-tracked-rule? found-reject-rule?)
                                                  (edge-data-reject-edge graph-attributes)]
                                                 [else (edge-data-regular-edge graph-attributes)])
                                    'fontsize FONT-SIZE))))
@@ -854,8 +854,11 @@
 (define (tm-viz M a-word head-pos #:cut-off [cut-off 100] #:palette [palette 'default] invs) ;;GET RID OF . FOR TESTING
   (let* (;;tm-struct
          [M (remake-tm M)]
-         ;;color-pallete ;;
-         [color-scheme standard-color-scheme]
+         ;;color-pallete ;;The corresponding color scheme to used in the viz
+         [color-scheme (cond [(eq? palette 'prot) protanopia-color-scheme] ;;red color blind
+                             [(eq? palette 'deut) deuteranopia-color-scheme] ;;green color blind 
+                             [(eq? palette 'trit) tritanopia-color-scheme] ;;blue color blind
+                             [else standard-color-scheme])]
          ;;(listof computations) ;;Purpose: All computations that the machine can have
          ;[computations (get-computations a-word (tm-rules M) (tm-start M) (tm-finals M) cut-off head-pos)]
          [all-paths (get-computations a-word (tm-rules M) (tm-start M) (tm-finals M) (tm-accepting-final M) cut-off head-pos)]

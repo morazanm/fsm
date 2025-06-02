@@ -748,8 +748,11 @@ type -> the type of the ndfa (ndfa/dfa) | symbol
 (define (ndfa-viz M a-word #:add-dead [add-dead #f] #:palette [palette 'default] invs)
   (let* (;;M ;;Purpose: A new machine with the dead state if add-dead is true
          [new-M (remake-machine (if add-dead (make-new-M M) M))]
-         ;;color-pallete ;;
-         [color-scheme standard-color-scheme]
+         ;;color-pallete ;;The corresponding color scheme to used in the viz
+         [color-scheme (cond [(eq? palette 'prot) protanopia-color-scheme] ;;red color blind
+                             [(eq? palette 'deut) deuteranopia-color-scheme] ;;green color blind 
+                             [(eq? palette 'trit) tritanopia-color-scheme] ;;blue color blind
+                             [else standard-color-scheme])]
          ;;symbol ;;Purpose: The name of the dead state
          [dead-state (cond [(and add-dead (eq? (ndfa-type new-M) 'ndfa)) (first (ndfa-states new-M))]
                            [(and add-dead (eq? (ndfa-type new-M) 'dfa)) DEAD]
