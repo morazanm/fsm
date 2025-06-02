@@ -245,7 +245,7 @@
 
 (define pda-jump-next
   (jump-next-inv  E-SCENE-WIDTH
-                  NDFA-E-SCENE-HEIGHT
+                  PDA-E-SCENE-HEIGHT
                   NODE-SIZE
                   DEFAULT-ZOOM-CAP
                   DEFAULT-ZOOM-FLOOR
@@ -254,7 +254,7 @@
 
 (define pda-jump-prev
   (jump-prev-inv  E-SCENE-WIDTH
-                  NDFA-E-SCENE-HEIGHT
+                  PDA-E-SCENE-HEIGHT
                   NODE-SIZE
                   DEFAULT-ZOOM-CAP
                   DEFAULT-ZOOM-FLOOR
@@ -281,7 +281,7 @@
 
 (define tm-jump-next
   (jump-next-inv  E-SCENE-WIDTH
-                  NDFA-E-SCENE-HEIGHT
+                  TM-E-SCENE-HEIGHT
                   NODE-SIZE
                   DEFAULT-ZOOM-CAP
                   DEFAULT-ZOOM-FLOOR
@@ -290,7 +290,7 @@
 
 (define tm-jump-prev
   (jump-prev-inv  E-SCENE-WIDTH
-                  NDFA-E-SCENE-HEIGHT
+                  TM-E-SCENE-HEIGHT
                   NODE-SIZE
                   DEFAULT-ZOOM-CAP
                   DEFAULT-ZOOM-FLOOR
@@ -396,3 +396,95 @@
               PERCENT-BORDER-GAP
               DEFAULT-ZOOM-CAP
               DEFAULT-ZOOM))
+
+
+(define mttm-2tape-viz-max-zoom-out
+  (max-zoom-out E-SCENE-WIDTH
+                MTTM-2tape-E-SCENE-HEIGHT
+                ZOOM-INCREASE
+                ZOOM-DECREASE
+                NODE-SIZE
+                PERCENT-BORDER-GAP
+                DEFAULT-ZOOM-CAP
+                DEFAULT-ZOOM))
+
+(define mttm-2tape-viz-zoom-out
+  (zoom-out E-SCENE-WIDTH
+            MTTM-2tape-E-SCENE-HEIGHT
+            ZOOM-INCREASE
+            ZOOM-DECREASE
+            NODE-SIZE
+            PERCENT-BORDER-GAP
+            DEFAULT-ZOOM-CAP
+            DEFAULT-ZOOM))
+
+(define mttm-2tape-viz-zoom-in
+  (zoom-in E-SCENE-WIDTH
+           MTTM-2tape-E-SCENE-HEIGHT
+           ZOOM-INCREASE
+           ZOOM-DECREASE
+           NODE-SIZE
+           PERCENT-BORDER-GAP
+           DEFAULT-ZOOM-CAP
+           DEFAULT-ZOOM))
+
+(define mttm-3tape-viz-max-zoom-out
+  (max-zoom-out E-SCENE-WIDTH
+                MTTM-3tape-E-SCENE-HEIGHT
+                ZOOM-INCREASE
+                ZOOM-DECREASE
+                NODE-SIZE
+                PERCENT-BORDER-GAP
+                DEFAULT-ZOOM-CAP
+                DEFAULT-ZOOM))
+
+(define mttm-3tape-viz-zoom-out
+  (zoom-out E-SCENE-WIDTH
+            MTTM-3tape-E-SCENE-HEIGHT
+            ZOOM-INCREASE
+            ZOOM-DECREASE
+            NODE-SIZE
+            PERCENT-BORDER-GAP
+            DEFAULT-ZOOM-CAP
+            DEFAULT-ZOOM))
+
+(define mttm-3tape-viz-zoom-in
+  (zoom-in E-SCENE-WIDTH
+           MTTM-3tape-E-SCENE-HEIGHT
+           ZOOM-INCREASE
+           ZOOM-DECREASE
+           NODE-SIZE
+           PERCENT-BORDER-GAP
+           DEFAULT-ZOOM-CAP
+           DEFAULT-ZOOM))
+
+(define mttm->=4tape-viz-max-zoom-out
+  (max-zoom-out E-SCENE-WIDTH
+                MTTM->=4tape-E-SCENE-HEIGHT
+                ZOOM-INCREASE
+                ZOOM-DECREASE
+                NODE-SIZE
+                PERCENT-BORDER-GAP
+                DEFAULT-ZOOM-CAP
+                DEFAULT-ZOOM))
+
+(define mttm->=4tape-viz-zoom-out
+  (zoom-out E-SCENE-WIDTH
+            MTTM->=4tape-E-SCENE-HEIGHT
+            ZOOM-INCREASE
+            ZOOM-DECREASE
+            NODE-SIZE
+            PERCENT-BORDER-GAP
+            DEFAULT-ZOOM-CAP
+            DEFAULT-ZOOM))
+
+
+(define mttm->=4tape-viz-zoom-in
+  (zoom-in E-SCENE-WIDTH
+           MTTM->=4tape-E-SCENE-HEIGHT
+           ZOOM-INCREASE
+           ZOOM-DECREASE
+           NODE-SIZE
+           PERCENT-BORDER-GAP
+           DEFAULT-ZOOM-CAP
+           DEFAULT-ZOOM))

@@ -1104,7 +1104,16 @@ destination -> the rest of a mttm rule | half-rule
                                         [else mttm->=4tape-img-bounding-limit])]
          [mttm-info-img (cond [(= (mttm-tape-amount M) 2) mttm-2tape-info-img]
                               [(= (mttm-tape-amount M) 3) mttm-3tape-info-img]
-                              [else mttm->=4tape-info-img])])
+                              [else mttm->=4tape-info-img])]         
+         [viz-zoom-in (cond [(= (mttm-tape-amount M) 2) mttm-2tape-viz-zoom-in]
+                              [(= (mttm-tape-amount M) 3) mttm-3tape-viz-zoom-in]
+                              [else mttm->=4tape-viz-zoom-in])]
+         [viz-zoom-out (cond [(= (mttm-tape-amount M) 2) mttm-2tape-viz-zoom-out]
+                              [(= (mttm-tape-amount M) 3) mttm-3tape-viz-zoom-out]
+                              [else mttm->=4tape-viz-zoom-out])]
+         [viz-max-zoom-out (cond [(= (mttm-tape-amount M) 2) mttm-2tape-viz-max-zoom-out]
+                              [(= (mttm-tape-amount M) 3) mttm-3tape-viz-max-zoom-out]
+                              [else mttm->=4tape-viz-max-zoom-out])])
     ;all-inv-configs
     ;(list->zipper failed-inv-configs)
     (run-viz graphs

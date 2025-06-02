@@ -106,7 +106,7 @@
 (define (calculate-viewport-limits scaled-image scale E-SCENE-WIDTH E-SCENE-HEIGHT NODE-SIZE)
   (let [(img-width-node-diff (- (/ (image-width scaled-image) 2) (* NODE-SIZE scale)))
         (img-height-node-diff (- (/ (image-height scaled-image) 2) (* NODE-SIZE scale)))
-        (scaled-node-size (* NODE-SIZE scale))]
+        (scaled-node-size (* NODE-SIZE scale))]    
     (let [(MIN-X (if (< E-SCENE-WIDTH (/ (image-width scaled-image) 2))
                      (- (* -1 (- (/ (image-width scaled-image) 2) E-SCENE-WIDTH)) (- E-SCENE-WIDTH scaled-node-size) )
                      (* -1 img-width-node-diff)))
