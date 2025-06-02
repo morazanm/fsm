@@ -542,8 +542,8 @@
                      
        [invs-zipper (cond [(zipper-empty? imsg-state-invs-zipper) imsg-state-invs-zipper]
                           [(and (not (zipper-at-end? imsg-state-invs-zipper))
-                                (>= (get-tm-config-index-frm-trace imsg-state-shown-accepting-trace)
-                                    (tm-config-index (first (zipper-unprocessed imsg-state-invs-zipper)))))
+                                (>= (add1 (get-tm-config-index-frm-trace imsg-state-shown-accepting-trace))
+                                    (tm-config-index (zipper-current imsg-state-invs-zipper))))
                            (zipper-next imsg-state-invs-zipper)]
                           [else imsg-state-invs-zipper])])])])))
 
@@ -648,8 +648,8 @@
                                   (zipper-prev imsg-state-shown-accepting-trace))]
        [invs-zipper (cond [(zipper-empty? imsg-state-invs-zipper) imsg-state-invs-zipper]
                           [(and (not (zipper-at-begin? imsg-state-invs-zipper))
-                                (<= (get-tm-config-index-frm-trace imsg-state-shown-accepting-trace)
-                                    (tm-config-index (first (zipper-processed imsg-state-invs-zipper)))))
+                                (<= (sub1 (get-tm-config-index-frm-trace imsg-state-shown-accepting-trace))
+                                    (tm-config-index (zipper-current imsg-state-invs-zipper))))
                            (zipper-prev imsg-state-invs-zipper)]
                           [else imsg-state-invs-zipper])])])])))
 
@@ -756,8 +756,6 @@
         [imsg-state-invs-zipper (imsg-state-tm-invs-zipper (informative-messages-component-state
                                                             (viz-state-informative-messages a-vs)))])
   (if (or (zipper-empty? imsg-state-invs-zipper)
-          (and (zipper-at-begin? imsg-state-invs-zipper)
-               (not (zipper-at-end? imsg-state-invs-zipper)))
           (< (get-tm-config-index-frm-trace imsg-state-shown-accepting-trace)
              (get-tm-config-index-frm-invs imsg-state-invs-zipper)))
       a-vs
@@ -810,8 +808,6 @@
         [imsg-state-invs-zipper (imsg-state-tm-invs-zipper (informative-messages-component-state
                                                             (viz-state-informative-messages a-vs)))])
   (if (or (zipper-empty? imsg-state-invs-zipper)
-          (and (zipper-at-end? imsg-state-invs-zipper)
-               (not (zipper-at-begin? imsg-state-invs-zipper)))
           (> (get-tm-config-index-frm-trace imsg-state-shown-accepting-trace)
                               (get-tm-config-index-frm-invs imsg-state-invs-zipper)))
       a-vs

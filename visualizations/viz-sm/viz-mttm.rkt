@@ -514,11 +514,11 @@ destination -> the rest of a mttm rule | half-rule
          ;;invs-zipper
          [invs-zipper (cond [(zipper-empty? imsg-state-invs-zipper) imsg-state-invs-zipper]
                             [(and (not (zipper-at-end? imsg-state-invs-zipper))
-                                  (>= (get-mttm-config-index-frm-trace
+                                  (>= (add1 (get-mttm-config-index-frm-trace
                                        (if (zipper-empty? imsg-state-shown-accepting-trace)
                                            imsg-state-shown-rejecting-trace
-                                           imsg-state-shown-accepting-trace))
-                                      (mttm-config-index (first (zipper-unprocessed imsg-state-invs-zipper)))))
+                                           imsg-state-shown-accepting-trace)))
+                                                  (mttm-config-index (zipper-current imsg-state-invs-zipper))))
                              (zipper-next imsg-state-invs-zipper)]
                             [else imsg-state-invs-zipper])])])])))
 
@@ -643,11 +643,11 @@ destination -> the rest of a mttm rule | half-rule
          ;;invs-zipper
          [invs-zipper (cond [(zipper-empty? imsg-state-invs-zipper) imsg-state-invs-zipper]
                             [(and (not (zipper-at-begin? imsg-state-invs-zipper))
-                                  (<= (get-mttm-config-index-frm-trace
+                                  (<= (sub1 (get-mttm-config-index-frm-trace
                                        (if (zipper-empty? imsg-state-shown-accepting-trace)
                                            imsg-state-shown-rejecting-trace
-                                           imsg-state-shown-accepting-trace))
-                                      (mttm-config-index (first (zipper-processed imsg-state-invs-zipper)))))
+                                           imsg-state-shown-accepting-trace)))
+                                                  (mttm-config-index (zipper-current imsg-state-invs-zipper))))
                              (zipper-prev imsg-state-invs-zipper)]
                             [else imsg-state-invs-zipper])])])])))
 
@@ -811,13 +811,7 @@ destination -> the rest of a mttm rule | half-rule
                                                                          'mttm-language-recognizer)
                                                                     imsg-state-shown-accepting-trace
                                                                     imsg-state-shown-rejecting-trace))])
-    (displayln (and (zipper-at-begin? imsg-state-invs-zipper)
-                 (not (zipper-at-end? imsg-state-invs-zipper))))
-    (displayln (zipper-at-begin? imsg-state-invs-zipper))
-    (displayln (not (zipper-at-end? imsg-state-invs-zipper))) 
-    (if (or (zipper-empty? imsg-state-invs-zipper)
-            (and (zipper-at-begin? imsg-state-invs-zipper)
-                 (not (zipper-at-end? imsg-state-invs-zipper)))
+    (if (or (zipper-empty? imsg-state-invs-zipper) 
             (< inv-config-frm-trace (get-mttm-config-index-frm-invs imsg-state-invs-zipper)))
         a-vs
         (let* ([zip (if (and (not (zipper-at-begin? imsg-state-invs-zipper))
@@ -880,8 +874,6 @@ destination -> the rest of a mttm rule | half-rule
                                                                     imsg-state-shown-accepting-trace
                                                                     imsg-state-shown-rejecting-trace))])
     (if (or (zipper-empty? imsg-state-invs-zipper)
-            (and (zipper-at-end? imsg-state-invs-zipper)
-                 (not (zipper-at-begin? imsg-state-invs-zipper)))
             (> inv-config-frm-trace (get-mttm-config-index-frm-invs imsg-state-invs-zipper)))
         a-vs
         (let* ([zip (if (and (not (zipper-at-end? imsg-state-invs-zipper))
@@ -1117,7 +1109,8 @@ destination -> the rest of a mttm rule | half-rule
          [viz-max-zoom-out (cond [(= (mttm-tape-amount M) 2) mttm-2tape-viz-max-zoom-out]
                               [(= (mttm-tape-amount M) 3) mttm-3tape-viz-max-zoom-out]
                               [else mttm->=4tape-viz-max-zoom-out])])
-    ;all-inv-configs
+    #;all-inv-configs
+    
     ;(list->zipper failed-inv-configs)
     (run-viz graphs
              (lambda () (graph->bitmap (first graphs)))
