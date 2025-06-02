@@ -136,7 +136,8 @@
                                      (if (empty? pci)
                                          '()
                                          (list (list sub1-pci-length FADED-WORD-COLOR)
-                                               (list sub1-pci-length REJECT-COLOR)))))
+                                               (list sub1-pci-length REJECT-COLOR)))
+                                     (imsg-state-ndfa-color-pallete imsg-st)))
               (beside (text "Consumed: " FONT-SIZE FONT-COLOR)
                       (if (empty? pci)
                           (text "" FONT-SIZE FONT-COLOR)
@@ -144,7 +145,8 @@
                                          (if (> sub1-pci-length TAPE-SIZE)
                                              (imsg-state-ndfa-word-img-offset imsg-st)
                                              0)
-                                         '()))))]
+                                         '()
+                                         (imsg-state-ndfa-color-pallete imsg-st)))))]
             [else (above/align 'left
                                (beside (text "aaaK" FONT-SIZE BLANK-COLOR)
                                        (text "Word: " FONT-SIZE FONT-COLOR)
@@ -154,13 +156,15 @@
                                                           0)
                                                       (if (empty? pci)
                                                           '()
-                                                          (list (list (length pci) FADED-WORD-COLOR) '()))))
+                                                          (list (list (length pci) FADED-WORD-COLOR) '()))
+                                                      (imsg-state-ndfa-color-pallete imsg-st)))
                                (beside (text "Consumed: " FONT-SIZE FONT-COLOR)
                                        (make-tape-img pci
                                                       (if (> (length pci) TAPE-SIZE)
                                                           (imsg-state-ndfa-word-img-offset imsg-st)
                                                           0) 
-                                                      '())))])
+                                                      '()
+                                                      (imsg-state-ndfa-color-pallete imsg-st))))])
       (text (format "The current number of possible computations is ~a (without repeated configurations). "
                      (number->string (hash-ref (imsg-state-ndfa-computation-lengths imsg-st)
                                               upci
@@ -229,14 +233,16 @@
                                                  (if (empty? pci)
                                                      '()
                                                      (list (list sub1-pci-length FADED-WORD-COLOR)
-                                                           (list sub1-pci-length CUT-OFF-COLOR)))))
+                                                           (list sub1-pci-length CUT-OFF-COLOR)))
+                                                 (imsg-state-pda-color-pallete imsg-st)))
                           (beside (text "Consumed: " FONT-SIZE FONT-COLOR)
                                   (make-tape-img (take pci sub1-pci-length)
                                                  (if (> sub1-pci-length
                                                          TAPE-SIZE)
                                                      (imsg-state-pda-word-img-offset imsg-st)
                                                      0)
-                                                 '()))))]
+                                                 '()
+                                                 (imsg-state-pda-color-pallete imsg-st)))))]
             [(and (equal? upci farthest-consumed-input)
                   (eq? machine-decision 'reject))
              (let* ([pci-length (length pci)]
@@ -252,7 +258,8 @@
                                        (if (empty? pci)
                                            '()
                                            (list (list sub1-pci-length FADED-WORD-COLOR)
-                                                 (list sub1-pci-length REJECT-COLOR)))))
+                                                 (list sub1-pci-length REJECT-COLOR)))
+                                       (imsg-state-pda-color-pallete imsg-st)))
                 (beside (text "Consumed: " FONT-SIZE FONT-COLOR)
                         (if (empty? pci)
                             (text "" FONT-SIZE FONT-COLOR)
@@ -260,7 +267,8 @@
                                            (if (> pci-length TAPE-SIZE)
                                                (imsg-state-pda-word-img-offset imsg-st)
                                                0)
-                                           '())))))]
+                                           '()
+                                           (imsg-state-pda-color-pallete imsg-st))))))]
             [else (above/align 'left
                                (beside (text "aaaK" FONT-SIZE BLANK-COLOR)
                                        (text "Word: " FONT-SIZE FONT-COLOR)
@@ -270,13 +278,15 @@
                                                           0)
                                                       (if (empty? pci)
                                                           '()
-                                                          (list (list (length pci) FADED-WORD-COLOR) '()))))
+                                                          (list (list (length pci) FADED-WORD-COLOR) '()))
+                                                      (imsg-state-pda-color-pallete imsg-st)))
                                (beside (text "Consumed: " FONT-SIZE FONT-COLOR)
                                        (make-tape-img pci
                                                       (if (> (length pci) TAPE-SIZE)
                                                           (imsg-state-pda-word-img-offset imsg-st)
                                                           0)
-                                                      '())))])
+                                                      '()
+                                                      (imsg-state-pda-color-pallete imsg-st))))])
       (cond [(zipper-empty? (imsg-state-pda-stack imsg-st)) (text "aaaC" FONT-SIZE BLANK-COLOR)]
             [(empty? current-stack) (beside (text "aaak" FONT-SIZE BLANK-COLOR)
                                             (text "Stack: " FONT-SIZE FONT-COLOR))]
@@ -286,7 +296,8 @@
                                          (if (> (length current-stack) TAPE-SIZE)
                                              (imsg-state-pda-word-img-offset imsg-st)
                                              0)
-                                         '()))])
+                                         '()
+                                         (imsg-state-pda-color-pallete imsg-st)))])
       (text (format "The current number of possible computations is: ~a (without repeated configurations)."
                     (number->string (hash-ref (imsg-state-pda-computation-lengths imsg-st)
                                               upci

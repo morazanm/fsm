@@ -78,7 +78,7 @@ rules are a (listof rule-structs)
 
 (struct node-data (inv-node bi-inv-node dead-node regular-node final-state accepting-final-state regular-state bi-inv-font regular-font))
 
-(define default-node-attributes (node-data 'filled 'wedged 'dashed 'solid 'doublecirlce 'doubleoctagon 'circle "times-bold" "Times-Roman"))
+(define default-node-attributes (node-data 'filled 'wedged 'dashed 'solid 'doublecircle 'doubleoctagon 'circle "times-bold" "Times-Roman"))
 
 (struct edge-data (accept-edge reject-edge dead-edge regular-edge))
 
