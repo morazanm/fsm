@@ -38,7 +38,7 @@
   "../visualizations/viz-grammar-constructors/csg-viz.rkt"
   "private/Chomsky-Greibach-CFG-Transformations/chomsky.rkt"
   "private/Chomsky-Greibach-CFG-Transformations/greibach.rkt"
-  "private/fsmunit/check-accept-reject-macro.rkt"
+  "private/fsmunit/interface.rkt"
   racket/list
   racket/bool
   racket/contract)

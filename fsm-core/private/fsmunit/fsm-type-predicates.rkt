@@ -2,7 +2,8 @@
 
 (require "../csg.rkt"
          "../cfg.rkt"
-         "../regular-grammar.rkt")
+         "../regular-grammar.rkt"
+         "../regexp.rkt")
 
 (provide (all-defined-out))
 
@@ -14,7 +15,6 @@
         (cfg? g)
         (csg? g)))
 
-  
   ;; Any -> Boolean
   ;; Purpose: Checks if m is a turing machine
   (define (is-turing-machine? m)
@@ -37,6 +37,8 @@
   (cond [(is-turing-machine? unknown-val) 'turing-machine]
         [(is-machine? unknown-val) 'machine]
         [(is-grammar? unknown-val) 'grammar]
+        [(regexp? unknown-val) 'regexp]
+        [(procedure? unknown-val) 'inv]
         [else (if (equal? unknown-val 'sora)
                   (begin (displayln "- Garced was here")
                          'notanfsmval)

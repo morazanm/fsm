@@ -1,11 +1,7 @@
 #lang racket
 
-(require (for-syntax syntax/parse
-                     racket/base
-                     )
-         "../../interface.rkt"
-         "check-accept-reject-macro.rkt"
-         rackunit)
+(require "../../interface.rkt"
+         "interface.rkt")
 
 ;; TESTING MACHINES
 
