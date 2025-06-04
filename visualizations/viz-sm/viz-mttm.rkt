@@ -302,9 +302,9 @@ destination -> the rest of a mttm rule | half-rule
                                                 [found-accept-rule?   (color-palette-other-accept-color color-scheme)]
                                                 [found-reject-rule?   (color-palette-other-reject-color color-scheme)]
                                                 [else (color-palette-font-color color-scheme)])
-                                   'style (cond [(and found-tracked-rule? accepted?)
+                                   'style (cond [found-tracked-rule? #;(and found-tracked-rule? accepted?)
                                                  (edge-data-accept-edge graph-attributes)]
-                                                [(or found-tracked-rule? found-reject-rule?)                                                 
+                                                [(or found-reject-rule? found-accept-rule?) #;(or found-tracked-rule? found-reject-rule?)                                                 
                                                  (edge-data-reject-edge graph-attributes)]
                                                 [else (edge-data-regular-edge graph-attributes)])
                                    'fontsize FONT-SIZE))))

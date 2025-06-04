@@ -174,6 +174,11 @@ type -> the type of the ndfa (ndfa/dfa) | symbol
            (reverse (cons res acc)))]
          [(or (empty? rules)
               (empty? configs)) (reverse acc)]
+         [(and (empty? acc)
+              (not (equal? (triple-read (first rules)) EMP)))
+         (let* ([rle (rule (triple EMP EMP EMP))]
+                [res (trace (first configs) (list rle))])
+           (make-trace (rest configs) rules (cons res acc)))]
         [(and (not (empty? acc))
               (equal? (triple-read (first rules)) EMP))
          (let* ([rle (rule (first rules))]
@@ -307,6 +312,14 @@ type -> the type of the ndfa (ndfa/dfa) | symbol
         (list->seteq (fsa-getfinals M))
         (remake-rules (fsa-getrules M))
         (M 'whatami)))
+
+;;(listof trace) (listof trace) -> (listof trace)
+  ;;Purpose: Finds the longest computation for rejecting traces
+  (define (find-longest-computation a-LoRT acc)
+    (cond [(empty? a-LoRT) acc]
+          [(> (length (first a-LoRT)) (length acc))
+           (find-longest-computation (rest a-LoRT) (first a-LoRT))]
+          [(find-longest-computation (rest a-LoRT) acc)]))
   
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -338,7 +351,7 @@ type -> the type of the ndfa (ndfa/dfa) | symbol
 
 ;; graph machine word (listof rules) (listof rules) symbol -> graph
 ;; Purpose: To create a graph of edges from the given list of rules
-(define (edge-graph cgraph M current-shown-accept-rules other-current-accept-rules current-reject-rules dead color-scheme)
+(define (edge-graph cgraph M current-shown-accept-rules other-current-accept-rules current-reject-rules dead color-scheme accepted?)
   (foldl (λ (rule result)
            (let ([other-current-accept-rule-find-rule? (find-rule? rule dead other-current-accept-rules)]
                  [current-shown-accept-rule-find-rule? (find-rule? rule dead current-shown-accept-rules)]
@@ -355,13 +368,15 @@ type -> the type of the ndfa (ndfa/dfa) | symbol
                                                 [(and current-shown-accept-rule-find-rule? other-current-accept-rule-find-rule?
                                                       found-current-reject-rule?)
                                                  (color-palette-bi-accept-reject-color color-scheme)]
-                                                [current-shown-accept-rule-find-rule? (color-palette-shown-accept-color color-scheme)]
+                                                [(and accepted? current-shown-accept-rule-find-rule?) (color-palette-shown-accept-color color-scheme)]
+                                                [current-shown-accept-rule-find-rule? (color-palette-shown-reject-color color-scheme)]
                                                 [other-current-accept-rule-find-rule? (color-palette-other-accept-color color-scheme)]
                                                 [found-current-reject-rule? (color-palette-other-reject-color color-scheme)]
                                                 [else (color-palette-font-color color-scheme)])
                                    'fontsize FONT-SIZE
                                    'style (cond [current-shown-accept-rule-find-rule? (edge-data-accept-edge graph-attributes)]
-                                                [found-current-reject-rule? (edge-data-reject-edge graph-attributes)]
+                                                [(or other-current-accept-rule-find-rule? found-current-reject-rule?)
+                                                 (edge-data-reject-edge graph-attributes)]
                                                 [(equal? (triple-destination rule) dead) (edge-data-dead-edge graph-attributes)]
                                                 [else (edge-data-regular-edge graph-attributes)])))))
          cgraph
@@ -446,7 +461,8 @@ type -> the type of the ndfa (ndfa/dfa) | symbol
      current-a-rules
      current-rules
      (building-viz-state-dead a-vs)
-     (building-viz-state-palette a-vs))))
+     (building-viz-state-palette a-vs)
+     (not (empty? (building-viz-state-accepting-computations a-vs))))))
 
 ;;viz-state (listof graph-thunks) -> (listof graph-thunks)
 ;;Purpose: Creates all the graphs needed for the visualization
@@ -781,6 +797,7 @@ type -> the type of the ndfa (ndfa/dfa) | symbol
                                               (treelist->list (computation-LoR reject-comp))
                                               '()))
                                 rejecting-computations)]
+         [rejecting-trace (if (empty? accepting-traces) (find-longest-computation rejecting-traces '()) '())]
          ;;(listof symbol) ;;Purpose: The portion of the ci that the machine can conusme the most 
          [most-consumed-word (let* ([farthest-consumed (get-farthest-consumed LoC (ndfa-config (ndfa-start new-M) a-word 0))]
                                     [last-word (if (and (empty? accepting-traces) (not (empty? (ndfa-config-word farthest-consumed))))
@@ -800,10 +817,12 @@ type -> the type of the ndfa (ndfa/dfa) | symbol
                                              new-M
                                              (if (and add-dead (not (empty? invs))) (cons (list dead-state (λ (w) #t)) invs) invs) 
                                              dead-state
-                                             (if (empty? accepting-traces) accepting-traces (list (first accepting-traces)))
+                                             (if (empty? accepting-traces) (list rejecting-trace) (list (first accepting-traces)))
                                              (if (eq? (ndfa-type new-M) 'ndfa) accepting-computations pre-loc)
                                              (if (empty? accepting-traces) accepting-traces (rest accepting-traces))
-                                             rejecting-traces
+                                             (if (empty? accepting-traces) (filter (λ (config) (not (equal? config rejecting-trace)))
+                                                                                   rejecting-traces)
+                                                 rejecting-traces)
                                              most-consumed-word
                                              color-scheme)]
          ;;(listof graph-thunk) ;;Purpose: Gets all the graphs needed to run the viz
@@ -832,7 +851,7 @@ type -> the type of the ndfa (ndfa/dfa) | symbol
              (informative-messages ndfa-create-draw-informative-message
                                    (imsg-state-ndfa new-M
                                                     CIs
-                                                    (list->zipper (if (empty? accepting-traces) (first rejecting-traces) (first accepting-traces)))
+                                                    (list->zipper (if (empty? accepting-traces) rejecting-trace (first accepting-traces)))
                                                     most-consumed-word
                                                     (list->zipper inv-configs)
                                                     computation-lens

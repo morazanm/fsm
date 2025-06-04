@@ -347,9 +347,9 @@ farthest-consumed-input | is the portion the ci that the machine consumed the mo
                                          [found-accept-rule?   (color-palette-other-accept-color color-scheme)]
                                          [found-reject-rule?   (color-palette-other-reject-color color-scheme)]
                                          [else (color-palette-font-color color-scheme)])
-                                   'style (cond [(and found-tracked-rule? accepted?)
+                                   'style (cond [found-tracked-rule? #;(and found-tracked-rule? accepted?)
                                                  (edge-data-accept-edge graph-attributes)]
-                                                [(or found-tracked-rule? found-reject-rule?)
+                                                [(or #;found-tracked-rule? found-accept-rule? found-reject-rule?)
                                                  (edge-data-reject-edge graph-attributes)]
                                                 [(eq? (triple-pop rule) dead)
                                                  (edge-data-dead-edge graph-attributes)]

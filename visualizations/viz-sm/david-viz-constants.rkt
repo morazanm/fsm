@@ -71,22 +71,40 @@ rules are a (listof rule-structs)
 
 (define DARKGOLDENROD2 (make-color 238 173 14))
 (define DEEPBLUE (make-color 6 77 115))
+(define DEEPBLUE-HEX "#064D73")
+(define DEEPSEAGREEN-HEX "#057F5E")
+(define SKYBLUE-HEX "#56B4E9")
+(define BLUE2-HEX "#208FCD")
+(define STORMCLOUD-HEX "#585A5E")
+(define LIGHTGREY-HEX "#999AA7")
+(define MINTGREEN-HEX "#1CBB90")
+(define MURKYGREEN-HEX "#417360")
+(define DEEPSTORMBLUE (string-append STORMCLOUD-HEX ":" DEEPBLUE-HEX))
+(define SKYBLUE2 (string-append SKYBLUE-HEX ":invis:" BLUE2-HEX))
+(define SKYGREEN (string-append SKYBLUE-HEX ":invis:" DEEPSEAGREEN-HEX))
+(define LIGHTSEAGREEN (string-append LIGHTGREY-HEX ":invis:" DEEPSEAGREEN-HEX))
+(define STORMSEABLUE (string-append STORMCLOUD-HEX ":" DEEPSEAGREEN-HEX ":" DEEPBLUE-HEX))
+(define DEEPSEABLUE (string-append DEEPSEAGREEN-HEX ":" DEEPBLUE-HEX))
+(define SKYMINTGREEN (string-append SKYBLUE-HEX ":invis:" MINTGREEN-HEX))
+(define MURKYMINTGREEN (string-append MURKYGREEN-HEX ":invis:" MINTGREEN-HEX))
+(define SKYMINTBLUE2 (string-append SKYBLUE-HEX ":" MINTGREEN-HEX ":" BLUE2-HEX))
 
 ;;no color blind color sheme
 (define standard-color-scheme (color-palette
                                'forestgreen 'green 'chocolate1 'violetred 'darkgoldenrod2 'chartreuse4 'red2
-                               "red:chartreuse4" "forestgreen:green" "forestgreen:violetred"  "chocolate1:violetred" "forestgreen:green:violetred"
+                               "red:chartreuse4" "forestgreen:invis:green" "forestgreen:invis:violetred"
+                               "chocolate1:invis:violetred" "forestgreen:violetred:green"
                                'black 'white 'brown (make-color 34 139 34) 'red DARKGOLDENROD2 'green 'gray))
 ;;green color blind color scheme
 (define deuteranopia-color-scheme (color-palette
-                                   "#56B4E9" "#208FCD" "#999AA7" "#057F5E" 'darkgoldenrod2 "#064D73" "#585A5E"
-                                   "#585A5E:#064D73" "#56B4E9:#208FCD" "#56B4E9:#057F5E" "#999AA7:#057F5E"  "#585A5E:#064D73:#057F5E"
-                                   'black 'white 'brown DEEPBLUE (make-color 88 90 94) DARKGOLDENROD2 "#208FCD" 'gray))
+                                   SKYBLUE-HEX BLUE2-HEX LIGHTGREY-HEX DEEPSEAGREEN-HEX 'darkgoldenrod2 DEEPBLUE-HEX STORMCLOUD-HEX
+                                   DEEPSTORMBLUE SKYBLUE2 SKYGREEN LIGHTSEAGREEN STORMSEABLUE
+                                   'black 'white 'brown DEEPBLUE (make-color 88 90 94) DARKGOLDENROD2 BLUE2-HEX 'gray))
 ;;red color blind color scheme
 (define protanopia-color-scheme (color-palette
-                                 "#56B4E9" "#208FCD" "#417360" "#1CBB90" 'darkgoldenrod2 "#064D73" "#057F5E"
-                                 "#057F5E:#064D73" "#56B4E9:#208FCD" "#56B4E9:#1CBB90" "#417360:#1CBB90" "#56B4E9:#208FCD:#1CBB90"
-                                 'black 'white 'brown DEEPBLUE (make-color 5 127 94) DARKGOLDENROD2 "#208FCD" 'gray))
+                                 SKYBLUE-HEX BLUE2-HEX MURKYGREEN-HEX MINTGREEN-HEX 'darkgoldenrod2 DEEPBLUE-HEX DEEPSEAGREEN-HEX
+                                 DEEPSEABLUE SKYBLUE2 SKYGREEN MURKYMINTGREEN SKYMINTBLUE2
+                                 'black 'white 'brown DEEPBLUE (make-color 5 127 94) DARKGOLDENROD2 BLUE2-HEX 'gray))
 ;;blue color blind color scheme
 (define tritanopia-color-scheme standard-color-scheme)
 

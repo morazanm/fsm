@@ -1,8 +1,7 @@
 #lang racket
 
 (require ;"testing-parameter.rkt"
-         "../../fsm-core/interface.rkt"
-         "sm-viz.rkt")
+         "../../fsm-core/interface.rkt")
 
 (define (ndfa->pda M)
   (let [(states (sm-states M))
