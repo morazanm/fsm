@@ -363,7 +363,9 @@ type -> the type of the ndfa (ndfa/dfa) | symbol
                        (triple-destination rule)
                        #:atb (hash 'color (cond [(and current-shown-accept-rule-find-rule? other-current-accept-rule-find-rule?)
                                                  (color-palette-split-accept-color color-scheme)]
-                                                [(and current-shown-accept-rule-find-rule? found-current-reject-rule?)
+                                                [(and current-shown-accept-rule-find-rule? found-current-reject-rule? (not accepted?))
+                                                 (color-palette-split-reject-color color-scheme)]
+                                                [(and current-shown-accept-rule-find-rule? found-current-reject-rule? accepted?)
                                                  (color-palette-split-accept-reject-color color-scheme)]
                                                 [(and current-shown-accept-rule-find-rule? other-current-accept-rule-find-rule?
                                                       found-current-reject-rule?)
