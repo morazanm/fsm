@@ -1,7 +1,7 @@
 #lang racket
 
 (require ;"testing-parameter.rkt"
-         "../../fsm-core/interface.rkt")
+  "../../fsm-core/interface.rkt")
 
 (define (ndfa->pda M)
   (let [(states (sm-states M))
@@ -41,11 +41,25 @@
 
 ;; L = ab* U (ab)*b*
 (define L (make-ndfa '(S A B C D E)
-                               '(a b)
-                               'S
-                               '(S B C E)
-                               `((S ,EMP A) (S ,EMP C) (A a B) (B b B)
-                                 (C a D) (C b E) (D b C) (E b E))))
+                     '(a b)
+                     'S
+                     '(S B C E)
+                     `((S ,EMP A) (S ,EMP C) (A a B) (B b B)
+                                  (C a D) (C b E) (D b C) (E b E))))
+
+(define LM (sm-rename-states '(S A B C D E) L))
+
+(define MM1 (make-ndfa '(S A B C D E G H I J K)
+                       '(a b)
+                       'S
+                       '(S B C E H I K)
+                       `((S ,EMP A) (S ,EMP C) (S ,EMP G) (S ,EMP I)
+                                    (A a B) (B b B)(C a D) (C b E) (D b C) (E b E)
+                                    (G a H) (H b H) (I a J) (I b K) (J b I) (K b K)
+                                    )
+                       ))
+
+
 
 ;;L = aa* U ab*
 (define aa*Uab* (make-ndfa '(K B D)
@@ -195,12 +209,12 @@
                         (I ,EMP H))))
 ;; L = ab* U ab*b*
 (define ab*-U-ab*b*-ndfa 
-       (make-ndfa '(S A B C D E)
-                  '(a b)
-                  'S
-                  '(C E)
-                  `((S ,EMP A) (S ,EMP D) (A a B) (A ,EMP C)
-                               (B b A) (C b C) (D a E) (E b E))))
+  (make-ndfa '(S A B C D E)
+             '(a b)
+             'S
+             '(C E)
+             `((S ,EMP A) (S ,EMP D) (A a B) (A ,EMP C)
+                          (B b A) (C b C) (D a E) (E b E))))
 ;;L = 0 U 1(0 U 1)*
 (define PROP-BI (make-dfa '(S M N)
                           '(0 1)
@@ -328,7 +342,7 @@
 ;;Purpose: Determines if the last letter in the given word is an a
 (define (AB*B*UAB*-B-INV a-word)
   (and (not (empty? a-word)) (not
-       (equal? (last a-word) 'a))))
+                              (equal? (last a-word) 'a))))
 ;)
 
 ;;word -> boolean
@@ -494,6 +508,27 @@
                                          ((H a (a))(H ,EMP))
                                          ((H ,EMP ,EMP)(I ,EMP)))))
 
+(define MM2 (sm-rename-states '(K H I) SCHIZO-SAME-NUM-AB))
+
+(define MM3 (make-ndpda '(K H I B C)
+                        '(a b)
+                        '(a b)
+                        'K
+                        '(I C)
+                        `(((K ,EMP ,EMP)(H ,EMP))
+                          ((K a ,EMP)(K (b)))
+                          ((K b ,EMP)(K (a)))
+                          ((H ,EMP ,EMP)(K ,EMP))
+                          ((H b (b))(H ,EMP))
+                          ((H a (a))(H ,EMP))
+                          ((H ,EMP ,EMP)(I ,EMP))
+
+                          ((K ,EMP ,EMP)(B ,EMP))
+                          ((B ε ε) (K ε))
+                          ((B b (b)) (B ε))
+                          ((B a (a)) (B ε))
+                          ((B ε ε) (C ε)))))
+
 
 ;; L = {a^m b^n c^p z | m, n, p ≥ 0 and m ≤ n and m ≤ p}
 (define ambncp (make-ndpda '(S A B C D E F G)
@@ -502,20 +537,20 @@
                            'S
                            '(F)
                            `(((S a ,EMP) (A (a y)))
-                            ((A a ,EMP) (A (a)))
-                            ((A b (a)) (B ,EMP))
-                            ((B b (a)) (B ,EMP))
-                            ((B c (a)) (C ,EMP))
-                            ((C c (a)) (C ,EMP))
-                            ((C z ,EMP) (G ,EMP))
-                            ((C c (y)) (E (y)))
-                            ((B b (y)) (D (y)))
-                            ((D b (y)) (D (y)))
-                            ((D c (y)) (E (y)))
-                            ((E c (y)) (E (y)))
-                            ((E z (y)) (F ,EMP))
-                            ((G ,EMP (a)) (G ,EMP))
-                            ((G ,EMP (y)) (F ,EMP)))))
+                             ((A a ,EMP) (A (a)))
+                             ((A b (a)) (B ,EMP))
+                             ((B b (a)) (B ,EMP))
+                             ((B c (a)) (C ,EMP))
+                             ((C c (a)) (C ,EMP))
+                             ((C z ,EMP) (G ,EMP))
+                             ((C c (y)) (E (y)))
+                             ((B b (y)) (D (y)))
+                             ((D b (y)) (D (y)))
+                             ((D c (y)) (E (y)))
+                             ((E c (y)) (E (y)))
+                             ((E z (y)) (F ,EMP))
+                             ((G ,EMP (a)) (G ,EMP))
+                             ((G ,EMP (y)) (F ,EMP)))))
 
 ;;L = a^ib^j i <= j <= 2i buggy
 (define P2 (make-ndpda '(S H)
@@ -888,13 +923,13 @@
          (eq? (list-ref tape headpos) BLANK))))
 
 (define tm-a* (make-unchecked-tm '(S Y N)
-                              '(a b)
-                              `(((S a) (S ,RIGHT))
-                                ((S b) (N b))
-                                ((S ,BLANK) (Y ,BLANK)))
-                              'S
-                              '(Y N)
-                              'Y))
+                                 '(a b)
+                                 `(((S a) (S ,RIGHT))
+                                   ((S b) (N b))
+                                   ((S ,BLANK) (Y ,BLANK)))
+                                 'S
+                                 '(Y N)
+                                 'Y))
 
 ;; States (i is the position of the head)
 ;; S: no tape elements read, starting sate
@@ -1324,244 +1359,244 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define a^nb^n (make-mttm '(K H R E C O M T) ;;<--- states
-                                    '(a b) ;;<--- alpha
-                                    'K ;;<-- start
-                                    '(T) ;; final
-                                    (list
-                                     (list (list 'K (list BLANK BLANK BLANK));; <-- Starting 
-                                           (list 'H (list RIGHT RIGHT RIGHT))) 
-                                     (list (list 'H (list 'a BLANK BLANK)) ;;<-- Phase 1, reads a's
-                                           (list 'R (list 'a 'a BLANK)))
-                                     (list (list 'R (list 'a 'a BLANK))
-                                           (list 'H (list RIGHT RIGHT BLANK))) 
-                                     (list (list 'H (list 'b BLANK BLANK)) ;;<-- phase 2, read b's
-                                           (list 'E (list 'b BLANK 'b)))
-                                     (list (list 'E (list 'b BLANK 'b))
-                                           (list 'C (list RIGHT BLANK RIGHT)))
-                                     (list (list 'C (list 'b BLANK BLANK))
-                                           (list 'E (list 'b BLANK 'b))) 
-                                     (list (list 'C (list BLANK BLANK BLANK))
-                                           (list 'O (list RIGHT BLANK BLANK)))
-                                     (list (list 'O (list BLANK BLANK BLANK)) ;;<-- phase 4, matching as, bs, cs
-                                           (list 'M (list BLANK LEFT LEFT)))
-                                     (list (list 'M (list BLANK 'a 'b))
-                                           (list 'M (list BLANK LEFT LEFT)))
-                                     (list (list 'M (list BLANK BLANK BLANK)) ;;<-phase 5, accept (if possible)
-                                           (list 'T (list BLANK BLANK BLANK)))
-                                     ) ;;rules
-                                    3 ;;tape amout
-                                    'T)) ;;accepting final
+                          '(a b) ;;<--- alpha
+                          'K ;;<-- start
+                          '(T) ;; final
+                          (list
+                           (list (list 'K (list BLANK BLANK BLANK));; <-- Starting 
+                                 (list 'H (list RIGHT RIGHT RIGHT))) 
+                           (list (list 'H (list 'a BLANK BLANK)) ;;<-- Phase 1, reads a's
+                                 (list 'R (list 'a 'a BLANK)))
+                           (list (list 'R (list 'a 'a BLANK))
+                                 (list 'H (list RIGHT RIGHT BLANK))) 
+                           (list (list 'H (list 'b BLANK BLANK)) ;;<-- phase 2, read b's
+                                 (list 'E (list 'b BLANK 'b)))
+                           (list (list 'E (list 'b BLANK 'b))
+                                 (list 'C (list RIGHT BLANK RIGHT)))
+                           (list (list 'C (list 'b BLANK BLANK))
+                                 (list 'E (list 'b BLANK 'b))) 
+                           (list (list 'C (list BLANK BLANK BLANK))
+                                 (list 'O (list RIGHT BLANK BLANK)))
+                           (list (list 'O (list BLANK BLANK BLANK)) ;;<-- phase 4, matching as, bs, cs
+                                 (list 'M (list BLANK LEFT LEFT)))
+                           (list (list 'M (list BLANK 'a 'b))
+                                 (list 'M (list BLANK LEFT LEFT)))
+                           (list (list 'M (list BLANK BLANK BLANK)) ;;<-phase 5, accept (if possible)
+                                 (list 'T (list BLANK BLANK BLANK)))
+                           ) ;;rules
+                          3 ;;tape amout
+                          'T)) ;;accepting final
 
 ;;Pre-Condition: '(LM BLANK w) AND t0h = 1 AND tapes 1-3 are empty AND t1h-t3h = 0
 ;;L = {w | w ∈ a^nb^nc^n}
 (define a^nb^nc^n (make-mttm '(K H R E C O M T F)
-                                       '(a b c)
-                                       'K
-                                       '(F)
-                                       (list
-                                        (list (list 'K (list BLANK BLANK BLANK BLANK));; <-- Starting 
-                                              (list 'H (list RIGHT RIGHT RIGHT RIGHT))) 
-                                        (list (list 'H (list 'a BLANK BLANK BLANK)) ;;<-- Phase 1, reads a's
-                                              (list 'R (list 'a 'a BLANK BLANK)))
-                                        (list (list 'R (list 'a 'a BLANK BLANK))
-                                              (list 'H (list RIGHT RIGHT BLANK BLANK))) 
-                                        (list (list 'H (list 'b BLANK BLANK BLANK)) ;;<-- phase 2, read b's
-                                              (list 'E (list 'b BLANK 'b BLANK)))
-                                        (list (list 'E (list 'b BLANK 'b BLANK))
-                                              (list 'C (list RIGHT BLANK RIGHT BLANK)))
-                                        (list (list 'C (list 'b BLANK BLANK BLANK))
-                                              (list 'E (list 'b BLANK 'b BLANK))) 
-                                        (list (list 'C (list 'c BLANK BLANK BLANK)) ;;<-- phase 3, read c's
-                                              (list 'O (list 'c BLANK BLANK 'c)))
-                                        (list (list 'O (list 'c BLANK BLANK 'c))
-                                              (list 'M (list RIGHT BLANK BLANK RIGHT)))
-                                        (list (list 'M (list 'c BLANK BLANK BLANK)) 
-                                              (list 'O (list 'c BLANK BLANK 'c)))
-                                        (list (list 'M (list BLANK BLANK BLANK BLANK)) ;;<-- phase 4, matching as, bs, cs
-                                              (list 'T (list BLANK LEFT LEFT LEFT)))
-                                        (list (list 'T (list BLANK 'a 'b 'c))
-                                              (list 'T (list BLANK LEFT LEFT LEFT)))
-                                        (list (list 'T (list BLANK BLANK BLANK BLANK)) ;;<-phase 5, accept (if possible)
-                                              (list 'F (list BLANK BLANK BLANK BLANK)))
-                                        )
-                                       4
-                                       'F))
+                             '(a b c)
+                             'K
+                             '(F)
+                             (list
+                              (list (list 'K (list BLANK BLANK BLANK BLANK));; <-- Starting 
+                                    (list 'H (list RIGHT RIGHT RIGHT RIGHT))) 
+                              (list (list 'H (list 'a BLANK BLANK BLANK)) ;;<-- Phase 1, reads a's
+                                    (list 'R (list 'a 'a BLANK BLANK)))
+                              (list (list 'R (list 'a 'a BLANK BLANK))
+                                    (list 'H (list RIGHT RIGHT BLANK BLANK))) 
+                              (list (list 'H (list 'b BLANK BLANK BLANK)) ;;<-- phase 2, read b's
+                                    (list 'E (list 'b BLANK 'b BLANK)))
+                              (list (list 'E (list 'b BLANK 'b BLANK))
+                                    (list 'C (list RIGHT BLANK RIGHT BLANK)))
+                              (list (list 'C (list 'b BLANK BLANK BLANK))
+                                    (list 'E (list 'b BLANK 'b BLANK))) 
+                              (list (list 'C (list 'c BLANK BLANK BLANK)) ;;<-- phase 3, read c's
+                                    (list 'O (list 'c BLANK BLANK 'c)))
+                              (list (list 'O (list 'c BLANK BLANK 'c))
+                                    (list 'M (list RIGHT BLANK BLANK RIGHT)))
+                              (list (list 'M (list 'c BLANK BLANK BLANK)) 
+                                    (list 'O (list 'c BLANK BLANK 'c)))
+                              (list (list 'M (list BLANK BLANK BLANK BLANK)) ;;<-- phase 4, matching as, bs, cs
+                                    (list 'T (list BLANK LEFT LEFT LEFT)))
+                              (list (list 'T (list BLANK 'a 'b 'c))
+                                    (list 'T (list BLANK LEFT LEFT LEFT)))
+                              (list (list 'T (list BLANK BLANK BLANK BLANK)) ;;<-phase 5, accept (if possible)
+                                    (list 'F (list BLANK BLANK BLANK BLANK)))
+                              )
+                             4
+                             'F))
 
 
 (define a^nb^nc^nd^n (make-mttm '(K H R E C O M T F D U)
-                                          '(a b c d)
-                                          'K
-                                          '(F)
-                                          (list
-                                           (list (list 'K (list BLANK BLANK BLANK BLANK BLANK));; <-- Starting 
-                                                 (list 'H (list RIGHT RIGHT RIGHT RIGHT RIGHT))) 
-                                           (list (list 'H (list 'a BLANK BLANK BLANK BLANK)) ;;<-- Phase 1, reads a's
-                                                 (list 'R (list 'a 'a BLANK BLANK BLANK)))
-                                           (list (list 'R (list 'a 'a BLANK BLANK BLANK))
-                                                 (list 'H (list RIGHT RIGHT BLANK BLANK BLANK))) 
-                                           (list (list 'H (list 'b BLANK BLANK BLANK BLANK)) ;;<-- phase 2, read b's
-                                                 (list 'E (list 'b BLANK 'b BLANK BLANK)))
-                                           (list (list 'E (list 'b BLANK 'b BLANK BLANK))
-                                                 (list 'C (list RIGHT BLANK RIGHT BLANK BLANK)))
-                                           (list (list 'C (list 'b BLANK BLANK BLANK BLANK))
-                                                 (list 'E (list 'b BLANK 'b BLANK BLANK))) 
-                                           (list (list 'C (list 'c BLANK BLANK BLANK BLANK)) ;;<-- phase 3, read c's
-                                                 (list 'O (list 'c BLANK BLANK 'c BLANK)))
-                                           (list (list 'O (list 'c BLANK BLANK 'c BLANK))
-                                                 (list 'D (list RIGHT BLANK BLANK RIGHT BLANK)))
-                                           (list (list 'D (list 'c BLANK BLANK BLANK BLANK)) 
-                                                 (list 'O (list 'c BLANK BLANK 'c BLANK)))
-                                           (list (list 'D (list 'd BLANK BLANK BLANK BLANK))
-                                                 (list 'U (list 'd BLANK BLANK BLANK 'd)))
-                                           (list (list 'U (list 'd BLANK BLANK BLANK 'd))
-                                                 (list 'M (list RIGHT BLANK BLANK BLANK RIGHT)))
-                                           (list (list 'M (list 'd BLANK BLANK BLANK BLANK))
-                                                 (list 'U (list 'd BLANK BLANK BLANK 'd)))
-                                           (list (list 'M (list BLANK BLANK BLANK BLANK BLANK)) ;;<-- phase 4, matching as, bs, cs
-                                                 (list 'T (list BLANK LEFT LEFT LEFT LEFT)))
-                                           (list (list 'T (list BLANK 'a 'b 'c 'd))
-                                                 (list 'T (list BLANK LEFT LEFT LEFT LEFT)))
-                                           (list (list 'T (list BLANK BLANK BLANK BLANK BLANK)) ;;<-phase 5, accept (if possible)
-                                                 (list 'F (list BLANK BLANK BLANK BLANK BLANK)))
-                                           )
-                                          5
-                                          'F))
+                                '(a b c d)
+                                'K
+                                '(F)
+                                (list
+                                 (list (list 'K (list BLANK BLANK BLANK BLANK BLANK));; <-- Starting 
+                                       (list 'H (list RIGHT RIGHT RIGHT RIGHT RIGHT))) 
+                                 (list (list 'H (list 'a BLANK BLANK BLANK BLANK)) ;;<-- Phase 1, reads a's
+                                       (list 'R (list 'a 'a BLANK BLANK BLANK)))
+                                 (list (list 'R (list 'a 'a BLANK BLANK BLANK))
+                                       (list 'H (list RIGHT RIGHT BLANK BLANK BLANK))) 
+                                 (list (list 'H (list 'b BLANK BLANK BLANK BLANK)) ;;<-- phase 2, read b's
+                                       (list 'E (list 'b BLANK 'b BLANK BLANK)))
+                                 (list (list 'E (list 'b BLANK 'b BLANK BLANK))
+                                       (list 'C (list RIGHT BLANK RIGHT BLANK BLANK)))
+                                 (list (list 'C (list 'b BLANK BLANK BLANK BLANK))
+                                       (list 'E (list 'b BLANK 'b BLANK BLANK))) 
+                                 (list (list 'C (list 'c BLANK BLANK BLANK BLANK)) ;;<-- phase 3, read c's
+                                       (list 'O (list 'c BLANK BLANK 'c BLANK)))
+                                 (list (list 'O (list 'c BLANK BLANK 'c BLANK))
+                                       (list 'D (list RIGHT BLANK BLANK RIGHT BLANK)))
+                                 (list (list 'D (list 'c BLANK BLANK BLANK BLANK)) 
+                                       (list 'O (list 'c BLANK BLANK 'c BLANK)))
+                                 (list (list 'D (list 'd BLANK BLANK BLANK BLANK))
+                                       (list 'U (list 'd BLANK BLANK BLANK 'd)))
+                                 (list (list 'U (list 'd BLANK BLANK BLANK 'd))
+                                       (list 'M (list RIGHT BLANK BLANK BLANK RIGHT)))
+                                 (list (list 'M (list 'd BLANK BLANK BLANK BLANK))
+                                       (list 'U (list 'd BLANK BLANK BLANK 'd)))
+                                 (list (list 'M (list BLANK BLANK BLANK BLANK BLANK)) ;;<-- phase 4, matching as, bs, cs
+                                       (list 'T (list BLANK LEFT LEFT LEFT LEFT)))
+                                 (list (list 'T (list BLANK 'a 'b 'c 'd))
+                                       (list 'T (list BLANK LEFT LEFT LEFT LEFT)))
+                                 (list (list 'T (list BLANK BLANK BLANK BLANK BLANK)) ;;<-phase 5, accept (if possible)
+                                       (list 'F (list BLANK BLANK BLANK BLANK BLANK)))
+                                 )
+                                5
+                                'F))
 
 (define a^nb^nc^nd^ne^n (make-mttm '(K H R E C O M T F D U X B)
-                                             '(a b c d e)
-                                             'K
-                                             '(F)
-                                             (list
-                                              (list (list 'K (list BLANK BLANK BLANK BLANK BLANK BLANK));; <-- Starting 
-                                                    (list 'H (list RIGHT RIGHT RIGHT RIGHT RIGHT RIGHT))) 
-                                              (list (list 'H (list 'a BLANK BLANK BLANK BLANK BLANK)) ;;<-- Phase 1, reads a's
-                                                    (list 'R (list 'a 'a BLANK BLANK BLANK BLANK)))
-                                              (list (list 'R (list 'a 'a BLANK BLANK BLANK BLANK))
-                                                    (list 'H (list RIGHT RIGHT BLANK BLANK BLANK BLANK))) 
-                                              (list (list 'H (list 'b BLANK BLANK BLANK BLANK BLANK)) ;;<-- phase 2, read b's
-                                                    (list 'E (list 'b BLANK 'b BLANK BLANK BLANK)))
-                                              (list (list 'E (list 'b BLANK 'b BLANK BLANK BLANK))
-                                                    (list 'C (list RIGHT BLANK RIGHT BLANK BLANK BLANK)))
-                                              (list (list 'C (list 'b BLANK BLANK BLANK BLANK BLANK))
-                                                    (list 'E (list 'b BLANK 'b BLANK BLANK BLANK))) 
-                                              (list (list 'C (list 'c BLANK BLANK BLANK BLANK BLANK)) ;;<-- phase 3, read c's
-                                                    (list 'O (list 'c BLANK BLANK 'c BLANK BLANK)))
-                                              (list (list 'O (list 'c BLANK BLANK 'c BLANK BLANK))
-                                                    (list 'D (list RIGHT BLANK BLANK RIGHT BLANK BLANK)))
-                                              (list (list 'D (list 'c BLANK BLANK BLANK BLANK BLANK)) 
-                                                    (list 'O (list 'c BLANK BLANK 'c BLANK BLANK)))
-                                              (list (list 'D (list 'd BLANK BLANK BLANK BLANK BLANK))
-                                                    (list 'U (list 'd BLANK BLANK BLANK 'd BLANK)))
-                                              (list (list 'U (list 'd BLANK BLANK BLANK 'd BLANK))
-                                                    (list 'X (list RIGHT BLANK BLANK BLANK RIGHT BLANK)))
-                                              (list (list 'X (list 'd BLANK BLANK BLANK BLANK BLANK))
-                                                    (list 'U (list 'd BLANK BLANK BLANK 'd BLANK)))
-                                              (list (list 'X (list 'e BLANK BLANK BLANK BLANK BLANK))
-                                                    (list 'B (list 'e BLANK BLANK BLANK BLANK 'e)))
-                                              (list (list 'B (list 'e BLANK BLANK BLANK BLANK 'e))
-                                                    (list 'M (list RIGHT BLANK BLANK BLANK BLANK RIGHT)))
-                                              (list (list 'M (list 'e BLANK BLANK BLANK BLANK BLANK))
-                                                    (list 'B (list 'e BLANK BLANK BLANK BLANK 'e)))
-                                              (list (list 'M (list BLANK BLANK BLANK BLANK BLANK BLANK)) ;;<-- phase 4, matching as, bs, cs
-                                                    (list 'T (list BLANK LEFT LEFT LEFT LEFT LEFT)))
-                                              (list (list 'T (list BLANK 'a 'b 'c 'd 'e))
-                                                    (list 'T (list BLANK LEFT LEFT LEFT LEFT LEFT)))
-                                              (list (list 'T (list BLANK BLANK BLANK BLANK BLANK BLANK)) ;;<-phase 5, accept (if possible)
-                                                    (list 'F (list BLANK BLANK BLANK BLANK BLANK BLANK)))
-                                              )
-                                             6
-                                             'F))
+                                   '(a b c d e)
+                                   'K
+                                   '(F)
+                                   (list
+                                    (list (list 'K (list BLANK BLANK BLANK BLANK BLANK BLANK));; <-- Starting 
+                                          (list 'H (list RIGHT RIGHT RIGHT RIGHT RIGHT RIGHT))) 
+                                    (list (list 'H (list 'a BLANK BLANK BLANK BLANK BLANK)) ;;<-- Phase 1, reads a's
+                                          (list 'R (list 'a 'a BLANK BLANK BLANK BLANK)))
+                                    (list (list 'R (list 'a 'a BLANK BLANK BLANK BLANK))
+                                          (list 'H (list RIGHT RIGHT BLANK BLANK BLANK BLANK))) 
+                                    (list (list 'H (list 'b BLANK BLANK BLANK BLANK BLANK)) ;;<-- phase 2, read b's
+                                          (list 'E (list 'b BLANK 'b BLANK BLANK BLANK)))
+                                    (list (list 'E (list 'b BLANK 'b BLANK BLANK BLANK))
+                                          (list 'C (list RIGHT BLANK RIGHT BLANK BLANK BLANK)))
+                                    (list (list 'C (list 'b BLANK BLANK BLANK BLANK BLANK))
+                                          (list 'E (list 'b BLANK 'b BLANK BLANK BLANK))) 
+                                    (list (list 'C (list 'c BLANK BLANK BLANK BLANK BLANK)) ;;<-- phase 3, read c's
+                                          (list 'O (list 'c BLANK BLANK 'c BLANK BLANK)))
+                                    (list (list 'O (list 'c BLANK BLANK 'c BLANK BLANK))
+                                          (list 'D (list RIGHT BLANK BLANK RIGHT BLANK BLANK)))
+                                    (list (list 'D (list 'c BLANK BLANK BLANK BLANK BLANK)) 
+                                          (list 'O (list 'c BLANK BLANK 'c BLANK BLANK)))
+                                    (list (list 'D (list 'd BLANK BLANK BLANK BLANK BLANK))
+                                          (list 'U (list 'd BLANK BLANK BLANK 'd BLANK)))
+                                    (list (list 'U (list 'd BLANK BLANK BLANK 'd BLANK))
+                                          (list 'X (list RIGHT BLANK BLANK BLANK RIGHT BLANK)))
+                                    (list (list 'X (list 'd BLANK BLANK BLANK BLANK BLANK))
+                                          (list 'U (list 'd BLANK BLANK BLANK 'd BLANK)))
+                                    (list (list 'X (list 'e BLANK BLANK BLANK BLANK BLANK))
+                                          (list 'B (list 'e BLANK BLANK BLANK BLANK 'e)))
+                                    (list (list 'B (list 'e BLANK BLANK BLANK BLANK 'e))
+                                          (list 'M (list RIGHT BLANK BLANK BLANK BLANK RIGHT)))
+                                    (list (list 'M (list 'e BLANK BLANK BLANK BLANK BLANK))
+                                          (list 'B (list 'e BLANK BLANK BLANK BLANK 'e)))
+                                    (list (list 'M (list BLANK BLANK BLANK BLANK BLANK BLANK)) ;;<-- phase 4, matching as, bs, cs
+                                          (list 'T (list BLANK LEFT LEFT LEFT LEFT LEFT)))
+                                    (list (list 'T (list BLANK 'a 'b 'c 'd 'e))
+                                          (list 'T (list BLANK LEFT LEFT LEFT LEFT LEFT)))
+                                    (list (list 'T (list BLANK BLANK BLANK BLANK BLANK BLANK)) ;;<-phase 5, accept (if possible)
+                                          (list 'F (list BLANK BLANK BLANK BLANK BLANK BLANK)))
+                                    )
+                                   6
+                                   'F))
 
 (define a^nb^nc^nd^ne^nf^n (make-mttm '(K H R E C O M T F D U X B I V) 
-                                                '(a b c d e f)
-                                                'K
-                                                '(F)
-                                                (list
-                                                 (list (list 'K (list BLANK BLANK BLANK BLANK BLANK BLANK BLANK));; <-- Starting 
-                                                       (list 'H (list RIGHT RIGHT RIGHT RIGHT RIGHT RIGHT RIGHT))) 
-                                                 (list (list 'H (list 'a BLANK BLANK BLANK BLANK BLANK BLANK)) ;;<-- Phase 1, reads a's
-                                                       (list 'R (list 'a 'a BLANK BLANK BLANK BLANK BLANK)))
-                                                 (list (list 'R (list 'a 'a BLANK BLANK BLANK BLANK BLANK))
-                                                       (list 'H (list RIGHT RIGHT BLANK BLANK BLANK BLANK BLANK))) 
-                                                 (list (list 'H (list 'b BLANK BLANK BLANK BLANK BLANK BLANK)) ;;<-- phase 2, read b's
-                                                       (list 'E (list 'b BLANK 'b BLANK BLANK BLANK BLANK)))
-                                                 (list (list 'E (list 'b BLANK 'b BLANK BLANK BLANK BLANK))
-                                                       (list 'C (list RIGHT BLANK RIGHT BLANK BLANK BLANK BLANK)))
-                                                 (list (list 'C (list 'b BLANK BLANK BLANK BLANK BLANK BLANK))
-                                                       (list 'E (list 'b BLANK 'b BLANK BLANK BLANK BLANK))) 
-                                                 (list (list 'C (list 'c BLANK BLANK BLANK BLANK BLANK BLANK)) ;;<-- phase 3, read c's
-                                                       (list 'O (list 'c BLANK BLANK 'c BLANK BLANK BLANK)))
-                                                 (list (list 'O (list 'c BLANK BLANK 'c BLANK BLANK BLANK))
-                                                       (list 'D (list RIGHT BLANK BLANK RIGHT BLANK BLANK BLANK)))
-                                                 (list (list 'D (list 'c BLANK BLANK BLANK BLANK BLANK BLANK)) 
-                                                       (list 'O (list 'c BLANK BLANK 'c BLANK BLANK BLANK)))
-                                                 (list (list 'D (list 'd BLANK BLANK BLANK BLANK BLANK BLANK))
-                                                       (list 'U (list 'd BLANK BLANK BLANK 'd BLANK BLANK)))
-                                                 (list (list 'U (list 'd BLANK BLANK BLANK 'd BLANK BLANK))
-                                                       (list 'X (list RIGHT BLANK BLANK BLANK RIGHT BLANK BLANK)))
-                                                 (list (list 'X (list 'd BLANK BLANK BLANK BLANK BLANK BLANK))
-                                                       (list 'U (list 'd BLANK BLANK BLANK 'd BLANK BLANK)))
-                                                 (list (list 'X (list 'e BLANK BLANK BLANK BLANK BLANK BLANK))
-                                                       (list 'B (list 'e BLANK BLANK BLANK BLANK 'e BLANK)))
-                                                 (list (list 'B (list 'e BLANK BLANK BLANK BLANK 'e BLANK))
-                                                       (list 'I (list RIGHT BLANK BLANK BLANK BLANK RIGHT BLANK)))
-                                                 (list (list 'I (list 'e BLANK BLANK BLANK BLANK BLANK BLANK))
-                                                       (list 'B (list 'e BLANK BLANK BLANK BLANK 'e BLANK)))
+                                      '(a b c d e f)
+                                      'K
+                                      '(F)
+                                      (list
+                                       (list (list 'K (list BLANK BLANK BLANK BLANK BLANK BLANK BLANK));; <-- Starting 
+                                             (list 'H (list RIGHT RIGHT RIGHT RIGHT RIGHT RIGHT RIGHT))) 
+                                       (list (list 'H (list 'a BLANK BLANK BLANK BLANK BLANK BLANK)) ;;<-- Phase 1, reads a's
+                                             (list 'R (list 'a 'a BLANK BLANK BLANK BLANK BLANK)))
+                                       (list (list 'R (list 'a 'a BLANK BLANK BLANK BLANK BLANK))
+                                             (list 'H (list RIGHT RIGHT BLANK BLANK BLANK BLANK BLANK))) 
+                                       (list (list 'H (list 'b BLANK BLANK BLANK BLANK BLANK BLANK)) ;;<-- phase 2, read b's
+                                             (list 'E (list 'b BLANK 'b BLANK BLANK BLANK BLANK)))
+                                       (list (list 'E (list 'b BLANK 'b BLANK BLANK BLANK BLANK))
+                                             (list 'C (list RIGHT BLANK RIGHT BLANK BLANK BLANK BLANK)))
+                                       (list (list 'C (list 'b BLANK BLANK BLANK BLANK BLANK BLANK))
+                                             (list 'E (list 'b BLANK 'b BLANK BLANK BLANK BLANK))) 
+                                       (list (list 'C (list 'c BLANK BLANK BLANK BLANK BLANK BLANK)) ;;<-- phase 3, read c's
+                                             (list 'O (list 'c BLANK BLANK 'c BLANK BLANK BLANK)))
+                                       (list (list 'O (list 'c BLANK BLANK 'c BLANK BLANK BLANK))
+                                             (list 'D (list RIGHT BLANK BLANK RIGHT BLANK BLANK BLANK)))
+                                       (list (list 'D (list 'c BLANK BLANK BLANK BLANK BLANK BLANK)) 
+                                             (list 'O (list 'c BLANK BLANK 'c BLANK BLANK BLANK)))
+                                       (list (list 'D (list 'd BLANK BLANK BLANK BLANK BLANK BLANK))
+                                             (list 'U (list 'd BLANK BLANK BLANK 'd BLANK BLANK)))
+                                       (list (list 'U (list 'd BLANK BLANK BLANK 'd BLANK BLANK))
+                                             (list 'X (list RIGHT BLANK BLANK BLANK RIGHT BLANK BLANK)))
+                                       (list (list 'X (list 'd BLANK BLANK BLANK BLANK BLANK BLANK))
+                                             (list 'U (list 'd BLANK BLANK BLANK 'd BLANK BLANK)))
+                                       (list (list 'X (list 'e BLANK BLANK BLANK BLANK BLANK BLANK))
+                                             (list 'B (list 'e BLANK BLANK BLANK BLANK 'e BLANK)))
+                                       (list (list 'B (list 'e BLANK BLANK BLANK BLANK 'e BLANK))
+                                             (list 'I (list RIGHT BLANK BLANK BLANK BLANK RIGHT BLANK)))
+                                       (list (list 'I (list 'e BLANK BLANK BLANK BLANK BLANK BLANK))
+                                             (list 'B (list 'e BLANK BLANK BLANK BLANK 'e BLANK)))
                                         
-                                                 (list (list 'I (list 'f BLANK BLANK BLANK BLANK BLANK BLANK))
-                                                       (list 'V (list 'f BLANK BLANK BLANK BLANK BLANK 'f)))
-                                                 (list (list 'V (list 'f BLANK BLANK BLANK BLANK BLANK 'f))
-                                                       (list 'M (list RIGHT BLANK BLANK BLANK BLANK BLANK RIGHT)))
-                                                 (list (list 'M (list 'f BLANK BLANK BLANK BLANK BLANK BLANK))
-                                                       (list 'V (list 'f BLANK BLANK BLANK BLANK BLANK 'f)))
+                                       (list (list 'I (list 'f BLANK BLANK BLANK BLANK BLANK BLANK))
+                                             (list 'V (list 'f BLANK BLANK BLANK BLANK BLANK 'f)))
+                                       (list (list 'V (list 'f BLANK BLANK BLANK BLANK BLANK 'f))
+                                             (list 'M (list RIGHT BLANK BLANK BLANK BLANK BLANK RIGHT)))
+                                       (list (list 'M (list 'f BLANK BLANK BLANK BLANK BLANK BLANK))
+                                             (list 'V (list 'f BLANK BLANK BLANK BLANK BLANK 'f)))
                                         
-                                                 (list (list 'M (list BLANK BLANK BLANK BLANK BLANK BLANK BLANK)) ;;<-- phase 4, matching as, bs, cs
-                                                       (list 'T (list BLANK LEFT LEFT LEFT LEFT LEFT LEFT)))
-                                                 (list (list 'T (list BLANK 'a 'b 'c 'd 'e 'f))
-                                                       (list 'T (list BLANK LEFT LEFT LEFT LEFT LEFT LEFT)))
-                                                 (list (list 'T (list BLANK BLANK BLANK BLANK BLANK BLANK BLANK)) ;;<-phase 5, accept (if possible)
-                                                       (list 'F (list BLANK BLANK BLANK BLANK BLANK BLANK BLANK)))
-                                                 )
-                                                7
-                                                'F))
+                                       (list (list 'M (list BLANK BLANK BLANK BLANK BLANK BLANK BLANK)) ;;<-- phase 4, matching as, bs, cs
+                                             (list 'T (list BLANK LEFT LEFT LEFT LEFT LEFT LEFT)))
+                                       (list (list 'T (list BLANK 'a 'b 'c 'd 'e 'f))
+                                             (list 'T (list BLANK LEFT LEFT LEFT LEFT LEFT LEFT)))
+                                       (list (list 'T (list BLANK BLANK BLANK BLANK BLANK BLANK BLANK)) ;;<-phase 5, accept (if possible)
+                                             (list 'F (list BLANK BLANK BLANK BLANK BLANK BLANK BLANK)))
+                                       )
+                                      7
+                                      'F))
 
 ;;Pre-Condition: '(LM BLANK w) AND t0h = 1 AND tape 1 is empty AND t1h = 0
 ;;compute f(w) = ww
 (define ww (make-mttm '(K H T F E B W D M)
-                                '(a b)
-                                'K
-                                '(M)
-                                (list
-                                 (list (list 'K (list BLANK BLANK)) ;;<--- start
-                                       (list 'H (list RIGHT RIGHT))) 
-                                 (list (list 'H (list 'a BLANK)) ;;<---- PHASE 1: read a in w 
-                                       (list 'T (list 'a 'a)))
-                                 (list (list 'T (list 'a 'a))
-                                       (list 'H (list RIGHT RIGHT)))
-                                 (list (list 'H (list 'b BLANK)) ;;<---- PHASE 1: read b in w
-                                       (list 'F (list 'b 'b)))
-                                 (list (list 'F (list 'b 'b))
-                                       (list 'H (list RIGHT RIGHT)))
-                                 (list (list 'H (list BLANK BLANK)) ;;<--- PHASE 2: Go to beginning of t1
-                                       (list 'E (list BLANK LEFT)))
-                                 (list (list 'E (list BLANK 'a))
-                                       (list 'E (list BLANK LEFT)))
-                                 (list (list 'E (list BLANK 'b))
-                                       (list 'E (list BLANK LEFT)))
-                                 (list (list 'E (list BLANK BLANK)) ;;<---- PHASE 3: read w on t1 AND write w on t0
-                                       (list 'W (list BLANK RIGHT)))
-                                 (list (list 'W (list BLANK 'a))
-                                       (list 'D (list 'a 'a)))
-                                 (list (list 'D (list 'a 'a))
-                                       (list 'W (list RIGHT RIGHT)))
-                                 (list (list 'W (list BLANK 'b))
-                                       (list 'B (list 'b 'b)))
-                                 (list (list 'B (list 'b 'b))
-                                       (list 'W (list RIGHT RIGHT)))
-                                 (list (list 'W (list BLANK BLANK))
-                                       (list 'M (list BLANK BLANK)))
-                                 )        
-                                2))
+                      '(a b)
+                      'K
+                      '(M)
+                      (list
+                       (list (list 'K (list BLANK BLANK)) ;;<--- start
+                             (list 'H (list RIGHT RIGHT))) 
+                       (list (list 'H (list 'a BLANK)) ;;<---- PHASE 1: read a in w 
+                             (list 'T (list 'a 'a)))
+                       (list (list 'T (list 'a 'a))
+                             (list 'H (list RIGHT RIGHT)))
+                       (list (list 'H (list 'b BLANK)) ;;<---- PHASE 1: read b in w
+                             (list 'F (list 'b 'b)))
+                       (list (list 'F (list 'b 'b))
+                             (list 'H (list RIGHT RIGHT)))
+                       (list (list 'H (list BLANK BLANK)) ;;<--- PHASE 2: Go to beginning of t1
+                             (list 'E (list BLANK LEFT)))
+                       (list (list 'E (list BLANK 'a))
+                             (list 'E (list BLANK LEFT)))
+                       (list (list 'E (list BLANK 'b))
+                             (list 'E (list BLANK LEFT)))
+                       (list (list 'E (list BLANK BLANK)) ;;<---- PHASE 3: read w on t1 AND write w on t0
+                             (list 'W (list BLANK RIGHT)))
+                       (list (list 'W (list BLANK 'a))
+                             (list 'D (list 'a 'a)))
+                       (list (list 'D (list 'a 'a))
+                             (list 'W (list RIGHT RIGHT)))
+                       (list (list 'W (list BLANK 'b))
+                             (list 'B (list 'b 'b)))
+                       (list (list 'B (list 'b 'b))
+                             (list 'W (list RIGHT RIGHT)))
+                       (list (list 'W (list BLANK BLANK))
+                             (list 'M (list BLANK BLANK)))
+                       )        
+                      2))
 
 ;;(listof tape-configs) -> boolean
 ;;Purpose: Determine if K-inv holds
@@ -1739,91 +1774,91 @@
 
 #;(parameterize ([testing? #t])
   
-  (sm-viz pd-numb>numa '(a b) #:cut-off 5)
-  (sm-viz pd-numb>numa '(a b) #:cut-off 1)
-  (sm-viz pd-numb>numa '(a b) #:cut-off 10) ;;needs to be looked into
-  (sm-viz pd-numb>numa '(a b a) #:cut-off 5)
-  ;(sm-viz pd-numb>numa '(a b) #:cut-off 0) ;;needs to be looked into 
-  ;(sm-viz pd-numb>numa '(a b) #:cut-off -3)
-  (sm-viz more-a-than-b '(a a a a a b b))
-  (sm-viz a* '(a a a a a)
-          (list 'K (λ (w s) (and (empty? w) (empty? s)))) (list 'H (λ (w s) (and (not (= (length w) 3)) (empty? s)))))
-  (sm-viz aa* '(a a)
-          (list 'K (λ (w s) (and (empty? w) (empty? s)))) (list 'H (λ (w s) (and (empty? w) (empty? s)))))
-  (sm-viz a* '(a a)
-          (list 'K (λ (w s) (and (empty? w) (empty? s)))) (list 'H (λ (w s) (and (not (empty? w)) (empty? s)))))
-  (sm-viz P2 '(a a a b b) (list 'S P-S-INV) (list 'H P-H-INV))
-  (sm-viz a* '(a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a
-                 a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a
-                 a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a)
-          (list 'K (λ (w s) (and (empty? w) (empty? s)))) (list 'H (λ (w s) (and (not (empty? w)) (empty? s))))) ;; look into
-  (sm-viz P2 '(a a a b b) (list 'S P-S-INV) (list 'H P-H-INV)) ;;needs to be looked into
+    (sm-viz pd-numb>numa '(a b) #:cut-off 5)
+    (sm-viz pd-numb>numa '(a b) #:cut-off 1)
+    (sm-viz pd-numb>numa '(a b) #:cut-off 10) ;;needs to be looked into
+    (sm-viz pd-numb>numa '(a b a) #:cut-off 5)
+    ;(sm-viz pd-numb>numa '(a b) #:cut-off 0) ;;needs to be looked into 
+    ;(sm-viz pd-numb>numa '(a b) #:cut-off -3)
+    (sm-viz more-a-than-b '(a a a a a b b))
+    (sm-viz a* '(a a a a a)
+            (list 'K (λ (w s) (and (empty? w) (empty? s)))) (list 'H (λ (w s) (and (not (= (length w) 3)) (empty? s)))))
+    (sm-viz aa* '(a a)
+            (list 'K (λ (w s) (and (empty? w) (empty? s)))) (list 'H (λ (w s) (and (empty? w) (empty? s)))))
+    (sm-viz a* '(a a)
+            (list 'K (λ (w s) (and (empty? w) (empty? s)))) (list 'H (λ (w s) (and (not (empty? w)) (empty? s)))))
+    (sm-viz P2 '(a a a b b) (list 'S P-S-INV) (list 'H P-H-INV))
+    (sm-viz a* '(a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a
+                   a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a
+                   a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a)
+            (list 'K (λ (w s) (and (empty? w) (empty? s)))) (list 'H (λ (w s) (and (not (empty? w)) (empty? s))))) ;; look into
+    (sm-viz P2 '(a a a b b) (list 'S P-S-INV) (list 'H P-H-INV)) ;;needs to be looked into
 
-  (sm-viz P2 '(a a a b b))
+    (sm-viz P2 '(a a a b b))
 
-  (sm-viz P2 '(a a a b b) (list 'S P-S-INV))
-  (sm-viz AB*B*UAB* '(a b b))
+    (sm-viz P2 '(a a a b b) (list 'S P-S-INV))
+    (sm-viz AB*B*UAB* '(a b b))
 
-  ;;accept examples
-  (sm-viz AB*B*UAB* '(a b b))
-  (sm-viz p2-ndfa '(a b b))
-  (sm-viz missing-exactly-one '(a a a a b b b b a a b b a a))
-  (sm-viz AT-LEAST-ONE-MISSING '(c c c c b b b b c b))
-  (sm-viz aa-ab '(a a a a))
-  (sm-viz ends-with-two-bs '(a b a b a b b b))
-  (sm-viz ends-with-two-bs '(a b a b a b b a a a b b))
-  ;;reject examples
-  (sm-viz AB*B*UAB* '(a b b a))
-  (sm-viz p2-ndfa '(a b b a))
-  (sm-viz missing-exactly-one '(a a a a b b b b a a b b a a c))
-  (sm-viz AT-LEAST-ONE-MISSING '(c c c c b b b b c b a))
-  (sm-viz aa-ab '(a b b b a))
-  (sm-viz AT-LEAST-ONE-MISSING '(a b c))
-  (sm-viz p2-ndfa '(a b a b))
-  (sm-viz AB*B*UAB* '(a b a b))
+    ;;accept examples
+    (sm-viz AB*B*UAB* '(a b b))
+    (sm-viz p2-ndfa '(a b b))
+    (sm-viz missing-exactly-one '(a a a a b b b b a a b b a a))
+    (sm-viz AT-LEAST-ONE-MISSING '(c c c c b b b b c b))
+    (sm-viz aa-ab '(a a a a))
+    (sm-viz ends-with-two-bs '(a b a b a b b b))
+    (sm-viz ends-with-two-bs '(a b a b a b b a a a b b))
+    ;;reject examples
+    (sm-viz AB*B*UAB* '(a b b a))
+    (sm-viz p2-ndfa '(a b b a))
+    (sm-viz missing-exactly-one '(a a a a b b b b a a b b a a c))
+    (sm-viz AT-LEAST-ONE-MISSING '(c c c c b b b b c b a))
+    (sm-viz aa-ab '(a b b b a))
+    (sm-viz AT-LEAST-ONE-MISSING '(a b c))
+    (sm-viz p2-ndfa '(a b a b))
+    (sm-viz AB*B*UAB* '(a b a b))
 
-  ;;Invariant examples
-  (sm-viz AT-LEAST-ONE-MISSING '(a b c)
-          (list 'S AB*B*UAB*-S-INV)
-          (list 'A ALON-A-INV)
-          (list 'B ALON-B-INV)
-          (list 'C ALON-C-INV)) 
-  (sm-viz EVEN-NUM-Bs '(a b b b a b b) 
-          (list 'S EVEN-NUM-Bs-S-INV)
-          (list 'F EVEN-NUM-Bs-F-INV))
+    ;;Invariant examples
+    (sm-viz AT-LEAST-ONE-MISSING '(a b c)
+            (list 'S AB*B*UAB*-S-INV)
+            (list 'A ALON-A-INV)
+            (list 'B ALON-B-INV)
+            (list 'C ALON-C-INV)) 
+    (sm-viz EVEN-NUM-Bs '(a b b b a b b) 
+            (list 'S EVEN-NUM-Bs-S-INV)
+            (list 'F EVEN-NUM-Bs-F-INV))
 
-  (sm-viz AB*B*UAB* '(a b b b b)
-          (list 'S AB*B*UAB*-S-INV)
-          (list 'K AB*B*UAB*-K-INV)
-          (list 'B AB*B*UAB*-B-INV)
-          (list 'C AB*B*UAB*-C-INV)
-          (list 'H AB*B*UAB*-H-INV))
+    (sm-viz AB*B*UAB* '(a b b b b)
+            (list 'S AB*B*UAB*-S-INV)
+            (list 'K AB*B*UAB*-K-INV)
+            (list 'B AB*B*UAB*-B-INV)
+            (list 'C AB*B*UAB*-C-INV)
+            (list 'H AB*B*UAB*-H-INV))
 
 
-  (sm-viz n '(b a a))
-  (sm-viz nk '(b a a))
-  (sm-viz aa-ab '(a a a a b a))
-  (sm-viz aa-ab '(a a a a b a) #:add-dead #t)
-  (sm-viz aa-ab '(a a a a b a) #:add-dead 3)
+    (sm-viz n '(b a a))
+    (sm-viz nk '(b a a))
+    (sm-viz aa-ab '(a a a a b a))
+    (sm-viz aa-ab '(a a a a b a) #:add-dead #t)
+    (sm-viz aa-ab '(a a a a b a) #:add-dead 3)
 
-  (sm-viz aa-ab '(a a a a a a a))
-  (sm-viz ends-with-two-bs '(a a a a b b a b b b))
-  (sm-viz aa-ab '(a a a a a a a) (list 'S AB*B*UAB*-S-INV) (list 'A aa-ab-A-INV1) (list 'B aa-ab-B-INV1) (list 'F aa-ab-F-INV) #:add-dead #t)
-  (sm-viz DNA-SEQUENCE '(a t c g t a c) (list 'K DNA-K-INV) (list 'H DNA-H-INV) (list 'F DNA-F-INV)
-          (list 'M DNA-M-INV) (list 'I DNA-I-INV) (list 'D DNA-D-INV)  (list 'B DNA-B-INV) (list 'S DNA-S-INV) (list 'R DNA-R-INV))
-  (sm-viz DNA-SEQUENCE '(c g c g a t a t g c t a g c a t)  (list 'K DNA-K-INV) (list 'H DNA-H-INV) (list 'F DNA-F-INV)
-          (list 'M DNA-M-INV) (list 'I DNA-I-INV) (list 'D DNA-D-INV)  (list 'B DNA-B-INV) (list 'S DNA-S-INV) (list 'R DNA-R-INV))
+    (sm-viz aa-ab '(a a a a a a a))
+    (sm-viz ends-with-two-bs '(a a a a b b a b b b))
+    (sm-viz aa-ab '(a a a a a a a) (list 'S AB*B*UAB*-S-INV) (list 'A aa-ab-A-INV1) (list 'B aa-ab-B-INV1) (list 'F aa-ab-F-INV) #:add-dead #t)
+    (sm-viz DNA-SEQUENCE '(a t c g t a c) (list 'K DNA-K-INV) (list 'H DNA-H-INV) (list 'F DNA-F-INV)
+            (list 'M DNA-M-INV) (list 'I DNA-I-INV) (list 'D DNA-D-INV)  (list 'B DNA-B-INV) (list 'S DNA-S-INV) (list 'R DNA-R-INV))
+    (sm-viz DNA-SEQUENCE '(c g c g a t a t g c t a g c a t)  (list 'K DNA-K-INV) (list 'H DNA-H-INV) (list 'F DNA-F-INV)
+            (list 'M DNA-M-INV) (list 'I DNA-I-INV) (list 'D DNA-D-INV)  (list 'B DNA-B-INV) (list 'S DNA-S-INV) (list 'R DNA-R-INV))
 
-  (sm-viz ND4 '(a b b b) #:add-dead #t)
+    (sm-viz ND4 '(a b b b) #:add-dead #t)
 
-  (sm-viz M2 '(a a b b b b) #:add-dead #t)
+    (sm-viz M2 '(a a b b b b) #:add-dead #t)
 
-  (sm-viz DNA-SEQUENCE '(c g c g a t a t g c t a g c a t)  (list 'K DNA-K-INV) (list 'H DNA-H-INV) (list 'F DNA-F-INV)
-          (list 'M DNA-M-INV) (list 'I DNA-I-INV) (list 'D DNA-D-INV)  (list 'B DNA-B-INV) (list 'S DNA-S-INV) (list 'R DNA-R-INV))
+    (sm-viz DNA-SEQUENCE '(c g c g a t a t g c t a g c a t)  (list 'K DNA-K-INV) (list 'H DNA-H-INV) (list 'F DNA-F-INV)
+            (list 'M DNA-M-INV) (list 'I DNA-I-INV) (list 'D DNA-D-INV)  (list 'B DNA-B-INV) (list 'S DNA-S-INV) (list 'R DNA-R-INV))
 
-  (sm-viz DNA-SEQUENCE '(c g c g a t a t g c t a g c a t)  (list 'K DNA-K-INV) (list 'F DNA-F-INV)
-          (list 'M DNA-M-INV) (list 'I DNA-I-INV) (list 'D DNA-D-INV)  (list 'B DNA-B-INV) (list 'S DNA-S-INV) (list 'R DNA-R-INV))
+    (sm-viz DNA-SEQUENCE '(c g c g a t a t g c t a g c a t)  (list 'K DNA-K-INV) (list 'F DNA-F-INV)
+            (list 'M DNA-M-INV) (list 'I DNA-I-INV) (list 'D DNA-D-INV)  (list 'B DNA-B-INV) (list 'S DNA-S-INV) (list 'R DNA-R-INV))
 
-  (sm-viz DNA-SEQUENCE '(c g c g a t a t g c t a g c a t)))
+    (sm-viz DNA-SEQUENCE '(c g c g a t a t g c t a g c a t)))
 
 

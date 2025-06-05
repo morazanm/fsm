@@ -864,7 +864,10 @@ type -> the type of the ndfa (ndfa/dfa) | symbol
                                                     0
                                                     color-scheme)
                                    ndfa-img-bounding-limit)
-             (instructions-graphic E-SCENE-TOOLS
+             (instructions-graphic (above (beside (text "Accept traced" 20 (color-palette-shown-accept-color color-scheme))
+                                                  (text "Accept not traced" 20 (color-palette-other-accept-color color-scheme))
+                                                  )
+                                          E-SCENE-TOOLS)
                                    (bounding-limits 0
                                                     (image-width E-SCENE-TOOLS)
                                                     (+ EXTRA-HEIGHT-FROM-CURSOR
