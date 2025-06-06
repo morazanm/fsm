@@ -67,19 +67,45 @@ rules are a (listof rule-structs)
 (struct color-palette (shown-accept-color other-accept-color shown-reject-color other-reject-color cut-off-color inv-hold-color inv-fail-color
                        split-inv-color split-accept-color split-accept-reject-color split-reject-color bi-accept-reject-color
                        font-color blank-color computation-length-color imsg-accept-color imsg-reject-color ismg-cut-off-color start-state-color
-                       faded-word-color))
+                       faded-word-color legend-shown-accept-color legend-other-accept-color legend-shown-reject-color legend-other-reject-color))
 
+(define CHOCOLATE1-RACK (make-color 255 127 36))
+(define CHARTREUSE4-RACK (make-color 69 139 0))
+(define RED2-RACK (make-color 238 0 0))
+(define FORESTGREEN "forestgreen")
+(define GREEN "green")
+(define CHOCOLATE1 "chocolate1")
+(define VIOLETRED "violetred")
+(define DARKGOLDENROD2-SYMBOL "darkgoldenrod2")
+(define CHARTREUSE4 "chartreuse4")
+(define RED "red")
+(define RED2 "red2")
+(define GRAY 'gray)
+(define BLACK 'black)
+(define WHITE 'white)
+(define BROWN 'brown)
+(define SPLIT-INV-COLOR (string-append RED ":" CHARTREUSE4))
+(define SPLIT-ACCEPT-COLOR (string-append FORESTGREEN ":invis:" GREEN))
+(define SPLIT-ACCEPT-REJECT-COLOR (string-append FORESTGREEN ":invis:" VIOLETRED))
+(define SPLIT-REJECT-COLOR (string-append CHOCOLATE1 ":invis:" VIOLETRED))
+(define BI-ACCEPT-REJECT-COLOR (string-append FORESTGREEN ":" VIOLETRED ":" GREEN))
 (define DARKGOLDENROD2 (make-color 238 173 14))
 (define DEEPBLUE (make-color 6 77 115))
 (define DEEPBLUE-HEX "#064D73")
 (define DEEPSEAGREEN-HEX "#057F5E")
+(define DEEPSEAGREEN-RACK (make-color 5 127 94))
 (define SKYBLUE-HEX "#56B4E9")
+(define SKYBLUE-RACK (make-color 86 180 233))
 (define BLUE2-HEX "#208FCD")
+(define BLUE2-RACK (make-color 32 143 205))
 (define STORMCLOUD-HEX "#585A5E")
 (define LIGHTGREY-HEX "#999AA7")
+(define LIGHTGREY-RACK (make-color 153 154 167))
 (define MINTGREEN-HEX "#1CBB90")
+(define MINTGREEN-RACK (make-color 28 187 144))
 (define MURKYGREEN-HEX "#417360")
-(define DEEPSTORMBLUE (string-append STORMCLOUD-HEX ":" DEEPBLUE-HEX))
+(define MURKYGREEN-RACK (make-color 65 115 96))
+(define SPLIT-INV-COLOR-DEUT (string-append STORMCLOUD-HEX ":" DEEPBLUE-HEX))
 (define SKYBLUE2 (string-append SKYBLUE-HEX ":invis:" BLUE2-HEX))
 (define SKYGREEN (string-append SKYBLUE-HEX ":invis:" DEEPSEAGREEN-HEX))
 (define LIGHTSEAGREEN (string-append LIGHTGREY-HEX ":invis:" DEEPSEAGREEN-HEX))
@@ -91,20 +117,21 @@ rules are a (listof rule-structs)
 
 ;;no color blind color sheme
 (define standard-color-scheme (color-palette
-                               'forestgreen 'green 'chocolate1 'violetred 'darkgoldenrod2 'chartreuse4 'red2
-                               "red:chartreuse4" "forestgreen:invis:green" "forestgreen:invis:violetred"
-                               "chocolate1:invis:violetred" "forestgreen:violetred:green"
-                               'black 'white 'brown (make-color 34 139 34) 'red DARKGOLDENROD2 'green 'gray))
+                               FORESTGREEN GREEN CHOCOLATE1 VIOLETRED DARKGOLDENROD2-SYMBOL CHARTREUSE4 RED2
+                               SPLIT-INV-COLOR SPLIT-ACCEPT-COLOR SPLIT-ACCEPT-REJECT-COLOR SPLIT-REJECT-COLOR BI-ACCEPT-REJECT-COLOR
+                               BLACK WHITE BROWN (make-color 34 139 34) RED DARKGOLDENROD2 GREEN GRAY FORESTGREEN GREEN CHOCOLATE1-RACK VIOLETRED))
 ;;green color blind color scheme
 (define deuteranopia-color-scheme (color-palette
-                                   SKYBLUE-HEX BLUE2-HEX LIGHTGREY-HEX DEEPSEAGREEN-HEX 'darkgoldenrod2 DEEPBLUE-HEX STORMCLOUD-HEX
-                                   DEEPSTORMBLUE SKYBLUE2 SKYGREEN LIGHTSEAGREEN STORMSEABLUE
-                                   'black 'white 'brown DEEPBLUE (make-color 88 90 94) DARKGOLDENROD2 BLUE2-HEX 'gray))
+                                   SKYBLUE-HEX BLUE2-HEX LIGHTGREY-HEX DEEPSEAGREEN-HEX DARKGOLDENROD2-SYMBOL DEEPBLUE-HEX STORMCLOUD-HEX
+                                   SPLIT-INV-COLOR-DEUT SKYBLUE2 SKYGREEN LIGHTSEAGREEN STORMSEABLUE
+                                   BLACK WHITE BROWN DEEPBLUE (make-color 88 90 94) DARKGOLDENROD2 BLUE2-HEX GRAY
+                                   SKYBLUE-RACK BLUE2-RACK LIGHTGREY-RACK DEEPSEAGREEN-RACK))
 ;;red color blind color scheme
 (define protanopia-color-scheme (color-palette
-                                 SKYBLUE-HEX BLUE2-HEX MURKYGREEN-HEX MINTGREEN-HEX 'darkgoldenrod2 DEEPBLUE-HEX DEEPSEAGREEN-HEX
+                                 SKYBLUE-HEX BLUE2-HEX MURKYGREEN-HEX MINTGREEN-HEX DARKGOLDENROD2-SYMBOL DEEPBLUE-HEX DEEPSEAGREEN-HEX
                                  DEEPSEABLUE SKYBLUE2 SKYGREEN MURKYMINTGREEN SKYMINTBLUE2
-                                 'black 'white 'brown DEEPBLUE (make-color 5 127 94) DARKGOLDENROD2 BLUE2-HEX 'gray))
+                                 BLACK WHITE BROWN DEEPBLUE (make-color 5 127 94) DARKGOLDENROD2 BLUE2-HEX GRAY
+                                 SKYBLUE-RACK BLUE2-RACK MURKYGREEN-RACK MINTGREEN-RACK))
 ;;blue color blind color scheme
 (define tritanopia-color-scheme standard-color-scheme)
 

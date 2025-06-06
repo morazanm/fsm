@@ -781,6 +781,8 @@ type -> the type of the ndfa (ndfa/dfa) | symbol
          [computations (first computations+hash)]
          ;;(listof computation) ;;Purpose: Extracts all accepting computations
          [accepting-computations (treelist->list (paths-accepting computations))]
+         ;;boolean ;;Purpose: Determines if the word has been rejected
+         [rejected? (empty? accepting-computations)]
          ;;(listof computation) ;;Purpose: Extracts all rejecting computations
          [rejecting-computations (treelist->list (paths-rejecting computations))]
          ;;(listof computations) ;;Combination of rejecting and accepting computations
@@ -799,10 +801,10 @@ type -> the type of the ndfa (ndfa/dfa) | symbol
                                               (treelist->list (computation-LoR reject-comp))
                                               '()))
                                 rejecting-computations)]
-         [rejecting-trace (if (empty? accepting-traces) (find-longest-computation rejecting-traces '()) '())]
+         [rejecting-trace (if rejected? (find-longest-computation rejecting-traces '()) '())]
          ;;(listof symbol) ;;Purpose: The portion of the ci that the machine can conusme the most 
          [most-consumed-word (let* ([farthest-consumed (get-farthest-consumed LoC (ndfa-config (ndfa-start new-M) a-word 0))]
-                                    [last-word (if (and (empty? accepting-traces) (not (empty? (ndfa-config-word farthest-consumed))))
+                                    [last-word (if (and rejected? (not (empty? (ndfa-config-word farthest-consumed))))
                                                   farthest-consumed
                                                   (ndfa-config (ndfa-start new-M) 'none 0))])
                                (if (eq? 'none (ndfa-config-word last-word))
@@ -819,10 +821,10 @@ type -> the type of the ndfa (ndfa/dfa) | symbol
                                              new-M
                                              (if (and add-dead (not (empty? invs))) (cons (list dead-state (λ (w) #t)) invs) invs) 
                                              dead-state
-                                             (if (empty? accepting-traces) (list rejecting-trace) (list (first accepting-traces)))
+                                             (if rejected? (list rejecting-trace) (list (first accepting-traces)))
                                              (if (eq? (ndfa-type new-M) 'ndfa) accepting-computations pre-loc)
-                                             (if (empty? accepting-traces) accepting-traces (rest accepting-traces))
-                                             (if (empty? accepting-traces) (filter (λ (config) (not (equal? config rejecting-trace)))
+                                             (if rejected? accepting-traces (rest accepting-traces))
+                                             (if rejected? (filter (λ (config) (not (equal? config rejecting-trace)))
                                                                                    rejecting-traces)
                                                  rejecting-traces)
                                              most-consumed-word
@@ -842,7 +844,17 @@ type -> the type of the ndfa (ndfa/dfa) | symbol
                           (let ([computations (if (eq? (ndfa-type new-M) 'ndfa)
                                                   (map2 (λ (comp) (treelist->list (computation-LoC comp))) accepting-computations)
                                                   (map2 treelist->list LoC))])
-                            (get-failed-invariants a-word computations invs)))])
+                            (get-failed-invariants a-word computations invs)))]
+         [color-legend (let ([buffer-sqaure (square HEIGHT-BUFFER 'solid (color-palette-blank-color color-scheme))])
+                         (if rejected?
+                           (beside (text "Reject traced" 20 (color-palette-legend-shown-reject-color color-scheme))
+                                   buffer-sqaure
+                                   (text "Reject not traced" 20 (color-palette-legend-other-reject-color color-scheme)))
+                           (beside (text "Accept traced" 20 (color-palette-legend-shown-accept-color color-scheme))
+                                   buffer-sqaure
+                                   (text "Accept not traced" 20 (color-palette-legend-other-accept-color color-scheme))
+                                   buffer-sqaure
+                                   (text "Reject not traced" 20 (color-palette-legend-other-reject-color color-scheme)))))])
     
     (run-viz graphs
              (lambda () (graph->bitmap (first graphs)))
@@ -864,10 +876,7 @@ type -> the type of the ndfa (ndfa/dfa) | symbol
                                                     0
                                                     color-scheme)
                                    ndfa-img-bounding-limit)
-             (instructions-graphic (above (beside (text "Accept traced" 20 (color-palette-shown-accept-color color-scheme))
-                                                  (text "Accept not traced" 20 (color-palette-other-accept-color color-scheme))
-                                                  )
-                                          E-SCENE-TOOLS)
+             (instructions-graphic (above color-legend E-SCENE-TOOLS)
                                    (bounding-limits 0
                                                     (image-width E-SCENE-TOOLS)
                                                     (+ EXTRA-HEIGHT-FROM-CURSOR

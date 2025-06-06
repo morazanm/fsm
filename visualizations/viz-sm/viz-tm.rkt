@@ -862,6 +862,8 @@
          [reached-final? (paths-reached-final? all-paths)]
          ;;(listof computation) ;;Purpose: Extracts all accepting computations
          [accepting-computations (treelist->list (paths-accepting all-paths))]
+         ;;boolean ;;Purpose: Determines if the word has been rejected
+         [rejected? (empty? accepting-computations)]
          ;;(listof computation) ;;Purpose: Extracts all rejecting computations
          [rejecting-computations (treelist->list (paths-rejecting all-paths))]
          ;;(listof computation) ;;Purpose: Extracts the configurations from the computation
@@ -882,24 +884,24 @@
                                 rejecting-computations)]
          
          ;;(listof rules) ;;Purpose: Returns the first accepting computations (listof rules)
-         [accepting-trace (if (empty? accepting-traces) '() (first accepting-traces))]
-         [rejecting-trace (if (empty? accepting-traces) (find-longest-computation rejecting-traces '()) '())]
+         [accepting-trace (if rejected? '() (first accepting-traces))]
+         [rejecting-trace (if rejected? (find-longest-computation rejecting-traces '()) '())]
          [displayed-tape (map (λ (trace) (tm-config-tape (trace-config trace)))
                               (if (not (empty? accepting-trace))
                              accepting-trace
                              rejecting-trace))]
          [all-displayed-tape (list->zipper displayed-tape)]
          [tracked-head-pos (let ([head-pos (map (λ (trace) (tm-config-head-position (trace-config trace)))
-                                                (if (empty? accepting-trace)
+                                                (if rejected?
                                                     rejecting-trace
                                                     accepting-trace))])
                              head-pos)]
          [all-head-pos (list->zipper tracked-head-pos)]
-         [machine-decision (if (not (empty? accepting-computations))
+         [machine-decision (if (not rejected?)
                                'accept
                                'reject)]
          
-         [tracked-trace (list (if (not (empty? accepting-trace)) accepting-trace rejecting-trace))]
+         [tracked-trace (list (if (not rejected?) accepting-trace rejecting-trace))]
          ;;(listof number) ;;Purpose: Gets all the invariant configurations
          [all-inv-configs (if (empty? invs)
                               '()
@@ -912,8 +914,8 @@
          [building-state (building-viz-state all-displayed-tape
                                              LoC
                                              tracked-trace
-                                             (if (empty? accepting-traces) '() (rest accepting-traces))
-                                             (if (empty? accepting-traces) (filter (λ (config) (not (equal? config rejecting-trace)))
+                                             (if rejected? '() (rest accepting-traces))
+                                             (if rejected? (filter (λ (config) (not (equal? config rejecting-trace)))
                                                                                    rejecting-traces)
                                                  rejecting-traces)
                                              M
@@ -926,7 +928,17 @@
          ;;(listof graph-thunk) ;;Purpose: Gets all the graphs needed to run the viz
          [graphs (create-graph-thunks building-state '())]
          ;;(listof number) ;;Purpose: Gets the number of computations for each step
-         [cut-off-computations-lengths (take (count-computations LoC '()) (length tracked-head-pos))])
+         [cut-off-computations-lengths (take (count-computations LoC '()) (length tracked-head-pos))]
+         [color-legend (let ([buffer-sqaure (square HEIGHT-BUFFER 'solid (color-palette-blank-color color-scheme))])
+                         (if rejected?
+                           (beside (text "Reject traced" 20 (color-palette-legend-shown-reject-color color-scheme))
+                                   buffer-sqaure
+                                   (text "Reject not traced" 20 (color-palette-legend-other-reject-color color-scheme)))
+                           (beside (text "Accept traced" 20 (color-palette-legend-shown-accept-color color-scheme))
+                                   buffer-sqaure
+                                   (text "Accept not traced" 20 (color-palette-legend-other-accept-color color-scheme))
+                                   buffer-sqaure
+                                   (text "Reject not traced" 20 (color-palette-legend-other-reject-color color-scheme)))))])
    (run-viz graphs
              (lambda () (graph->bitmap (first graphs)))
              (posn (/ E-SCENE-WIDTH 2) (/ TM-E-SCENE-HEIGHT 2))
@@ -952,7 +964,7 @@
                                                   0
                                                   color-scheme)
                                    tm-img-bounding-limit)
-             (instructions-graphic E-SCENE-TOOLS
+             (instructions-graphic (above color-legend E-SCENE-TOOLS)
                                    (bounding-limits 0
                                                     (image-width E-SCENE-TOOLS)
                                                     (+ EXTRA-HEIGHT-FROM-CURSOR

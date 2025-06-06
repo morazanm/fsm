@@ -1022,6 +1022,8 @@ destination -> the rest of a mttm rule | half-rule
                              [else standard-color-scheme])]
          ;;(listof computation) ;;Purpose: Extracts all accepting computations
          [accepting-computations (treelist->list (paths-accepting all-paths))]
+         ;;boolean ;;Purpose: Determines if the word has been rejected
+         [rejected? (empty? accepting-computations)]
          ;;(listof computation) ;;Purpose: Extracts all rejecting computations
          [rejecting-computations (treelist->list (paths-rejecting all-paths))]
          ;;(listof configurations) ;;Purpose: Extracts the configurations from the computation
@@ -1043,10 +1045,10 @@ destination -> the rest of a mttm rule | half-rule
                                               '()))
                                 rejecting-computations)]
          ;;(listof rules) ;;Purpose: Returns the first accepting computations (listof rules)
-         [accepting-trace (if (empty? accepting-traces) '() (first accepting-traces))]
-         [rejecting-trace (if (empty? accepting-traces) (find-longest-computation rejecting-traces '()) '())]
+         [accepting-trace (if rejected? '() (first accepting-traces))]
+         [rejecting-trace (if rejected? (find-longest-computation rejecting-traces '()) '())]
          [all-tapes (map2 (λ (trace) (mttm-config-lotc (trace-config trace)))
-                         (if (not (empty? accepting-trace))
+                         (if (not rejected?)
                              accepting-trace
                              rejecting-trace))]
          [displayed-tape (for/list [(lotc all-tapes)]
@@ -1058,11 +1060,11 @@ destination -> the rest of a mttm rule | half-rule
                                  
                              
          [all-head-pos (list->zipper tracked-head-pos)]
-         [machine-decision (if (not (empty? accepting-computations))
+         [machine-decision (if (not rejected?)
                                'accept
                                'reject)]
          
-         [tracked-trace (list (if (not (empty? accepting-trace)) accepting-trace rejecting-trace))]
+         [tracked-trace (list (if (not rejected?) accepting-trace rejecting-trace))]
          ;;(listof (list config boolean)) ;;Purpose: Gets all the invariant configurations
          [all-inv-configs (if (empty? invs)
                               '()
@@ -1074,10 +1076,10 @@ destination -> the rest of a mttm rule | half-rule
          ;;building-state struct
          [building-state (building-viz-state all-displayed-tape
                                              LoC
-                                             (if (empty? accepting-traces) accepting-traces tracked-trace)
-                                             (if (empty? accepting-traces) tracked-trace '())
-                                             (if (empty? accepting-traces) accepting-traces (rest accepting-traces))
-                                             (if (empty? accepting-traces) (filter (λ (config) (not (equal? config rejecting-trace)))
+                                             (if rejected? accepting-traces tracked-trace)
+                                             (if rejected? tracked-trace '())
+                                             (if rejected? accepting-traces (rest accepting-traces))
+                                             (if rejected? (filter (λ (config) (not (equal? config rejecting-trace)))
                                                                                    rejecting-traces)
                                                  rejecting-traces)
                                              M
@@ -1108,7 +1110,18 @@ destination -> the rest of a mttm rule | half-rule
                               [else mttm->=4tape-viz-zoom-out])]
          [viz-max-zoom-out (cond [(= (mttm-tape-amount M) 2) mttm-2tape-viz-max-zoom-out]
                               [(= (mttm-tape-amount M) 3) mttm-3tape-viz-max-zoom-out]
-                              [else mttm->=4tape-viz-max-zoom-out])])
+                              [else mttm->=4tape-viz-max-zoom-out])]
+
+         [color-legend (let ([buffer-sqaure (square HEIGHT-BUFFER 'solid (color-palette-blank-color color-scheme))])
+                         (if rejected?
+                           (beside (text "Reject traced" 20 (color-palette-legend-shown-reject-color color-scheme))
+                                   buffer-sqaure
+                                   (text "Reject not traced" 20 (color-palette-legend-other-reject-color color-scheme)))
+                           (beside (text "Accept traced" 20 (color-palette-legend-shown-accept-color color-scheme))
+                                   buffer-sqaure
+                                   (text "Accept not traced" 20 (color-palette-legend-other-accept-color color-scheme))
+                                   buffer-sqaure
+                                   (text "Reject not traced" 20 (color-palette-legend-other-reject-color color-scheme)))))])
     #;all-inv-configs
     
     ;(list->zipper failed-inv-configs)
@@ -1139,7 +1152,7 @@ destination -> the rest of a mttm rule | half-rule
                                                     0
                                                     color-scheme)
                                    mttm-img-bounding-limit)
-             (instructions-graphic MTTM-E-SCENE-TOOLS
+             (instructions-graphic (above color-legend MTTM-E-SCENE-TOOLS)
                                    (bounding-limits 0
                                                     (image-width E-SCENE-TOOLS)
                                                     (+ EXTRA-HEIGHT-FROM-CURSOR

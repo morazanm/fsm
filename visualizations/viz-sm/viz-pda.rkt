@@ -1005,6 +1005,8 @@ farthest-consumed-input | is the portion the ci that the machine consumed the mo
          [all-paths (first computations+hash)]
          ;;(listof computation) ;;Purpose: Extracts all accepting computations
          [accepting-computations (treelist->list (paths-accepting all-paths))]
+         ;;boolean ;;Purpose: Determines if the word has been rejected
+         [rejected? (empty? accepting-computations)]
          ;;(listof computation) ;;Purpose: Extracts all rejecting computations
          [rejecting-computations (treelist->list (paths-rejecting all-paths))]
          ;;(listof computation) ;;Purpose: Extracts the configurations from the computation
@@ -1022,11 +1024,11 @@ farthest-consumed-input | is the portion the ci that the machine consumed the mo
                                               '()))
                                 rejecting-computations)]
          
-         [longest-rejecting-compution (if (empty? accepting-computations)
+         [longest-rejecting-compution (if rejected?
                                           (find-longest-computation (rest rejecting-computations) (list (first rejecting-computations)))
                                           '())]
          ;;(zipperof computation) ;;Purpose: Gets the stack of the first accepting computation
-         [pre-stack (remove-empty (if (empty? accepting-computations)
+         [pre-stack (remove-empty (if rejected?
                                   (treelist->list (computation-LoC longest-rejecting-compution))
                                   (treelist->list (computation-LoC (first accepting-computations)))))]
 
@@ -1038,8 +1040,8 @@ farthest-consumed-input | is the portion the ci that the machine consumed the mo
                              (second computations+hash))]
 
          ;;(listof rules) ;;Purpose: Returns the first accepting computations (listof rules)
-         [accepting-trace (if (empty? accepting-traces) '() (first accepting-traces))]
-         [rejecting-trace (if (empty? accepting-traces) (make-trace (treelist->list (computation-LoC longest-rejecting-compution))
+         [accepting-trace (if rejected? '() (first accepting-traces))]
+         [rejecting-trace (if rejected? (make-trace (treelist->list (computation-LoC longest-rejecting-compution))
                                                               (treelist->list (computation-LoR longest-rejecting-compution))
                                                               '())
                               '())]
@@ -1047,7 +1049,7 @@ farthest-consumed-input | is the portion the ci that the machine consumed the mo
          ;;boolean ;;Determines if the computation has reached the cut-off threshold
          [computation-has-cut-off? (paths-cut-off? all-paths)]
          ;;(listof symbol) ;;Purpose: The portion of the ci that the machine can conusme the most 
-         [most-consumed-word (let* ([farthest-consumed (if (not (empty? accepting-traces))
+         [most-consumed-word (let* ([farthest-consumed (if (not rejected?)
                                                            (pda-config (pda-start new-M) FULLY-CONSUMED '() 0)
                                                            (treelist-last (computation-LoC longest-rejecting-compution)))]
                                     [last-word (if (and (empty? accepting-trace) (not (empty? (pda-config-word farthest-consumed))))
@@ -1083,8 +1085,8 @@ farthest-consumed-input | is the portion the ci that the machine consumed the mo
                                              (for/list ([computation LoC]) (treelist->list computation))
                                              accepting-computations
                                              (list->zipper stack)
-                                             (list (if (empty? accepting-traces) rejecting-trace accepting-trace))
-                                             (if (empty? accepting-traces) '() (rest accepting-traces))
+                                             (list (if rejected? rejecting-trace accepting-trace))
+                                             (if rejected? '() (rest accepting-traces))
                                              cut-off-traces
                                              new-M
                                              (if (and add-dead (not (empty? invs))) (cons (list dead-state (λ (w s) #t)) invs) invs)
@@ -1098,7 +1100,17 @@ farthest-consumed-input | is the portion the ci that the machine consumed the mo
          [graphs (create-graph-thunks building-state)]
          ;;(listof number) ;;Purpose: Gets the index of image where an invariant failed
          [inv-configs (get-failed-invariants a-word accepting-computations invs)]
-         )
+
+         [color-legend (let ([buffer-sqaure (square HEIGHT-BUFFER 'solid (color-palette-blank-color color-scheme))])
+                         (if rejected?
+                           (beside (text "Reject traced" 20 (color-palette-legend-shown-reject-color color-scheme))
+                                   buffer-sqaure
+                                   (text "Reject not traced" 20 (color-palette-legend-other-reject-color color-scheme)))
+                           (beside (text "Accept traced" 20 (color-palette-legend-shown-accept-color color-scheme))
+                                   buffer-sqaure
+                                   (text "Accept not traced" 20 (color-palette-legend-other-accept-color color-scheme))
+                                   buffer-sqaure
+                                   (text "Reject not traced" 20 (color-palette-legend-other-reject-color color-scheme)))))])
     (run-viz graphs
              (lambda () (graph->bitmap (first graphs)))
              (posn (/ E-SCENE-WIDTH 2) (/ PDA-E-SCENE-HEIGHT 2))
@@ -1122,7 +1134,7 @@ farthest-consumed-input | is the portion the ci that the machine consumed the mo
                                                    0
                                                    color-scheme)
                                    pda-img-bounding-limit)
-             (instructions-graphic E-SCENE-TOOLS
+             (instructions-graphic (above color-legend E-SCENE-TOOLS)
                                    (bounding-limits 0
                                                     (image-width E-SCENE-TOOLS)
                                                     (+ EXTRA-HEIGHT-FROM-CURSOR
