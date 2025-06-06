@@ -47,7 +47,7 @@
                      `((S ,EMP A) (S ,EMP C) (A a B) (B b B)
                                   (C a D) (C b E) (D b C) (E b E))))
 
-(define LM (sm-rename-states '(S A B C D E) L))
+(define ML (sm-rename-states '(S A B C D E) L))
 
 (define MM1 (make-ndfa '(S A B C D E G H I J K)
                        '(a b)
