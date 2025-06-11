@@ -397,6 +397,112 @@
               DEFAULT-ZOOM-CAP
               DEFAULT-ZOOM))
 
+(define pda-viz-zoom-in
+  (zoom-in E-SCENE-WIDTH
+           PDA-E-SCENE-HEIGHT
+           ZOOM-INCREASE
+           ZOOM-DECREASE
+           NODE-SIZE
+           PERCENT-BORDER-GAP
+           DEFAULT-ZOOM-CAP
+           DEFAULT-ZOOM))
+
+(define pda-viz-zoom-out
+  (zoom-out E-SCENE-WIDTH
+            PDA-E-SCENE-HEIGHT
+            ZOOM-INCREASE
+            ZOOM-DECREASE
+            NODE-SIZE
+            PERCENT-BORDER-GAP
+            DEFAULT-ZOOM-CAP
+            DEFAULT-ZOOM))
+
+(define pda-viz-max-zoom-out
+  (max-zoom-out E-SCENE-WIDTH
+                PDA-E-SCENE-HEIGHT
+                ZOOM-INCREASE
+                ZOOM-DECREASE
+                NODE-SIZE
+                PERCENT-BORDER-GAP
+                DEFAULT-ZOOM-CAP
+                DEFAULT-ZOOM))
+
+(define pda-viz-max-zoom-in
+  (max-zoom-in E-SCENE-WIDTH
+               PDA-E-SCENE-HEIGHT
+               ZOOM-INCREASE
+               ZOOM-DECREASE
+               NODE-SIZE
+               PERCENT-BORDER-GAP
+               DEFAULT-ZOOM-CAP
+               DEFAULT-ZOOM))
+
+(define pda-viz-reset-zoom
+  (reset-zoom E-SCENE-WIDTH
+              PDA-E-SCENE-HEIGHT
+              ZOOM-INCREASE
+              ZOOM-DECREASE
+              NODE-SIZE
+              PERCENT-BORDER-GAP
+              DEFAULT-ZOOM-CAP
+              DEFAULT-ZOOM))
+
+
+
+
+
+
+
+
+(define tm-viz-zoom-in
+  (zoom-in E-SCENE-WIDTH
+           TM-E-SCENE-HEIGHT
+           ZOOM-INCREASE
+           ZOOM-DECREASE
+           NODE-SIZE
+           PERCENT-BORDER-GAP
+           DEFAULT-ZOOM-CAP
+           DEFAULT-ZOOM))
+
+(define tm-viz-zoom-out
+  (zoom-out E-SCENE-WIDTH
+            TM-E-SCENE-HEIGHT
+            ZOOM-INCREASE
+            ZOOM-DECREASE
+            NODE-SIZE
+            PERCENT-BORDER-GAP
+            DEFAULT-ZOOM-CAP
+            DEFAULT-ZOOM))
+
+(define tm-viz-max-zoom-out
+  (max-zoom-out E-SCENE-WIDTH
+                TM-E-SCENE-HEIGHT
+                ZOOM-INCREASE
+                ZOOM-DECREASE
+                NODE-SIZE
+                PERCENT-BORDER-GAP
+                DEFAULT-ZOOM-CAP
+                DEFAULT-ZOOM))
+
+(define tm-viz-max-zoom-in
+  (max-zoom-in E-SCENE-WIDTH
+               TM-E-SCENE-HEIGHT
+               ZOOM-INCREASE
+               ZOOM-DECREASE
+               NODE-SIZE
+               PERCENT-BORDER-GAP
+               DEFAULT-ZOOM-CAP
+               DEFAULT-ZOOM))
+
+(define tm-viz-reset-zoom
+  (reset-zoom E-SCENE-WIDTH
+              TM-E-SCENE-HEIGHT
+              ZOOM-INCREASE
+              ZOOM-DECREASE
+              NODE-SIZE
+              PERCENT-BORDER-GAP
+              DEFAULT-ZOOM-CAP
+              DEFAULT-ZOOM))
 
 (define mttm-2tape-viz-max-zoom-out
   (max-zoom-out E-SCENE-WIDTH

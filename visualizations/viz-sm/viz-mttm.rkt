@@ -1122,9 +1122,6 @@ destination -> the rest of a mttm rule | half-rule
                                    (text "Accept not traced" 20 (color-palette-legend-other-accept-color color-scheme))
                                    buffer-sqaure
                                    (text "Reject not traced" 20 (color-palette-legend-other-reject-color color-scheme)))))])
-    #;all-inv-configs
-    
-    ;(list->zipper failed-inv-configs)
     (run-viz graphs
              (lambda () (graph->bitmap (first graphs)))
              (posn (/ E-SCENE-WIDTH 2) (/ MTTM-E-SCENE-HEIGHT 2))
