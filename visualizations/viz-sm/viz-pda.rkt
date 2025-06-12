@@ -1158,8 +1158,8 @@ farthest-consumed-input | is the portion the ci that the machine consumed the mo
                                      [ "e" pda-viz-reset-zoom identity]
                                      [ "a" identity a-key-pressed]
                                      [ "d" identity d-key-pressed]
-                                     [ "wheel-down" viz-zoom-in identity]
-                                     [ "wheel-up" viz-zoom-out identity]
+                                     [ "wheel-down" pda-viz-zoom-in identity]
+                                     [ "wheel-up" pda-viz-zoom-out identity]
                                      [ "j" pda-jump-prev j-key-pressed]
                                      [ "l" pda-jump-next l-key-pressed]
                                      )

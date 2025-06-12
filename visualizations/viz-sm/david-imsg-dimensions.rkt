@@ -64,7 +64,29 @@
                                     (let ([offset-cap (- (length '(a b b)) TM-TAPE-SIZE)])
                                       (if (> 0 offset-cap) 0 offset-cap))
                                     0
-                                    standard-color-scheme)))
+                                    standard-color-scheme))
+  #;(above (tm-create-draw-informative-message
+                     (imsg-state-tm EVEN-AS-&-BS
+                                    (list->zipper (list `(,LM b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a c c b a b
+                                                        a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a b a c)))
+                                    (list->zipper '(1))
+                                    (list->zipper '())
+                                    (list->zipper '())
+                                    (list->zipper '())
+                                    (list->zipper '(1))
+                                    1
+                                    'accept
+                                    0
+                                    (let ([offset-cap (- (length '(a b b)) TM-TAPE-SIZE)])
+                                      (if (> 0 offset-cap) 0 offset-cap))
+                                    0
+                                    standard-color-scheme))
+                     (let ([buffer-sqaure (square HEIGHT-BUFFER 'solid (color-palette-blank-color standard-color-scheme))])
+                         (above (text "Accept traced" 20 (color-palette-legend-shown-accept-color standard-color-scheme))
+                                   buffer-sqaure
+                                   (text "Accept not traced" 20 (color-palette-legend-other-accept-color standard-color-scheme))
+                                   buffer-sqaure
+                                   (text "Reject not traced" 20 (color-palette-legend-other-reject-color standard-color-scheme))))))
 
 (define mttm-2tape-info-img (mttm-create-draw-informative-message
                              (imsg-state-mttm ww

@@ -988,8 +988,8 @@
                                      [ "e" tm-viz-reset-zoom identity]
                                      [ "a" identity a-key-pressed]
                                      [ "d" identity d-key-pressed]
-                                     [ "wheel-down" viz-zoom-in identity]
-                                     [ "wheel-up" viz-zoom-out identity]
+                                     [ "wheel-down" tm-viz-zoom-in identity]
+                                     [ "wheel-up" tm-viz-zoom-out identity]
                                      [ "j" tm-jump-prev j-key-pressed]
                                      [ "l" tm-jump-next l-key-pressed]
                                      )
