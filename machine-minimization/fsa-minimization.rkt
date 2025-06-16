@@ -12,20 +12,62 @@
          "../sm-graph.rkt")
 
 
+(struct equivalence-class (non-final final) #:transparent)
+
+(define EX1 (make-unchecked-dfa '(A B C D E)
+                      '(0 1)
+                      'A
+                      '(E)
+                      '((A 0 B) (A 1 C)
+                        (B 0 B) (B 1 D)
+                        (C 0 B) (C 1 C)
+                        (D 1 E) (D 0 B)
+                        (E 0 B) (E 1 C))
+                      'no-dead))
 
 
 
 
 
 
-
-
-
-
-(define (make-transition-table M)
+(define (minimize-dfa M)
   (let* ([dfa (ndfa->dfa M)]
-         [states (fsa-getstates dfa)]
-         [rules (fsa-getrules dfa)])
+         [transition-table (make-transition-table dfa)]
+         [finals (fsa-getfinals dfa)]
+         [equivalence-class (make-equivalence-classes (filter (λ (s) (not (member s finals))) (fsa-getstates dfa)) finals transition-table)])
+    (equivalence-class->dfa (fsa-getalphabet dfa) (fsa-getstart dfa) finals equivalence-class transition-table)))
+
+
+(define (equivalence-class->dfa alphabet start finals EC transition-table)
+  (let* ([merged-states (cond  [(set-member? (equivalence-class-non-final EC) start) start]
+                               [(not (set-empty? (equivalence-class-non-final EC))) (first (set->list (equivalence-class-non-final EC)))]
+                               ['()])]
+        [other-states (append-map set->list (equivalence-class-final EC))]
+        [new-states (if (empty? merged-states)
+                        other-states
+                        (cons merged-states other-states))]
+        [table->rules (filter (λ (rule)
+                                (and (list? (member (first rule) new-states))
+                                     (list? (member (third rule) new-states))))
+                              (foldl (λ (row acc)
+                                       (if (list? (member (first row) new-states))
+                                           (append (map (λ (r) (if (list? (member (second r) new-states))
+                                                                   (cons (first row) r)
+                                                                   (list (first row) (first r) merged-states)))
+                                                                    (second row)) acc)
+                                           acc))
+                                     '()
+                                     transition-table))])
+  (make-unchecked-dfa new-states
+                      alphabet
+                      start
+                      finals
+                      table->rules
+                      'no-dead)))
+
+(define (make-transition-table dfa)
+  (let ([states (fsa-getstates dfa)]
+        [rules (fsa-getrules dfa)])
     (for/list ([state states]
                #:do [(define applicable-rules (filter-map (λ (rule) (and (eq? state (first rule))
                                                                          (list (second rule) (third rule))))
@@ -34,7 +76,66 @@
     
 
 
-;;establish equivalence classes where 
+;;establish equivalence classes where
+
+(define (make-equivalence-classes states finals transition-table)
+  (let ([first-equivalence-class (equivalence-class (list->set states) (list (list->set finals)))])
+    
+    (define (equivalence? matchee matcher last-ec-non-finals)
+      (define (same-transitions? matchee-transitions matcher-transitions)
+        (list? (andmap (λ (transition) (member transition matchee-transitions)) matcher-transitions)))
+
+      (define (partial-match? matchee-transitions matcher-transitions)
+        (list? (ormap (λ (t) (member t matchee-transitions)) matcher-transitions)))
+      (let ([matchee-transitions (first (filter-map (λ (row) (and (eq? matchee (first row))
+                                                           (second row)))
+                                             transition-table))]
+            [matcher-transitions (first (filter-map (λ (row) (and (eq? matcher (first row))
+                                                           (second row)))
+                                             transition-table))])
+        (or (same-transitions? matchee-transitions matcher-transitions)
+            (and (partial-match? matchee-transitions matcher-transitions)
+                 (andmap (λ (t) (set-member? last-ec-non-finals (second t))) matchee-transitions)
+                 (andmap (λ (t) (set-member? last-ec-non-finals (second t))) matcher-transitions)))))
+                 
+           
+    (define (make-equivalence matchee potential-matches new-ec last-ec-non-finals)
+      (cond [(set-empty? potential-matches)
+             (struct-copy equivalence-class
+                          new-ec
+                          [final (cons (set matchee) (equivalence-class-final new-ec))])]
+            [(equivalence? matchee (set-first potential-matches) last-ec-non-finals)
+             (struct-copy equivalence-class
+                          new-ec
+                          [non-final (if (set-empty? (equivalence-class-non-final new-ec))
+                                          (set-add (set-add (equivalence-class-non-final new-ec) matchee) (set-first potential-matches))
+                                          (set-add (equivalence-class-non-final new-ec) matchee))])]
+            [else (make-equivalence matchee (set-rest potential-matches) new-ec last-ec-non-finals)]))
+
+    
+    (define (make-next-equivalence-class last-ec matches-to-make new-ec)
+      (let ([set-second (compose1 set-first set-rest)])
+        (if (set-empty? matches-to-make)
+            new-ec
+            (make-next-equivalence-class last-ec
+                                         (set-rest matches-to-make)
+                                         (make-equivalence (set-first matches-to-make)
+                                                           (set-union (set-rest matches-to-make) (equivalence-class-non-final new-ec))
+                                                           new-ec
+                                                           (equivalence-class-non-final last-ec))))))
+    
+    (define (make-equivalence-classes-helper LoEC)
+      (define (same-equivalence-class? EC1 EC2)
+        (and (list? (andmap (λ (t) (member t (equivalence-class-final EC1))) (equivalence-class-final EC2)))
+             (set=? (equivalence-class-non-final EC1) (equivalence-class-non-final EC2))))
+      (if (and (>= (length LoEC) 2)
+               (same-equivalence-class? (first LoEC) (second LoEC)))
+          (first LoEC)
+          (make-equivalence-classes-helper (cons (make-next-equivalence-class (first LoEC)
+                                                                              (equivalence-class-non-final (first LoEC))
+                                                                              (equivalence-class (set) (equivalence-class-final (first LoEC))))
+                                                 LoEC)))) 
+        (make-equivalence-classes-helper (list first-equivalence-class))))
 
 
 
