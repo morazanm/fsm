@@ -611,6 +611,7 @@
          [merged-states (append final-merged-states non-final-merged-states)]
          [other-states (append-map set->list (filter (λ (s) (= (set-count s) 1)) (equivalence-class-final EC)))]
          [new-states (append (map merged-state-new-symbol merged-states) other-states)]
+         [new-finals (filter (λ (s) (member s finals)) new-states)]
          [table->rules (foldl (λ (row acc)
                                 (if (list? (member (first row) new-states))
                                     (append (map (λ (r) (if (list? (member (second r) new-states))
@@ -623,7 +624,7 @@
     (make-unchecked-dfa new-states
                         alphabet
                         start
-                        finals
+                        new-finals
                         table->rules
                         'no-dead)))
 
