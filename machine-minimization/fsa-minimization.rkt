@@ -592,7 +592,8 @@
          [transition-table (make-transition-table dfa)]
          [finals (fsa-getfinals dfa)]
          [equivalence-class (make-equivalence-classes (filter (λ (s) (not (member s finals))) (fsa-getstates dfa)) finals transition-table)])
-    (if (list? equivalence-class)
+    (equivalence-class->dfa (fsa-getalphabet dfa) (fsa-getstart dfa) finals equivalence-class transition-table)
+    #;(if (list? equivalence-class)
         equivalence-class
         (equivalence-class->dfa (fsa-getalphabet dfa) (fsa-getstart dfa) finals equivalence-class transition-table))))
 
@@ -610,7 +611,7 @@
                                                       (merged-state (set-first s) s))) (equivalence-class-final EC))]
          [merged-states (append final-merged-states non-final-merged-states)]
          [other-states (append-map set->list (filter (λ (s) (= (set-count s) 1)) (equivalence-class-final EC)))]
-         [new-states (append (map merged-state-new-symbol merged-states) other-states)]
+         [new-states (remove-duplicates (append (map merged-state-new-symbol merged-states) other-states))]
          [new-finals (filter (λ (s) (member s finals)) new-states)]
          [table->rules (foldl (λ (row acc)
                                 (if (list? (member (first row) new-states))
@@ -850,7 +851,7 @@
       (cond [(or (and (>= (length LoEC) 2)
                   (same-equivalence-class? (first LoEC) (second LoEC)))
                  (= (length LoEC) 4))
-             (if (= (length LoEC) 4) LoEC (first LoEC))]
+             (first LoEC)]
             [(ormap (λ (s) (> (set-count s) 1)) (equivalence-class-final (first LoEC)))
              (let ([new-ec-for-non-finals (make-next-equivalence-class
                                            (first LoEC)
