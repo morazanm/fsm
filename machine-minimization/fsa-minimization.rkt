@@ -11,7 +11,7 @@
                   make-uncheckedndfa)
          "../sm-graph.rkt")
 
-
+(struct dfa (states alphabet start finals rules no-dead) #:transparent)
 (struct equivalence-class (non-final final) #:transparent)
 
 (struct merged-state (new-symbol old-symbols) #:transparent)
@@ -93,6 +93,30 @@
                         (F 0 D) (F 1 E)
                         (G 0 G) (G 1 G))
                       'no-dead))
+
+(define EX5-vid (make-unchecked-dfa '(A B C D E F)
+                                    '(0 1)
+                                    'A
+                                    '(D C E)
+                                    '((A 0 B) (A 1 C)
+                                      (B 0 A) (B 1 D)
+                                      (C 0 E) (C 1 F)
+                                      (D 0 E) (D 1 F)
+                                      (E 0 E) (E 1 F)
+                                      (F 0 F) (F 1 F))
+                                    'no-dead))
+
+(define EX6-vid (make-unchecked-dfa '(A B C D E)
+                                    '(0 1)
+                                    'A
+                                    '(E)
+                                    '((A 0 B) (A 1 C)
+                                      (B 0 B) (B 1 D)
+                                      (C 0 B) (C 1 C)
+                                      (D 0 B) (D 1 E)
+                                      (E 0 B) (E 1 C)
+                                      (F 0 F) (F 1 F))
+                                    'no-dead))
 
 
 ;;probably raise error if final is unreachable
@@ -535,7 +559,8 @@
                         LoEC)))]
               [else (make-equivalence-classes-helper (cons (make-next-equivalence-class (first LoEC)
                                                                                         (equivalence-class-non-final (first LoEC))
-                                                                                        (equivalence-class (list) (equivalence-class-final (first LoEC)))
+                                                                                        (equivalence-class (list)
+                                                                                                           (equivalence-class-final (first LoEC)))
                                                                                         transition-table)
                                                            LoEC))])) 
       (make-equivalence-classes-helper (list first-equivalence-class)))) 
@@ -622,7 +647,8 @@
                                     acc))
                               '()
                               transition-table)])
-    (make-unchecked-dfa new-states
+    
+     (make-unchecked-dfa new-states
                         alphabet
                         start
                         new-finals
@@ -784,7 +810,8 @@
                        (connection-between-matchee-and-matcher matchee-transitions matcher-transitions)))))
           
           (cond [(set-empty? potential-matches)
-                 (if (or (ormap (λ (s) (proper-subset? (set matchee) s)) (equivalence-class-non-final new-ec))
+                 (if #;(member (set matchee) (equivalence-class-final new-ec))
+                     (or (ormap (λ (s) (proper-subset? (set matchee) s)) (equivalence-class-non-final new-ec))
                          #;(ormap (λ (s) (subset? (set matchee) s)) (equivalence-class-final new-ec)))
                      new-ec
                      (struct-copy equivalence-class
@@ -877,11 +904,213 @@
                       LoEC)))]
             [else (make-equivalence-classes-helper (cons (make-next-equivalence-class (first LoEC)
                                                                                       (equivalence-class-non-final (first LoEC))
-                                                                                      (equivalence-class (list) (equivalence-class-final (first LoEC)))
+                                                                                      (equivalence-class (list)
+                                                                                                         (equivalence-class-final (first LoEC)))
                                                                                       transition-table
                                                                                       #f)
                                                          LoEC))])) 
     (make-equivalence-classes-helper (list first-equivalence-class))))
+
+(struct state-pair (s1 s2 marked?) #:transparent)
+
+(struct state-pairings (all-pairs) #:transparent)
+
+(define (unchecked->dfa old-dfa)
+  (dfa (fsa-getstates old-dfa)
+       (fsa-getalphabet old-dfa)
+       (fsa-getstart old-dfa)
+       (fsa-getfinals old-dfa)
+       (fsa-getrules old-dfa)
+       'no-dead))
+
+;;table filling method
+(define (minimize-dfa5 M)
+  (let* ([dfa (remove-unreachables (ndfa->dfa M))]
+         [transition-table (make-transition-table dfa)]
+         [finals (fsa-getfinals dfa)]
+         [states-table (map (λ (sp) (mark-states-table sp finals)) (make-states-table dfa))]
+         [filled-table (make-matches (list (state-pairings states-table)) transition-table (fsa-getalphabet dfa))])
+   (table->dfa (state-pairings-all-pairs filled-table) dfa transition-table)))
+
+
+(define (table->dfa loSP old-dfa transition-table)
+  (define (search-for-merged-state old-state merged-states)
+    (first (filter-map (λ (ms) (and (set-member? (merged-state-old-symbols ms) old-state)
+                                    (merged-state-new-symbol ms)))                
+                       merged-states)))
+  
+  (let* ([states (fsa-getstates old-dfa)]
+         [finals (fsa-getfinals old-dfa)]
+         [marked-pairs (filter (λ (sp) (state-pair-marked? sp)) loSP)]
+         [unmarked-pairs (filter (λ (sp) (not (state-pair-marked? sp))) loSP)]
+         [merged-unmarked-pairs (accumulate-unmarked-pairs old-dfa unmarked-pairs '())]
+         [states-that-were-merged (set->list (foldl (λ (mp acc) (set-remove (set-union acc (merged-state-old-symbols mp))
+                                                                            (merged-state-new-symbol mp)))
+                                                    (set) merged-unmarked-pairs))]
+         [remaining-states (filter (λ (s) (not (member s states-that-were-merged))) states)]
+         [new-finals (filter (λ (s) (member s finals)) remaining-states)]
+         [table->rules (foldl (λ (row acc)
+                                  (if (list? (member (first row) remaining-states))
+                                      (append (map (λ (r) (if (list? (member (second r) remaining-states))
+                                                              (cons (first row) r)
+                                                              (list (first row) (first r) (search-for-merged-state (second r)
+                                                                                                                   merged-unmarked-pairs))))
+                                                   (second row)) acc)
+                                      acc))
+                                '()
+                                transition-table)])
+   (make-unchecked-dfa remaining-states
+                        (fsa-getalphabet old-dfa)
+                        (fsa-getstart old-dfa)
+                        new-finals
+                        table->rules
+                        'no-dead)))
+
+
+
+
+(define (overlap? unmarked-pair loSP)
+  (ormap (λ (sp) (or (set-member? (merged-state-old-symbols sp) (state-pair-s1 unmarked-pair))
+                     (set-member? (merged-state-old-symbols sp) (state-pair-s2 unmarked-pair))))
+         loSP))
+
+
+(define (merge-pairs dfa unmarked-pair loSP)
+  (let* ([overlapped-pair (first (filter (λ (sp) (or (set-member? (merged-state-old-symbols sp) (state-pair-s1 unmarked-pair))
+                                              (set-member? (merged-state-old-symbols sp) (state-pair-s2 unmarked-pair))))
+                                 loSP))]
+        [new-merged-state (update-merged-state dfa unmarked-pair overlapped-pair)])
+    (map (λ (sp) (if (equal? overlapped-pair sp) new-merged-state sp)) loSP)))
+
+(define (update-merged-state dfa unmarked-pair overlapped-pair)
+  (let* ([start (fsa-getstart dfa)]
+         [finals (fsa-getfinals dfa)]
+         [ump-s1 (state-pair-s1 unmarked-pair)]
+         [ump-s2 (state-pair-s2 unmarked-pair)]
+         [new-old-symbols-set (set-add (set-add (merged-state-old-symbols overlapped-pair) ump-s1) ump-s2)])
+    (cond [(and (or (eq? ump-s1 start) (eq? ump-s2 start))
+                (not (eq? (merged-state-new-symbol overlapped-pair) start)))
+           (struct-copy merged-state overlapped-pair
+                        [new-symbol start]
+                        [old-symbols new-old-symbols-set])]
+          [(and (or (member ump-s1 finals) (member ump-s2 finals))
+                (not (member (merged-state-new-symbol overlapped-pair) finals)))
+           (struct-copy merged-state overlapped-pair
+                        [new-symbol (if (member ump-s1 finals) ump-s1 ump-s2)]
+                        [old-symbols new-old-symbols-set])]
+           [else (struct-copy merged-state overlapped-pair [old-symbols new-old-symbols-set])])))
+
+
+           
+          
+
+(define (make-merged-state dfa unmarked-pair)
+  (let ([start (fsa-getstart dfa)]
+        [finals (fsa-getfinals dfa)]
+        [ump-s1 (state-pair-s1 unmarked-pair)]
+        [ump-s2 (state-pair-s2 unmarked-pair)])
+    (cond [(or (eq? ump-s1 start)
+               (eq? ump-s2 start))
+           (merged-state start (set ump-s1 ump-s2))]
+          [(or (member ump-s1 finals)
+               (member ump-s2 finals))
+          (merged-state (if (member ump-s1 finals)
+                            ump-s1
+                            ump-s2)
+                        (set ump-s1 ump-s2))]
+          [else (merged-state ump-s1 (set (state-pair-s1 unmarked-pair) ump-s2))])))
+                     
+    
+(define (accumulate-unmarked-pairs dfa unmarked-pairs acc)
+  (cond [(empty? unmarked-pairs) acc]
+        [(overlap? (first unmarked-pairs) acc)
+         (accumulate-unmarked-pairs dfa (rest unmarked-pairs) (merge-pairs dfa (first unmarked-pairs) acc))]
+        [(accumulate-unmarked-pairs dfa (rest unmarked-pairs) (cons (make-merged-state dfa (first unmarked-pairs)) acc))]))
+
+(define (mark-states-table pairing finals)
+  (if (or (and (list? (member (state-pair-s1 pairing) finals))
+               (boolean? (member (state-pair-s2 pairing) finals)))
+          
+          (and (list? (member (state-pair-s2 pairing) finals))
+               (boolean? (member (state-pair-s1 pairing) finals))))
+      (struct-copy state-pair pairing [marked? #t])
+      pairing))
+
+
+(define (make-matches loSP transition-table alphabet)
+  (define (update-pairs marked-pairs unmarked-pairs remaining-unmarked-pairs)
+    (cond [(empty? unmarked-pairs) (state-pairings (append marked-pairs remaining-unmarked-pairs))]
+          [(update-mark? (first unmarked-pairs) marked-pairs transition-table alphabet)
+           (update-pairs (cons (struct-copy state-pair (first unmarked-pairs) [marked? #t]) marked-pairs)
+                         (rest unmarked-pairs)
+                         remaining-unmarked-pairs)]
+          [else (update-pairs marked-pairs
+                         (rest unmarked-pairs)
+                         (cons (first unmarked-pairs) remaining-unmarked-pairs))]))
+  (if (and (>= (length loSP) 2)
+           (same-markings? (state-pairings-all-pairs (first loSP)) (state-pairings-all-pairs (second loSP))))
+     (first loSP)
+      (let ([marked-pairs (filter (λ (sp) (state-pair-marked? sp)) (state-pairings-all-pairs (first loSP)))]
+            [unmarked-pairs (filter (λ (sp) (not (state-pair-marked? sp))) (state-pairings-all-pairs (first loSP)))])
+        (make-matches (cons (update-pairs marked-pairs unmarked-pairs '()) loSP)
+                      transition-table
+                      alphabet)
+        #;(list marked-pairs unmarked-pairs) #;(map (λ (ump) (update-mark ump marked-pairs transition-table alphabet)) unmarked-pairs))))
+
+(define (same-markings? loSP1 loSP2)
+  (let ([unmarked-SP1 (filter (λ (sp) (not (state-pair-marked? sp))) loSP1)]
+        [unmarked-SP2 (filter (λ (sp) (not (state-pair-marked? sp))) loSP2)]
+        [marked-SP1 (filter (λ (sp) (state-pair-marked? sp)) loSP1)]
+        [marked-SP2 (filter (λ (sp) (state-pair-marked? sp)) loSP2)])
+    (and (andmap (λ (sp) (list? (member sp unmarked-SP2))) unmarked-SP1)
+         (andmap (λ (sp) (list? (member sp marked-SP2))) marked-SP1))))
+
+(define (update-mark? unmarked-pair marked-pairs transition-table alphabet)
+  (let* ([ump-s1-transitions (first (filter (λ (transition) (eq? (first transition) (state-pair-s1 unmarked-pair))) transition-table))]
+         [ump-s2-transitions (first (filter (λ (transition) (eq? (first transition) (state-pair-s2 unmarked-pair))) transition-table))]
+         [state-pairs-from-transitions (map (λ (x) (let ([s1-tran (filter (λ (tran) (eq? x (first tran))) (second ump-s1-transitions))]
+                                                         [s2-tran (filter (λ (tran) (eq? x (first tran))) (second ump-s2-transitions))])
+                                                     (state-pair (second (first s1-tran)) (second (first s2-tran)) #f)))
+                                            alphabet)])
+    (ormap (λ (sp) (list? (member sp marked-pairs (λ (sp1 sp2) (or (and (eq? (state-pair-s1 sp1) (state-pair-s1 sp2))
+                                                                        (eq? (state-pair-s2 sp1) (state-pair-s2 sp2)))
+                                                                   (and (eq? (state-pair-s1 sp1) (state-pair-s2 sp2))
+                                                                        (eq? (state-pair-s2 sp1) (state-pair-s1 sp2))))
+                                                                   ))))
+           state-pairs-from-transitions)
+    #;(if (ormap (λ (sp) (list? (member sp marked-pairs (λ (sp1 sp2) (and (eq? (state-pair-s1 sp1) (state-pair-s1 sp2))
+                                                                               (eq? (state-pair-s2 sp1) (state-pair-s2 sp2)))))))
+                      state-pairs-from-transitions)
+                     (struct-copy state-pair unmarked-pair [marked? #t])
+                     unmarked-pair)))
+  
+
+
+(define (make-states-table dfa)
+  (define (make-half-table loSP new-table)
+    (cond [(empty? loSP) new-table]
+          [(boolean? (member (first loSP) new-table (λ (sp1 sp2) (and (eq? (state-pair-s1 sp1) (state-pair-s2 sp2))
+                                                            (eq? (state-pair-s2 sp1) (state-pair-s1 sp2))))))
+           (make-half-table (rest loSP) (cons (first loSP) new-table))]
+          [else (make-half-table (rest loSP) new-table)]))
+  (let* ([states (fsa-getstates dfa)]
+         [init-states-pairing (for*/list ([s1 states]
+                                          [s2 states]
+                                          #:unless (eq? s1 s2))
+                                (state-pair s1 s2 #f))]
+         [other-half-of-table (make-half-table init-states-pairing '())]
+         [half-of-table (make-half-table (reverse init-states-pairing) '())])
+    
+    (filter (λ (sp) (not (member sp other-half-of-table))) init-states-pairing)
+                  #;(for*/set ([sp1 init-states-pairing]
+                [sp2 init-states-pairing]
+                #:unless (and (eq? (state-pair-s1 sp1) (state-pair-s2 sp2))
+                              (eq? (state-pair-s2 sp1) (state-pair-s1 sp2))))
+      sp1)))  
+      
+
+
+
 
 
 
@@ -1072,6 +1301,7 @@
                             (M 0 M)
                             (M 1 M))))
 
+;;failed
 (define DNA-SEQUENCE (make-unchecked-dfa '(K H F M I D B S R) ;C)
                                '(a t c g)
                                'K
