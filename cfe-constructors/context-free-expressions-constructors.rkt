@@ -65,18 +65,23 @@
 (define (singleton-cfexp a-char)
   (mk-singleton-cfexp a-char (empty-cfexp-env)))
 
+
+;;cfe -> env
+;;Purpose: Extracts the environment from the given cfe 
+(define (get-cfe-env cfe)
+  (cond [(mk-null-cfexp? cfe) (mk-null-cfexp-env cfe)]
+        [(mk-empty-cfexp? cfe) (mk-empty-cfexp-env cfe)]
+        [(mk-singleton-cfexp? cfe) (mk-singleton-cfexp-env cfe)]
+        [(mk-concat-cfexp? cfe) (mk-concat-cfexp-env cfe)]
+        [(mk-union-cfexp? cfe) (mk-union-cfexp-env cfe)]
+        [(var-cfexp? cfe) (var-cfexp-env cfe)]
+        [else (mk-kleene-cfexp-env cfe)]))
+
 ;;(listof cfexp) -> env
 ;;Purpose: Merges all of the environments from the given (listof cfexp) in to one environment
 (define (merge-env locfexp)
   (foldl (λ (cfe env)
-           (hash-union env
-                       (cond [(mk-null-cfexp? cfe) (mk-null-cfexp-env cfe)]
-                             [(mk-empty-cfexp? cfe) (mk-empty-cfexp-env cfe)]
-                             [(mk-singleton-cfexp? cfe) (mk-singleton-cfexp-env cfe)]
-                             [(var-cfexp? cfe) (var-cfexp-env cfe)]
-                             [(mk-concat-cfexp? cfe) (mk-concat-cfexp-env cfe)]
-                             [(mk-union-cfexp? cfe) (mk-union-cfexp-env cfe)]
-                             [else (mk-kleene-cfexp-env cfe)])))
+           (hash-union env (get-cfe-env cfe)))
          (hash)
          locfexp))
 
@@ -95,13 +100,7 @@
 ;;cfexp -> Kleene-cfexp
 ;;Purpose: A wrapper to create a Kleene-cfexp
 (define (kleene-cfexp cfe)
-  (let ([cfe-env (cond [(mk-null-cfexp? cfe) (mk-null-cfexp-env cfe)]
-                       [(mk-empty-cfexp? cfe) (mk-empty-cfexp-env cfe)]
-                       [(mk-singleton-cfexp? cfe) (mk-singleton-cfexp-env cfe)]
-                       [(mk-concat-cfexp? cfe) (mk-concat-cfexp-env cfe)]
-                       [(mk-union-cfexp? cfe) (mk-union-cfexp-env cfe)]
-                       [(var-cfexp? cfe) (var-cfexp-env cfe)]
-                       [else (mk-kleene-cfexp-env cfe)])])
+  (let ([cfe-env (get-cfe-env cfe)])
     (mk-kleene-cfexp cfe cfe-env)))
 
 ;;cfe-id cfe -> env
