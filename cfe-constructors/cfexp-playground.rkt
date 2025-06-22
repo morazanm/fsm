@@ -24,8 +24,40 @@
 (define ASB (concat-cfexp (list A S B)))
 
 (define EUASB (union-cfexp E (concat-cfexp (list A S B))))
-    
+
+;;w = a^nb^n
 (define ANBN (make-varcfexp-binding S EUASB))
+
+(define K (var-cfexp 'K (empty-cfexp-env)))
+
+(define EUAAKB (union-cfexp E (concat-cfexp A A K B)))
+
+;;w = a^2ib^i
+(define A2iBi (make-varcfexp-binding K EUAAKB))
+
+(define H (var-cfexp 'H (empty-cfexp-env)))
+
+(define AHA (concat-cfexp A H A))
+
+(define BHB (concat-cfexp B H B))
+
+(define EUAHAUBHB (union-cfexp E AHA BHB))
+
+;; w = ww^r
+(define WWR (make-varcfexp-binding H EUAHAUBHB))
+
+(define I (var-cfexp 'I (empty-cfexp-env)))
+
+(define AIB (concat-cfexp A I B))
+
+(define AIBB (concat-cfexp A I B B))
+
+(define EUAIBUAIBB (union-cfexp E AIB AIBB))
+
+;;w = A^iB^j
+(define AiBj (make-varcfexp-binding I EUAIBUAIBB))
+
+
 
 (define (loopinator cfe a-num)
   (define (loopinator-helper a-num)
