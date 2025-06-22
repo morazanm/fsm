@@ -1301,7 +1301,7 @@
                             (M 0 M)
                             (M 1 M))))
 
-;;failed
+;;failed min4 ;; PASSED min 5
 (define DNA-SEQUENCE (make-unchecked-dfa '(K H F M I D B S R) ;C)
                                '(a t c g)
                                'K
