@@ -1353,4 +1353,34 @@
                                   ((S b (a)) (S ,EMP)))))
 
 
+<<<<<<< Updated upstream
+=======
+;; Let Σ = {a b}. Design and implement a pda for L = {w | w is a
+;; palindrome}. Follow all the steps of the design recipe.
+;; (a palindrome is a word that can be spelled the same forward and backwards
+
+
+(define palindrome-pda (make-ndpda '(S A)
+                                   '(a b)
+                                   'S
+                                   '(A)
+                                   `(((S a ,EMP) (S (a)))
+                                     ((S b ,EMP) (S (b)))
+                                     ((S a ,EMP) (A ,EMP))
+                                     ((S b ,EMP) (A ,EMP))
+                                     ((S ,EMP ,EMP) (A ,EMP))
+                                     ((A a '(a)) (A ,EMP))
+                                     ((A b '(b)) (A ,EMP)))))
+
+
+
+
+
+
+
+
+
+
+
+>>>>>>> Stashed changes
 
