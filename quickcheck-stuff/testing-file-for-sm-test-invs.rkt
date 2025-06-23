@@ -1126,3 +1126,231 @@
                             0
                             RES2-WORDS))
 
+
+
+
+
+
+
+
+;                                      
+;                                      
+;                                      
+;                                      
+;    ;;;;;;  ;;;;;;     ;;;            
+;     ;    ;  ;    ;     ;;            
+;     ;    ;  ;     ;   ;  ;    ;;;; ; 
+;     ;    ;  ;     ;   ;  ;   ;    ;; 
+;     ;    ;  ;     ;   ;  ;   ;       
+;     ;;;;;   ;     ;  ;;;;;;   ;;;;;  
+;     ;       ;     ;  ;    ;        ; 
+;     ;       ;    ;  ;      ; ;     ; 
+;    ;;;;;   ;;;;;;  ;;;    ;;;;;;;;;  
+;                                      
+;                                      
+;                                      
+;                                      
+;                                      
+
+
+
+;; L = {aˆnbˆn | n >= 0}
+;; States
+;; S ci = (listof a) = stack, start state
+;; M ci = (append (listof a) (listof b)) AND
+;;        (length ci as) = (length stack) + (length ci bs)
+;; F ci = (append (listof a) (listof b)) and all as and bs matched,
+;; final state
+;; The stack is a (listof a)
+(define aˆnbˆn (make-ndpda '(S M F)
+                           '(a b)
+                           '(a)
+                           'S
+                           '(F)
+                           `(((S ,EMP ,EMP) (M ,EMP))
+                            ((S a ,EMP) (S (a)))
+                            ((M b (a)) (M ,EMP))
+                            ((M ,EMP ,EMP) (F ,EMP)))))
+;; Tests for aˆnbˆn
+(check-equal? (sm-apply aˆnbˆn '(a)) 'reject)
+(check-equal? (sm-apply aˆnbˆn '(b b)) 'reject)
+(check-equal? (sm-apply aˆnbˆn '(a b b)) 'reject)
+(check-equal? (sm-apply aˆnbˆn '(a b a a b b)) 'reject)
+(check-equal? (sm-apply aˆnbˆn '()) 'accept)
+(check-equal? (sm-apply aˆnbˆn '(a a b b)) 'accept)
+
+
+;; Invariants for aˆnbˆn
+
+;; word stack → Boolean
+;; Purpose: Determine if the given ci and stack are the
+;;          same (listof a)
+(define (S-INV-aˆnbˆn ci stck)
+  (and (= (length ci) (length stck))
+       (andmap (λ (i g) (and (eq? i 'a) (eq? g 'a))) ci stck)))
+
+;; Tests for S-INV-aˆnbˆn
+(check-equal? (S-INV-aˆnbˆn '() '(a a)) #f)
+(check-equal? (S-INV-aˆnbˆn '(a) '()) #f)
+(check-equal? (S-INV-aˆnbˆn '(b b b) '(b b b)) #f)
+(check-equal? (S-INV-aˆnbˆn '() '()) #t)
+(check-equal? (S-INV-aˆnbˆn '(a a a) '(a a a)) #t)
+
+
+;; word stack → Boolean
+;; Purpose: Determine if ci = EMP or a+b+ AND the stack
+;;          only contains a AND |ci as| = |stack| + |ci bs|
+(define (M-INV-aˆnbˆn ci stck)
+  (let* [(as (takef ci (λ (s) (eq? s 'a))))
+         (bs (takef (drop ci (length as))
+                    (λ (s) (eq? s 'b))))]
+    (and (equal? (append as bs) ci)
+         (andmap (λ (s) (eq? s 'a)) stck)
+         (= (length as) (+ (length bs) (length stck))))))
+
+;; Tests for M-INV-aˆnbˆn
+(check-equal? (M-INV-aˆnbˆn '(a a b) '(a a)) #f)
+(check-equal? (M-INV-aˆnbˆn '(a) '()) #f)
+(check-equal? (M-INV-aˆnbˆn '(a a a b) '(a a a)) #f)
+(check-equal? (M-INV-aˆnbˆn '(a a a b) '(a)) #f)
+(check-equal? (M-INV-aˆnbˆn '() '()) #t)
+(check-equal? (M-INV-aˆnbˆn '(a) '(a)) #t)
+(check-equal? (M-INV-aˆnbˆn '(a b) '()) #t)
+(check-equal? (M-INV-aˆnbˆn '(a a a b b) '(a)) #t)
+
+
+
+;; word stack → Boolean
+;; Purpose: Determine if ci = a^nb^n and stack is empty
+(define (F-INV-aˆnbˆn ci stck)
+  (let* [(as (takef ci (λ (s) (eq? s 'a))))
+         (bs (takef (drop ci (length as))
+                    (λ (s) (eq? s 'b))))]
+    (and (empty? stck)
+         (equal? (append as bs) ci)
+         (= (length as) (length bs)))))
+
+;; Tests for F-INV-aˆnbˆn
+(check-equal? (F-INV-aˆnbˆn '(a a b) '()) #f)
+(check-equal? (F-INV-aˆnbˆn '(a) '()) #f)
+(check-equal? (F-INV-aˆnbˆn '(a a a b) '(a a a)) #f)
+(check-equal? (F-INV-aˆnbˆn '() '()) #t)
+(check-equal? (F-INV-aˆnbˆn '(a b) '()) #t)
+(check-equal? (F-INV-aˆnbˆn '(a a b b) '()) #t)
+
+
+
+;; L = wcwˆR | w in (a b)*
+;; States
+;; S ci is empty and stack is empty
+;; P ci = stackˆR AND c not in ci
+;; Q ci = (append w (list c) v) AND
+;; w = stackˆR vˆR
+;; F stack = () AND ci = (append w (list c) wˆR)
+(define wcwˆr (make-ndpda '(S P Q F)
+                          '(a b c)
+                          '(a b)
+                          'S
+                          '(F)
+                          `(((S ,EMP ,EMP) (P ,EMP))
+                           ((P a ,EMP) (P (a)))
+                           ((P b ,EMP) (P (b)))
+                           ((P c ,EMP) (Q ,EMP))
+                           ((Q a (a)) (Q ,EMP))
+                           ((Q b (b)) (Q ,EMP))
+                           ((Q ,EMP ,EMP) (F ,EMP)))))
+
+;; Tests for wcwˆr
+(check-equal? (sm-apply wcwˆr '(a)) 'reject)
+(check-equal? (sm-apply wcwˆr '(a c)) 'reject)
+(check-equal? (sm-apply wcwˆr '(b c a)) 'reject)
+(check-equal? (sm-apply wcwˆr '(a a b c b a b)) 'reject)
+(check-equal? (sm-apply wcwˆr '(c)) 'accept)
+(check-equal? (sm-apply wcwˆr '(a c a)) 'accept)
+(check-equal? (sm-apply wcwˆr '(a b b b c b b b a)) 'accept)
+
+
+;; invariants for wcwˆr
+
+;; word stack → Boolean
+;; Purpose: Determine in the given word and stack are empty
+(define (S-INV-wcwˆr ci s) (and (empty? ci) (empty? s)))
+
+;; Tests for S-INV-wcwˆr
+(check-equal? (S-INV-wcwˆr '() '(a a)) #f)
+(check-equal? (S-INV-wcwˆr '(a c a) '()) #f)
+(check-equal? (S-INV-wcwˆr '(a c a) '(b b)) #f)
+(check-equal? (S-INV-wcwˆr '() '()) #t)
+
+;; word stack → Boolean
+;; Purpose: Determine if the given ci is the reverse of
+;; the given stack AND c is not in ci
+(define (P-INV-wcwˆr ci s)
+  (and (equal? ci (reverse s)) (not (member 'c ci))))
+
+;; Tests for P-INV-wcwˆr
+(check-equal? (P-INV-wcwˆr '(a c a) '(a c a)) #f)
+(check-equal? (P-INV-wcwˆr '(a a) '(a b)) #f)
+(check-equal? (P-INV-wcwˆr '() '()) #t)
+(check-equal? (P-INV-wcwˆr '(a b) '(b a)) #t)
+(check-equal? (P-INV-wcwˆr '(a b a a) '(a a b a)) #t)
+
+
+;; word stack → Boolean
+;; Purpose: Determine if ci=s^Rv^Rcv
+(define (Q-INV-wcwˆr ci s)
+  (let* [(w (takef ci (λ (s) (not (eq? s 'c)))))
+         (v (if (member 'c ci)
+                (drop ci (add1 (length w)))
+                '()))]
+    (and (equal? ci (append w (list 'c) v))
+         (equal? w (append (reverse s) (reverse v))))))
+
+;; Tests for Q-INV-wcwˆr
+(check-equal? (Q-INV-wcwˆr '(a a) '()) #f)
+(check-equal? (Q-INV-wcwˆr '(b b c a) '(b a)) #f)
+(check-equal? (Q-INV-wcwˆr '(c) '()) #t)
+(check-equal? (Q-INV-wcwˆr '(b a c) '(a b)) #t)
+(check-equal? (Q-INV-wcwˆr '(a b c b) '(a)) #t)
+(check-equal? (Q-INV-wcwˆr '(a b b c b) '(b a)) #t)
+
+
+;; word stack → Boolean
+;; Purpose: Determine if ci=s^Rv^Rcv AND stack is empty
+(define (F-INV-wcwˆr ci s)
+  (let* [(w (takef ci (λ (s) (not (eq? s 'c)))))]
+  (and (empty? s)
+     (equal? ci (append w (list 'c) (reverse w))))))
+
+;; Tests for F-INV-wcwˆr
+(check-equal? (F-INV-wcwˆr '() '()) #f)
+(check-equal? (F-INV-wcwˆr '(b b) '()) #f)
+(check-equal? (F-INV-wcwˆr '(b a c) '(b a)) #f)
+(check-equal? (F-INV-wcwˆr '(c) '()) #t)
+(check-equal? (F-INV-wcwˆr '(b a c a b) '()) #t)
+(check-equal? (F-INV-wcwˆr '(a b b c b b a) '()) #t)
+
+
+
+;; Let Σ = {a b}. Design and implement a pda for L = {w | w has an
+;; equal number of as and bs}. Follow all the steps of the design recipe.
+
+;; L = {w | w has an equal number of as and bs}
+;; States
+;;    S: stack contains the number of bs that have been read - the number of as that have been read
+;;       OR stack containst the number of as that have been read - the number of bs that have been read
+;; The stack is a (listof (a*b*))
+
+
+(define equal-as-bs (make-ndpda '(S)
+                                '(a b)
+                                '(a b)
+                                'S
+                                '(S)
+                                `(((S a ,EMP) (S (a)))
+                                  ((S b ,EMP) (S (b)))
+                                  ((S a (b)) (S ,EMP))
+                                  ((S b (a)) (S ,EMP)))))
+
+
+
