@@ -9,33 +9,23 @@
 
 (define B (singleton-cfexp 'b))
 
-(define OLD-ANBN (let [(S-ENV void)
-                   (S void)]
-               (begin
-               (set! S-ENV (empty-cfexp-env))
-               (set! S (var-cfexp 'S S-ENV))
-               (set! S-ENV (env-cfexp 'S (union-cfexp E (concat-cfexp (list A S B)))))
-               (set-var-cfexp-env! S S-ENV)
-               (set! S (var-cfexp 'S S-ENV))
-               S)))
+(define S (var-cfexp (empty-cfexp-env) 'S))
 
-(define S (var-cfexp 'S (empty-cfexp-env)))
+(define ASB (concat-cfexp A S B))
 
-(define ASB (concat-cfexp (list A S B)))
-
-(define EUASB (union-cfexp E (concat-cfexp (list A S B))))
+(define EUASB (union-cfexp E (concat-cfexp A S B)))
 
 ;;w = a^nb^n
 (define ANBN (make-varcfexp-binding S EUASB))
 
-(define K (var-cfexp 'K (empty-cfexp-env)))
+(define K (var-cfexp (empty-cfexp-env) 'K))
 
 (define EUAAKB (union-cfexp E (concat-cfexp A A K B)))
 
 ;;w = a^2ib^i
 (define A2iBi (make-varcfexp-binding K EUAAKB))
 
-(define H (var-cfexp 'H (empty-cfexp-env)))
+(define H (var-cfexp (empty-cfexp-env) 'H))
 
 (define AHA (concat-cfexp A H A))
 
@@ -46,7 +36,7 @@
 ;; w = ww^r
 (define WWR (make-varcfexp-binding H EUAHAUBHB))
 
-(define I (var-cfexp 'I (empty-cfexp-env)))
+(define I (var-cfexp (empty-cfexp-env) 'I))
 
 (define AIB (concat-cfexp A I B))
 

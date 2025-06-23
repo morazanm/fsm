@@ -64,7 +64,7 @@
 ;; symbol -> singleton-cfexp
 ;;Purpose: A wrapper to create a singleton-cfexp
 (define (singleton-cfexp a-char)
-  (mk-singleton-cfexp a-char (empty-cfexp-env)))
+  (mk-singleton-cfexp (empty-cfexp-env) a-char))
 
 ;;(listof cfexp) -> env
 ;;Purpose: Merges all of the environments from the given (listof cfexp) in to one environment
@@ -77,17 +77,17 @@
 ;; . cfexp -> concat-cfexp
 ;;Purpose: A wrapper to create a concat-cfexp
 (define (concat-cfexp . cfexp)
-  (mk-concat-cfexp cfexp (merge-env cfexp)))
+  (mk-concat-cfexp (merge-env cfexp) cfexp))
 
 ;; . cfexp -> union-cfexp
 ;;Purpose: A wrapper to create a union-cfexp
 (define (union-cfexp . cfexp)
-  (mk-union-cfexp cfexp (merge-env cfexp)))
+  (mk-union-cfexp (merge-env cfexp) cfexp))
 
 ;;cfexp -> Kleene-cfexp
 ;;Purpose: A wrapper to create a Kleene-cfexp
 (define (kleene-cfexp cfe)
-  (mk-kleene-cfexp cfe (cfexp-env cfe)))
+  (mk-kleene-cfexp (cfexp-env cfe) cfe))
 
 ;;cfe-id cfe -> env
 ;;Purpose: Creates an environment where the given cfe-id is the key and cfe is the value
@@ -102,7 +102,7 @@
     (begin
       (set! env (env-cfexp sym binding))
       (set-cfexp-env! bindee env)
-      (set! bindee (var-cfexp sym env))
+      (set! bindee (var-cfexp env sym))
       bindee)))
 
 ;;singleton-cfe -> word
