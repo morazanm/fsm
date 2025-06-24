@@ -2,7 +2,6 @@
 
 (require "../fsm-core/private/constants.rkt"
          "../fsm-core/private/fsa.rkt"
-         "../fsm-core/private/misc.rkt"
          #;(only-in "../fsm-core/interface.rkt"
                   ndfa->dfa
                   EMP
@@ -114,8 +113,7 @@
                                       (B 0 B) (B 1 D)
                                       (C 0 B) (C 1 C)
                                       (D 0 B) (D 1 E)
-                                      (E 0 B) (E 1 C)
-                                      (F 0 F) (F 1 F))
+                                      (E 0 B) (E 1 C))
                                     'no-dead))
 
 
@@ -1135,6 +1133,7 @@
                        (G b H)
                        (H ,EMP D))))
 
+
 (define L (make-unchecked-ndfa '(S A B C D E)
                                '(a b)
                                'S
@@ -1382,3 +1381,41 @@
                                (A a ,DEAD) (A b F)
                                (F a ,DEAD) (F b F))
                      'no-dead))
+
+(define listofmachines
+  (list EX1 EX2-trans EX3-vid EX4-vid EX5-vid EX6-vid M L aa*Uab* AT-LEAST-ONE-MISSING p2-ndfa AB*B*UAB* AB*B*UAB*2 aa-ab ends-with-two-bs
+      nd n nk ab*-U-ab*b*-ndfa PROP-BI DNA-SEQUENCE ND ND2 ND3 ND4 ND5 ENDS-WITH-TWO-Bs nd-a* missing-exactly-one EVEN-NUM-Bs M2))
+
+(struct status (M result) #:transparent)
+
+"minimize 4 - moore"
+(define minimize4-test (map (λ (M) (if (boolean? (test-equiv-fsa (ndfa->dfa M) (minimize-dfa4 M)))
+                                       (status (M 'whatami) #t)
+                                       (status (M 'whatami) #f))) listofmachines))
+"all passed?"
+(andmap (λ (s) (status-result s)) minimize4-test)
+
+"total"
+(length listofmachines)
+"pass"
+(length (filter (λ (s) (status-result s)) minimize4-test))
+"fail"
+(- (length listofmachines) (length (filter (λ (s) (status-result s)) minimize4-test)))
+"success rate"
+(* 100 (/ (length (filter (λ (s) (status-result s)) minimize4-test)) (length listofmachines)))
+
+"minimize 5 - myhill-nerode"
+(define minimize5-test (map (λ (M) (if (boolean? (test-equiv-fsa (ndfa->dfa M) (minimize-dfa5 M)))
+                (status (M 'whatami) #t)
+                (status (M 'whatami) #f))) listofmachines))
+"all passed?"
+(andmap (λ (s) (status-result s)) minimize5-test)
+
+"total"
+(length listofmachines)
+"pass"
+(length (filter (λ (s) (status-result s)) minimize5-test))
+"fail"
+(- (length listofmachines) (length (filter (λ (s) (status-result s)) minimize5-test)))
+"success rate"
+(* 100 (/ (length (filter (λ (s) (status-result s)) minimize5-test)) (length listofmachines)))
