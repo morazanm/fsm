@@ -1332,6 +1332,7 @@
 
 
 
+
 ;; Let Σ = {a b}. Design and implement a pda for L = {w | w has an
 ;; equal number of as and bs}. Follow all the steps of the design recipe.
 
@@ -1353,34 +1354,104 @@
                                   ((S b (a)) (S ,EMP)))))
 
 
-<<<<<<< Updated upstream
-=======
+
 ;; Let Σ = {a b}. Design and implement a pda for L = {w | w is a
 ;; palindrome}. Follow all the steps of the design recipe.
 ;; (a palindrome is a word that can be spelled the same forward and backwards
 
+;; basically ww^R
 
-(define palindrome-pda (make-ndpda '(S A)
+;; States
+;;   S: stack is empty AND ci is empty ,start state and final state
+;;   A: ci = the stack reversed
+;;   B: ci = (append w v) AND w = stack^R v^R
+;;   C: stack = empty AND ci is a palindrome (append w w^R), final state 
+(define palindrome-pda (make-ndpda '(S A B C)
+                                   '(a b)
                                    '(a b)
                                    'S
-                                   '(A)
-                                   `(((S a ,EMP) (S (a)))
-                                     ((S b ,EMP) (S (b)))
-                                     ((S a ,EMP) (A ,EMP))
-                                     ((S b ,EMP) (A ,EMP))
-                                     ((S ,EMP ,EMP) (A ,EMP))
-                                     ((A a '(a)) (A ,EMP))
-                                     ((A b '(b)) (A ,EMP)))))
+                                   '(C)
+                                   `(((S ,EMP ,EMP) (A ,EMP))
+                                     ((A a ,EMP) (A (a)))
+                                     ((A b ,EMP) (A (b)))
+                                     ((A a ,EMP) (B,EMP))
+                                     ((A b ,EMP) (B ,EMP))
+                                     ((A ,EMP ,EMP) (B ,EMP))
+                                     ((B a (a)) (B ,EMP))
+                                     ((B b (b)) (B ,EMP))
+                                     ((B ,EMP ,EMP) (C ,EMP)))))
+
+;; tests for palindrome-pda
+(check-equal? (sm-apply palindrome-pda '()) 'accept)
+(check-equal? (sm-apply palindrome-pda '(a)) 'accept)
+(check-equal? (sm-apply palindrome-pda '(a b a)) 'accept)
+(check-equal? (sm-apply palindrome-pda '(b a b)) 'accept)
+(check-equal? (sm-apply palindrome-pda '(a a b b a a)) 'accept)
+(check-equal? (sm-apply palindrome-pda '(a b)) 'reject)
+(check-equal? (sm-apply palindrome-pda '(b a)) 'reject)
+(check-equal? (sm-apply palindrome-pda '(a b a a)) 'reject)
+
+;; invariants for palindrome-pda
+
+;; invariants also take in the stack now
+
+;; word stack -> Boolean
+;; Purpose: To determine if the given word and stack belongs in S
+;;          (empty stack AND empty word)
+(define (S-INV-PALINDROME-PDA ci stack)
+  (and (empty? ci)
+       (empty? stack)))
+
+;; tests for S-INV-PALINDROME-PDA
+(check-equal? (S-INV-PALINDROME-PDA '() '()) #t)
+(check-equal? (S-INV-PALINDROME-PDA '(a) '()) #f)
+(check-equal? (S-INV-PALINDROME-PDA '() '(b)) #f)
+(check-equal? (S-INV-PALINDROME-PDA '(a) '(a)) #f)
+(check-equal? (S-INV-PALINDROME-PDA '(b b) '(b b)) #f)
+
+
+;; word stack -> Boolean
+;; Purpose: To determine if the given word and stack belongs in A
+;;          (ci = stack reversed)
+(define (A-INV-PALINDROME-PDA ci stack)
+  (equal? ci (reverse stack)))
+
+;; tests for A-INV-PALINDROME-PDA
+(check-equal? (A-INV-PALINDROME-PDA '() '()) #t)
+(check-equal? (A-INV-PALINDROME-PDA '(a) '(a)) #t)
+(check-equal? (A-INV-PALINDROME-PDA '(a b b a) '(a b b a)) #t)
+(check-equal? (A-INV-PALINDROME-PDA '(b b) '(b b)) #t)
+(check-equal? (A-INV-PALINDROME-PDA '(b a) '(b a)) #f)
+(check-equal? (A-INV-PALINDROME-PDA '(a b) '(a b)) #f)
+(check-equal? (A-INV-PALINDROME-PDA '(a a a a) '(b b)) #f)
+
+
+;; word stack -> Boolean
+;; Purpose: To determine if the given word and stack belongs in B
+;;          (ci = (append w v) AND w = stack^R v^R)
+(define (B-INV-PALINDROME-PDA ci stack)
+  (and (equal? (append (reverse stack) (drop ci stack)))))
 
 
 
 
 
+               
+;; word stack -> Boolean
+;; Purpose: To determine if the given word and stack belongs in C
+;;          (stack = empty AND ci = ww^R
+(define (C-INV-PALINDROME-PDA ci stack)
+  (local [(define w (if (even? (length ci)) (take ci (/ (length ci) 2))                   ;; if the word length is even
+                        (take ci (inexact->exact  (- (/ (length ci) 2) 0.5)))))]          ;; if word length is odd, don't worry about the letter in the middle
+    (and (empty? stack)
+         (or (empty? ci)
+             (equal? ci (if (even? (length ci)) (append w (reverse w))
+                            (append w (list (list-ref ci (inexact->exact (+ (/ (length ci) 2) 0.5)))) (reverse w))))))))
+
+;; tests for C-INV-PALINDROME-PDA
+(check-equal? (C-INV-PALINDROME-PDA '() '()) #t)
+(check-equal? (C-INV-PALINDROME-PDA '(a a b a a) '()) #t)
 
 
 
-
-
-
->>>>>>> Stashed changes
 
