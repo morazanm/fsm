@@ -10,11 +10,11 @@
          concat-cfexp
          union-cfexp
          kleene-cfexp
-         make-varcfexp-binding
+         extend-env!
          gen-cfexp-word
          empty-cfexp-env
-         (struct-out var-cfexp) ;;change to remove struct out
-         env-cfexp)
+         var-cfexp ;;change to remove struct out
+         #;env-cfexp)
 
 ;;a context-free expression is either:
 ;; 1. null (base case)
@@ -49,7 +49,7 @@
 (struct mk-kleene-cfexp cfexp (cfe) #:transparent)
 
 ;;variable-cfexp ;;Purpose: A cfexp to represent a variable that needs to be substituted
-(struct var-cfexp cfexp (cfe) #:transparent)
+(struct mk-var-cfexp cfexp (cfe) #:transparent)
 
 ;; -> null-cfexp
 ;;Purpose: A wrapper to create a null-cfexp
@@ -65,6 +65,11 @@
 ;;Purpose: A wrapper to create a singleton-cfexp
 (define (singleton-cfexp a-char)
   (mk-singleton-cfexp (empty-cfexp-env) a-char))
+
+;;symbol -> variable-cfexp
+;;Purpose: A wrapper to create a variable-cfexp
+(define (var-cfexp symbol)
+  (mk-var-cfexp (empty-cfexp-env) symbol))
 
 ;;(listof cfexp) -> env
 ;;Purpose: Merges all of the environments from the given (listof cfexp) in to one environment
@@ -92,19 +97,20 @@
 ;;cfe-id cfe -> env
 ;;Purpose: Creates an environment where the given cfe-id is the key and cfe is the value
 (define (env-cfexp cfe-id binding)
-  (hash cfe-id binding))
+  (hash cfe-id (list binding)))
 
 ;;var-cfexp cfe -> var-cfexp
 ;;Purpose: Creates a binding where the cfe is bound to the given var-cfexp's environment
-(define (make-varcfexp-binding bindee binding)
-  (let ([env (cfexp-env bindee)]
-        [sym (var-cfexp-cfe bindee)])
+(define (extend-env! cfe bindee-id binding)
+  (let ([env (cfexp-env cfe)]
+        [sym bindee-id])
     (begin
-      (set! env (env-cfexp sym binding))
-      (set-cfexp-env! bindee env)
-      (set! bindee (var-cfexp env sym))
-      bindee)))
-
+      (if (hash-has-key? env bindee-id)
+          (hash-set! env bindee-id (cons binding (hash-ref env bindee-id)))
+          (set! env (env-cfexp bindee-id binding)))
+      (set-cfexp-env! cfe env)
+      (set! cfe (mk-var-cfexp env bindee-id)))))
+          
 ;;singleton-cfe -> word
 ;;Purpose: Extracts the singleton 
 (define (convert-singleton cfe)
@@ -119,7 +125,8 @@
 ;;var-cfexp --> word
 ;;Purpose: Substitutes the given var-cfexp with it's environment bindings 
 (define (substitute-var cfe)
-  (gen-cfexp-word (hash-ref (cfexp-env cfe) (var-cfexp-cfe cfe))))
+  (let ([bindings (hash-ref (cfexp-env cfe) (mk-var-cfexp-cfe cfe))])
+    (gen-cfexp-word (list-ref bindings (random (length bindings))))))
 
 ;;concat-cfexp --> word
 ;;Purpose: Returns the concatenation of the sub context-free expressions 
@@ -149,7 +156,7 @@
   (cond [(mk-null-cfexp? cfe) (error "A word cannot be generated using the null-regexp.")]
         [(mk-empty-cfexp? cfe) EMP]
         [(mk-singleton-cfexp? cfe) (convert-singleton cfe)]
-        [(var-cfexp? cfe) (substitute-var cfe)]
+        [(mk-var-cfexp? cfe) (substitute-var cfe)]
         [(mk-concat-cfexp? cfe) (gen-concat-word cfe gen-cfexp-word MAX-KLEENESTAR-REPS)]
         [(mk-union-cfexp? cfe) (gen-cfexp-word (pick-cfexp cfe)  MAX-KLEENESTAR-REPS)]
         [else (gen-cfe-kleene-word cfe MAX-KLEENESTAR-REPS gen-cfexp-word)]))

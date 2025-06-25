@@ -3,50 +3,57 @@
 (require  "../fsm-core/private/constants.rkt"
           "context-free-expressions-constructors.rkt")
 
-(define E (empty-cfexp))
+(define EMPTY (empty-cfexp))
 
 (define A (singleton-cfexp 'a))
 
 (define B (singleton-cfexp 'b))
 
-(define S (var-cfexp (empty-cfexp-env) 'S))
+;; w = ww^r
+(define WWR 
+  (local [(define WWR (var-cfexp 'WWR))
 
-(define ASB (concat-cfexp A S B))
+          (define AHA (concat-cfexp A WWR A))
 
-(define EUASB (union-cfexp E (concat-cfexp A S B)))
+          (define BHB (concat-cfexp B WWR B))
+
+          (define EUAHAUBHB (union-cfexp EMPTY AHA BHB))]
+    (begin
+      (extend-env! WWR 'WWR EUAHAUBHB)
+      WWR)))
 
 ;;w = a^nb^n
-(define ANBN (make-varcfexp-binding S EUASB))
+(define ANBN
+  (local [(define ANBN (var-cfexp 'ANBN))
 
-(define K (var-cfexp (empty-cfexp-env) 'K))
+          (define ASB (concat-cfexp A ANBN B))
 
-(define EUAAKB (union-cfexp E (concat-cfexp A A K B)))
+          (define EUASB (union-cfexp EMPTY ASB))]
+    (begin
+      (extend-env! ANBN 'ANBN EUASB)
+      ANBN)))
 
 ;;w = a^2ib^i
-(define A2iBi (make-varcfexp-binding K EUAAKB))
+(define A2iBi
+  (local [(define A2iBi (var-cfexp 'A2iBi))
 
-(define H (var-cfexp (empty-cfexp-env) 'H))
-
-(define AHA (concat-cfexp A H A))
-
-(define BHB (concat-cfexp B H B))
-
-(define EUAHAUBHB (union-cfexp E AHA BHB))
-
-;; w = ww^r
-(define WWR (make-varcfexp-binding H EUAHAUBHB))
-
-(define I (var-cfexp (empty-cfexp-env) 'I))
-
-(define AIB (concat-cfexp A I B))
-
-(define AIBB (concat-cfexp A I B B))
-
-(define EUAIBUAIBB (union-cfexp E AIB AIBB))
+          (define EUAAKB (union-cfexp EMPTY (concat-cfexp A A A2iBi B)))]
+    (begin
+      (extend-env! A2iBi 'A2iBi EUAAKB)
+      A2iBi)))
 
 ;;w = A^iB^j
-(define AiBj (make-varcfexp-binding I EUAIBUAIBB))
+(define AiBj
+  (local [(define AiBj (var-cfexp 'AiBj))
 
+          (define AIB (concat-cfexp A AiBj B))
+
+          (define AIBB (concat-cfexp A AiBj B B))
+
+          (define EUAIBUAIBB (union-cfexp EMPTY AIB AIBB))]
+    (begin
+      (extend-env! AiBj 'AiBj EUAIBUAIBB)
+      AiBj)))
 
 
 (define (loopinator cfe a-num)
@@ -55,3 +62,48 @@
         '()
         (cons (gen-cfexp-word cfe) (loopinator-helper (sub1 a-num)))))
   (remove-duplicates (loopinator-helper a-num)))
+
+(define (valid-wwr-word w)
+  (or (eq? w EMP)
+      (let* ([w-length (length w)]
+             [half-w (take w (/ w-length 2))]
+             [w^r (drop w (/ w-length 2))])
+        (and (even? w-length)
+             (equal? w (append half-w w^r))
+             (equal? (reverse half-w) w^r)
+             (equal? half-w (reverse w^r))))))
+
+(define (valid-anbn-word w)
+  (or (eq? w EMP)
+      (let ([as (filter (λ (s) (eq? s 'a)) w)]
+            [bs (filter (λ (s) (eq? s 'b)) w)])
+        (and (even? (length w))
+             (equal? w (append as bs))
+             (= (length as) (length bs))))))
+
+(define (valid-a2ibi-word w)
+  (or (eq? w EMP)
+      (let ([as (filter (λ (s) (eq? s 'a)) w)]
+            [bs (filter (λ (s) (eq? s 'b)) w)])
+        (and (equal? w (append as bs))
+             (= (length as) (* 2 (length bs)))))))
+
+(define (valid-aibj-word w)
+  (or (eq? w EMP)
+      (let ([as (filter (λ (s) (eq? s 'a)) w)]
+            [bs (filter (λ (s) (eq? s 'b)) w)])
+        (and (equal? w (append as bs))
+             (<= (length as) (length bs) (* 2 (length as)))))))
+
+
+;;TESTING
+#|
+(andmap valid-wwr-word (loopinator WWR 1000))
+
+(andmap valid-anbn-word (loopinator ANBN 1000))
+
+(andmap valid-a2ibi-word (loopinator A2iBi 1000))
+
+(andmap valid-aibj-word (loopinator AiBj 1000))
+|#
+         
