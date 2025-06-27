@@ -1,6 +1,7 @@
 #lang racket
 
 (require "../fsm-core/private/constants.rkt"
+         "../fsm-core/private/cfg.rkt"
          racket/hash
          racket/string)
 
@@ -10,7 +11,7 @@
          concat-cfexp
          union-cfexp
          kleene-cfexp
-         extend-env!
+         update-binding!
          gen-cfexp-word
          empty-cfexp-env
          var-cfexp ;;change to remove struct out
@@ -25,7 +26,7 @@
 ;; 6. union
 ;; 7. kleene
 
-(struct cfexp ([env #:mutable]))
+(struct cfexp ([env #:mutable]) #:transparent)
 
 ;;hash ;;Purpose: To represent an empty environment
 (define (empty-cfexp-env) (hash))
@@ -75,7 +76,10 @@
 ;;Purpose: Merges all of the environments from the given (listof cfexp) in to one environment
 (define (merge-env locfexp)
   (foldl (λ (cfe env)
-           (hash-union env (cfexp-env cfe)))
+           (let ([cfe-env-id (extract-hash-key cfe)])
+             (if (hash-has-key? env cfe-env-id)
+               (append (hash-ref (cfexp-env cfe) cfe-env-id) (hash-ref env cfe-env-id))
+                     (hash-union env (cfexp-env cfe)))))
          (hash)
          locfexp))
 
@@ -101,7 +105,7 @@
 
 ;;var-cfexp cfe -> var-cfexp
 ;;Purpose: Creates a binding where the cfe is bound to the given var-cfexp's environment
-(define (extend-env! cfe bindee-id binding)
+(define (update-binding! cfe bindee-id binding)
   (let ([env (cfexp-env cfe)]
         [sym bindee-id])
     (begin
@@ -160,3 +164,8 @@
         [(mk-concat-cfexp? cfe) (gen-concat-word cfe gen-cfexp-word MAX-KLEENESTAR-REPS)]
         [(mk-union-cfexp? cfe) (gen-cfexp-word (pick-cfexp cfe)  MAX-KLEENESTAR-REPS)]
         [else (gen-cfe-kleene-word cfe MAX-KLEENESTAR-REPS gen-cfexp-word)]))
+
+
+
+(define (cfe->cfg cfe)
+  cfe)
