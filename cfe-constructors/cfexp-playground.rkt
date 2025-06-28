@@ -2,6 +2,7 @@
 
 (require  "../fsm-core/private/constants.rkt"
           "context-free-expressions-constructors.rkt"
+          "../fsm-core/private/cfg.rkt"
           rackunit)
 
 (define EMPTY (empty-cfexp))
@@ -65,21 +66,14 @@
 
 
 (define S2
-  (local [(define AiBj (var-cfexp 'S))
+  (local [(define BNAN (var-cfexp 'S))
 
-          (define AIB (concat-cfexp A AiBj B))
-
-          (define AIBB (concat-cfexp A AiBj B B))
-
-          (define EUAIBUAIBB (union-cfexp EMPTY AIB AIBB))]
+          (define BSA (concat-cfexp B BNAN A))]
     (begin
-      (update-binding! AiBj 'S EUAIBUAIBB)
-      AiBj)))
+      (update-binding! BNAN 'S (union-cfexp EMPTY BSA))
+      BNAN)))
 
-(define test (union-cfexp S1 S2))
-      
-
-
+        
 (define (loopinator cfe a-num)
   (define (loopinator-helper a-num)
     (if (= a-num 0)
@@ -130,4 +124,28 @@
 
 (check-pred (λ (low) (andmap valid-aibj-word low)) (loopinator AiBj 100000))
 
+
+(define test (union-cfexp S1 S2))
+      
+(define ANBN-cfg (make-unchecked-cfg '(S)
+                                     '(a b)
+                                     `((S ,ARROW ,EMP) (S ,ARROW aSb))
+                                     'S))
+
+(define transformed-anbn (cfg->cfe ANBN-cfg))
+
+(check-pred (λ (low) (andmap valid-anbn-word low)) (loopinator transformed-anbn 100000))
+
+(define thesis-cfg (make-unchecked-cfg '(S T U)
+                                       '(a)
+                                       `((S ,ARROW aST) (S ,ARROW U)
+                                         (T ,ARROW TU) (T ,ARROW S)
+                                         (U ,ARROW ,EMP))
+                                       'S))
+
+(define transformed-thesis (cfg->cfe thesis-cfg))
+
+(define (check-grammar g cfe)
+  (let ([w (gen-cfexp-word cfe)])
+    (cfg-derive g (if (eq? w EMP) '() w))))
          

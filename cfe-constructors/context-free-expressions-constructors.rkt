@@ -2,6 +2,7 @@
 
 (require "../fsm-core/private/constants.rkt"
          "../fsm-core/private/cfg.rkt"
+         "../fsm-core/private/misc.rkt"
          racket/hash
          racket/string)
 
@@ -15,6 +16,7 @@
          gen-cfexp-word
          empty-cfexp-env
          var-cfexp ;;change to remove struct out
+         cfg->cfe
          #;env-cfexp)
 
 ;;a context-free expression is either:
@@ -76,22 +78,25 @@
 ;;Purpose: Merges all of the environments from the given (listof cfexp) in to one environment
 (define (merge-env locfexp)
   (foldl (λ (cfe env)
-           (let ([cfe-env-id (extract-hash-key cfe)])
-             (if (hash-has-key? env cfe-env-id)
-               (append (hash-ref (cfexp-env cfe) cfe-env-id) (hash-ref env cfe-env-id))
-                     (hash-union env (cfexp-env cfe)))))
+           (let ([new-cfe-env (hash-map/copy (cfexp-env cfe)
+                                             (λ (k v) (if (hash-has-key? env k)
+                                                          (values (gen-state (hash-keys env)) v)
+                                                          (values k v))))])
+             (hash-union env new-cfe-env)))
          (hash)
          locfexp))
 
 ;; . cfexp -> concat-cfexp
 ;;Purpose: A wrapper to create a concat-cfexp
 (define (concat-cfexp . cfexp)
-  (mk-concat-cfexp (merge-env cfexp) cfexp))
+  (let ([cfexp (flatten cfexp)])
+    (mk-concat-cfexp (merge-env cfexp) cfexp)))
 
 ;; . cfexp -> union-cfexp
 ;;Purpose: A wrapper to create a union-cfexp
 (define (union-cfexp . cfexp)
-  (mk-union-cfexp (merge-env cfexp) cfexp))
+  (let ([cfexp (flatten cfexp)])
+    (mk-union-cfexp (merge-env cfexp) cfexp)))
 
 ;;cfexp -> Kleene-cfexp
 ;;Purpose: A wrapper to create a Kleene-cfexp
@@ -106,8 +111,7 @@
 ;;var-cfexp cfe -> var-cfexp
 ;;Purpose: Creates a binding where the cfe is bound to the given var-cfexp's environment
 (define (update-binding! cfe bindee-id binding)
-  (let ([env (cfexp-env cfe)]
-        [sym bindee-id])
+  (let ([env (cfexp-env cfe)])
     (begin
       (if (hash-has-key? env bindee-id)
           (hash-set! env bindee-id (cons binding (hash-ref env bindee-id)))
@@ -165,7 +169,55 @@
         [(mk-union-cfexp? cfe) (gen-cfexp-word (pick-cfexp cfe)  MAX-KLEENESTAR-REPS)]
         [else (gen-cfe-kleene-word cfe MAX-KLEENESTAR-REPS gen-cfexp-word)]))
 
+(define-struct cfg (nts signa rules start) #:transparent)
 
+(define (cfg->cfe G)
+
+  (define (make-hash-table lox f)
+    (foldl (λ (x h)
+             (hash-set h x (f x)))
+           (hash)
+           lox))
+
+  (define (explode string)
+    (define (explode-helper string idx acc)
+      (if (= idx 0)
+          acc
+          (explode-helper string (sub1 idx) (cons (string->symbol (substring string (sub1 idx) idx)) acc))))
+    (explode-helper string (string-length string) '()))
+
+
+  (define (make-cfexps-frm-rules rules singletons variables)
+
+    (define (make-expression value)
+      (if (hash-has-key? singletons value)
+          (hash-ref singletons value)
+          (hash-ref variables value)))
+    
+    (define (make-translation key value)
+      (cond [(and (= (length value) 1)
+                  (eq? (first value) EMP)) (empty-cfexp)]
+            [(= (length value) 1) (make-expression (first value))]
+            [else (concat-cfexp (map (λ (v) (make-expression v)) value))]))
+    (hash-map/copy rules (λ (k v)
+                           (values k (if (> (length v) 1)
+                                         (union-cfexp (map (λ (v) (make-translation k v)) v))
+                                         (map (λ (v) (make-translation k v)) v))))))
+  
+  (let* ([nts (cfg-get-v G)]
+         [alphabet (cfg-get-alphabet G)]
+         [rules (make-hash-table nts (λ (x) (filter-map (λ (rule) (and (eq? (first rule) x)
+                                                                       (explode (symbol->string (third rule))))) (cfg-get-rules G))))]
+         [start (cfg-get-start G)]
+         [singletons (make-hash-table alphabet singleton-cfexp)]
+         [variables (make-hash-table nts var-cfexp)]
+         [rules->cfexp (make-cfexps-frm-rules rules singletons variables)]
+         [updated-bindings (hash-map/copy rules->cfexp (λ (k v)
+                                  (begin
+                                    (update-binding! (hash-ref variables k) k v)
+                                    (values k (hash-ref variables k)))))])
+     (hash-ref updated-bindings start)))
+  
 
 (define (cfe->cfg cfe)
   cfe)
