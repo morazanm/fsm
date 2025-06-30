@@ -38,7 +38,7 @@
 (struct warn:fsm:test:no-cases warn:fsm:test ()
   #:methods gen:printable-fsm-err-vals
   [(define (anonymous-single-failure err-struct)
-     (let ([fsm-val-type (whatami? (warn:fsm-fsm-expr err-struct))])
+     (let ([fsm-val-type (parse-fsm-val-type (warn:fsm-fsm-expr err-struct))])
        (if (eq? fsm-val-type 'grammar)
          (format "Step 4 of the design recipe has not been successfully completed. The unit-test for the constructed ~a does not contain any cases to test."
                  fsm-val-type)
@@ -46,7 +46,7 @@
                  fsm-val-type))))
 
    (define (named-single-failure err-struct)
-     (let ([fsm-val-type (whatami? (warn:fsm-fsm-expr err-struct))])
+     (let ([fsm-val-type (parse-fsm-val-type (warn:fsm-fsm-expr err-struct))])
        (if (eq? fsm-val-type 'grammar)
          (format "Step 4 of the design recipe has not been successfuly completed. The unit-test for the constructed ~a, ~s, does not contain any cases to test."
                  fsm-val-type

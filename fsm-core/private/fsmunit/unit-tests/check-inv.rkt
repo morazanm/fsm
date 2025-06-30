@@ -9,20 +9,20 @@
   (bitwise-bit-set? (procedure-arity-mask proc) 1))
 
 (define (check-invariant accept? inv words)
-  (check-syntax (fsm-contract valid-predicate?
-                              (list inv)
-                              warn:fsm:app:inv:invalid-pred
-                              inv)
-                (fsm-contract list?
-                              words
-                              warn:fsm:app:inv:invalid-words
-                              inv)
+  (check-syntax (property-check valid-predicate?
+                                (list inv)
+                                warn:fsm:app:inv:invalid-pred
+                                inv)
+                (property-check list?
+                                words
+                                warn:fsm:app:inv:invalid-words
+                                inv)
                 (if accept?
-                    (fsm-contract inv
-                                  words
-                                  warn:fsm:app:inv:accept
-                                  inv)
-                    (fsm-contract (compose1 not inv)
-                                  words
-                                  warn:fsm:app:inv:reject
-                                  inv))))
+                    (property-check inv
+                                    words
+                                    warn:fsm:app:inv:accept
+                                    inv)
+                    (property-check (compose1 not inv)
+                                    words
+                                    warn:fsm:app:inv:reject
+                                    inv))))

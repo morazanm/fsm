@@ -33,6 +33,8 @@ E - ci = ab* final
                (C ,EMP H)
                (H b H))))
 
+(check-in-lang? (curry * 2) '(2))
+#|
 (check-in-lang? AB*B*UAB* '(a b a b a b b b b))
 (check-in-lang? AB*B*UAB* '())
 (check-in-lang? AB*B*UAB* '(a b b b b))
@@ -1271,3 +1273,4 @@ Y - w=x* AND [xs] remainder 3 = 0, final accepting state
 (check-not-in-lang? aibj '(a a a b a a a)) 
 (check-not-in-lang? aibj '(a a b b a a))
 (check-not-in-lang? aibj '(b b a b b))
+|#

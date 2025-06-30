@@ -5,9 +5,9 @@
          "../regular-grammar.rkt"
          "../regexp.rkt")
 
-(provide (all-defined-out))
+(provide parse-fsm-val-type)
 
-(define (whatami? unknown-val)
+(define (parse-fsm-val-type unknown-val)
   ;; Any -> Boolean
   ;; Purpose: Checks is g is a grammar
   (define (is-grammar? g)

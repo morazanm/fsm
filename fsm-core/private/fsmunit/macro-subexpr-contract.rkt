@@ -4,7 +4,7 @@
          "syntax-value-struct.rkt")
 
 (provide check-syntax
-         (struct-out fsm-contract))
+         (struct-out property-check))
 
 (define (accumulate-invalid-words contract word-lst)
   (filter (lambda (w) (not (contract (val-stx-pair-val w)))) word-lst))
@@ -18,13 +18,13 @@
          word-lst
          contracts))
 
-(struct fsm-contract (c testables err fsm-expr))
+(struct property-check (contract testables err-type-constructor fsm-expr))
 
 (define (check-syntax . fsm-contracts)
   (for ([a-contract (in-list fsm-contracts)]
-        #:do [(define err-vals (if (list? (fsm-contract-c a-contract))
-                                   (accumulate-invalid-words-dep (fsm-contract-c a-contract) (fsm-contract-testables a-contract))
-                                   (accumulate-invalid-words (fsm-contract-c a-contract) (fsm-contract-testables a-contract))))]
+        #:do [(define err-vals (if (list? (property-check-contract a-contract))
+                                   (accumulate-invalid-words-dep (property-check-contract a-contract) (property-check-testables a-contract))
+                                   (accumulate-invalid-words (property-check-contract a-contract) (property-check-testables a-contract))))]
         #:final (not (null? err-vals)))
     (when (not (null? err-vals))
-      (display-fsm-err ((fsm-contract-err a-contract) (fsm-contract-fsm-expr a-contract) err-vals)))))
+      (display-fsm-err ((property-check-err-type-constructor a-contract) (property-check-fsm-expr a-contract) err-vals)))))

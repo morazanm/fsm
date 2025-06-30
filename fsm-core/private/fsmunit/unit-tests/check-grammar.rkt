@@ -21,20 +21,20 @@
   (listof (apply or/c (grammar-sigma G))))
 
 (define (check-grammar accept? G unprocessed-words)
-  (check-syntax (fsm-contract list?
-                              unprocessed-words
-                              warn:fsm:app:gmr:invalid-word
-                              G)
-                (fsm-contract (valid-grammar-word (val-stx-pair-val G))
-                              unprocessed-words
-                              warn:fsm:app:gmr:invalid-nt
-                              G)
+  (check-syntax (property-check list?
+                                unprocessed-words
+                                warn:fsm:app:gmr:invalid-word
+                                G)
+                (property-check (valid-grammar-word (val-stx-pair-val G))
+                                unprocessed-words
+                                warn:fsm:app:gmr:invalid-nt
+                                G)
                 (if accept?
-                    (fsm-contract (lambda (val) (not (string? (grammar-derive (val-stx-pair-val G) val))))
-                                  unprocessed-words
-                                  warn:fsm:app:gmr:accept
-                                  G)
-                    (fsm-contract (lambda (val) (string? (grammar-derive (val-stx-pair-val G) val)))
-                                  unprocessed-words
-                                  warn:fsm:app:gmr:reject
-                                  G))))
+                    (property-check (lambda (val) (not (string? (grammar-derive (val-stx-pair-val G) val))))
+                                    unprocessed-words
+                                    warn:fsm:app:gmr:accept
+                                    G)
+                    (property-check (lambda (val) (string? (grammar-derive (val-stx-pair-val G) val)))
+                                    unprocessed-words
+                                    warn:fsm:app:gmr:reject
+                                    G))))

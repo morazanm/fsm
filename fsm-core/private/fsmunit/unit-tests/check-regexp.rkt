@@ -9,16 +9,16 @@
 
 (define (check-regexp accept? regex words)
   (define regexp-machine (regexp->fsa regex))
-  (check-syntax (fsm-contract list?
-                              words
-                              warn:fsm:app:regexp:invalid-words
-                              regex)
+  (check-syntax (property-check list?
+                                words
+                                warn:fsm:app:regexp:invalid-words
+                                regex)
                 (if accept?
-                    (fsm-contract (lambda (word) (eq? 'accept (sm-apply regexp-machine word)))
-                                  words
-                                  warn:fsm:app:regexp:accept
-                                  regex)
-                    (fsm-contract (lambda (word) (eq? 'reject (sm-apply regexp-machine word)))
-                                  words
-                                  warn:fsm:app:regexp:reject
-                                  regex))))
+                    (property-check (lambda (word) (eq? 'accept (sm-apply regexp-machine word)))
+                                    words
+                                    warn:fsm:app:regexp:accept
+                                    regex)
+                    (property-check (lambda (word) (eq? 'reject (sm-apply regexp-machine word)))
+                                    words
+                                    warn:fsm:app:regexp:reject
+                                    regex))))

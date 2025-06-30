@@ -40,58 +40,58 @@
   (map (lambda (x) (lambda (y) (> (length x) y))) lst-deps))      
 
 (define (check-subexprs M orig-vals unprocessed-words head-posns accept?)
-  (check-syntax (fsm-contract correct-tm-word-arity/c
-                              orig-vals
-                              warn:fsm:app:tm:invalid-arity
-                              M)
-                (fsm-contract list?
-                              unprocessed-words
-                              warn:fsm:app:tm:invalid-word
-                              M)
-                (fsm-contract (map (lambda (x) (valid-head-pos/c (length x)))
-                                   (map val-stx-pair-val unprocessed-words))
-                              head-posns
-                              (lambda (fsm-expr err-vals)
-                                (warn:fsm:app:tm:invalid-head-pos fsm-expr
-                                                                  err-vals
-                                                                  (lambda (vals)
-                                                                    (map-to-val (map val-stx-pair-stx vals)
-                                                                                (map val-stx-pair-stx head-posns)
-                                                                                (map val-stx-pair-val unprocessed-words)))))
-                              M)
-                (fsm-contract (build-contract (map val-stx-pair-val unprocessed-words))
-                              head-posns
-                              (lambda (fsm-expr err-vals)
-                                (warn:fsm:app:tm:invalid-head-pos-index fsm-expr
-                                                                        err-vals
-                                                                        (lambda (vals)
-                                                                          (map-to-val (map val-stx-pair-stx vals)
-                                                                                      (map val-stx-pair-stx head-posns)
-                                                                                      (map val-stx-pair-val unprocessed-words)))))
-                              M)
-                (fsm-contract has-left-hand-marker/c
-                              unprocessed-words
-                              warn:fsm:app:tm:no-left-hand-marker
-                              M)
-                (fsm-contract (valid-tm-word/c (val-stx-pair-val M))
-                              unprocessed-words
-                              warn:fsm:app:tm:invalid-nt
-                              M)
+  (check-syntax (property-check correct-tm-word-arity/c
+                                orig-vals
+                                warn:fsm:app:tm:invalid-arity
+                                M)
+                (property-check list?
+                                unprocessed-words
+                                warn:fsm:app:tm:invalid-word
+                                M)
+                (property-check (map (lambda (x) (valid-head-pos/c (length x)))
+                                     (map val-stx-pair-val unprocessed-words))
+                                head-posns
+                                (lambda (fsm-expr err-vals)
+                                  (warn:fsm:app:tm:invalid-head-pos fsm-expr
+                                                                    err-vals
+                                                                    (lambda (vals)
+                                                                      (map-to-val (map val-stx-pair-stx vals)
+                                                                                  (map val-stx-pair-stx head-posns)
+                                                                                  (map val-stx-pair-val unprocessed-words)))))
+                                M)
+                (property-check (build-contract (map val-stx-pair-val unprocessed-words))
+                                head-posns
+                                (lambda (fsm-expr err-vals)
+                                  (warn:fsm:app:tm:invalid-head-pos-index fsm-expr
+                                                                          err-vals
+                                                                          (lambda (vals)
+                                                                            (map-to-val (map val-stx-pair-stx vals)
+                                                                                        (map val-stx-pair-stx head-posns)
+                                                                                        (map val-stx-pair-val unprocessed-words)))))
+                                M)
+                (property-check has-left-hand-marker/c
+                                unprocessed-words
+                                warn:fsm:app:tm:no-left-hand-marker
+                                M)
+                (property-check (valid-tm-word/c (val-stx-pair-val M))
+                                unprocessed-words
+                                warn:fsm:app:tm:invalid-nt
+                                M)
                 (if accept?
-                    (fsm-contract (map (lambda (head-pos)
-                                         (lambda (val) (eq? (sm-apply (val-stx-pair-val M) val head-pos)
-                                                            'accept)))
-                                       (map val-stx-pair-val head-posns))
-                                  unprocessed-words
-                                  warn:fsm:app:tm:accept
-                                  M)
-                    (fsm-contract (map (lambda (head-pos)
-                                         (lambda (val) (eq? (sm-apply (val-stx-pair-val M) val head-pos)
-                                                            'reject)))
-                                       (map val-stx-pair-val head-posns))
-                                  unprocessed-words
-                                  warn:fsm:app:tm:reject
-                                  M))))
+                    (property-check (map (lambda (head-pos)
+                                           (lambda (val) (eq? (sm-apply (val-stx-pair-val M) val head-pos)
+                                                              'accept)))
+                                         (map val-stx-pair-val head-posns))
+                                    unprocessed-words
+                                    warn:fsm:app:tm:accept
+                                    M)
+                    (property-check (map (lambda (head-pos)
+                                           (lambda (val) (eq? (sm-apply (val-stx-pair-val M) val head-pos)
+                                                              'reject)))
+                                         (map val-stx-pair-val head-posns))
+                                    unprocessed-words
+                                    warn:fsm:app:tm:reject
+                                    M))))
 
 (define (parse-input M test-cases accept?)
   ;; results doesn't need to be a fold anymore can just be a map

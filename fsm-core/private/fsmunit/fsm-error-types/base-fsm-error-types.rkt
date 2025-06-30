@@ -59,14 +59,14 @@
                  (cond [(warn:fsm:app? err-struct)
                         (let ([str (create-err-str err-struct)])
                           (display-warning str (exn:fail:check-failed
-                                                  str
-                                                  (current-continuation-marks)
-                                                  (map (lambda (x) (syntax-srcloc (val-stx-pair-stx x)))
-                                                       (warn:fsm:app-err-exprs err-struct)))))]
+                                                str
+                                                (current-continuation-marks)
+                                                (map (lambda (x) (syntax-srcloc (val-stx-pair-stx x)))
+                                                     (warn:fsm:app-err-exprs err-struct)))))]
                        [(warn:fsm? err-struct)
                         (let ([str (create-err-str err-struct)])
                           (display-warning str (exn:fail:check-failed
-                                                  str
-                                                  (current-continuation-marks)
-                                                  (list (syntax-srcloc (val-stx-pair-stx (warn:fsm-fsm-expr err-struct)))))))]
+                                                str
+                                                (current-continuation-marks)
+                                                (list (syntax-srcloc (val-stx-pair-stx (warn:fsm-fsm-expr err-struct)))))))]
                        [else (raise-user-error "Invalid error type raised. Please contact FSM developers if you see this message.")]))])

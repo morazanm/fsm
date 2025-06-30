@@ -13,7 +13,8 @@
          racket/list
          racket/local
          racket/set
-         racket/dict)
+         racket/dict
+         profile-flame-graph)
 
 (provide csg-viz)
 
@@ -491,6 +492,10 @@
               (I ,ARROW ,EMP)) 
             'S))
 
+#;(profile-thunk (lambda () (csg-viz anbncn-csg '(a b c)))
+               #:svg-path (string->path "/home/sora/Pictures/viz-flame.svg")
+               #:preview? #t
+               )
 
 ;; generates word word-reversed word
 ;; S - Generates K, G, right hand marker R

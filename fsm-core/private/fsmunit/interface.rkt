@@ -19,23 +19,23 @@
          check-inv-holds? check-inv-fails?)
 
 (define (handle-one-val fsm-val stx)
-  (if (eq? 'notanfsmval (whatami? fsm-val))
+  (if (eq? 'notanfsmval (parse-fsm-val-type fsm-val))
       (display-fsm-err (warn:fsm:test:no-fsm-val stx))
       (display-fsm-err (warn:fsm:test:no-cases stx))))
 
-(define (handle-no-vals stx)
-  (display-fsm-err (warn:fsm:test:no-vals stx)))
+(define (handle-no-vals val-stx)
+  (display-fsm-err (warn:fsm:test:no-vals val-stx)))
 
-(define (handle-std-case accept? fsm-val-stx-pair word-lst-val-stx-pairs)
-  (cond [(eq? (whatami? (val-stx-pair-val fsm-val-stx-pair)) 'turing-machine)
+(define (execute-runtime-checks accept? fsm-val-stx-pair word-lst-val-stx-pairs)
+  (cond [(eq? (parse-fsm-val-type (val-stx-pair-val fsm-val-stx-pair)) 'turing-machine)
          (check-turing-machine accept? fsm-val-stx-pair word-lst-val-stx-pairs)]
-        [(eq? (whatami? (val-stx-pair-val fsm-val-stx-pair)) 'machine)
+        [(eq? (parse-fsm-val-type (val-stx-pair-val fsm-val-stx-pair)) 'machine)
          (check-machine accept? fsm-val-stx-pair word-lst-val-stx-pairs)]
-        [(eq? (whatami? (val-stx-pair-val fsm-val-stx-pair)) 'grammar)
+        [(eq? (parse-fsm-val-type (val-stx-pair-val fsm-val-stx-pair)) 'grammar)
          (check-grammar accept? fsm-val-stx-pair word-lst-val-stx-pairs)]
-        [(eq? (whatami? (val-stx-pair-val fsm-val-stx-pair)) 'regexp)
+        [(eq? (parse-fsm-val-type (val-stx-pair-val fsm-val-stx-pair)) 'regexp)
          (check-regexp accept? fsm-val-stx-pair word-lst-val-stx-pairs)]
-        [(eq? (whatami? (val-stx-pair-val fsm-val-stx-pair)) 'inv)
+        [(eq? (parse-fsm-val-type (val-stx-pair-val fsm-val-stx-pair)) 'inv)
          (check-invariant accept? fsm-val-stx-pair word-lst-val-stx-pairs)]
         [else (display-fsm-err (warn:fsm:test:invalid-fsm-val fsm-val-stx-pair))]))
 
@@ -48,7 +48,7 @@
     [(_ fsm-val)
      #'(handle-one-val fsm-val (val-stx-pair stx #'stx))]
     [(_ fsm-val word ...)
-     #'(handle-std-case #t (val-stx-pair fsm-val #'fsm-val) (list (val-stx-pair word #'word) ...))]))
+     #'(execute-runtime-checks #t (val-stx-pair fsm-val #'fsm-val) (list (val-stx-pair word #'word) ...))]))
 
 ;; FSM-Val Word ... -> (void)
 ;; Purpose: To determine whether a given machine/grammar can reject/not process a given word
@@ -59,7 +59,7 @@
     [(_ fsm-val)
      #'(handle-one-val fsm-val (val-stx-pair stx #'stx))]
     [(_ fsm-val word ...)
-     #'(handle-std-case #f (val-stx-pair fsm-val #'fsm-val) (list (val-stx-pair word #'word) ...))]))
+     #'(execute-runtime-checks #f (val-stx-pair fsm-val #'fsm-val) (list (val-stx-pair word #'word) ...))]))
 
 (define-syntax check-derive? (make-rename-transformer #'check-in-lang?))
 (define-syntax check-gen? (make-rename-transformer #'check-in-lang?))
