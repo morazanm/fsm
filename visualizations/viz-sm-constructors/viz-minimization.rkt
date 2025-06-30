@@ -12,30 +12,28 @@
          "../viz-lib/bounding-limits.rkt"
          "../viz-lib/viz-imgs/cursor.rkt"
          "../../sm-graph.rkt")
-<<<<<<< Updated upstream
-(struct dfa (states alphabet start finals rules no-dead) #:transparent)
-(define (unchecked->dfa old-dfa)
-  (dfa (fsa-getstates old-dfa)
-       (fsa-getalphabet old-dfa)
-       (fsa-getstart old-dfa)
-       (fsa-getfinals old-dfa)
-       (fsa-getrules old-dfa)
-=======
 
 
 
 
-(struct imsg-state (table state-pairs))
+(struct imsg-state (table state-pairs) #:transparent)
+
+(struct state-pair (s1 s2 marked?) #:transparent)
+
+(struct state-pairings (all-pairs) #:transparent)
 
 (struct dfa (states alphabet start finals rules no-dead) #:transparent)
+
+
 (define (unchecked->dfa M)
   (dfa (fsa-getstates M)
        (fsa-getalphabet M)
        (fsa-getstart M)
        (fsa-getfinals M)
        (fsa-getrules M)
->>>>>>> Stashed changes
        'no-dead))
+
+
 (define E-SCENE-TOOLS (e-scene-tools-generator HEIGHT-BUFFER LETTER-KEY-WIDTH-BUFFER FONT-SIZE
                                                (list (list ARROW-UP-KEY "Restart")
                                                      (list ARROW-RIGHT-KEY "Forward")
@@ -95,11 +93,7 @@
   (vector-ref (vector-ref table column) row))
 
 
-<<<<<<< Updated upstream
-(define (draw-table table)
-=======
 (define (draw-table table finals)
->>>>>>> Stashed changes
   (define (draw-table-helper row-amount idx)
     (if (= row-amount idx)
         (make-row (vector-ref table idx) 0)
@@ -107,22 +101,14 @@
                (draw-table-helper row-amount (add1 idx)))))
   (define (make-row row idx)
     (define (draw-square sym)
-<<<<<<< Updated upstream
-      (let ([base-square-img (overlay (square 40 'solid 'white) (square 45 'solid 'gray))])
-=======
       (let ([base-square-img (overlay (square 40 'solid 'white) (square 45 'solid 'gray))]
             [final-state-square-img (overlay (square 40 'solid 'lightorange) (square 45 'solid 'gray))])
->>>>>>> Stashed changes
         (match sym
           ['blank base-square-img]
           ['black (overlay (square 40 'solid 'black) (square 45 'solid 'gray))]
           ['new-mark (overlay (text "X" 38 'red) base-square-img)]
           ['mark (overlay (text "X" 38 'black) base-square-img)]
-<<<<<<< Updated upstream
-          [_ (overlay (text (symbol->string sym) 38 'black) base-square-img)])))
-=======
           [_ (overlay (text (symbol->string sym) 38 'black) (if (member sym finals) final-state-square-img base-square-img))])))
->>>>>>> Stashed changes
     (if (= (sub1 (vector-length row)) idx)
         (draw-square (vector-ref row idx))
         (beside (draw-square (vector-ref row idx)) (make-row row (add1 idx)))))
@@ -131,11 +117,7 @@
 (define (make-main-graphic M)
   (beside (sm-graph M)
           (square 10 'solid 'white)
-<<<<<<< Updated upstream
-          (draw-table (make-table M))))
-=======
           (draw-table (make-table M) (fsa-getfinals M))))
->>>>>>> Stashed changes
 
 (define (make-info-messages M)
   (above (text "TBD" 20 'black)

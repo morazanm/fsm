@@ -344,6 +344,8 @@
        'no-dead))
 
 ;;table filling method
+;;dfa -> dfa
+;;Purpose: If possible minimizes the given dfa, by merging equivalent states and removing unreachable states
 (define (minimize-dfa M)
   (let* ([dfa (remove-unreachables (ndfa->dfa M))]
          [transition-table (make-transition-table dfa)]
@@ -352,8 +354,11 @@
          [filled-table (make-matches (list (state-pairings states-table)) transition-table (fsa-getalphabet dfa))])
    (table->dfa (state-pairings-all-pairs filled-table) dfa transition-table)))
 
-
+;; (listof state-pairings) dfa transtition-table -> dfa
+;;Purpose: Converts the (listof state-pairings), dfa, and transition table into an equivalent minimized (if possible) dfa.
 (define (table->dfa loSP old-dfa transition-table)
+  ;;state (listof merged-state) -> state
+  ;; Purpose: Searches for the merged-state that contains the given state
   (define (search-for-merged-state old-state merged-states)
     (first (filter-map (λ (ms) (and (set-member? (merged-state-old-symbols ms) old-state)
                                     (merged-state-new-symbol ms)))                
@@ -386,22 +391,26 @@
                         table->rules
                         'no-dead)))
 
+;; merged-state state-pair -> boolean
+;; Purpose: Determines if given state-pair shares at least one state with the given merged-state
+(define (at-least-one-state-matches? merged-state unmarked-pair)
+  (or (set-member? (merged-state-old-symbols merged-state) (state-pair-s1 unmarked-pair))
+      (set-member? (merged-state-old-symbols merged-state) (state-pair-s2 unmarked-pair))))
 
-
-
+;; state-pair (listof merged-state) -> boolean
+;; Purpose: Determines if given state-pair has any overlap (at least one same state) with any state-pair in the given (listof state-pairings)
 (define (overlap? unmarked-pair loSP)
-  (ormap (λ (sp) (or (set-member? (merged-state-old-symbols sp) (state-pair-s1 unmarked-pair))
-                     (set-member? (merged-state-old-symbols sp) (state-pair-s2 unmarked-pair))))
-         loSP))
+  (ormap (λ (sp) (at-least-one-state-matches? sp unmarked-pair)) loSP))
 
-
+;;dfa state-pair (listof merged-state) -> (listof merged-state)
+;;Purpose: Merges the state-pair into its overlapping pair and updates the given (listof merged-state) to contain the new merged-state
 (define (merge-pairs dfa unmarked-pair loSP)
-  (let* ([overlapped-pair (first (filter (λ (sp) (or (set-member? (merged-state-old-symbols sp) (state-pair-s1 unmarked-pair))
-                                              (set-member? (merged-state-old-symbols sp) (state-pair-s2 unmarked-pair))))
-                                 loSP))]
-        [new-merged-state (update-merged-state dfa unmarked-pair overlapped-pair)])
+  (let* ([overlapped-pair (first (filter (λ (sp) (at-least-one-state-matches? sp unmarked-pair)) loSP))]
+         [new-merged-state (update-merged-state dfa unmarked-pair overlapped-pair)])
     (map (λ (sp) (if (equal? overlapped-pair sp) new-merged-state sp)) loSP)))
 
+;;dfa state-pair merged-state -> merged-state
+;;Purpose: Updates the given merged state to contain the states from the given state-pair
 (define (update-merged-state dfa unmarked-pair overlapped-pair)
   (let* ([start (fsa-getstart dfa)]
          [finals (fsa-getfinals dfa)]
@@ -422,8 +431,8 @@
 
 
            
-          
-
+;;dfa state-pair -> merged-state
+;;Purpose: Converts a state pair into a merged-state
 (define (make-merged-state dfa unmarked-pair)
   (let ([start (fsa-getstart dfa)]
         [finals (fsa-getfinals dfa)]
@@ -440,13 +449,16 @@
                         (set ump-s1 ump-s2))]
           [else (merged-state ump-s1 (set (state-pair-s1 unmarked-pair) ump-s2))])))
                      
-    
+;;dfa (listof state-pair) (listof merged-state) -> (listof merged-state)
+;;Purpose: Accumulates the conversion of state-pairs into merged-states
 (define (accumulate-unmarked-pairs dfa unmarked-pairs acc)
   (cond [(empty? unmarked-pairs) acc]
         [(overlap? (first unmarked-pairs) acc)
          (accumulate-unmarked-pairs dfa (rest unmarked-pairs) (merge-pairs dfa (first unmarked-pairs) acc))]
         [(accumulate-unmarked-pairs dfa (rest unmarked-pairs) (cons (make-merged-state dfa (first unmarked-pairs)) acc))]))
 
+;;state-pair final-states -> state-pair
+;;Purpose: Marks if the given state-pair if only one of the states is a final state
 (define (mark-states-table pairing finals)
   (if (or (and (list? (member (state-pair-s1 pairing) finals))
                (boolean? (member (state-pair-s2 pairing) finals)))
@@ -456,8 +468,11 @@
       (struct-copy state-pair pairing [marked? #t])
       pairing))
 
-
+;;(listof state-pairings) transition-table alphabet -> state-pairings
+;; Purpose: Updates the marks of the given (listof state-pairings) if applicable, terminates when two pairings are identical.
 (define (make-matches loSP transition-table alphabet)
+  ;;(listof state-pair) (listof state-pair) (listof state-pair) -> state-pairings
+  ;;Purpose: Updates the unmarked-pairs to become marked-pairs if applicable.
   (define (update-pairs marked-pairs unmarked-pairs remaining-unmarked-pairs)
     (cond [(empty? unmarked-pairs) (state-pairings (append marked-pairs remaining-unmarked-pairs))]
           [(update-mark? (first unmarked-pairs) marked-pairs transition-table alphabet)
@@ -476,6 +491,8 @@
                       transition-table
                       alphabet))))
 
+;;(listof state-pairings) (listof state-pairings) -> boolean
+;; Purpose: Determines if the two given state-pairings are the same
 (define (same-markings? loSP1 loSP2)
   (let ([unmarked-SP1 (filter (λ (sp) (not (state-pair-marked? sp))) loSP1)]
         [unmarked-SP2 (filter (λ (sp) (not (state-pair-marked? sp))) loSP2)]
@@ -484,6 +501,8 @@
     (and (andmap (λ (sp) (list? (member sp unmarked-SP2))) unmarked-SP1)
          (andmap (λ (sp) (list? (member sp marked-SP2))) marked-SP1))))
 
+;;state-pair (listof state-pair) transition-table alphabet -> boolean
+;;Purpose: Determines if the given state-pair needs to be marked.
 (define (update-mark? unmarked-pair marked-pairs transition-table alphabet)
   (let* ([ump-s1-transitions (first (filter (λ (transition) (eq? (first transition) (state-pair-s1 unmarked-pair))) transition-table))]
          [ump-s2-transitions (first (filter (λ (transition) (eq? (first transition) (state-pair-s2 unmarked-pair))) transition-table))]
@@ -498,8 +517,11 @@
            state-pairs-from-transitions)))
   
 
-
+;;dfa -> (listof state-pair)
+;;Purpose: Makes the state table needed to minimize the dfa
 (define (make-states-table dfa)
+  ;;(listof state-pair) (listof state-pair) -> (listof state-pair)
+  ;;Purpose: Makes half of the state-pairing table
   (define (make-half-table loSP new-table)
     (cond [(empty? loSP) new-table]
           [(boolean? (member (first loSP) new-table (λ (sp1 sp2) (and (eq? (state-pair-s1 sp1) (state-pair-s2 sp2))
@@ -511,9 +533,7 @@
                                           [s2 states]
                                           #:unless (eq? s1 s2))
                                 (state-pair s1 s2 #f))]
-         [other-half-of-table (make-half-table init-states-pairing '())]
-         [half-of-table (make-half-table (reverse init-states-pairing) '())])
-    
+         [other-half-of-table (make-half-table init-states-pairing '())])
     (filter (λ (sp) (not (member sp other-half-of-table))) init-states-pairing)))  
       
 
