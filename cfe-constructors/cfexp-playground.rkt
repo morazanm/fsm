@@ -3,6 +3,7 @@
 (require  "../fsm-core/private/constants.rkt"
           "context-free-expressions-constructors.rkt"
           "../fsm-core/private/cfg.rkt"
+          "../visualizations/viz-grammar-constructors/cfg-derive-leftmost.rkt"
           rackunit)
 
 (define EMPTY (empty-cfexp))
@@ -10,6 +11,8 @@
 (define A (singleton-cfexp 'a))
 
 (define B (singleton-cfexp 'b))
+
+(define C (singleton-cfexp 'c))
 
 ;; w = ww^r
 (define WWR 
@@ -75,11 +78,11 @@
 
         
 (define (loopinator cfe a-num)
-  (define (loopinator-helper a-num)
+  (define (loopinator-helper a-num acc)
     (if (= a-num 0)
-        '()
-        (cons (gen-cfexp-word cfe) (loopinator-helper (sub1 a-num)))))
-  (remove-duplicates (loopinator-helper a-num)))
+        acc
+       (loopinator-helper (sub1 a-num) (cons (gen-cfexp-word cfe) acc))))
+  (remove-duplicates (loopinator-helper a-num '())))
 
 (define (valid-wwr-word w)
   (or (eq? w EMP)
@@ -126,7 +129,11 @@
 
 
 (define test (union-cfexp S1 S2))
-      
+
+
+;;Transformation tests
+
+;;cfg -> cfe
 (define ANBN-cfg (make-unchecked-cfg '(S)
                                      '(a b)
                                      `((S ,ARROW ,EMP) (S ,ARROW aSb))
@@ -145,7 +152,48 @@
 
 (define transformed-thesis (cfg->cfe thesis-cfg))
 
+
+;;cfe->cfg
+
+;;w = (ab)*c
+(define AB^NC
+  (local [(define AB^NC (var-cfexp 'AB^NC))
+
+          (define ABX (concat-cfexp A B AB^NC))]
+    (begin
+      (update-binding! AB^NC 'AB^NC (union-cfexp C ABX))
+      AB^NC)))
+
+(define abnc (make-unchecked-cfg '(X)
+                                 '(a b c)
+                                 `((X ,ARROW c) (X ,ARROW abX))
+                                 'X))
+
+(define thesis-cfe
+  (local [(define X (var-cfexp 'X))
+
+          (define Y (var-cfexp 'Y))
+
+          (define ABY (concat-cfexp A B Y))
+
+          (define CXA (concat-cfexp C X A))]
+  (begin
+    (update-binding! X 'X (union-cfexp EMPTY ABY))
+    (update-binding! Y 'Y CXA)
+    X)))
+
+(define thesis-cfg1 (make-unchecked-cfg '(X Y)
+                                        '(a b c)
+                                        `((X ,ARROW abY) (X ,ARROW ,EMP)
+                                                         (Y ,ARROW cXa))
+                                        'X))
+
 (define (check-grammar g cfe)
   (let ([w (gen-cfexp-word cfe)])
     (cfg-derive g (if (eq? w EMP) '() w))))
-         
+
+(define (grammar-checker g cfe num)
+  (let ([res (for/list ([x (in-naturals)])
+               #:break (= x num)
+               (check-grammar g cfe))])
+    (andmap list? res)))

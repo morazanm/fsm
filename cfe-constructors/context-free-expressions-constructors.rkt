@@ -17,6 +17,7 @@
          empty-cfexp-env
          var-cfexp ;;change to remove struct out
          cfg->cfe
+         cfe->cfg
          #;env-cfexp)
 
 ;;a context-free expression is either:
@@ -166,7 +167,7 @@
         [(mk-singleton-cfexp? cfe) (convert-singleton cfe)]
         [(mk-var-cfexp? cfe) (substitute-var cfe)]
         [(mk-concat-cfexp? cfe) (gen-concat-word cfe gen-cfexp-word MAX-KLEENESTAR-REPS)]
-        [(mk-union-cfexp? cfe) (gen-cfexp-word (pick-cfexp cfe)  MAX-KLEENESTAR-REPS)]
+        [(mk-union-cfexp? cfe) (gen-cfexp-word (pick-cfexp cfe) MAX-KLEENESTAR-REPS)]
         [else (gen-cfe-kleene-word cfe MAX-KLEENESTAR-REPS gen-cfexp-word)]))
 
 (define-struct cfg (nts signa rules start) #:transparent)
@@ -202,7 +203,7 @@
     (hash-map/copy rules (λ (k v)
                            (values k (if (> (length v) 1)
                                          (union-cfexp (map (λ (v) (make-translation k v)) v))
-                                         (map (λ (v) (make-translation k v)) v))))))
+                                         (make-translation k (first v)))))))
   
   (let* ([nts (cfg-get-v G)]
          [alphabet (cfg-get-alphabet G)]
@@ -220,4 +221,41 @@
   
 
 (define (cfe->cfg cfe)
-  cfe)
+ (define-struct pair-cfe (cfe-sym env) #:transparent)
+
+  (define (get-symbol cfe)
+    (cond [(mk-null-cfexp? cfe) 'null]
+          [(mk-empty-cfexp? cfe) EMP]
+          [(mk-singleton-cfexp? cfe) (mk-singleton-cfexp-char cfe)]
+          [(mk-var-cfexp? cfe) (mk-var-cfexp-cfe cfe)]
+          [(mk-concat-cfexp? cfe) (map extract-data (mk-concat-cfexp-locfe cfe))]
+          [(mk-union-cfexp? cfe)  (map extract-data (mk-union-cfexp-locfe cfe))]
+          [else (get-symbol (mk-kleene-cfexp-cfe cfe))]))
+
+  (define (get-cfe-symbol cfe)
+    (cond [(mk-null-cfexp? cfe) 'null]
+          [(mk-empty-cfexp? cfe) EMP]
+          [(mk-singleton-cfexp? cfe) (mk-singleton-cfexp-char cfe)]
+          [(mk-var-cfexp? cfe) (extract-all-cfexp (cfexp-env cfe) (list (extract-data cfe)))]
+          [(mk-concat-cfexp? cfe) (flatten (map get-cfe-symbol (mk-concat-cfexp-locfe cfe)))]
+          [(mk-union-cfexp? cfe) (flatten (map get-cfe-symbol (mk-union-cfexp-locfe cfe)))]
+          [else (get-cfe-symbol (mk-kleene-cfexp-cfe cfe))]))
+
+  (define (extract-data cfe)
+    (pair-cfe (get-symbol cfe) cfe))
+  
+  (define (base-case? cfe)
+    (or (mk-null-cfexp? cfe)
+        (mk-empty-cfexp? cfe)
+        (mk-singleton-cfexp? cfe)))
+  
+  (define (extract-all-cfexp cfe-env acc)
+    (foldl (λ (cfe acc) (flatten (cons (extract-all-cfexp (cfexp-env cfe) (list (extract-data cfe)))#;(if (not (base-case? cfe))
+                                           (extract-all-cfexp (cfexp-env cfe) (list (extract-data cfe)))
+                                           (extract-data cfe)) acc)))
+             acc
+             (flatten (hash-values cfe-env)))
+    #;(flatten (hash-values cfe-env)))
+  
+  (let* ([all-cfes (flatten (extract-all-cfexp (cfexp-env cfe) (list (extract-data cfe))))])
+    all-cfes))
