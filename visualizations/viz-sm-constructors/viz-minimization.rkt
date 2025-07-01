@@ -15,7 +15,7 @@
 
 (struct imsg-state (table state-pairs) #:transparent)
 
-(struct state-pair (s1 s2 marked?) #:transparent)
+(struct state-pair (s1 s2 marked? destination-pairs) #:transparent)
 
 (struct state-pairings (all-pairs) #:transparent)
 
@@ -24,8 +24,25 @@
 (struct dfa (states alphabet start finals rules no-dead) #:transparent)
 
 (struct phase (number attributes) #:transparent)
+#|
+viz phases
 
-(struct minimization-results (machine loSP) #:transparent)
+0 -> only show input machine
+
+1 -> if applicable, remove unreachable states
+
+2 -> show empty transition table and new machine
+
+3 -> mark all final, non-final pairings
+
+4 -> fill the table
+
+5 -> build the new machine from scratch 
+
+
+|#
+
+(struct minimization-results (new-machine unreachables-removed-M loSP init-states-table) #:transparent)
 
 (define (unchecked->dfa M)
   (dfa (fsa-getstates M)
@@ -37,9 +54,9 @@
 
 
 
-;;dfa -> boolean
-;;Purpose: Determines if the given M has any unreachable states
-(define (has-unreachables? old-M new-M)
+;;dfa dfa -> boolean
+;;Purpose: Determines if the two dfa have any changes
+(define (machine-changed? old-M new-M)
   (not (= (length (fsa-getstates old-M)) (length (fsa-getstates new-M)))))
 
 ;;dfa -> dfa
@@ -113,7 +130,7 @@
              states)))
   ;;dfa -> (listof state-pair)
   ;;Purpose: Makes the state table needed to minimize the dfa
-  (define (make-states-table dfa)
+  (define (make-states-table dfa transition-table)
     ;;(listof state-pair) (listof state-pair) -> (listof state-pair)
     ;;Purpose: Makes half of the state-pairing table
     (define (make-half-table loSP new-table)
@@ -122,11 +139,20 @@
                                                                         (eq? (state-pair-s2 sp1) (state-pair-s1 sp2))))))
              (make-half-table (rest loSP) (cons (first loSP) new-table))]
             [else (make-half-table (rest loSP) new-table)]))
+    (define (make-destination-pairs sp)
+      (let* ([ump-s1-transitions (hash-ref transition-table (state-pair-s1 sp))]
+             [ump-s2-transitions (hash-ref transition-table (state-pair-s2 sp))]
+             [state-pairs-from-transitions (map (λ (x) (let ([s1-tran (filter (λ (tran) (eq? x (first tran))) ump-s1-transitions)]
+                                                             [s2-tran (filter (λ (tran) (eq? x (first tran))) ump-s2-transitions)])
+                                                         (state-pair (second (first s1-tran)) (second (first s2-tran)) #f 'none)))
+                                                (fsa-getalphabet dfa))])
+        (struct-copy state-pair sp [destination-pairs state-pairs-from-transitions])))
     (let* ([states (fsa-getstates dfa)]
            [init-states-pairing (for*/list ([s1 states]
                                             [s2 states]
                                             #:unless (eq? s1 s2))
-                                  (state-pair s1 s2 #f))]
+                                  (make-destination-pairs (state-pair s1 s2 #f 'none)))]
+           
            [other-half-of-table (make-half-table init-states-pairing '())])
       (filter (λ (sp) (not (member sp other-half-of-table))) init-states-pairing)))
   ;; merged-state state-pair -> boolean
@@ -152,20 +178,14 @@
     (define (update-pairs marked-pairs unmarked-pairs remaining-unmarked-pairs)
       ;;state-pair (listof state-pair) transition-table alphabet -> boolean
       ;;Purpose: Determines if the given state-pair needs to be marked.
-      (define (update-mark? unmarked-pair alphabet)
-        (let* ([ump-s1-transitions (hash-ref transition-table (state-pair-s1 unmarked-pair))]
-               [ump-s2-transitions (hash-ref transition-table (state-pair-s2 unmarked-pair))]
-               [state-pairs-from-transitions (map (λ (x) (let ([s1-tran (filter (λ (tran) (eq? x (first tran))) ump-s1-transitions)]
-                                                               [s2-tran (filter (λ (tran) (eq? x (first tran))) ump-s2-transitions)])
-                                                           (state-pair (second (first s1-tran)) (second (first s2-tran)) #f)))
-                                                  alphabet)])
-          (ormap (λ (sp) (list? (member sp marked-pairs (λ (sp1 sp2) (or (and (eq? (state-pair-s1 sp1) (state-pair-s1 sp2))
-                                                                              (eq? (state-pair-s2 sp1) (state-pair-s2 sp2)))
-                                                                         (and (eq? (state-pair-s1 sp1) (state-pair-s2 sp2))
-                                                                              (eq? (state-pair-s2 sp1) (state-pair-s1 sp2))))))))
-                 state-pairs-from-transitions)))
+      (define (update-mark? unmarked-pair)
+        (ormap (λ (sp) (list? (member sp marked-pairs (λ (sp1 sp2) (or (and (eq? (state-pair-s1 sp1) (state-pair-s1 sp2))
+                                                                            (eq? (state-pair-s2 sp1) (state-pair-s2 sp2)))
+                                                                       (and (eq? (state-pair-s1 sp1) (state-pair-s2 sp2))
+                                                                            (eq? (state-pair-s2 sp1) (state-pair-s1 sp2))))))))
+               (state-pair-destination-pairs unmarked-pair)))
       (cond [(empty? unmarked-pairs) (state-pairings (append marked-pairs remaining-unmarked-pairs))]
-            [(update-mark? (first unmarked-pairs) alphabet)
+            [(update-mark? (first unmarked-pairs))
              (update-pairs (cons (struct-copy state-pair (first unmarked-pairs) [marked? #t]) marked-pairs)
                            (rest unmarked-pairs)
                            remaining-unmarked-pairs)]
@@ -278,21 +298,15 @@
                           (fsa-getstart old-dfa)
                           new-finals
                           table->rules
-                          'no-dead)
-      (minimization-results (make-unchecked-dfa remaining-states
-                                                (fsa-getalphabet old-dfa)
-                                                (fsa-getstart old-dfa)
-                                                new-finals
-                                                table->rules
-                                                'no-dead)
-                            loSP)))
+                          'no-dead)))
   (let* ([dfa (remove-unreachables (ndfa->dfa M))]
          [transition-table (make-transition-table dfa)]
          [finals (fsa-getfinals dfa)]
-         [states-table (map (λ (sp) (mark-states-table sp finals)) (make-states-table dfa))]
+         [init-states-table (make-states-table dfa transition-table)]
+         [states-table (map (λ (sp) (mark-states-table sp finals)) init-states-table)]
          [filled-table (make-matches (list (state-pairings states-table)) transition-table (fsa-getalphabet dfa))]
          [new-M (table->dfa (state-pairings-all-pairs (first filled-table)) dfa transition-table)])
-    (minimization-results new-M filled-table)))
+    (minimization-results new-M dfa filled-table (state-pairings init-states-table))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define E-SCENE-TOOLS (e-scene-tools-generator HEIGHT-BUFFER LETTER-KEY-WIDTH-BUFFER FONT-SIZE
@@ -553,16 +567,18 @@
 (define (minimization-viz M)
   (let* ([unchecked-M M]
          [results-from-minimization (minimize-dfa unchecked-M)]
-         [minimized-M (minimization-results-machine results-from-minimization)]
-         #;[has-unreachables? (has-unreachables? unchecked-M minimized-M)]
+         [no-unreachables-M (minimization-results-unreachables-removed-M results-from-minimization)]
+         [minimized-M (minimization-results-new-machine results-from-minimization)]
+         [has-unreachables? (machine-changed? unchecked-M no-unreachables-M)]
+         [can-be-minimized? (machine-changed? unchecked-M minimized-M)]
          [M (unchecked->dfa M)]
          [state-table-mappings (for/hash ([state (dfa-states M)]
                                           [num (in-naturals)])
                                  (values state (add1 num)))]
-         [state-pairing-table (make-table M)]
-         )
+         [state-pairing-table (make-table M)])
     
     results-from-minimization
+    
   #;(run-viz (list (create-init-graph-struct M))
            (lambda () (make-img M))
            MIDDLE-E-SCENE

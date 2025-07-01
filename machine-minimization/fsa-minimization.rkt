@@ -384,9 +384,7 @@
                                       acc))
                                 '()
                                 transition-table)])
-    #;(list remaining-states merged-unmarked-pairs transition-table)
-    table->rules
-   #;(make-unchecked-dfa remaining-states
+   (make-unchecked-dfa remaining-states
                         (fsa-getalphabet old-dfa)
                         (fsa-getstart old-dfa)
                         new-finals
