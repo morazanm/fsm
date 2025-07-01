@@ -67,8 +67,8 @@
                                     acc))
                               '()
                               transition-table)])
-    
-     (make-unchecked-dfa new-states
+    table->rules
+     #;(make-unchecked-dfa new-states
                         alphabet
                         start
                         new-finals
@@ -384,7 +384,9 @@
                                       acc))
                                 '()
                                 transition-table)])
-   (make-unchecked-dfa remaining-states
+    #;(list remaining-states merged-unmarked-pairs transition-table)
+    table->rules
+   #;(make-unchecked-dfa remaining-states
                         (fsa-getalphabet old-dfa)
                         (fsa-getstart old-dfa)
                         new-finals
