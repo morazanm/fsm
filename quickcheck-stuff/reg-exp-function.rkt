@@ -165,13 +165,7 @@
                 (get-all-reg-expr-helper (rest los)
                                          (cons (list (first los) regexp-first-los) accum)))))]
     (if (empty? paths-to-start-state) (get-all-reg-expr-helper states-no-start-state (list (list (sm-start machine-with-states-that-reach-finals)
-                                                                                                 (simplify-regexp (fsa->regexp
-                                                                                                                   (make-ndfa
-                                                                                                                    (list (sm-start machine-with-states-that-reach-finals))
-                                                                                                                    (sm-sigma machine-with-states-that-reach-finals)
-                                                                                                                    (sm-start machine-with-states-that-reach-finals)
-                                                                                                                    (list (sm-start machine-with-states-that-reach-finals))
-                                                                                                                    `()))))))
+                                                                                                 (empty-regexp))))
         (get-all-reg-expr-helper states '()))))
    
 
