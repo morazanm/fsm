@@ -197,9 +197,11 @@
     
     (define (make-translation key value)
       (cond [(and (= (length value) 1)
-                  (eq? (first value) EMP)) (empty-cfexp)]
+                  (eq? (first value) EMP))
+             (empty-cfexp)]
             [(= (length value) 1) (make-expression (first value))]
             [else (concat-cfexp (map (λ (v) (make-expression v)) value))]))
+    
     (hash-map/copy rules (λ (k v)
                            (values k (if (> (length v) 1)
                                          (union-cfexp (map (λ (v) (make-translation k v)) v))
