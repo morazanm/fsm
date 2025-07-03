@@ -79,7 +79,7 @@
                              (if (< (viz-state-scale-factor-floor a-vs) unnormalized-scale)
                                  unnormalized-scale
                                  (viz-state-scale-factor-floor a-vs))]
-                            [else (error "Not a correct zoom factor")]))]
+                            [else 1]))]
       (if (= new-scale (viz-state-scale-factor a-vs))
           a-vs
           (let* [(scaled-image (scale new-scale (viz-state-curr-image a-vs)))
@@ -390,7 +390,14 @@
 ;; Purpose: Zooms all the way out in the visualization
 (define (max-zoom-out E-SCENE-WIDTH E-SCENE-HEIGHT ZOOM-INCREASE ZOOM-DECREASE NODE-SIZE PERCENT-BORDER-GAP DEFAULT-ZOOM-CAP DEFAULT-ZOOM)
   (lambda (a-vs)
-    (if (or (< E-SCENE-WIDTH (image-width (viz-state-curr-image a-vs)))
+    ;; actual-width * (curr-scale * factor) = new-width
+    ;; new-width / actual-width = curr-scale * factor
+    ;; new-width / actual-width * curr-scale = factor
+    ((zoom (max (/ (image-width (viz-state-scaled-curr-image a-vs)) (* (image-width (viz-state-curr-image a-vs)) (viz-state-scale-factor a-vs)))
+                (/ (image-height (viz-state-scaled-curr-image a-vs)) (* (image-height (viz-state-curr-image a-vs)) (viz-state-scale-factor a-vs))))
+                #;(find-new-floor (viz-state-curr-image a-vs) (* E-SCENE-WIDTH PERCENT-BORDER-GAP) (* E-SCENE-HEIGHT PERCENT-BORDER-GAP))#;(/ (min (second img-resize) (third img-resize)) (viz-state-scale-factor a-vs))
+                 E-SCENE-WIDTH E-SCENE-HEIGHT ZOOM-INCREASE ZOOM-DECREASE NODE-SIZE) a-vs)
+    #;(if (or (< E-SCENE-WIDTH (image-width (viz-state-curr-image a-vs)))
             (< E-SCENE-HEIGHT (image-height (viz-state-curr-image a-vs))))
         (let [(img-resize (resize-image (viz-state-curr-image a-vs) (* E-SCENE-WIDTH PERCENT-BORDER-GAP) (* E-SCENE-HEIGHT PERCENT-BORDER-GAP)))]
           ((zoom (find-new-floor (viz-state-curr-image a-vs) (* E-SCENE-WIDTH PERCENT-BORDER-GAP) (* E-SCENE-HEIGHT PERCENT-BORDER-GAP))#;(/ (min (second img-resize) (third img-resize)) (viz-state-scale-factor a-vs))
