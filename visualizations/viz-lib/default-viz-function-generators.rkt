@@ -393,7 +393,7 @@
     (if (or (< E-SCENE-WIDTH (image-width (viz-state-curr-image a-vs)))
             (< E-SCENE-HEIGHT (image-height (viz-state-curr-image a-vs))))
         (let [(img-resize (resize-image (viz-state-curr-image a-vs) (* E-SCENE-WIDTH PERCENT-BORDER-GAP) (* E-SCENE-HEIGHT PERCENT-BORDER-GAP)))]
-          ((zoom (/ (min (second img-resize) (third img-resize)) (viz-state-scale-factor a-vs))
+          ((zoom (find-new-floor (viz-state-curr-image a-vs) (* E-SCENE-WIDTH PERCENT-BORDER-GAP) (* E-SCENE-HEIGHT PERCENT-BORDER-GAP))#;(/ (min (second img-resize) (third img-resize)) (viz-state-scale-factor a-vs))
                  E-SCENE-WIDTH E-SCENE-HEIGHT ZOOM-INCREASE ZOOM-DECREASE NODE-SIZE) a-vs))
         (struct-copy viz-state a-vs
                      [scale-factor DEFAULT-ZOOM]))))
