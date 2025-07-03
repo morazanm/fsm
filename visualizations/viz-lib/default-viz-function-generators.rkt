@@ -393,8 +393,8 @@
     ;; actual-width * (curr-scale * factor) = new-width
     ;; new-width / actual-width = curr-scale * factor
     ;; new-width / actual-width * curr-scale = factor
-    ((zoom (max (/ (image-width (viz-state-scaled-curr-image a-vs)) (* (image-width (viz-state-curr-image a-vs)) (viz-state-scale-factor a-vs)))
-                (/ (image-height (viz-state-scaled-curr-image a-vs)) (* (image-height (viz-state-curr-image a-vs)) (viz-state-scale-factor a-vs))))
+    ((zoom (max (/ (image-width (viz-state-curr-image a-vs)) (* (image-width (viz-state-scaled-curr-image a-vs)) (viz-state-scale-factor a-vs)))
+                (/ (image-height (viz-state-curr-image a-vs)) (* (image-height (viz-state-scaled-curr-image a-vs)) (viz-state-scale-factor a-vs))))
                 #;(find-new-floor (viz-state-curr-image a-vs) (* E-SCENE-WIDTH PERCENT-BORDER-GAP) (* E-SCENE-HEIGHT PERCENT-BORDER-GAP))#;(/ (min (second img-resize) (third img-resize)) (viz-state-scale-factor a-vs))
                  E-SCENE-WIDTH E-SCENE-HEIGHT ZOOM-INCREASE ZOOM-DECREASE NODE-SIZE) a-vs)
     #;(if (or (< E-SCENE-WIDTH (image-width (viz-state-curr-image a-vs)))
