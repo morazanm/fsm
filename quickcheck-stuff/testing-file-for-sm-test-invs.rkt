@@ -476,12 +476,12 @@
 (define E2-INV contains-aabab?)
 
 (define RES (sm-test-invs CONTAINS-aabab
-                          (list (list 'S S2-INV)
-                                (list 'A A2-INV)
-                                (list 'B B2-INV)
-                                (list 'C C2-INV)
-                                (list 'D D2-INV)
-                                (list 'E E2-INV))))
+                          (list 'S S2-INV)
+                          (list 'A A2-INV)
+                          (list 'B B2-INV)
+                          (list 'C C2-INV)
+                          (list 'D D2-INV)
+                          (list 'E E2-INV)))
 
 (define RES-WORDS (sm-all-possible-words CONTAINS-aabab
                                          (list (list 'S S2-INV)
@@ -1105,13 +1105,13 @@
          (= (remainder (length cs) 3) 0))))
 
 (define RES2 (sm-test-invs M3
-                           (list (list 'S S3-INV)
-                                 (list 'A A3-INV)
-                                 (list 'B B3-INV)
-                                 (list 'C C3-INV)
-                                 (list 'D D3-INV)
-                                 (list 'E E3-INV)
-                                 (list 'F F3-INV))))
+                           (list 'S S3-INV)
+                           (list 'A A3-INV)
+                           (list 'B B3-INV)
+                           (list 'C C3-INV)
+                           (list 'D D3-INV)
+                           (list 'E E3-INV)
+                           (list 'F F3-INV)))
 
 (define RES2-WORDS (sm-all-possible-words M3
                                           (list (list 'S S3-INV)
@@ -1168,9 +1168,9 @@
                            'S
                            '(F)
                            `(((S ,EMP ,EMP) (M ,EMP))
-                            ((S a ,EMP) (S (a)))
-                            ((M b (a)) (M ,EMP))
-                            ((M ,EMP ,EMP) (F ,EMP)))))
+                             ((S a ,EMP) (S (a)))
+                             ((M b (a)) (M ,EMP))
+                             ((M ,EMP ,EMP) (F ,EMP)))))
 ;; Tests for aˆnbˆn
 (check-equal? (sm-apply aˆnbˆn '(a)) 'reject)
 (check-equal? (sm-apply aˆnbˆn '(b b)) 'reject)
@@ -1253,12 +1253,12 @@
                           'S
                           '(F)
                           `(((S ,EMP ,EMP) (P ,EMP))
-                           ((P a ,EMP) (P (a)))
-                           ((P b ,EMP) (P (b)))
-                           ((P c ,EMP) (Q ,EMP))
-                           ((Q a (a)) (Q ,EMP))
-                           ((Q b (b)) (Q ,EMP))
-                           ((Q ,EMP ,EMP) (F ,EMP)))))
+                            ((P a ,EMP) (P (a)))
+                            ((P b ,EMP) (P (b)))
+                            ((P c ,EMP) (Q ,EMP))
+                            ((Q a (a)) (Q ,EMP))
+                            ((Q b (b)) (Q ,EMP))
+                            ((Q ,EMP ,EMP) (F ,EMP)))))
 
 ;; Tests for wcwˆr
 (check-equal? (sm-apply wcwˆr '(a)) 'reject)
@@ -1319,8 +1319,8 @@
 ;; Purpose: Determine if ci=s^Rv^Rcv AND stack is empty
 (define (F-INV-wcwˆr ci s)
   (let* [(w (takef ci (λ (s) (not (eq? s 'c)))))]
-  (and (empty? s)
-     (equal? ci (append w (list 'c) (reverse w))))))
+    (and (empty? s)
+         (equal? ci (append w (list 'c) (reverse w))))))
 
 ;; Tests for F-INV-wcwˆr
 (check-equal? (F-INV-wcwˆr '() '()) #f)
@@ -1429,28 +1429,176 @@
 ;; word stack -> Boolean
 ;; Purpose: To determine if the given word and stack belongs in B
 ;;          (ci = (append w v) AND w = stack^R v^R)
-(define (B-INV-PALINDROME-PDA ci stack)
-  (and (equal? (append (reverse stack) (drop ci stack)))))
+(define (B-INV-PALINDROME-PDA ci stack)    
+  (or (empty? ci)
+      (and (<= (length stack) (length ci))
+           (local [(define w (if (even? (length (append ci stack)))
+                                 (take ci (/ (length (append ci stack)) 2))         
+                                 (take ci (floor (/ (length (append ci stack)) 2)))))
+                   
+                   (define v (if (even? (length (append ci stack)))
+                                 (drop ci (length w))
+                                 (drop ci (add1 (length w)))))]
+             (equal? w (append (reverse stack) (reverse v)))))))
 
-
-
+;; tests for B-INV-PALINDROME-PDA
+(check-equal? (B-INV-PALINDROME-PDA '() '()) #t)
+(check-equal? (B-INV-PALINDROME-PDA '(a b) '(a)) #t)
+(check-equal? (B-INV-PALINDROME-PDA '(a b b) '(a)) #t)
+(check-equal? (B-INV-PALINDROME-PDA '(b b a) '(b b)) #t)
+(check-equal? (B-INV-PALINDROME-PDA '(a b b a b) '(b a)) #t)
+(check-equal? (B-INV-PALINDROME-PDA '(a a a) '(a a)) #t)
+(check-equal? (B-INV-PALINDROME-PDA '(b) '(b a)) #f)
+(check-equal? (B-INV-PALINDROME-PDA '(a a) '(b b)) #f)
+(check-equal? (B-INV-PALINDROME-PDA '(b a) '(b b)) #f)
+(check-equal? (B-INV-PALINDROME-PDA '(a a) '(b a)) #f)
+(check-equal? (B-INV-PALINDROME-PDA '(b) '(b b)) #f)
+(check-equal? (B-INV-PALINDROME-PDA '(b b) '(b b b)) #f)
 
 
                
 ;; word stack -> Boolean
 ;; Purpose: To determine if the given word and stack belongs in C
-;;          (stack = empty AND ci = ww^R
+;;          (stack = empty AND ci = ww^R)
 (define (C-INV-PALINDROME-PDA ci stack)
-  (local [(define w (if (even? (length ci)) (take ci (/ (length ci) 2))                   ;; if the word length is even
-                        (take ci (inexact->exact  (- (/ (length ci) 2) 0.5)))))]          ;; if word length is odd, don't worry about the letter in the middle
     (and (empty? stack)
          (or (empty? ci)
-             (equal? ci (if (even? (length ci)) (append w (reverse w))
-                            (append w (list (list-ref ci (inexact->exact (+ (/ (length ci) 2) 0.5)))) (reverse w))))))))
+             (equal? ci (reverse ci)))))
 
 ;; tests for C-INV-PALINDROME-PDA
 (check-equal? (C-INV-PALINDROME-PDA '() '()) #t)
 (check-equal? (C-INV-PALINDROME-PDA '(a a b a a) '()) #t)
+(check-equal? (C-INV-PALINDROME-PDA '(a a a a a a) '()) #t)
+(check-equal? (C-INV-PALINDROME-PDA '(a a a a a) '()) #t)
+(check-equal? (C-INV-PALINDROME-PDA '(a b a b) '()) #f)
+(check-equal? (C-INV-PALINDROME-PDA '(a a a b) '(a a b)) #f)
+
+
+
+;; Let Σ = {a b}. Design and implement a pda for
+;; L = {aibj |i≤j≤2i}. Follow all the steps of the design recipe
+
+;; States: 
+;;   S: ci = empty AND stack = empty, start and final state
+;;   A: ci = a+ AND stack = amount of as to be matched with a b AND (length stack) => 1
+;;   B: ci = a+b+ AND stack = amount of as to be matched with a b
+;;   C: ci = aibj where i≤j≤2i AND stack = empty, final state
+
+(define AiBj (make-ndpda '(S A B C)
+                         '(a b)
+                         '(a)
+                         'S
+                         '(S C)
+                         `(((S a ,EMP) (A (a)))
+                           ((S a ,EMP) (A (a a)))
+                           ((A a ,EMP) (A (a)))
+                           ((A a ,EMP) (A (a a)))
+                           ((A b (a)) (B ,EMP))
+                           ((B b (a)) (B ,EMP))
+                           ((B ,EMP ,EMP) (C ,EMP))
+                           )))
+                         
+
+;; Tests for AiBj
+(check-equal? (sm-apply AiBj '(a b)) 'accept)
+(check-equal? (sm-apply AiBj '(a a b b b)) 'accept)
+(check-equal? (sm-apply AiBj '()) 'accept)
+(check-equal? (sm-apply AiBj '(a a a b b b)) 'accept)
+(check-equal? (sm-apply AiBj '(a b b)) 'accept)
+(check-equal? (sm-apply AiBj '(a a a a a a b)) 'reject)
+(check-equal? (sm-apply AiBj '(a b b b)) 'reject)
+(check-equal? (sm-apply AiBj '(a)) 'reject)
+(check-equal? (sm-apply AiBj '(b)) 'reject)
+(check-equal? (sm-apply AiBj '(a a)) 'reject)
+(check-equal? (sm-apply AiBj '(a a b)) 'reject)
+
+
+;; invariants for AiBj
+
+;; word stack -> Boolean
+;; Purpose: To determine if the given word and stack belongs in S
+;;          (empty stack AND empty word)
+(define (S-INV-AiBj ci stack)
+  (and (empty? ci)
+       (empty? stack)))
+
+;; tests for S-INV-AiBj
+(check-equal? (S-INV-AiBj '() '()) #t)
+(check-equal? (S-INV-AiBj '(a) '(a a)) #f)
+(check-equal? (S-INV-AiBj '(b) '()) #f)
+(check-equal? (S-INV-AiBj '(a a a a) '(a a a a a a a a)) #f)
+
+
+;; word stack -> Boolean
+;; Purpose: To determine if the given word and stack belongs in A
+;;          ci = a+ AND stack = amount of as to be matched with a b AND (length stack) => 1
+(define (A-INV-AiBj ci stack)
+  (and (andmap (λ (x) (eq? 'a x)) ci)
+       (< 0 (length ci))))
+
+;; tests for A-INV-AiBj
+(check-equal? (A-INV-AiBj '(a) '(a a)) #t)
+(check-equal? (A-INV-AiBj '(a a) '(a a a a)) #t)
+(check-equal? (A-INV-AiBj '(a a a) '(a a a a a a)) #t)
+(check-equal? (A-INV-AiBj '(a a a a) '(a a a a a a a a)) #t)
+(check-equal? (A-INV-AiBj '() '()) #f)
+(check-equal? (A-INV-AiBj '() '(a)) #f)
+(check-equal? (A-INV-AiBj '(a b) '(a a)) #f)
+
+
+;; word stack -> Boolean
+;; Purpose: To determine if the given word and stack belongs in B
+;;          (ci = a+b+ AND stack = amount of as to be matched with a b)
+(define (B-INV-AiBj ci stack)
+  (local [(define num-as (length (takef ci (λ (x) (eq? x 'a)))))
+          (define num-bs (length (drop ci num-as)))]
+  (and (< 0 num-as)
+       (< 0 num-bs)
+       (< 1 (length ci))
+       (<= num-as num-bs (* 2 num-as)))))
+
+;; tests for B-INV-AiBj
+(check-equal? (B-INV-AiBj '(a a b b) '()) #t)
+(check-equal? (B-INV-AiBj '(a b) '(a)) #t)
+(check-equal? (B-INV-AiBj '(a a a b b b) '(a a a a)) #t)
+(check-equal? (B-INV-AiBj '(a a b b b) '(a)) #t)
+(check-equal? (B-INV-AiBj '(a a b b) '(a a a)) #t)
+(check-equal? (B-INV-AiBj '(a a b) '(a a a)) #f)
+(check-equal? (B-INV-AiBj '(a a b b b b b b) '()) #f)
+(check-equal? (B-INV-AiBj '(a b b b b b b b b b) '()) #f)
+
+
+;; word stack -> Boolean
+;; Purpose: To determine if the given word and stack belongs in C
+;;          (ci = aibj where i≤j≤2i AND stack = empty)
+(define (C-INV-AiBj ci stack)
+  (local [(define num-as (length (takef ci (λ (x) (eq? x 'a)))))
+          (define num-bs (length (drop ci num-as)))]
+    (and (< 0 num-as)
+         (<= num-as num-bs)
+         (<= num-bs (* 2 num-as))
+         (empty? stack))))
+
+;; tests for C-INV-AiBj
+(check-equal? (C-INV-AiBj '(a b) '()) #t)
+(check-equal? (C-INV-AiBj '(a b b) '()) #t)
+(check-equal? (C-INV-AiBj '(a a b b) '()) #t)
+(check-equal? (C-INV-AiBj '(a a b b b b) '()) #t)
+(check-equal? (C-INV-AiBj '(a a b b b) '()) #t)
+(check-equal? (C-INV-AiBj '(a b b b) '()) #f)
+(check-equal? (C-INV-AiBj '() '()) #f)
+(check-equal? (C-INV-AiBj '(a b b) '(a)) #f)
+(check-equal? (C-INV-AiBj '(a b b) '(a a)) #f)
+       
+
+;; Let Σ = {a b}. Design and implement a pda for L = {w | w has 3
+;;   times as many as than b}. Follow all the steps of the design recipe
+
+
+
+
+
+
 
 
 
