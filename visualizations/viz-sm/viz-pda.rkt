@@ -1101,15 +1101,16 @@ farthest-consumed-input | is the portion the ci that the machine consumed the mo
          ;;(listof number) ;;Purpose: Gets the index of image where an invariant failed
          [inv-configs (get-failed-invariants a-word accepting-computations invs)]
 
-         [color-legend (let ([buffer-sqaure (square HEIGHT-BUFFER 'solid (color-palette-blank-color color-scheme))])
+         [color-legend (let* ([buffer-sqaure (square HEIGHT-BUFFER 'solid (color-palette-blank-color color-scheme))]
+                              [spacer (beside buffer-sqaure buffer-sqaure buffer-sqaure buffer-sqaure)])
                          (if rejected?
                            (beside (text "Reject traced" 20 (color-palette-legend-shown-reject-color color-scheme))
-                                   buffer-sqaure
+                                   spacer
                                    (text "Reject not traced" 20 (color-palette-legend-other-reject-color color-scheme)))
                            (beside (text "Accept traced" 20 (color-palette-legend-shown-accept-color color-scheme))
-                                   buffer-sqaure
+                                   spacer
                                    (text "Accept not traced" 20 (color-palette-legend-other-accept-color color-scheme))
-                                   buffer-sqaure
+                                   spacer
                                    (text "Reject not traced" 20 (color-palette-legend-other-reject-color color-scheme)))))])
     (run-viz graphs
              (lambda () (graph->bitmap (first graphs)))

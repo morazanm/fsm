@@ -1112,15 +1112,16 @@ destination -> the rest of a mttm rule | half-rule
                               [(= (mttm-tape-amount M) 3) mttm-3tape-viz-max-zoom-out]
                               [else mttm->=4tape-viz-max-zoom-out])]
 
-         [color-legend (let ([buffer-sqaure (square HEIGHT-BUFFER 'solid (color-palette-blank-color color-scheme))])
+         [color-legend (let* ([buffer-sqaure (square HEIGHT-BUFFER 'solid (color-palette-blank-color color-scheme))]
+                              [spacer (beside buffer-sqaure buffer-sqaure buffer-sqaure buffer-sqaure)])
                          (if rejected?
                            (beside (text "Reject traced" 20 (color-palette-legend-shown-reject-color color-scheme))
-                                   buffer-sqaure
+                                   spacer
                                    (text "Reject not traced" 20 (color-palette-legend-other-reject-color color-scheme)))
                            (beside (text "Accept traced" 20 (color-palette-legend-shown-accept-color color-scheme))
-                                   buffer-sqaure
+                                   spacer
                                    (text "Accept not traced" 20 (color-palette-legend-other-accept-color color-scheme))
-                                   buffer-sqaure
+                                   spacer
                                    (text "Reject not traced" 20 (color-palette-legend-other-reject-color color-scheme)))))])
     (run-viz graphs
              (lambda () (graph->bitmap (first graphs)))
