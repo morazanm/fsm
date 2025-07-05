@@ -1594,9 +1594,35 @@
 ;; Let Σ = {a b}. Design and implement a pda for L = {w | w has 3
 ;;   times as many as than b}. Follow all the steps of the design recipe
 
+;; States:
+;;   S: ci = empty AND stack = empty
+;;   A: ci = (a*b*)* AND stack = amount of as that have to be
+;;      matched with a b AND amount of bs that have to be matched with 3 as
+;;   B: ci = 3 times more as than bs AND stack = empty
+(define 3xa-b (make-ndpda '(S A B)
+                          '(a b)
+                          '(a b)
+                          'S
+                          '(S B)
+                          `(((S ,EMP ,EMP) (A ,EMP))
 
-
-
+                            ((A a (a a)) (A ,EMP))
+                            ((A a (a)) (A ,EMP))
+                            ((A a ,EMP) (A (b)))
+                            ((A b ,EMP) (A (a a a)))
+                            ((A b (b)) (A ,EMP))
+                            
+                            ((A ,EMP ,EMP) (B ,EMP)))))
+                          
+;; tests for 3xa-b
+(check-equal? (sm-apply 3xa-b '() '()) 'accept)
+(check-equal? (sm-apply 3xa-b '(b a a a) '()) 'accept)
+(check-equal? (sm-apply 3xa-b '(a a a b) '()) 'accept)
+(check-equal? (sm-apply 3xa-b '(b a a b a a a a) '()) 'accept)
+(check-equal? (sm-apply 3xa-b '(a b a a) '()) 'accept)
+(check-equal? (sm-apply 3xa-b '(a a b b a a b a a a a a) '()) 'accept)
+(check-equal? (sm-apply 3xa-b '(a) '()) 'reject)
+(check-equal? (sm-apply 3xa-b '(b) '()) 'reject)
 
 
 
