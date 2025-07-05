@@ -10,8 +10,7 @@
          "../viz-lib/default-viz-function-generators.rkt"
          "../viz-lib/viz.rkt"
          "../viz-lib/bounding-limits.rkt"
-         "../viz-lib/viz-imgs/cursor.rkt"
-         "../../sm-graph.rkt")
+         "../viz-lib/zipper.rkt")
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;CONSTANTS;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -32,8 +31,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;STRUCTS;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;;lophase | all of the phases needed for the visualization | (listof phase)  
-(struct imsg-state (lophase) #:transparent)
+;;phase | all of the phases needed for the visualization | (zipperof phase)  
+(struct imsg-state (phase) #:transparent)
 
 ;;s1      | the first of the state in the state pair  | state
 ;;s2      | the second of the state in the state pair | state
@@ -150,42 +149,42 @@ ismg "finished machine"
   ;;dfa -> dfa
   ;;Purpose: Removes any unreachable states
   (define (remove-unreachables M)
-  ;;state (listof rule) (listof path) -> boolean
-  ;;Purpose: Determines if the given state is reachable from the start state
-  (define (reachable-from-start? destination rules paths)  
-    ;; path -> boolean
-    ;; Purpose: Determines if the given path has reached the destination state
-    (define (reached-destination? path)
-      (eq? (third (first path)) destination))
-    ;;start destination path -> path
-    ;; Purpose: Updates the path to the destination state
-    (define (reachable-from-start-helper path)
-      (let* ([last-rules-used (first path)]
-             [usable-rules (filter (λ (rule) (and (eq? (third last-rules-used) (first rule))
-                                                  (not (member rule path))))
-                                   rules)])
-        (for/list ([last-rule last-rules-used]
-                   [connected-rules usable-rules])
-          (cons connected-rules path))))
-    (cond [(ormap reached-destination? paths) #t]
-          [(qempty? paths) #f]
-          [else (reachable-from-start? destination
-                                       rules
-                                       (enqueue (dequeue paths) (reachable-from-start-helper (qfirst paths))))]))
-  (let* ([states (fsa-getstates M)]
-         [start (fsa-getstart M)]
-         [rules (fsa-getrules M)]
-         [starter-rules (filter-map (λ (rule) (and (eq? (first rule) start)
-                                                   (list rule))) rules)]
-         [reachable-states (filter (λ (state) (or (eq? state start)
-                                                  (reachable-from-start? state rules starter-rules))) states)]
-         [usable-rules (filter (λ (r) (ormap (λ (s) (eq? (first r) s)) reachable-states)) rules)])
-    (make-unchecked-dfa reachable-states
-                        (fsa-getalphabet M)
-                        (fsa-getstart M)
-                        (filter (λ (f) (member f reachable-states)) (fsa-getfinals M))
-                        usable-rules
-                        'no-dead)))
+    ;;state (listof rule) (listof path) -> boolean
+    ;;Purpose: Determines if the given state is reachable from the start state
+    (define (reachable-from-start? destination rules paths)  
+      ;; path -> boolean
+      ;; Purpose: Determines if the given path has reached the destination state
+      (define (reached-destination? path)
+        (eq? (third (first path)) destination))
+      ;;start destination path -> path
+      ;; Purpose: Updates the path to the destination state
+      (define (reachable-from-start-helper path)
+        (let* ([last-rules-used (first path)]
+               [usable-rules (filter (λ (rule) (and (eq? (third last-rules-used) (first rule))
+                                                    (not (member rule path))))
+                                     rules)])
+          (for/list ([last-rule last-rules-used]
+                     [connected-rules usable-rules])
+            (cons connected-rules path))))
+      (cond [(ormap reached-destination? paths) #t]
+            [(qempty? paths) #f]
+            [else (reachable-from-start? destination
+                                         rules
+                                         (enqueue (dequeue paths) (reachable-from-start-helper (qfirst paths))))]))
+    (let* ([states (fsa-getstates M)]
+           [start (fsa-getstart M)]
+           [rules (fsa-getrules M)]
+           [starter-rules (filter-map (λ (rule) (and (eq? (first rule) start)
+                                                     (list rule))) rules)]
+           [reachable-states (filter (λ (state) (or (eq? state start)
+                                                    (reachable-from-start? state rules starter-rules))) states)]
+           [usable-rules (filter (λ (r) (ormap (λ (s) (eq? (first r) s)) reachable-states)) rules)])
+      (make-unchecked-dfa reachable-states
+                          (fsa-getalphabet M)
+                          (fsa-getstart M)
+                          (filter (λ (f) (member f reachable-states)) (fsa-getfinals M))
+                          usable-rules
+                          'no-dead)))
   ;;dfa -> (hash state rules)
   ;;Purpose: Makes a transition table with the states and its applicable rules
   (define (make-transition-table dfa)
@@ -274,7 +273,7 @@ ismg "finished machine"
              (andmap (λ (sp) (list? (member sp marked-SP2))) marked-SP1))))
     (if (and (>= (length loSP) 2)
              (same-markings? (state-pairings-all-pairs (first loSP)) (state-pairings-all-pairs (second loSP))))
-         loSP
+        loSP
         (let ([marked-pairs (filter (λ (sp) (state-pair-marked? sp)) (state-pairings-all-pairs (first loSP)))]
               [unmarked-pairs (filter (λ (sp) (not (state-pair-marked? sp))) (state-pairings-all-pairs (first loSP)))])
           (make-matches (cons (update-pairs marked-pairs unmarked-pairs '()) loSP)
@@ -297,8 +296,8 @@ ismg "finished machine"
       ;; Purpose: Determines if given state-pair has any overlap (at least one same state) with any state-pair in the given (listof state-pairings)
       (define (overlap? unmarked-pair loSP)
         (ormap (λ (sp) (at-least-one-state-matches? sp unmarked-pair)) loSP))
-        ;;dfa state-pair (listof merged-state) -> (listof merged-state)
-        ;;Purpose: Merges the state-pair into its overlapping pair and updates the given (listof merged-state) to contain the new merged-state
+      ;;dfa state-pair (listof merged-state) -> (listof merged-state)
+      ;;Purpose: Merges the state-pair into its overlapping pair and updates the given (listof merged-state) to contain the new merged-state
       (define (merge-pairs unmarked-pair loSP)
         ;;dfa state-pair merged-state -> merged-state
         ;;Purpose: Updates the given merged state to contain the states from the given state-pair
@@ -322,27 +321,27 @@ ismg "finished machine"
         (let* ([overlapped-pair (first (filter (λ (sp) (at-least-one-state-matches? sp unmarked-pair)) loSP))]
                [new-merged-state (update-merged-state unmarked-pair overlapped-pair)])
           (map (λ (sp) (if (equal? overlapped-pair sp) new-merged-state sp)) loSP)))
-        ;;dfa state-pair -> merged-state
-        ;;Purpose: Converts a state pair into a merged-state
-        (define (make-merged-state unmarked-pair)
-          (let ([start (fsa-getstart old-dfa)]
-                [finals (fsa-getfinals old-dfa)]
-                [ump-s1 (state-pair-s1 unmarked-pair)]
-                [ump-s2 (state-pair-s2 unmarked-pair)])
-            (cond [(or (eq? ump-s1 start)
-                       (eq? ump-s2 start))
-                   (merged-state start (set ump-s1 ump-s2))]
-                  [(or (member ump-s1 finals)
-                       (member ump-s2 finals))
-                   (merged-state (if (member ump-s1 finals)
-                                     ump-s1
-                                     ump-s2)
-                                 (set ump-s1 ump-s2))]
-                  [else (merged-state ump-s1 (set (state-pair-s1 unmarked-pair) ump-s2))])))
-        (cond [(empty? unmarked-pairs) acc]
-              [(overlap? (first unmarked-pairs) acc)
-               (accumulate-unmarked-pairs (rest unmarked-pairs) (merge-pairs (first unmarked-pairs) acc))]
-              [(accumulate-unmarked-pairs (rest unmarked-pairs) (cons (make-merged-state (first unmarked-pairs)) acc))]))
+      ;;dfa state-pair -> merged-state
+      ;;Purpose: Converts a state pair into a merged-state
+      (define (make-merged-state unmarked-pair)
+        (let ([start (fsa-getstart old-dfa)]
+              [finals (fsa-getfinals old-dfa)]
+              [ump-s1 (state-pair-s1 unmarked-pair)]
+              [ump-s2 (state-pair-s2 unmarked-pair)])
+          (cond [(or (eq? ump-s1 start)
+                     (eq? ump-s2 start))
+                 (merged-state start (set ump-s1 ump-s2))]
+                [(or (member ump-s1 finals)
+                     (member ump-s2 finals))
+                 (merged-state (if (member ump-s1 finals)
+                                   ump-s1
+                                   ump-s2)
+                               (set ump-s1 ump-s2))]
+                [else (merged-state ump-s1 (set (state-pair-s1 unmarked-pair) ump-s2))])))
+      (cond [(empty? unmarked-pairs) acc]
+            [(overlap? (first unmarked-pairs) acc)
+             (accumulate-unmarked-pairs (rest unmarked-pairs) (merge-pairs (first unmarked-pairs) acc))]
+            [(accumulate-unmarked-pairs (rest unmarked-pairs) (cons (make-merged-state (first unmarked-pairs)) acc))]))
     (let* ([states (fsa-getstates old-dfa)]
            [finals (fsa-getfinals old-dfa)]
            [marked-pairs (filter (λ (sp) (state-pair-marked? sp)) loSP)]
@@ -364,12 +363,12 @@ ismg "finished machine"
                                                           val)
                                                      '()))))])
       (list (make-unchecked-dfa remaining-states
-                          (fsa-getalphabet old-dfa)
-                          (fsa-getstart old-dfa)
-                          new-finals
-                          table->rules
-                          'no-dead)
-             merged-unmarked-pairs)))
+                                (fsa-getalphabet old-dfa)
+                                (fsa-getstart old-dfa)
+                                new-finals
+                                table->rules
+                                'no-dead)
+            merged-unmarked-pairs)))
   (let* ([dfa (remove-unreachables (ndfa->dfa M))]
          [transition-table (make-transition-table dfa)]
          [finals (fsa-getfinals dfa)]
@@ -393,6 +392,10 @@ ismg "finished machine"
                                                      (list E-KEY "Mid zoom")
                                                      (list F-KEY "Max zoom"))))
 
+(define imsg-img
+  (above (text "Kleenestar of the ndfa" FONT-SIZE 'black)
+         (text (format "Generated starting state:") FONT-SIZE 'black)
+         (text (format "Added edges:") FONT-SIZE 'black)))
 
 (define E-SCENE-HEIGHT (- (* 0.9 WINDOW-HEIGHT)
                           (image-height imsg-img)
@@ -508,8 +511,7 @@ ismg "finished machine"
 ;;viz-state -> viz-state
 ;;Purpose: Steps the visualization forward once
 (define (right-key-pressed a-vs)
-  a-vs
-  #;(struct-copy
+  (struct-copy
    viz-state
    a-vs
    [informative-messages
@@ -517,27 +519,18 @@ ismg "finished machine"
      informative-messages
      (viz-state-informative-messages a-vs)
      [component-state
-      (struct-copy imsg-state
-                   (informative-messages-component-state (viz-state-informative-messages a-vs))
-                   [phase
-                    (if (= (imsg-state-phase (informative-messages-component-state
-                                              (viz-state-informative-messages a-vs)))
-                           0)
-                        1
-                        (imsg-state-phase (informative-messages-component-state
-                                           (viz-state-informative-messages a-vs))))]
-                   [start
-                    (imsg-state-start (informative-messages-component-state
-                                       (viz-state-informative-messages a-vs)))]
-                   [added-edges
-                    (imsg-state-added-edges (informative-messages-component-state
-                                             (viz-state-informative-messages a-vs)))])])]))
+      (let ([all-phases (imsg-state-phase (informative-messages-component-state (viz-state-informative-messages a-vs)))])
+        (struct-copy imsg-state
+                     (informative-messages-component-state (viz-state-informative-messages a-vs))
+                     [phase
+                      (if (zipper-at-end? all-phases)
+                          all-phases
+                          (zipper-next all-phases))]))])]))
 
 ;;viz-state -> viz-state
 ;;Purpose: Steps the visualization backward once
 (define (left-key-pressed a-vs)
-  a-vs
-  #;(struct-copy
+  (struct-copy
    viz-state
    a-vs
    [informative-messages
@@ -545,27 +538,18 @@ ismg "finished machine"
      informative-messages
      (viz-state-informative-messages a-vs)
      [component-state
-      (struct-copy imsg-state
-                   (informative-messages-component-state (viz-state-informative-messages a-vs))
-                   [phase
-                    (if (= (imsg-state-phase (informative-messages-component-state
-                                              (viz-state-informative-messages a-vs)))
-                           1)
-                        0
-                        (imsg-state-phase (informative-messages-component-state
-                                           (viz-state-informative-messages a-vs))))]
-                   [start
-                    (imsg-state-start (informative-messages-component-state
-                                       (viz-state-informative-messages a-vs)))]
-                   [added-edges
-                    (imsg-state-added-edges (informative-messages-component-state
-                                             (viz-state-informative-messages a-vs)))])])]))
+      (let ([all-phases (imsg-state-phase (informative-messages-component-state (viz-state-informative-messages a-vs)))])
+        (struct-copy imsg-state
+                     (informative-messages-component-state (viz-state-informative-messages a-vs))
+                     [phase
+                      (if (zipper-at-begin? all-phases)
+                          all-phases
+                          (zipper-prev all-phases))]))])]))
 
 ;;viz-state -> viz-state
 ;;Purpose: Jumps to the end of the visualization
 (define (down-key-pressed a-vs)
-  a-vs
-  #;(struct-copy
+  (struct-copy
    viz-state
    a-vs
    [informative-messages
@@ -573,27 +557,18 @@ ismg "finished machine"
      informative-messages
      (viz-state-informative-messages a-vs)
      [component-state
-      (struct-copy imsg-state
-                   (informative-messages-component-state (viz-state-informative-messages a-vs))
-                   [phase
-                    (if (= (imsg-state-phase (informative-messages-component-state
-                                              (viz-state-informative-messages a-vs)))
-                           0)
-                        1
-                        (imsg-state-phase (informative-messages-component-state
-                                           (viz-state-informative-messages a-vs))))]
-                   [start
-                    (imsg-state-start (informative-messages-component-state
-                                       (viz-state-informative-messages a-vs)))]
-                   [added-edges
-                    (imsg-state-added-edges (informative-messages-component-state
-                                             (viz-state-informative-messages a-vs)))])])]))
+      (let ([all-phases (imsg-state-phase (informative-messages-component-state (viz-state-informative-messages a-vs)))])
+        (struct-copy imsg-state
+                     (informative-messages-component-state (viz-state-informative-messages a-vs))
+                     [phase
+                      (if (zipper-at-end? all-phases)
+                          all-phases
+                          (zipper-to-end all-phases))]))])]))
 
 ;;viz-state -> viz-state
 ;;Purpose: Jumps to the beginning of the visualization
 (define (up-key-pressed a-vs)
-  a-vs
-  #;(struct-copy
+  (struct-copy
    viz-state
    a-vs
    [informative-messages
@@ -601,21 +576,13 @@ ismg "finished machine"
      informative-messages
      (viz-state-informative-messages a-vs)
      [component-state
-      (struct-copy imsg-state
-                   (informative-messages-component-state (viz-state-informative-messages a-vs))
-                   [phase
-                    (if (= (imsg-state-phase (informative-messages-component-state
-                                              (viz-state-informative-messages a-vs)))
-                           1)
-                        0
-                        (imsg-state-phase (informative-messages-component-state
-                                           (viz-state-informative-messages a-vs))))]
-                   [start
-                    (imsg-state-start (informative-messages-component-state
-                                       (viz-state-informative-messages a-vs)))]
-                   [added-edges
-                    (imsg-state-added-edges (informative-messages-component-state
-                                             (viz-state-informative-messages a-vs)))])])]))
+      (let ([all-phases (imsg-state-phase (informative-messages-component-state (viz-state-informative-messages a-vs)))])
+        (struct-copy imsg-state
+                     (informative-messages-component-state (viz-state-informative-messages a-vs))
+                     [phase
+                      (if (zipper-at-begin? all-phases)
+                          all-phases
+                          (zipper-to-begin all-phases))]))])]))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;DRAWING FUNCTIONS;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -663,17 +630,8 @@ ismg "finished machine"
     ;; phase -> graph-thunk
     ;; Purpose: Draws the state-pairing table next to the transition diagram thunk using the given phase
     (define (draw-table-and-graph)
-      ;;phase-attributes -> (listof state-pair)
-      ;;Purpose: Extracts the state-pair from the given phase-attribute
-      (define (get-pair phase-attribute)
-        (let ([pair (if (phase-3-attributes? phase-attribute)
-                        (phase-3-attributes-initial-pairings phase-attribute)
-                        (phase-4-attributes-unmarked-pair phase-attribute))])
-          (if (phase-3-attributes? phase-attribute)
-              (list pair) 
-              (state-pair-destination-pairs pair))))
-      (let ([state-pairs (if (<= 3 (phase-number phase) 4)
-                             (get-pair (phase-attributes phase))
+      (let ([state-pairs (if (= (phase-number phase) 4)
+                             (state-pair-destination-pairs (phase-4-attributes-unmarked-pair (phase-attributes phase)))
                              '())])
         (create-init-graph-struct (phase-M phase) #:state-pair state-pairs)
         #;(beside (create-init-graph-struct (phase-M phase) #:state-pair state-pairs)
@@ -684,20 +642,85 @@ ismg "finished machine"
         (draw-graph)))
   (map (λ (phase) (draw-graphic phase)) loPhase))
 
-
 ;; imsg-state -> image
-(define (draw-imsg a-imsg-state)
-  (above (text "TBD" 20 BLACK)
-         (text "TBD" 20 BLACK)))
+;;Purpose: Draws the informative messages using the given imsg-state
+(define (draw-imsg imsg-state)
 
+  (define phase0-imsg (text "Input Machine" 20 BLACK))
 
+  ;;(listof state) -> string
+  ;;Purpose: Converts the given (listof state) into a string
+  (define (convert-to-string los)
+    (if (= (length los) 1)
+        (symbol->string (first los))
+        (string-append (symbol->string (first los)) ", "
+                       (convert-to-string (rest los)))))
 
-(define imsg-img
-  (above (text "Kleenestar of the ndfa" FONT-SIZE 'black)
-         (text (format "Generated starting state:") FONT-SIZE 'black)
-         (text (format "Added edges:") FONT-SIZE 'black)))
+  ;;phase-attributes -> image
+  ;;Purpose: Makes the imsg for phase 1
+  (define (make-phase1-imsg phase-attribute)
+    (above (text "Removed unreachable states" 20 BLACK)
+           (text (format "~a ~a" (convert-to-string (phase-1-attributes-unreachable-state phase-attribute))
+                         (if (= (length (phase-1-attributes-unreachable-state phase-attribute)) 1)
+                             "is an unreachable state"
+                             "are unreachable states"))
+                 20 BLACK)))
+  
+  (define phase2-imsg (text "Created state pairing table" 20 BLACK))
 
+  ;;state-pair -> string
+  ;;Purpose: Makes the state pair readable
+  (define (pretty-print-state-pair state-pair)
+    (string-append "(" (symbol->string (state-pair-s1 state-pair)) "," (symbol->string (state-pair-s2 state-pair)) ")"))
 
+  ;;phase-attributes -> image
+  ;;Purpose: Makes the imsg for phase 3
+  (define (make-phase3-imsg phase-attribute)
+    (above (text "Marking all state pairings that contain one final and one non-final state" 20 BLACK)
+           (text (format "State pair ~a is marked" (pretty-print-state-pair (phase-3-attributes-initial-pairings phase-attribute))) 20 BLACK)))
+
+  ;;phase-attributes -> image
+  ;;Purpose: Makes the imsg for phase 4
+  (define (make-phase4-imsg phase-attribute)
+    (let ([phase-4-state-pair (phase-4-attributes-unmarked-pair phase-attribute)])
+      (above (text "Attempting to mark all state pairings that are currently unmarked" 20 BLACK)
+             (text (format (if (state-pair-marked? phase-4-state-pair)
+                               "State pair ~a is marked because one of it's destination state pairing: ~a, is also marked"
+                               "State pair ~a remains unmarked because both of it's destination state pairing: ~a, are also unmarked")
+                           (pretty-print-state-pair phase-4-state-pair)
+                           (string-append (pretty-print-state-pair (first (state-pair-destination-pairs phase-4-state-pair)))
+                                          " and "
+                                          (pretty-print-state-pair (second (state-pair-destination-pairs phase-4-state-pair)))))
+                   20 BLACK))))
+
+  ;;phase-attributes -> image
+  ;;Purpose: Makes the imsg for phase 5
+  (define (make-phase5-imsg phase-attribute)
+    (let ([merged-state (phase-5-attributes-merged-states phase-attribute)])
+      (above (text "Rebuilding the machine" 20 BLACK)
+             (if (empty? merged-state)
+                 (text "yler" 20 'white)
+                 (text (format "States ~a have been merged to create state ~s"
+                               (convert-to-string (set->list (merged-state-old-symbols merged-state)))
+                               (merged-state-new-symbol merged-state))
+                       20
+                       BLACK)))))
+
+  ;;phase-attributes -> image
+  ;;Purpose: Makes the imsg for phase 6
+  (define (make-phase6-imsg phase-attribute)
+    (text (if (phase-6-attributes-minimized? phase-attribute)
+              "Minimized Machine"
+              "This machine cannot be minimized")
+          20 BLACK))
+  (let ([current-phase (zipper-current (imsg-state-phase imsg-state))])
+    (cond [(= (phase-number current-phase) 0) phase0-imsg]
+          [(= (phase-number current-phase) 1) (make-phase1-imsg (phase-attributes current-phase))]
+          [(= (phase-number current-phase) 2) phase2-imsg]
+          [(= (phase-number current-phase) 3) (make-phase3-imsg (phase-attributes current-phase))]
+          [(= (phase-number current-phase) 4) (make-phase4-imsg (phase-attributes current-phase))]
+          [(= (phase-number current-phase) 5) (make-phase5-imsg (phase-attributes current-phase))]
+          [else (make-phase6-imsg (phase-attributes current-phase))])))
 
 ;; ndfa -> graph-thunk
 ;;Purpose: Creates a graph-thunk using the given dfa and optional state-pair
@@ -728,8 +751,10 @@ ismg "finished machine"
                        (third rule)
                        #:atb (hash 'fontsize 20
                                    'style 'solid
-                                   'color (cond  [(ormap (λ (sp) (and (eq? (first rule) (state-pair-s1 sp))
-                                                                      (eq? (third rule) (state-pair-s2 sp))))
+                                   'color (cond  [(ormap (λ (sp) (or (and (eq? (first rule) (state-pair-s1 sp))
+                                                                          (eq? (third rule) (state-pair-s2 sp)))
+                                                                     (and (eq? (third rule) (state-pair-s1 sp))
+                                                                          (eq? (first rule) (state-pair-s2 sp)))))
                                                          state-pair)
                                                   'violet]
                                                  [else BLACK]))))
@@ -741,8 +766,6 @@ ismg "finished machine"
                                          (dfa-start M)
                                          (dfa-finals M))
                         state-pair))
-
-
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;VIZ-PRIMITIVE;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; 
 
@@ -876,9 +899,11 @@ ismg "finished machine"
                                  (values state (add1 num)))]
          [no-unreachables-M-state-pairing-table (make-table no-unreachables-M)]
          [minimized-M (unchecked->dfa minimized-M)]
-         [phase-0 (phase 0 M  no-unreachables-M-state-pairing-table (phase-0-attributes))]
-         [phase-1 (phase 1 no-unreachables-M no-unreachables-M-state-pairing-table (phase-1-attributes unreachable-states))]
-         [phase-2 (phase 2 no-unreachables-M no-unreachables-M-state-pairing-table (phase-2-attributes))]
+         [phase-0 (list (phase 0 M  no-unreachables-M-state-pairing-table (phase-0-attributes)))]
+         [phase-1 (if has-unreachables?
+                      (list (phase 1 no-unreachables-M no-unreachables-M-state-pairing-table (phase-1-attributes unreachable-states)))
+                      '())]
+         [phase-2 (list (phase 2 no-unreachables-M no-unreachables-M-state-pairing-table (phase-2-attributes)))]
          [phase3+new-table (make-phase 3 phase-3-attributes no-unreachables-M no-unreachables-M-state-pairing-table
                                        final-non-final-pairings state-table-mappings)]
          [phase-3 (phase-results-loPhase phase3+new-table)]
@@ -889,8 +914,8 @@ ismg "finished machine"
          [rebuilding-machines (reconstruct-machine minimized-M)]
          [merged-states (minimization-results-merged-states results-from-minimization)]
          [phase-5 (make-phase-5 rebuilding-machines merged-states filled-table)]
-         [phase-6 (phase 6 (last rebuilding-machines) filled-table (phase-6-attributes can-be-minimized?))]
-         [all-phases (append (list phase-0 phase-1 phase-2) phase-3 phase-4 phase-5 (list phase-6))]
+         [phase-6 (list (phase 6 (last rebuilding-machines) filled-table (phase-6-attributes can-be-minimized?)))]
+         [all-phases (append phase-0 phase-1 phase-2 phase-3 phase-4 phase-5 phase-6)]
          [graphs (make-main-graphic all-phases)])
     
     #;(test-equiv-fsa unchecked-M minimized-M)
@@ -902,14 +927,7 @@ ismg "finished machine"
              DEFAULT-ZOOM-CAP
              DEFAULT-ZOOM-FLOOR
              (informative-messages draw-imsg
-                                   (imsg-state all-phases)
-
-                                   #;(let ([new-start (generate-symbol 'K (sm-states M))])
-                                       (imsg-state 0
-                                                   new-start
-                                                   (list (list new-start EMP (sm-start M))
-                                                         (map (λ (f) (list f EMP new-start))
-                                                              (sm-finals M)))))
+                                   (imsg-state (list->zipper all-phases))
                                    RULE-YIELD-DIMS)
              (instructions-graphic E-SCENE-TOOLS
                                    (bounding-limits 0
@@ -947,41 +965,41 @@ ismg "finished machine"
 
 
 (define EX4 (make-unchecked-dfa '(A B C D E F G)
-                      '(0 1)
-                      'A
-                      '(B C G)
-                      '((A 0 B) (A 1 C)
-                        (B 0 D) (B 1 E)
-                        (C 0 E) (C 1 D)
-                        (D 0 G) (D 1 G)
-                        (E 0 G) (E 1 G)
-                        (F 0 D) (F 1 E)
-                        (G 0 G) (G 1 G))
-                      'no-dead))
+                                '(0 1)
+                                'A
+                                '(B C G)
+                                '((A 0 B) (A 1 C)
+                                          (B 0 D) (B 1 E)
+                                          (C 0 E) (C 1 D)
+                                          (D 0 G) (D 1 G)
+                                          (E 0 G) (E 1 G)
+                                          (F 0 D) (F 1 E)
+                                          (G 0 G) (G 1 G))
+                                'no-dead))
 
 (define EX5 (make-unchecked-dfa '(A B C D E F G H I)
-                      '(0 1)
-                      'A
-                      '(B C G)
-                      '((A 0 B) (A 1 C)
-                        (B 0 D) (B 1 E)
-                        (C 0 E) (C 1 D)
-                        (D 0 G) (D 1 G)
-                        (E 0 G) (E 1 G)
-                        (F 0 D) (F 1 E)
-                        (H 0 F) (H 1 I)
-                        (I 0 H) (I 1 F)
-                        (G 0 G) (G 1 G))
-                      'no-dead))
+                                '(0 1)
+                                'A
+                                '(B C G)
+                                '((A 0 B) (A 1 C)
+                                          (B 0 D) (B 1 E)
+                                          (C 0 E) (C 1 D)
+                                          (D 0 G) (D 1 G)
+                                          (E 0 G) (E 1 G)
+                                          (F 0 D) (F 1 E)
+                                          (H 0 F) (H 1 I)
+                                          (I 0 H) (I 1 F)
+                                          (G 0 G) (G 1 G))
+                                'no-dead))
 
 
 (define EX6 (make-unchecked-dfa '(A B C D E)
-                    '(0 1)
-                    'A
-                    '(E)
-                    '((A 0 B) (A 1 C)
-                              (B 0 B) (B 1 D)
-                              (C 0 B) (C 1 C)
-                              (D 0 B) (D 1 E)
-                              (E 0 B) (E 1 C))
-                    'no-dead))
+                                '(0 1)
+                                'A
+                                '(E)
+                                '((A 0 B) (A 1 C)
+                                          (B 0 B) (B 1 D)
+                                          (C 0 B) (C 1 C)
+                                          (D 0 B) (D 1 E)
+                                          (E 0 B) (E 1 C))
+                                'no-dead))
