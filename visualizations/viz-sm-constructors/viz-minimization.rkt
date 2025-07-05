@@ -13,31 +13,84 @@
          "../viz-lib/viz-imgs/cursor.rkt"
          "../../sm-graph.rkt")
 
-(struct imsg-state (table state-pairs) #:transparent)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;CONSTANTS;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define BLANK-SPACE 'blank)
+
+(define BLACK 'black)
+
+(define NEW-MARK 'new-mark)
+
+(define MARK 'mark)
+
+(define e-queue '())
+
+(define qfirst first)
+
+(define qempty? empty?)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;STRUCTS;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;;lophase | all of the phases needed for the visualization | (listof phase)  
+(struct imsg-state (lophase) #:transparent)
+
+;;s1      | the first of the state in the state pair  | state
+;;s2      | the second of the state in the state pair | state
+;;marked? | Determines if the state pair should be marked in the table | boolean
+;;destination-pairs | The state pairs that s1 and s2 transition to | (listof state-pair)
 (struct state-pair (s1 s2 marked? destination-pairs) #:transparent)
 
+;;all-pairs | all of the state-pairs after each iteration of filling the table | (listof state-pair) 
 (struct state-pairings (all-pairs) #:transparent)
 
+;;new-symbol | the new state symbol that represents all of the states that got merged | symbol
+;;old-symbols | all of the symbols that merged into one state | (listof state)
 (struct merged-state (new-symbol old-symbols) #:transparent)
 
+;;new-machine | the *possibly* minimized machine that resulted from the minimize-dfa |fsa
+;;unreachables-removed-M | the machine with unreachable states removed | fsa
+;;loSP | all of the state-pairings that was created and used for the minimization algorithm |(listof state-pairings)
+;;merged-states | all of merged-state created from the minimization algorithm | (listof merged-state)
+(struct minimization-results (new-machine unreachables-removed-M loSP merged-states) #:transparent)
+
+;;states | the states of the dfa | (listof state)
+;;alphabet | the alphabet that the dfa reads | (list of symbol)
+;;start | the starting state of the dfa | state
+;;finals | the final states of the dfa| (listof finals)
+;;rules | the rules that the dfa must follow | (listof rule)
+;;no-dead | the symbol of the dead state | symbol
 (struct dfa (states alphabet start finals rules no-dead) #:transparent)
 
+;;number | the number denoting the phase | natnum
+;;M | the dfa associated with the given phase and step | dfa
+;;state-pairing-table | the pairing-table associated with the given phase and step | (vectorof (vectorf marking))
+;;attributes | extra data needed for the phase | phase-#-attribute
 (struct phase (number M state-pairing-table attributes) #:transparent)
 
 (struct phase-0-attributes () #:transparent)
 
+;;unreachable-state | the states that were deemed unreachable from the start state | (listof state)
 (struct phase-1-attributes (unreachable-state) #:transparent)
 
 (struct phase-2-attributes () #:transparent)
 
+;;initial-pairings | the final X non-final state pairings needed for the minimization algorithm | (listof of state-pair)
 (struct phase-3-attributes (initial-pairings) #:transparent)
 
+;;unmarked-pair | all of the pairings used in the algorithm | (listof state-pair)
 (struct phase-4-attributes (unmarked-pair) #:transparent)
 
+;;merged-stated | all of the states that got merged into another state | (listof merged-state)
 (struct phase-5-attributes (merged-states) #:transparent)
 
+;;minimized? | determines if the machine has been minimized | boolean
 (struct phase-6-attributes (minimized?) #:transparent)
+
+;;loPhase | the accumulated phases created from reenacting the minimization algorithm | (listof phase)
+;;new-table | the finalized table after completing a phase | (vectorof (vectorof marking))
+(struct phase-results (loPhase new-table) #:transparent)
+
 #|
 viz phases
 
@@ -61,12 +114,12 @@ imsg "building the new machine"
 
 6 -> finalized machine
 ismg "finished machine"
-
-
 |#
 
-(struct minimization-results (new-machine unreachables-removed-M loSP init-states-table merged-states) #:transparent)
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;MINIMIZATION ALGORITHM;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;;unchecked-dfa -> dfa-struct
+;;Purpose: Converts the given unchecked-dfa to a dfa struct
 (define (unchecked->dfa M)
   (dfa (fsa-getstates M)
        (fsa-getalphabet M)
@@ -75,21 +128,15 @@ ismg "finished machine"
        (fsa-getrules M)
        'no-dead))
 
-
-(define e-queue '())
 ;;(queueof X) (queue X) -> (queueof X)
 ;;Purpose: Adds the X to the back of the given (queueof X) 
 (define (enqueue queue x)
   (append queue x))
 
-(define qfirst first)
-
 ;;(queueof X) -> (queueof X)
 ;;Purpose: Removes the first element of the given (queueof X) 
 (define (dequeue queue)
   (rest queue))
-
-(define qempty? empty?)
 
 ;;dfa dfa -> boolean
 ;;Purpose: Determines if the two dfa have any changes
@@ -105,13 +152,7 @@ ismg "finished machine"
   (define (remove-unreachables M)
   ;;state (listof rule) (listof path) -> boolean
   ;;Purpose: Determines if the given state is reachable from the start state
-  (define (reachable-from-start? destination rules paths)
-    
-    ;;(queueof X) X -> (queueof X)
-    ;;Purpose: Adds the X to the back of the given (queueof X) 
-    (define (enqueue queue x)
-      (append queue x))
-  
+  (define (reachable-from-start? destination rules paths)  
     ;; path -> boolean
     ;; Purpose: Determines if the given path has reached the destination state
     (define (reached-destination? path)
@@ -168,6 +209,8 @@ ismg "finished machine"
                                                                         (eq? (state-pair-s2 sp1) (state-pair-s1 sp2))))))
              (make-half-table (rest loSP) (cons (first loSP) new-table))]
             [else (make-half-table (rest loSP) new-table)]))
+    ;;state-pair -> state-pair
+    ;;Purpose: Creates the destination state-pairs using the given state-pair and destination state-pairs to the orignal-state-pair
     (define (make-destination-pairs sp)
       (let* ([ump-s1-transitions (hash-ref transition-table (state-pair-s1 sp))]
              [ump-s2-transitions (hash-ref transition-table (state-pair-s2 sp))]
@@ -181,7 +224,6 @@ ismg "finished machine"
                                             [s2 states]
                                             #:unless (eq? s1 s2))
                                   (make-destination-pairs (state-pair s1 s2 #f 'none)))]
-           
            [other-half-of-table (make-half-table init-states-pairing '())])
       (filter (λ (sp) (not (member sp other-half-of-table))) init-states-pairing)))
   ;; merged-state state-pair -> boolean
@@ -238,7 +280,6 @@ ismg "finished machine"
           (make-matches (cons (update-pairs marked-pairs unmarked-pairs '()) loSP)
                         transition-table
                         alphabet))))
-
   
   ;; (listof state-pairings) dfa transtition-table -> dfa
   ;;Purpose: Converts the (listof state-pairings), dfa, and transition table into an equivalent minimized (if possible) dfa.
@@ -336,9 +377,10 @@ ismg "finished machine"
          [states-table (map (λ (sp) (mark-states-table sp finals)) init-states-table)]
          [filled-table (make-matches (list (state-pairings states-table)) transition-table (fsa-getalphabet dfa))]
          [new-M (table->dfa (state-pairings-all-pairs (first filled-table)) dfa transition-table)])
-    (minimization-results (first new-M) dfa filled-table (state-pairings init-states-table) (second new-M))))
+    (minimization-results (first new-M) dfa filled-table (second new-M))))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;VIZ-SCENE-STUFF;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define E-SCENE-TOOLS (e-scene-tools-generator HEIGHT-BUFFER LETTER-KEY-WIDTH-BUFFER FONT-SIZE
                                                (list (list ARROW-UP-KEY "Restart")
                                                      (list ARROW-RIGHT-KEY "Forward")
@@ -351,15 +393,13 @@ ismg "finished machine"
                                                      (list E-KEY "Mid zoom")
                                                      (list F-KEY "Max zoom"))))
 
-(define imsg-img
-  (above (text "Kleenestar of the ndfa" FONT-SIZE 'black)
-         (text (format "Generated starting state:") FONT-SIZE 'black)
-         (text (format "Added edges:") FONT-SIZE 'black)))
 
 (define E-SCENE-HEIGHT (- (* 0.9 WINDOW-HEIGHT)
                           (image-height imsg-img)
                           (image-height E-SCENE-TOOLS)))
+
 (define MIDDLE-E-SCENE (posn (/ E-SCENE-WIDTH 2) (/ E-SCENE-HEIGHT 2)))
+
 (define E-SCENE-BOUNDING-LIMITS (bounding-limits 0 E-SCENE-WIDTH 0 E-SCENE-HEIGHT))
 
 (define RULE-YIELD-DIMS
@@ -380,115 +420,7 @@ ismg "finished machine"
                          (E-KEY "Mid zoom")
                          (F-KEY "Max zoom")))
 
-
-(define (make-table M)
-  (make-table-helper (dfa-states M) (add1 (length (dfa-states M)))))
-
-(define (make-table-helper states num-rows)
-  (build-vector num-rows (λ (row-num)
-                           (build-vector num-rows
-                                         (λ (col-num) (let ([blank-tile-count (- (length states) (- num-rows row-num))])
-                                                        (cond [(= row-num 0) (if (= col-num 0) 'blank (list-ref states (sub1 col-num)))]
-                                                              [(= col-num 0) (list-ref states (sub1 row-num))]
-                                                              [(<= col-num blank-tile-count) 'blank]
-                                                              [else 'black])))))))
-
-(define (look-up-in-table table row column)
-  (vector-ref (vector-ref table row) column))
-
-
-(define (draw-table table finals)
-  (define (draw-table-helper row-amount idx)
-    (if (= row-amount idx)
-        (make-row (vector-ref table idx) 0)
-        (above (make-row (vector-ref table idx) 0)
-               (draw-table-helper row-amount (add1 idx)))))
-  (define (make-row row idx)
-    (define (draw-square sym)
-      (let ([base-square-img (overlay (square 40 'solid 'white) (square 45 'solid 'gray))]
-            [final-state-square-img (overlay (square 40 'solid 'lightorange) (square 45 'solid 'gray))])
-        (match sym
-          ['blank base-square-img]
-          ['black (overlay (square 40 'solid 'black) (square 45 'solid 'gray))]
-          ['new-mark (overlay (text "X" 38 'red) base-square-img)]
-          ['mark (overlay (text "X" 38 'black) base-square-img)]
-          [_ (overlay (text (symbol->string sym) 38 'black) (if (member sym finals) final-state-square-img base-square-img))])))
-    (if (= (sub1 (vector-length row)) idx)
-        (draw-square (vector-ref row idx))
-        (beside (draw-square (vector-ref row idx)) (make-row row (add1 idx)))))
-  (draw-table-helper (sub1 (vector-length table)) 0))
-
-(define (choose-mark-for-table current-table-mark)
-  (match
-      current-table-mark
-    ['blank 'new-mark]
-    ['new-mark 'mark]
-    [_ 'mark]))
-    
-
-(define (update-table row column-id)
-  (let* ([current-column-ref (vector-ref row column-id)])
-    (vector-set/copy row column-id (choose-mark-for-table current-column-ref))))
-
-(define (make-mark-on-table table state-pairing state-mapping)
-  (let* ([row-id (hash-ref state-mapping (state-pair-s1 state-pairing))]
-         [column-id (hash-ref state-mapping (state-pair-s2 state-pairing))]
-         [current-row (vector-ref table row-id)]
-         [current-table-ref (look-up-in-table table row-id column-id)])
-    (vector-set/copy table row-id (update-table current-row column-id))))
-
-(define (get-pair phase-attribute)
-  (let ([pair (if (phase-3-attributes? phase-attribute)
-                  (phase-3-attributes-initial-pairings phase-attribute)
-                  (phase-4-attributes-unmarked-pair phase-attribute))])
-    (if (phase-3-attributes? phase-attribute)
-        (list pair) 
-        (state-pair-destination-pairs pair))))
-    
-(define (draw-table-and-graph phase)
-  (let ([state-pairs (if (<= 3 (phase-number phase) 4)
-                              (get-pair (phase-attributes phase))
-                              '())])
-    (create-init-graph-struct (phase-M phase) #:state-pair state-pairs)
-    #;(beside (create-init-graph-struct (phase-M phase) #:state-pair state-pairs)
-            (square 10 'solid 'white)
-            (draw-table (phase-state-pairing-table phase) (dfa-finals (phase-M phase))))))
-
-
-(define (draw-graph phase)
-  (create-init-graph-struct (phase-M phase)))
-
-(define (draw-graphic phase)
-  (if (<= 2 (phase-number phase) 5)
-      (draw-table-and-graph phase)
-      (draw-graph phase)))
-
-
-
-(define (make-main-graphic loPhase)
-  (map (λ (phase) (draw-graphic phase)) loPhase)
-  #;(beside (sm-graph M)
-          (square 10 'solid 'white)
-          (draw-table (make-table M) (fsa-getfinals M))))
-
-
-;; imsg-state -> image
-(define (draw-imsg a-imsg-state)
-  (above (text "TBD" 20 'black)
-         (text "TBD" 20 'black)))
-
-(define (make-info-messages M)
-  (above (text "TBD" 20 'black)
-         (text "TBD" 20 'black)))
-
-
-(define (make-viz-demo M)
-  (overlay (above (make-main-graphic M)
-                  (square 60 'solid 'white)
-                  (make-info-messages M)
-                  (square 40 'solid 'white)
-                  E-SCENE-TOOLS)
-                  (empty-scene E-SCENE-WIDTH E-SCENE-HEIGHT)))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;VIZ-FUNCTIONS;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 
 (define viz-go-next
@@ -498,6 +430,7 @@ ismg "finished machine"
            DEFAULT-ZOOM-CAP
            DEFAULT-ZOOM-FLOOR
            PERCENT-BORDER-GAP))
+
 (define viz-go-prev
   (go-prev E-SCENE-WIDTH
            E-SCENE-HEIGHT
@@ -505,6 +438,7 @@ ismg "finished machine"
            DEFAULT-ZOOM-CAP
            DEFAULT-ZOOM-FLOOR
            PERCENT-BORDER-GAP))
+
 (define viz-go-to-begin
   (go-to-begin E-SCENE-WIDTH
                E-SCENE-HEIGHT
@@ -512,6 +446,7 @@ ismg "finished machine"
                DEFAULT-ZOOM-CAP
                DEFAULT-ZOOM-FLOOR
                PERCENT-BORDER-GAP))
+
 (define viz-go-to-end
   (go-to-end E-SCENE-WIDTH
              E-SCENE-HEIGHT
@@ -529,6 +464,7 @@ ismg "finished machine"
            PERCENT-BORDER-GAP
            DEFAULT-ZOOM-CAP
            DEFAULT-ZOOM))
+
 (define viz-zoom-out
   (zoom-out E-SCENE-WIDTH
             E-SCENE-HEIGHT
@@ -538,6 +474,7 @@ ismg "finished machine"
             PERCENT-BORDER-GAP
             DEFAULT-ZOOM-CAP
             DEFAULT-ZOOM))
+
 (define viz-max-zoom-out
   (max-zoom-out E-SCENE-WIDTH
                 E-SCENE-HEIGHT
@@ -547,6 +484,7 @@ ismg "finished machine"
                 PERCENT-BORDER-GAP
                 DEFAULT-ZOOM-CAP
                 DEFAULT-ZOOM))
+
 (define viz-max-zoom-in
   (max-zoom-in E-SCENE-WIDTH
                E-SCENE-HEIGHT
@@ -556,6 +494,7 @@ ismg "finished machine"
                PERCENT-BORDER-GAP
                DEFAULT-ZOOM-CAP
                DEFAULT-ZOOM))
+
 (define viz-reset-zoom
   (reset-zoom E-SCENE-WIDTH
               E-SCENE-HEIGHT
@@ -566,88 +505,6 @@ ismg "finished machine"
               DEFAULT-ZOOM-CAP
               DEFAULT-ZOOM))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-;; make-node-graph
-;; graph los start final -> graph
-;; Purpose: To make a node graph
-(define (make-node-graph graph los s f)
-  (foldl (λ (state result)
-           (add-node result
-                     state
-                     #:atb (hash 'color
-                                 (cond
-                                   [(eq? state s) 'darkgreen]
-                                   [else 'black])
-                                 'shape
-                                 (if (member state f) 'doublecircle 'circle)
-                                 'label
-                                 (if (equal? state '()) 'ds state)
-                                 'fontcolor
-                                 'black
-                                 'font
-                                 "Sans")))
-         graph
-         los))
-;; make-init-edge-graph
-;; graph ndfa ndfa -> graph
-;; Purpose: To make an edge graph
-(define (make-init-edge-graph graph M state-pair)
-  (foldl (λ (rule result)
-           (add-edge result
-                     (second rule)
-                     (first rule)
-                     (third rule)
-                     #:atb (hash 'fontsize
-                                 20
-                                 'style
-                                 'solid
-                                 'color
-                                 (cond
-                                   [(ormap (λ (sp) (and (eq? (first rule) (state-pair-s1 sp))
-                                                            (eq? (third rule) (state-pair-s2 sp))))
-                                                state-pair)
-                                         'violet]
-                                   [else 'black]))))
-         graph
-         (dfa-rules M)))
-
-;; make-init-grph-structure
-;; ndfa -> dgraph
-;; Purpose: To draw the graph of the initial ndfa's
-(define (make-init-grph-structure M)
-  (let* ([graph (make-init-edge-graph
-                 (make-node-graph (create-graph 'dgraph #:atb (hash 'rankdir "LR" 'font "Sans"))
-                                  (dfa-states M)
-                                  (dfa-start M)
-                                  (dfa-finals M))
-                 M
-                 (dfa-start M))])
-    graph))
-
-;; ndfa -> graph
-;; Creates the graph structure used to create the initially displayed graphic
-(define (create-init-graph-struct M #:state-pair [state-pair '()])
-  (make-init-edge-graph (make-node-graph (create-graph 'dgraph
-                                                       #:atb (hash 'rankdir "LR" 'font "Sans"))
-                                         (dfa-states M)
-                                         (dfa-start M)
-                                         (dfa-finals M))
-                        M
-                        state-pair))
-
-(define (make-img M)
-  (beside (graph->bitmap (make-init-grph-structure M))
-          (square 10 'solid 'white)
-          (draw-table (make-table M) (dfa-finals M))))
-
-    
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-
-
-
-;;right-key-pressed
 ;;viz-state -> viz-state
 ;;Purpose: Steps the visualization forward once
 (define (right-key-pressed a-vs)
@@ -676,9 +533,8 @@ ismg "finished machine"
                     (imsg-state-added-edges (informative-messages-component-state
                                              (viz-state-informative-messages a-vs)))])])]))
 
-;;left-key-pressed
 ;;viz-state -> viz-state
-;;Purpose: Steps the visualization backword once
+;;Purpose: Steps the visualization backward once
 (define (left-key-pressed a-vs)
   a-vs
   #;(struct-copy
@@ -704,9 +560,9 @@ ismg "finished machine"
                    [added-edges
                     (imsg-state-added-edges (informative-messages-component-state
                                              (viz-state-informative-messages a-vs)))])])]))
-;;down-key-pressed
+
 ;;viz-state -> viz-state
-;;Purpose: Finishes the visualization
+;;Purpose: Jumps to the end of the visualization
 (define (down-key-pressed a-vs)
   a-vs
   #;(struct-copy
@@ -733,9 +589,8 @@ ismg "finished machine"
                     (imsg-state-added-edges (informative-messages-component-state
                                              (viz-state-informative-messages a-vs)))])])]))
 
-;;up-key-pressed
 ;;viz-state -> viz-state
-;;Purpose: Restarts the visualization
+;;Purpose: Jumps to the beginning of the visualization
 (define (up-key-pressed a-vs)
   a-vs
   #;(struct-copy
@@ -763,85 +618,247 @@ ismg "finished machine"
                                              (viz-state-informative-messages a-vs)))])])]))
 
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(struct phase-results (loPhase new-table) #:transparent)
-
-;; dfa -> (listof dfa)
-;; Purpose: Incrementally rebuilds the given machine
-(define (reconstruct-machine M)
-  (let* ([start (dfa-start M)]
-         [states-connected-to-start (remove-duplicates (filter-map (λ (rule) (and (and (eq? (first rule) start)
-                                                                    (not (eq? (third rule) start)))
-                                                               (third rule)))
-                                                (dfa-rules M)))]
-         [looping-rules (filter (λ (rule) (and (eq? (first rule) start)
-                                               (eq? (third rule) start)))
-                                (dfa-rules M))]
-         [rebuild-M (dfa (list start) (dfa-alphabet M) start '() looping-rules 'no-dead)])
-   (machine-rebuilder M states-connected-to-start rebuild-M (list rebuild-M))))
-
-;;dfa (queueof state) dfa (listof dfa) -> (listof dfa)
-;;Purpose: Builds the next step to the given dfa using the first state in the (queueof state)
-(define (machine-rebuilder finalized-M qoS rebuild-M acc)
-  (if (qempty? qoS)
-      (reverse acc)
-      (let* ([next-state-to-add (qfirst qoS)]
-             [connecting-state-rules (filter (λ (rule) (or (and (member (first rule) (dfa-states rebuild-M))
-                                                                (eq? (third rule) next-state-to-add))
-                                                           (and (member (third rule) (dfa-states rebuild-M))
-                                                                (eq? (first rule) next-state-to-add))
-                                                           (and (eq? (first rule) next-state-to-add)
-                                                                (eq? (third rule) next-state-to-add))))
-                                             (dfa-rules finalized-M))]
-             [reachables-from-state (remove-duplicates (filter-map (λ (rule) (and (and (eq? (first rule) next-state-to-add)
-                                                                                       (not (eq? (third rule) next-state-to-add))
-                                                                                       (not (member (third rule) (dfa-states rebuild-M))))
-                                                                                  (third rule)))
-                                                                   (dfa-rules finalized-M)))]
-             [new-rebuild-M (struct-copy dfa rebuild-M
-                                         [states (cons next-state-to-add (dfa-states rebuild-M))]
-                                         [rules (append connecting-state-rules (dfa-rules rebuild-M))]
-                                         [finals (if (member next-state-to-add (dfa-finals finalized-M))
-                                                     (cons next-state-to-add (dfa-finals rebuild-M))
-                                                     (dfa-finals rebuild-M))])])
-        (machine-rebuilder finalized-M (enqueue (dequeue qoS) reachables-from-state) new-rebuild-M (cons new-rebuild-M acc)))))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;DRAWING FUNCTIONS;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 
-;;natnum phase-attribute-struct dfa (vectorof (vectorof marking)) (listof state-pair) (hash state . natnum) -> (listof phase)
-;;Purpose: Makes all of phase for the given natnum using the given dfa, state-table, (listof state-pair), and state-table-mappings 
-(define (make-phase phase-id attribute-struct-id no-unreachables-M state-pairing-table loSP state-table-mappings)
-  ;; (vectorof (vectorof marking)) (listof state-pair) (listof phase) -> (listof phase)
-  ;; Purpose: Makes the 
-  (define (make-phase-helper state-pairing-table loSP acc)
-    (if (empty? loSP)
-        (phase-results (reverse acc) state-pairing-table)
-        (let* ([state-pairing (first loSP)]
-               [new-table (if (state-pair-marked? state-pairing)
-                              (make-mark-on-table state-pairing-table state-pairing state-table-mappings)
-                              state-pairing-table)]
-               [new-phase (phase phase-id no-unreachables-M new-table (attribute-struct-id state-pairing))])
-          (make-phase-helper new-table (rest loSP) (cons new-phase acc)))))
-  (make-phase-helper state-pairing-table loSP '()))
+;; (vectorof (vectorof marking)) (listof state) -> image
+;; Purpose: Draws the given table and distinguishes the final states from the remaining state
+(define (draw-table table finals)
+  ;;natnum natum -> image
+  ;;Purpose: Draws the given table row by row
+  (define (draw-table-helper row-amount idx)
+    (if (= row-amount idx)
+        (make-row (vector-ref table idx) 0)
+        (above (make-row (vector-ref table idx) 0)
+               (draw-table-helper row-amount (add1 idx)))))
+  ;;natnum natnum -> image
+  ;;Purpose: Draws the given row
+  (define (make-row row idx)
+    ;; symbol -> image
+    ;;Purpose: Draws a sqaure in the table using the given symbol
+    (define (draw-square sym)
+      (let ([base-square-img (overlay (square 40 'solid 'white) (square 45 'solid 'gray))]
+            [final-state-square-img (overlay (square 40 'solid 'lightorange) (square 45 'solid 'gray))])
+        (match sym
+          [BLANK-SPACE base-square-img]
+          [BLACK (overlay (square 40 'solid BLACK) (square 45 'solid 'gray))]
+          [MARK (overlay (text "X" 38 'red) base-square-img)]
+          [MARK (overlay (text "X" 38 BLACK) base-square-img)]
+          [_ (overlay (text (symbol->string sym) 38 BLACK) (if (member sym finals) final-state-square-img base-square-img))])))
+    (if (= (sub1 (vector-length row)) idx)
+        (draw-square (vector-ref row idx))
+        (beside (draw-square (vector-ref row idx)) (make-row row (add1 idx)))))
+  (draw-table-helper (sub1 (vector-length table)) 0))
 
-;; (listof dfa) (listof merged-state) (vectorof (vectorof marking)) -> (listof phase)
-;; Purpose: Pairs a merged-state with a rebuild dfa that contains either the new merged state symbol or one of the states that got merged
-(define (make-phase-5 loRM loMS state-pairing-table)
-  (define (make-phase-5-helper loRM loMS acc)
-    (if (empty? loRM)
-        (reverse acc)
-        (let* ([rebuild-M (first loRM)]
-               [merged-state (filter (λ (ms) (or (member (merged-state-new-symbol ms) (dfa-states rebuild-M))
-                                                 (ormap (λ (state) (set-member? (merged-state-old-symbols ms) state)) (dfa-states rebuild-M))))
-                                     loMS)]
-               [found-merged-state? (not (empty? merged-state))]
-               [new-phase (phase 5 (first loRM) state-pairing-table (phase-5-attributes (if found-merged-state? (first merged-state) merged-state)))])
-          (make-phase-5-helper (rest loRM) (if found-merged-state? (remove (first merged-state) loMS) loMS) (cons new-phase acc)))))
-  (make-phase-5-helper loRM loMS '()))
+;;(listof phase) -> (listof graph-thunk)
+;;Purpose: Creates all of the graphics need for the visualization using the given (listof phase)
+(define (make-main-graphic loPhase)
+  ;;phase -> graph-thunk
+  ;;Purpose: Creates the transition diagram thunk and state pairing table using the given phase
+  (define (draw-graphic phase)
+    ;; phase -> graph-thunk
+    ;;Purpose: Draws the transition diagram thunk of using the given phase
+    (define (draw-graph)
+      (create-init-graph-struct (phase-M phase)))
+    ;; phase -> graph-thunk
+    ;; Purpose: Draws the state-pairing table next to the transition diagram thunk using the given phase
+    (define (draw-table-and-graph)
+      ;;phase-attributes -> (listof state-pair)
+      ;;Purpose: Extracts the state-pair from the given phase-attribute
+      (define (get-pair phase-attribute)
+        (let ([pair (if (phase-3-attributes? phase-attribute)
+                        (phase-3-attributes-initial-pairings phase-attribute)
+                        (phase-4-attributes-unmarked-pair phase-attribute))])
+          (if (phase-3-attributes? phase-attribute)
+              (list pair) 
+              (state-pair-destination-pairs pair))))
+      (let ([state-pairs (if (<= 3 (phase-number phase) 4)
+                             (get-pair (phase-attributes phase))
+                             '())])
+        (create-init-graph-struct (phase-M phase) #:state-pair state-pairs)
+        #;(beside (create-init-graph-struct (phase-M phase) #:state-pair state-pairs)
+                  (square 10 'solid 'white)
+                  (draw-table (phase-state-pairing-table phase) (dfa-finals (phase-M phase))))))
+    (if (<= 2 (phase-number phase) 5)
+        (draw-table-and-graph)
+        (draw-graph)))
+  (map (λ (phase) (draw-graphic phase)) loPhase))
+
+
+;; imsg-state -> image
+(define (draw-imsg a-imsg-state)
+  (above (text "TBD" 20 BLACK)
+         (text "TBD" 20 BLACK)))
+
+
+
+(define imsg-img
+  (above (text "Kleenestar of the ndfa" FONT-SIZE 'black)
+         (text (format "Generated starting state:") FONT-SIZE 'black)
+         (text (format "Added edges:") FONT-SIZE 'black)))
+
+
+
+;; ndfa -> graph-thunk
+;;Purpose: Creates a graph-thunk using the given dfa and optional state-pair
+(define (create-init-graph-struct M #:state-pair [state-pair '()])
+  ;; graph (listof state) start (listof state) -> graph
+  ;; Purpose: To make a node graph
+  (define (make-node-graph graph los start finals)
+    (foldl (λ (state result)
+             (add-node result
+                       state
+                       #:atb (hash 'color
+                                   (cond [(eq? state start) 'darkgreen]
+                                         [else BLACK])
+                                   'shape (if (member state finals) 'doublecircle 'circle)
+                                   'label state
+                                   'fontcolor BLACK
+                                   'font "Sans")))
+           graph
+           los))
+
+  ;; graph dfa (listof state-pair) -> graph
+  ;; Purpose: To make an edge graph
+  (define (make-init-edge-graph graph state-pair)
+    (foldl (λ (rule result)
+             (add-edge result
+                       (second rule)
+                       (first rule)
+                       (third rule)
+                       #:atb (hash 'fontsize 20
+                                   'style 'solid
+                                   'color (cond  [(ormap (λ (sp) (and (eq? (first rule) (state-pair-s1 sp))
+                                                                      (eq? (third rule) (state-pair-s2 sp))))
+                                                         state-pair)
+                                                  'violet]
+                                                 [else BLACK]))))
+           graph
+           (dfa-rules M)))
+  (make-init-edge-graph (make-node-graph (create-graph 'dgraph
+                                                       #:atb (hash 'rankdir "LR" 'font "Sans"))
+                                         (dfa-states M)
+                                         (dfa-start M)
+                                         (dfa-finals M))
+                        state-pair))
+
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;VIZ-PRIMITIVE;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; 
+
 
 ;; fsa -> void
 ;; Purpose: Displays the process of minimizing a dfa
 (define (minimization-viz M)
+  ;; dfa -> (vectorof (vectorof marking))
+  ;; Purpose: Creates the representation of the state pairing table
+  (define (make-table M)
+    ;; (listof state) natnum -> (vectorof (vectorof marking))
+    ;; Purpose: Makes the state pairing table using given states 
+    (define (make-table-helper states num-rows)
+      (build-vector num-rows (λ (row-num)
+                               (build-vector num-rows
+                                             (λ (col-num)
+                                               (let ([blank-tile-count (- (length states) (- num-rows row-num))])
+                                                 (cond [(= row-num 0) (if (= col-num 0) BLANK-SPACE (list-ref states (sub1 col-num)))]
+                                                       [(= col-num 0) (list-ref states (sub1 row-num))]
+                                                       [(<= col-num blank-tile-count) BLANK-SPACE]
+                                                       [else BLACK])))))))
+    (make-table-helper (dfa-states M) (add1 (length (dfa-states M)))))
+
+  ;; dfa -> (listof dfa)
+  ;; Purpose: Incrementally rebuilds the given machine
+  (define (reconstruct-machine minimized-M)
+    ;;dfa (queueof state) dfa (listof dfa) -> (listof dfa)
+    ;;Purpose: Builds the next step to the given dfa using the first state in the (queueof state)
+    (define (machine-rebuilder qoS rebuild-M acc)
+      (if (qempty? qoS)
+          (reverse acc)
+          (let* ([next-state-to-add (qfirst qoS)]
+                 [connecting-state-rules (filter (λ (rule) (or (and (member (first rule) (dfa-states rebuild-M))
+                                                                    (eq? (third rule) next-state-to-add))
+                                                               (and (member (third rule) (dfa-states rebuild-M))
+                                                                    (eq? (first rule) next-state-to-add))
+                                                               (and (eq? (first rule) next-state-to-add)
+                                                                    (eq? (third rule) next-state-to-add))))
+                                                 (dfa-rules minimized-M))]
+                 [reachables-from-state (remove-duplicates (filter-map (λ (rule) (and (and (eq? (first rule) next-state-to-add)
+                                                                                           (not (eq? (third rule) next-state-to-add))
+                                                                                           (not (member (third rule) (dfa-states rebuild-M))))
+                                                                                      (third rule)))
+                                                                       (dfa-rules minimized-M)))]
+                 [new-rebuild-M (struct-copy dfa rebuild-M
+                                             [states (cons next-state-to-add (dfa-states rebuild-M))]
+                                             [rules (append connecting-state-rules (dfa-rules rebuild-M))]
+                                             [finals (if (member next-state-to-add (dfa-finals minimized-M))
+                                                         (cons next-state-to-add (dfa-finals rebuild-M))
+                                                         (dfa-finals rebuild-M))])])
+            (machine-rebuilder (enqueue (dequeue qoS) reachables-from-state) new-rebuild-M (cons new-rebuild-M acc)))))  
+    (let* ([start (dfa-start minimized-M)]
+           [states-connected-to-start (remove-duplicates (filter-map (λ (rule) (and (and (eq? (first rule) start)
+                                                                                         (not (eq? (third rule) start)))
+                                                                                    (third rule)))
+                                                                     (dfa-rules minimized-M)))]
+           [looping-rules (filter (λ (rule) (and (eq? (first rule) start)
+                                                 (eq? (third rule) start)))
+                                  (dfa-rules minimized-M))]
+           [rebuild-M (dfa (list start) (dfa-alphabet minimized-M) start '() looping-rules 'no-dead)])
+      (machine-rebuilder states-connected-to-start rebuild-M (list rebuild-M))))
+
+  ;;natnum phase-attribute-struct dfa (vectorof (vectorof marking)) (listof state-pair) (hash state . natnum) -> (listof phase)
+  ;;Purpose: Makes all of phase for the given natnum using the given dfa, state-table, (listof state-pair), and state-table-mappings 
+  (define (make-phase phase-id attribute-struct-id no-unreachables-M state-pairing-table loSP state-table-mappings)
+    ;; (vectorof (vectorof marking)) (listof state-pair) (listof phase) -> (listof phase)
+    ;; Purpose: Makes the phase with the updated table and corresponding state pair
+    (define (make-phase-helper state-pairing-table loSP acc)
+      ;;(vectorof (vectorof marking)) state-pair (hash state . natnum) -> (vectorof (vectorof marking))
+      ;; Purpose: Updates the given table using the given state pair and hash
+      (define (make-mark-on-table state-pairing)
+        ;; (vectorof marking) natnum -> (vectorof marking)
+        ;; Purpose: Updates a spot on state pairing table using the given row and column number
+        (define (update-row row column-id)
+          ;;symbol -> symbol
+          ;;Purpose: Updates the given mark for the state pairing table
+          (define (choose-mark-for-row current-table-mark)
+            (match
+                current-table-mark
+              [BLANK-SPACE MARK]
+              [MARK MARK]
+              [_ MARK]))
+          (let* ([current-column-ref (vector-ref row column-id)])
+            (vector-set/copy row column-id (choose-mark-for-row current-column-ref))))
+        (let* ([row-id (hash-ref state-table-mappings (state-pair-s1 state-pairing))]
+               [column-id (hash-ref state-table-mappings (state-pair-s2 state-pairing))]
+               [current-row (vector-ref state-pairing-table row-id)])
+          (vector-set/copy state-pairing-table row-id (update-row current-row column-id))))
+      (if (empty? loSP)
+          (phase-results (reverse acc) state-pairing-table)
+          (let* ([state-pairing (first loSP)]
+                 [new-table (if (state-pair-marked? state-pairing)
+                                (make-mark-on-table state-pairing)
+                                state-pairing-table)]
+                 [new-phase (phase phase-id no-unreachables-M new-table (attribute-struct-id state-pairing))])
+            (make-phase-helper new-table (rest loSP) (cons new-phase acc)))))
+    (make-phase-helper state-pairing-table loSP '()))
+
+  ;; (listof dfa) (listof merged-state) (vectorof (vectorof marking)) -> (listof phase)
+  ;; Purpose: Pairs a merged-state with a rebuild dfa that contains either the new merged state symbol or one of the states that got merged
+  (define (make-phase-5 loRM loMS state-pairing-table)
+    ;;(listof dfa) (listof merged-state) (listof phase)
+    ;;Purpose: Associates the given rebuilt dfa with a merged-state if any of the components a merged-state has been found
+    (define (make-phase-5-helper loRM loMS acc)
+      (if (empty? loRM)
+          (reverse acc)
+          (let* ([rebuild-M (first loRM)]
+                 [merged-state (filter (λ (ms) (or (member (merged-state-new-symbol ms) (dfa-states rebuild-M))
+                                                   (ormap (λ (state) (set-member? (merged-state-old-symbols ms) state)) (dfa-states rebuild-M))))
+                                       loMS)]
+                 [found-merged-state? (not (empty? merged-state))]
+                 [new-phase (phase 5 (first loRM) state-pairing-table (phase-5-attributes
+                                                                       (if found-merged-state? (first merged-state) merged-state)))])
+            (make-phase-5-helper (rest loRM) (if found-merged-state? (remove (first merged-state) loMS) loMS) (cons new-phase acc)))))
+    (make-phase-5-helper loRM loMS '()))
+  
   (let* ([unchecked-M M]
          [results-from-minimization (minimize-dfa unchecked-M)]
          [no-unreachables-M (minimization-results-unreachables-removed-M results-from-minimization)]
@@ -857,7 +874,6 @@ ismg "finished machine"
          [state-table-mappings (for/hash ([state (dfa-states no-unreachables-M)]
                                           [num (in-naturals)])
                                  (values state (add1 num)))]
-         #;[init-M-state-pairing-table (make-table M)]
          [no-unreachables-M-state-pairing-table (make-table no-unreachables-M)]
          [minimized-M (unchecked->dfa minimized-M)]
          [phase-0 (phase 0 M  no-unreachables-M-state-pairing-table (phase-0-attributes))]
@@ -877,62 +893,57 @@ ismg "finished machine"
          [all-phases (append (list phase-0 phase-1 phase-2) phase-3 phase-4 phase-5 (list phase-6))]
          [graphs (make-main-graphic all-phases)])
     
-    
-    #;(unchecked->dfa minimized-M)
     #;(test-equiv-fsa unchecked-M minimized-M)
-    #;(draw-table (make-mark-on-table state-pairing-table
-                        (state-pair 'B 'A #t (list (state-pair 'D 'B #f 'none) (state-pair 'E 'C #f 'none)))
-                        state-table-mappings) (dfa-finals M))
     
-  (run-viz graphs
-           (lambda () (graph->bitmap (first graphs)))
-           MIDDLE-E-SCENE
-           DEFAULT-ZOOM
-           DEFAULT-ZOOM-CAP
-           DEFAULT-ZOOM-FLOOR
-           (informative-messages draw-imsg
-                                 (imsg-state 0 0)
+    (run-viz graphs
+             (lambda () (graph->bitmap (first graphs)))
+             MIDDLE-E-SCENE
+             DEFAULT-ZOOM
+             DEFAULT-ZOOM-CAP
+             DEFAULT-ZOOM-FLOOR
+             (informative-messages draw-imsg
+                                   (imsg-state all-phases)
 
-                                  #;(let ([new-start (generate-symbol 'K (sm-states M))])
-                                   (imsg-state 0
-                                               new-start
-                                               (list (list new-start EMP (sm-start M))
-                                                     (map (λ (f) (list f EMP new-start))
-                                                          (sm-finals M)))))
-                                 RULE-YIELD-DIMS)
-           (instructions-graphic E-SCENE-TOOLS
-                                 (bounding-limits 0
-                                                  (image-width imsg-img)
-                                                  E-SCENE-HEIGHT
-                                                  (+ E-SCENE-HEIGHT (image-height imsg-img))))
-           (create-viz-draw-world E-SCENE-WIDTH E-SCENE-HEIGHT INS-TOOLS-BUFFER)
-           (create-viz-process-key ["right" viz-go-next right-key-pressed]
-                                   ["left" viz-go-prev left-key-pressed]
-                                   ["up" viz-go-to-begin up-key-pressed]
-                                   ["down" viz-go-to-end down-key-pressed]
-                                   ["w" viz-zoom-in identity]
-                                   ["s" viz-zoom-out identity]
-                                   ["r" viz-max-zoom-out identity]
-                                   ["f" viz-max-zoom-in identity]
-                                   ["e" viz-reset-zoom identity]
-                                   ["wheel-down" viz-zoom-in identity]
-                                   ["wheel-up" viz-zoom-out identity])
-           (create-viz-process-tick E-SCENE-BOUNDING-LIMITS
-                                    NODE-SIZE
-                                    E-SCENE-WIDTH
-                                    E-SCENE-HEIGHT
-                                    CLICK-BUFFER-SECONDS
-                                    ()
-                                    ( [ARROW-UP-KEY-DIMS viz-go-to-begin up-key-pressed]
-                                      [ARROW-DOWN-KEY-DIMS viz-go-to-end down-key-pressed]
-                                      [ARROW-LEFT-KEY-DIMS viz-go-prev left-key-pressed]
-                                      [ARROW-RIGHT-KEY-DIMS viz-go-next right-key-pressed]
-                                      [W-KEY-DIMS viz-zoom-in identity]
-                                      [S-KEY-DIMS viz-zoom-out identity]
-                                      [R-KEY-DIMS viz-max-zoom-out identity]
-                                      [E-KEY-DIMS viz-reset-zoom identity]
-                                      [F-KEY-DIMS viz-max-zoom-in identity]))
-           'minimization-viz)))
+                                   #;(let ([new-start (generate-symbol 'K (sm-states M))])
+                                       (imsg-state 0
+                                                   new-start
+                                                   (list (list new-start EMP (sm-start M))
+                                                         (map (λ (f) (list f EMP new-start))
+                                                              (sm-finals M)))))
+                                   RULE-YIELD-DIMS)
+             (instructions-graphic E-SCENE-TOOLS
+                                   (bounding-limits 0
+                                                    (image-width imsg-img)
+                                                    E-SCENE-HEIGHT
+                                                    (+ E-SCENE-HEIGHT (image-height imsg-img))))
+             (create-viz-draw-world E-SCENE-WIDTH E-SCENE-HEIGHT INS-TOOLS-BUFFER)
+             (create-viz-process-key ["right" viz-go-next right-key-pressed]
+                                     ["left" viz-go-prev left-key-pressed]
+                                     ["up" viz-go-to-begin up-key-pressed]
+                                     ["down" viz-go-to-end down-key-pressed]
+                                     ["w" viz-zoom-in identity]
+                                     ["s" viz-zoom-out identity]
+                                     ["r" viz-max-zoom-out identity]
+                                     ["f" viz-max-zoom-in identity]
+                                     ["e" viz-reset-zoom identity]
+                                     ["wheel-down" viz-zoom-in identity]
+                                     ["wheel-up" viz-zoom-out identity])
+             (create-viz-process-tick E-SCENE-BOUNDING-LIMITS
+                                      NODE-SIZE
+                                      E-SCENE-WIDTH
+                                      E-SCENE-HEIGHT
+                                      CLICK-BUFFER-SECONDS
+                                      ()
+                                      ( [ARROW-UP-KEY-DIMS viz-go-to-begin up-key-pressed]
+                                        [ARROW-DOWN-KEY-DIMS viz-go-to-end down-key-pressed]
+                                        [ARROW-LEFT-KEY-DIMS viz-go-prev left-key-pressed]
+                                        [ARROW-RIGHT-KEY-DIMS viz-go-next right-key-pressed]
+                                        [W-KEY-DIMS viz-zoom-in identity]
+                                        [S-KEY-DIMS viz-zoom-out identity]
+                                        [R-KEY-DIMS viz-max-zoom-out identity]
+                                        [E-KEY-DIMS viz-reset-zoom identity]
+                                        [F-KEY-DIMS viz-max-zoom-in identity]))
+             'minimization-viz)))
 
 
 (define EX4 (make-unchecked-dfa '(A B C D E F G)
