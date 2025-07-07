@@ -1589,7 +1589,94 @@
 (check-equal? (C-INV-AiBj '() '()) #f)
 (check-equal? (C-INV-AiBj '(a b b) '(a)) #f)
 (check-equal? (C-INV-AiBj '(a b b) '(a a)) #f)
-       
+
+
+;; PROOF
+
+;; The state invariants hold when M accepts w
+#|
+
+When M starts, S-INV holds because ci = '() and s '().
+This establishes the base case.
+ 
+
+Proof invariants hold after each transition that consumes input:
+
+((S a ,EMP) (A (a))): By inductive hypothesis, S-INV holds.
+This guarantees that ci = '() and s = '(). After using this
+rule, ci = '(a) and s = '(a). A-INV holds, because ci = a+
+AND stack = amount of as to be matched with a b AND (length stack) => 1.
+Thus, A-INV holds after the transition rule is used. 
+
+((S a ,EMP) (A (a a))): By inductive hypothesis, S-INV holds. S-INV
+guarantees that ci = '() and s = '(). After using this rule, ci = '(a)
+and stack = '(a a). A-INV holds, because ci = a+ AND stack = amount
+of as to be matched with a b AND (length stack) => 1. Thus, A-INV holds
+after the transition rule is used. 
+
+((A a ,EMP) (A (a))): By inductivve hypothesis, A-INV holds. A-INV
+guarantees that ci = a+ AND stack = amount of as that have to be matched 
+with a b AND (length stack) => 1. By reading an a and pushing an a to the
+stack, we still have ci = a+ AND stack = amount of as that have to matced
+with a b AND (length stack) => 1. Thus, A-INV holds after the transition rule
+is used. 
+
+((A a ,EMP) (A (a a))): By inductivve hypothesis, A-INV holds. A-INV
+guarentees that ci = a+ AND stack = amount of as that have to be matched
+with a b AND (length stack) => 1. By reading an a and pushing 2 as to the stack
+, we still have ci = a+ AND stack = amount of as that have to be matched
+with a b AND (length stack) => 1. Thus, A-INV holds after the transition rule
+is used.
+
+((A b (a)) (B ,EMP)): By inductive hypothesis, A-INV holds. A-INV
+guarentees that ci = a+ AND stack = amount of as that have to be mached with
+a b AND (length stack) => 1. By reading a b and popping an a from the stack, 
+B-INV holds since ci = a+b+ AND stack = amount of as to be matched with a b. Thus,
+B-INV holds after the trannsition rule is used. 
+
+((B b (a)) (B ,EMP)): By inductive hypothesis, B-INV holds. B-INV guarentees that
+ci = a+b+ AND stack = amount of as that have to be matched with a b.
+By reading a b and popping an a from the stack, B-INV holds since ci = a+b+ AND stack = amount
+of as to be matched with a b. Thus, B-INV holds after the transition rule is used.
+
+((B ,EMP ,EMP) (C ,EMP)): By inductive hypothesis, B-INV holds. B-INV guarentees that
+ci = a+b+ AND stack = amount of as that have to be matched with a b
+before using this transition. Reading nothing and not changing the stack means that ci = a+b+ after the transition. Recall that M is
+nondetermintistic and uses such transtion only to move to C (the final state)
+and accept. This means that s must be empty and, there for ci = aibj, where i <= j <= 2i.
+Thus, C-INV holds. 
+
+
+
+PROVING L = L(M)
+
+w∈L ⇔ w∈L(M)
+
+(⇒) Assume w∈L. This means that w = aibj, where i <= j <= 2i. Given that state invariants
+always hold, the following computation takes place:
+(S aibj EMP) -|ˆ∗ (A bj (amount of as to be matched with bs))
+-| (B b+ (amount of as to be matched with bs)) -|ˆ∗ (C EMP EMP)
+Therefore, w∈L(M).
+
+(⇐) Assume w∈L(M). This means that M halts in C, a final state,
+with an empty stack having consumed w, or M halts in S, a final state
+. Given that the state invariants always hold, we may conclude that
+w = aibj, where i <= j <= 2i. Therefore, w∈L
+
+
+w∈/L ⇔ w∈/L(M)
+Proof
+(⇒) Assume w∈/L. This means w 
+≠ aibj, where i <= j <= 2i. Given that the state invariant
+predicates always hold, there is no computation that has M consume w and
+end in C or S with an empty stack. Therefore, w∈/L(M).
+(⇐) Assume w∈/L(M). This means that M cannot transition into C or S with an
+empty stack having consumed w. Given that the state invariants always hold,
+this means that w 
+≠ aibj, where i <= j <= 2i. Thus, w∈/L.
+
+|#
+
 
 ;; Let Σ = {a b}. Design and implement a pda for L = {w | w has 3
 ;;   times as many as than b}. Follow all the steps of the design recipe
@@ -1599,20 +1686,22 @@
 ;;   A: ci = (a*b*)* AND stack = amount of as that have to be
 ;;      matched with a b AND amount of bs that have to be matched with 3 as
 ;;   B: ci = 3 times more as than bs AND stack = empty
-(define 3xa-b (make-ndpda '(S A B)
+(define 3xa-b (make-ndpda '(S A B C)
                           '(a b)
                           '(a b)
                           'S
-                          '(S B)
-                          `(((S ,EMP ,EMP) (A ,EMP))
-
-                            ((A a (a a)) (A ,EMP))
-                            ((A a (a)) (A ,EMP))
-                            ((A a ,EMP) (A (b)))
-                            ((A b ,EMP) (A (a a a)))
+                          '(S)
+                          `(((S a ,EMP) (A ,EMP))
+                            ((S b ,EMP) (B (a a a)))
                             ((A b (b)) (A ,EMP))
-                            
-                            ((A ,EMP ,EMP) (B ,EMP)))))
+                            ((A b ,EMP) (A (a a a)))
+                            ((A a ,EMP) (C ,EMP))
+                            ((B b (b)) (B ,EMP))
+                            ((B b ,EMP) (B (a a a)))
+                            ((B a ,EMP) (A ,EMP))
+                            ((C b (b)) (C ,EMP))
+                            ((C b ,EMP) (C (a a a)))
+                            ((C a ,EMP) (S (b))))))
                           
 ;; tests for 3xa-b
 (check-equal? (sm-apply 3xa-b '() '()) 'accept)
