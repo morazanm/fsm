@@ -157,7 +157,6 @@
                       (λ (i) (gen-function (mk-kleene-cfexp-cfe cfe) reps))))))]
     (if (empty? lst-words) EMP lst-words)))
 
-
 ;; cfe [natnum] -> word
 ;; Purpose: Generates a word using 
 (define (gen-cfexp-word cfe . reps)
@@ -172,40 +171,48 @@
 
 (define-struct cfg (nts signa rules start) #:transparent)
 
+;;context-free grammar -> cfe
+;;Purpose: Converts the given cfg its equivalent cfe
 (define (cfg->cfe G)
 
+  ;;(listof X) (X -> Y) -> (hash X . Y)
   (define (make-hash-table lox f)
     (foldl (λ (x h)
              (hash-set h x (f x)))
            (hash)
            lox))
 
+  ;;string -> (listof symbol)
+  ;;Purpose: Seperates every character in the given string and puts them into a list
   (define (explode string)
-    (define (explode-helper string idx acc)
+    ;;natnum (listof symbol) -> (listof symbol)
+    ;;Purpose: Seperates every character in the given string and puts them into a list
+    ;;acc = the character in the string from [idx..(string-length string)]
+    (define (explode-helper idx acc)
       (if (= idx 0)
           acc
-          (explode-helper string (sub1 idx) (cons (string->symbol (substring string (sub1 idx) idx)) acc))))
-    (explode-helper string (string-length string) '()))
+          (explode-helper (sub1 idx) (cons (string->symbol (substring string (sub1 idx) idx)) acc))))
+    (explode-helper (string-length string) '()))
 
-
+  ;;(hash nts . (listof symbol)) (hash symbol . singleton-cfe)) (hash nts . variable-cfe)) -> (hash nts . cfe))
+  ;;Purpose: Converts the RHS of cfg rules into cfes
   (define (make-cfexps-frm-rules rules singletons variables)
-
-    (define (make-expression value)
-      (if (hash-has-key? singletons value)
-          (hash-ref singletons value)
-          (hash-ref variables value)))
-    
-    (define (make-translation key value)
-      (cond [(and (= (length value) 1)
-                  (eq? (first value) EMP))
-             (empty-cfexp)]
-            [(= (length value) 1) (make-expression (first value))]
-            [else (concat-cfexp (map (λ (v) (make-expression v)) value))]))
-    
-    (hash-map/copy rules (λ (k v)
-                           (values k (if (> (length v) 1)
-                                         (union-cfexp (map (λ (v) (make-translation k v)) v))
-                                         (make-translation k (first v)))))))
+    ;;symbol -> cfe
+    ;;Purpose: Matches the given symbol with the corresponding cfe
+    (define (convert-to-expression RHS-of-rule)
+      (cond [(eq? RHS-of-rule EMP) (empty-cfexp)]
+            [(hash-has-key? singletons RHS-of-rule) (hash-ref singletons RHS-of-rule)]
+            [else (hash-ref variables RHS-of-rule)]))
+    ;;(listof symbol) -> cfe
+    ;;Purpose: Translates the given (listof symbol) into its corresponding cfe
+    (define (rule->expression RHS-of-rule)
+      (if (= (length RHS-of-rule) 1)
+          (convert-to-expression (first RHS-of-rule))
+          (concat-cfexp (map (λ (sym) (convert-to-expression sym)) RHS-of-rule))))
+    (hash-map/copy rules (λ (nts RHS)
+                           (values nts (if (> (length RHS) 1)
+                                         (union-cfexp (map (λ (rule) (rule->expression rule)) RHS))
+                                         (rule->expression (first RHS)))))))
   
   (let* ([nts (cfg-get-v G)]
          [alphabet (cfg-get-alphabet G)]
@@ -215,10 +222,10 @@
          [singletons (make-hash-table alphabet singleton-cfexp)]
          [variables (make-hash-table nts var-cfexp)]
          [rules->cfexp (make-cfexps-frm-rules rules singletons variables)]
-         [updated-bindings (hash-map/copy rules->cfexp (λ (k v)
+         [updated-bindings (hash-map/copy rules->cfexp (λ (key values)
                                   (begin
-                                    (update-binding! (hash-ref variables k) k v)
-                                    (values k (hash-ref variables k)))))])
+                                    (update-binding! (hash-ref variables key) key values)
+                                    (values key (hash-ref variables key)))))])
      (hash-ref updated-bindings start)))
   
 
