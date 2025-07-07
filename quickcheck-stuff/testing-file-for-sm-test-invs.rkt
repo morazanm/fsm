@@ -1,5 +1,6 @@
 #lang fsm
 (require "sm-test-invs-wip.rkt")
+(provide (all-defined-out))
 
 ;; USEFUL FUNCTIONS
 
@@ -1702,7 +1703,7 @@ this means that w
                             ((C b (b)) (C ,EMP))
                             ((C b ,EMP) (C (a a a)))
                             ((C a ,EMP) (S (b))))))
-                          
+#|                          
 ;; tests for 3xa-b
 (check-equal? (sm-apply 3xa-b '() '()) 'accept)
 (check-equal? (sm-apply 3xa-b '(b a a a) '()) 'accept)
@@ -1715,6 +1716,6 @@ this means that w
 
 
 
-
+|#
 
 

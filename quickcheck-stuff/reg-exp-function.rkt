@@ -1,4 +1,5 @@
 #lang fsm
+(provide get-all-reg-expr)
 
 ;; X loX -> Boolean
 ;; Purpose: To determine if the given item is a member of the given list
@@ -168,18 +169,5 @@
                                                                                                  (empty-regexp))))
         (get-all-reg-expr-helper states '()))))
    
-
-;; dfa used to test it (doesn't contain aa)
-(define NO-AA
-  (make-dfa
-   '(S A B R)
-   '(a b)
-   'S
-   '(S A B)
-   '((S a A) (S b B)
-             (B a A) (B b B)
-             (A a R) (A b B)
-             (R a R) (R b R))
-   'no-dead))
 
 
