@@ -3,7 +3,8 @@
 (require "../fsm-core/private/constants.rkt"
          "../fsm-core/private/fsa.rkt"
          "fsa-minimization.rkt"
-         "../sm-graph.rkt")
+         "../sm-graph.rkt"
+         "../visualizations/viz-sm-constructors/viz-minimization.rkt")
 
 
 
@@ -84,6 +85,21 @@
                         (F 0 D) (F 1 E)
                         (G 0 G) (G 1 G))
                       'no-dead))
+
+(define EX5 (make-unchecked-dfa '(A B C D E F G H I)
+                                '(0 1)
+                                'A
+                                '(B C G)
+                                '((A 0 B) (A 1 C)
+                                          (B 0 D) (B 1 E)
+                                          (C 0 E) (C 1 D)
+                                          (D 0 G) (D 1 G)
+                                          (E 0 G) (E 1 G)
+                                          (F 0 D) (F 1 E)
+                                          (H 0 F) (H 1 I)
+                                          (I 0 H) (I 1 F)
+                                          (G 0 G) (G 1 G))
+                                'no-dead))
 
 (define EX5-vid (make-unchecked-dfa '(A B C D E F)
                                     '(0 1)
@@ -375,7 +391,7 @@
                      'no-dead))
 
 (define listofmachines
-  (list EX1 EX2-trans EX3-vid EX4-vid EX5-vid EX6-vid M L aa*Uab* AT-LEAST-ONE-MISSING p2-ndfa AB*B*UAB* AB*B*UAB*2 aa-ab ends-with-two-bs
+  (list EX1 EX2-trans EX3-vid EX4-vid EX5 EX5-vid EX6-vid M L aa*Uab* AT-LEAST-ONE-MISSING p2-ndfa AB*B*UAB* AB*B*UAB*2 aa-ab ends-with-two-bs
       nd n nk ab*-U-ab*b*-ndfa PROP-BI DNA-SEQUENCE ND ND2 ND3 ND4 ND5 ENDS-WITH-TWO-Bs nd-a* missing-exactly-one EVEN-NUM-Bs M2))
 
 (struct status (M result) #:transparent)

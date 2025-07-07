@@ -1,559 +1,284 @@
 #lang racket
 
-(require "../fsm-core/private/constants.rkt"
-         "../fsm-core/private/fsa.rkt"
-         "../sm-graph.rkt")
+(require "../fsm-core/private/fsa.rkt")
 
 (provide unchecked->dfa minimize-dfa dfa)
 
-(struct dfa (states alphabet start finals rules no-dead) #:transparent)
-(struct equivalence-class (non-final final) #:transparent)
+;;s1      | the first of the state in the state pair  | state
+;;s2      | the second of the state in the state pair | state
+;;marked? | Determines if the state pair should be marked in the table | boolean
+;;destination-pairs | The state pairs that s1 and s2 transition to | (listof state-pair)
+(struct state-pair (s1 s2 marked? destination-pairs) #:transparent)
 
-(struct merged-state (new-symbol old-symbols) #:transparent)
-
-
-;;probably raise error if final is unreachable
-(define (remove-unreachables M)
-  (let* ([states (fsa-getstates M)]
-         [start (fsa-getstart M)]
-         [rules (fsa-getrules M)]
-         [reachable-states (filter (λ (s) (ormap (λ (r) (or (eq? start s)
-                                                            (and (not (eq? (first r) (third r)))
-                                                                 (eq? (third r) s)))) rules)) states)]
-         [usable-rules (filter (λ (r) (ormap (λ (s) (eq? (first r) s)) reachable-states)) rules)])
-    (make-unchecked-dfa reachable-states
-                        (fsa-getalphabet M)
-                        (fsa-getstart M)
-                        (filter (λ (f) (member f reachable-states)) (fsa-getfinals M))
-                        usable-rules
-                        'no-dead)))
-
-
-
-
-;;implementation 4 -> removing unreachables
-(define (minimize-dfa4 M)
-  (let* ([dfa (remove-unreachables (ndfa->dfa M))]
-         [transition-table (make-transition-table dfa)]
-         [finals (fsa-getfinals dfa)]
-         [equivalence-class (make-equivalence-classes (filter (λ (s) (not (member s finals))) (fsa-getstates dfa)) finals transition-table)])
-    (equivalence-class->dfa (fsa-getalphabet dfa) (fsa-getstart dfa) finals equivalence-class transition-table)
-    #;(if (list? equivalence-class)
-        equivalence-class
-        (equivalence-class->dfa (fsa-getalphabet dfa) (fsa-getstart dfa) finals equivalence-class transition-table))))
-
-
-(define (equivalence-class->dfa alphabet start finals EC transition-table)
-  (define (search-for-merged-state old-state merged-states)
-    (first (filter-map (λ (ms) (and (set-member? (merged-state-old-symbols ms) old-state)
-                                    (merged-state-new-symbol ms)))                
-                       merged-states)))
-  (let* ([non-final-merged-states (map (λ (s) (if (set-member? s start)
-                                                  (merged-state start s)
-                                                  (merged-state (set-first s) s)))
-                                       (equivalence-class-non-final EC))]
-         [final-merged-states (filter-map (λ (s) (and (> (set-count s) 1)
-                                                      (merged-state (set-first s) s))) (equivalence-class-final EC))]
-         [merged-states (append final-merged-states non-final-merged-states)]
-         [other-states (append-map set->list (filter (λ (s) (= (set-count s) 1)) (equivalence-class-final EC)))]
-         [new-states (remove-duplicates (append (map merged-state-new-symbol merged-states) other-states))]
-         [new-finals (filter (λ (s) (member s finals)) new-states)]
-         [table->rules (foldl (λ (row acc)
-                                (if (list? (member (first row) new-states))
-                                    (append (map (λ (r) (if (list? (member (second r) new-states))
-                                                            (cons (first row) r)
-                                                            (list (first row) (first r) (search-for-merged-state (second r) merged-states))))
-                                                 (second row)) acc)
-                                    acc))
-                              '()
-                              transition-table)])
-    table->rules
-     #;(make-unchecked-dfa new-states
-                        alphabet
-                        start
-                        new-finals
-                        table->rules
-                        'no-dead)))
-
-(define (make-transition-table dfa)
-  (let ([states (fsa-getstates dfa)]
-        [rules (fsa-getrules dfa)])
-    (for/list ([state states]
-               #:do [(define applicable-rules (filter-map (λ (rule) (and (eq? state (first rule))
-                                                                         (list (second rule) (third rule))))
-                                                          rules))])
-      (list state applicable-rules))))
-    
-
-
-
-
-
-
-
-
-
-(define (equivalence? matchee matcher last-ec-non-finals last-ec-finals transition-table matching-finals)
-  (define (same-transitions? matchee-transitions matcher-transitions)
-    (made-match? andmap matchee-transitions matcher-transitions))
-
-  (define (partial-match? matchee-transitions matcher-transitions)
-    (made-match? ormap matchee-transitions matcher-transitions))
-
-  (define (made-match? f matchee-transitions matcher-transitions)
-    (list? (f (λ (t) (member t matchee-transitions)) matcher-transitions)))
-    
-  (define (transition-to-ec-final-apart-of-same-set transitions finals-set)
-    (for*/and ([tran transitions]
-               [finals last-ec-finals])
-      (not (set-member? finals (second tran)))))
-    
-  (define (at-least-one-transitions-to-ec-non-final transitions non-finals-set)
-    (for*/or ([tran transitions]
-              [non-finals non-finals-set])
-      (set-member? non-finals (second tran))))
-  
-  (define (matchee-transition-to-matcher? matchee-transitions)
-    (let ([matchee-destinations (map second matchee-transitions)])
-      (list? (member matcher matchee-destinations))))
-
-  (define (transitions-apart-of-same-set? matchee-transitions matcher-transitions)
-    (let* ([matchee-destinations (map second matchee-transitions)]
-           [matcher-destinations (map second matcher-transitions)]
-           [matcher-destination-set-from-non-finals (append-map
-                                                     (λ (d) (filter (λ (s) (proper-subset? (set d) s)) last-ec-non-finals))
-                                                     matcher-destinations)]
-           [matcher-destination-set-from-finals (append-map
-                                                 (λ (d) (filter (λ (s) (proper-subset? (set d) s)) last-ec-finals))
-                                                 matcher-destinations)])
-      (ormap (λ (d) (or (ormap (λ (s) (proper-subset? (set d) s)) matcher-destination-set-from-non-finals)
-                        (ormap (λ (s) (proper-subset? (set d) s)) matcher-destination-set-from-finals))) matchee-destinations)))
-      
-  (define (connection-between-matchee-and-matcher matchee-transitions matcher-transitions)
-    (or (and (partial-match? matchee-transitions matcher-transitions)
-             (at-least-one-transitions-to-ec-non-final matchee-transitions last-ec-non-finals)
-             (at-least-one-transitions-to-ec-non-final matcher-transitions last-ec-non-finals))
-        (and (matchee-transition-to-matcher? matchee-transitions)
-             (transitions-apart-of-same-set? matchee-transitions matcher-transitions))))
-  
-  (let ([matchee-transitions (first (filter-map (λ (row) (and (eq? matchee (first row))
-                                                              (second row)))
-                                                transition-table))]
-        [matcher-transitions (first (filter-map (λ (row) (and (eq? matcher (first row))
-                                                              (second row)))
-                                                transition-table))])
-    #|(displayln matchee-transitions)
-    (displayln matcher-transitions)
-    (displayln last-ec-non-finals)
-    (displayln last-ec-finals)
-    (displayln transition-table)|#
-    (or (same-transitions? matchee-transitions matcher-transitions)
-        (and (connection-between-matchee-and-matcher matchee-transitions matcher-transitions)
-             (transition-to-ec-final-apart-of-same-set matchee-transitions last-ec-finals)
-             (transition-to-ec-final-apart-of-same-set matcher-transitions last-ec-finals))
-        (and (ormap (λ (s) (> (set-count s) 1)) last-ec-finals)
-             (or (and matching-finals (transitions-apart-of-same-set? matchee-transitions matcher-transitions))
-                 (connection-between-matchee-and-matcher matchee-transitions matcher-transitions))
-             #;(connection-between-matchee-and-matcher matchee-transitions matcher-transitions)))))
-         
-
-
-
-
-;;establish equivalence classes where
-
-(define (make-equivalence-classes states finals transition-table)
-  (define (make-next-equivalence-class last-ec matches-to-make new-ec transition-table matching-finals)
-    (define (make-next-equivalence-class-helper last-ec matches-to-make new-ec transition-table matching-finals)
-      (define (make-equivalence-helper matchee lo-matches-to-make last-ec new-ec transition-table matching-finals)
-        (define (make-equivalence matchee potential-matches new-ec last-ec-non-finals last-ec-finals transition-table matching-finals)
-          (define (make-equivalence-set matchee matched non-finals)
-            (let ([set-index (index-where non-finals (λ (s) (set-member? s matched)))])
-              (if (number? set-index)
-                  (cons (set-add (list-ref non-finals set-index) matchee) (remove (list-ref non-finals set-index) non-finals))
-                  (cons (set matchee matched) non-finals))))
-  
-          #;(define (equivalence? matchee matcher last-ec-non-finals last-ec-finals transition-table)
-            (define (same-transitions? matchee-transitions matcher-transitions)
-              (made-match? andmap matchee-transitions matcher-transitions))
-
-            (define (partial-match? matchee-transitions matcher-transitions)
-              (made-match? ormap matchee-transitions matcher-transitions))
-
-            (define (made-match? f matchee-transitions matcher-transitions)
-              (list? (f (λ (t) (member t matchee-transitions)) matcher-transitions)))
-    
-            (define (transition-to-ec-final-apart-of-same-set transitions finals-set)
-              (for*/and ([tran transitions]
-                         [finals last-ec-finals])
-                (not (set-member? finals (second tran)))))
-    
-            (define (at-least-one-transitions-to-ec-non-final transitions non-finals-set)
-              (for*/or ([tran transitions]
-                        [non-finals non-finals-set])
-                (set-member? non-finals (second tran))))
-  
-            (define (matchee-transition-to-matcher? matchee-transitions)
-              (let ([matchee-destinations (map second matchee-transitions)])
-                (list? (member matcher matchee-destinations))))
-
-            (define (transitions-apart-of-same-set? matchee-transitions matcher-transitions)
-              (let* ([matchee-destinations (map second matchee-transitions)]
-                     [matcher-destinations (map second matcher-transitions)]
-                     [matcher-destination-set-from-non-finals (append-map
-                                                               (λ (d) (filter (λ (s) (proper-subset? (set d) s)) last-ec-non-finals))
-                                                               matcher-destinations)]
-                     [matcher-destination-set-from-finals (append-map
-                                                           (λ (d) (filter (λ (s) (proper-subset? (set d) s)) last-ec-finals))
-                                                           matcher-destinations)])
-                (ormap (λ (d) (or (ormap (λ (s) (proper-subset? (set d) s)) matcher-destination-set-from-non-finals)
-                                  (ormap (λ (s) (proper-subset? (set d) s)) matcher-destination-set-from-finals))) matchee-destinations)))
-      
-            (define (connection-between-matchee-and-matcher matchee-transitions matcher-transitions)
-              (or (and (partial-match? matchee-transitions matcher-transitions)
-                       (at-least-one-transitions-to-ec-non-final matchee-transitions last-ec-non-finals)
-                       (at-least-one-transitions-to-ec-non-final matcher-transitions last-ec-non-finals))
-                  (and (matchee-transition-to-matcher? matchee-transitions)
-                       (transitions-apart-of-same-set? matchee-transitions matcher-transitions))))
-  
-            (let ([matchee-transitions (first (filter-map (λ (row) (and (eq? matchee (first row))
-                                                                        (second row)))
-                                                          transition-table))]
-                  [matcher-transitions (first (filter-map (λ (row) (and (eq? matcher (first row))
-                                                                        (second row)))
-                                                          transition-table))])
-              (or (same-transitions? matchee-transitions matcher-transitions)
-                  (and (connection-between-matchee-and-matcher matchee-transitions matcher-transitions)
-                       (transition-to-ec-final-apart-of-same-set matchee-transitions last-ec-finals)
-                       (transition-to-ec-final-apart-of-same-set matcher-transitions last-ec-finals))
-                  (and (ormap (λ (s) (> (set-count s) 1)) last-ec-finals)
-                       (connection-between-matchee-and-matcher matchee-transitions matcher-transitions)))))
-          
-          (cond [(set-empty? potential-matches)
-                 (if #;(member (set matchee) (equivalence-class-final new-ec))
-                     (or (ormap (λ (s) (proper-subset? (set matchee) s)) (equivalence-class-non-final new-ec))
-                         #;(ormap (λ (s) (subset? (set matchee) s)) (equivalence-class-final new-ec)))
-                     new-ec
-                     (struct-copy equivalence-class
-                                  new-ec
-                                  [final (cons (set matchee) (equivalence-class-final new-ec))]))]
-                [(equivalence? matchee (set-first potential-matches) last-ec-non-finals last-ec-finals transition-table matching-finals)
-                 (struct-copy equivalence-class
-                              new-ec
-                              [non-final (make-equivalence-set matchee (set-first potential-matches) (equivalence-class-non-final new-ec))])]
-                [else (make-equivalence matchee
-                                        (set-rest potential-matches)
-                                        new-ec
-                                        last-ec-non-finals
-                                        last-ec-finals
-                                        transition-table
-                                        matching-finals)]))
-        (if (empty? lo-matches-to-make)
-            new-ec
-            (make-equivalence-helper matchee
-                                     (rest lo-matches-to-make)
-                                     last-ec
-                                     (make-equivalence matchee
-                                                       (first lo-matches-to-make)
-                                                       new-ec
-                                                       (equivalence-class-non-final last-ec)
-                                                       (equivalence-class-final last-ec)
-                                                       transition-table
-                                                       matching-finals)
-                                     transition-table
-                                     matching-finals)))
-      (if (set-empty? matches-to-make)
-          new-ec 
-          (make-next-equivalence-class-helper last-ec
-                                              (set-rest matches-to-make)
-                                              (make-equivalence-helper (set-first matches-to-make)
-                                                                       (if (empty? (equivalence-class-non-final new-ec))
-                                                                           (list (set-rest matches-to-make))
-                                                                           (map (λ (nfs) (set-union (set-rest matches-to-make) nfs))
-                                                                                (equivalence-class-non-final new-ec)))
-                                                                       last-ec
-                                                                       new-ec
-                                                                       transition-table
-                                                                       matching-finals)
-                                              transition-table
-                                              matching-finals)))
-    (if (empty? matches-to-make)
-        new-ec 
-        (make-next-equivalence-class last-ec
-                                     (rest matches-to-make)
-                                     (make-next-equivalence-class-helper last-ec (first matches-to-make) new-ec transition-table matching-finals)
-                                     transition-table
-                                     matching-finals)))
-  
-  (let ([first-equivalence-class (equivalence-class (list (list->set states)) (list (list->set finals)))])
-    (define (make-equivalence-classes-helper LoEC)
-      (define (same-equivalence-class? EC1 EC2)
-        (define (same-equivalence-final)
-          (and (= (length (equivalence-class-final EC1)) (length (equivalence-class-final EC2)))
-               (list? (andmap (λ (t) (member t (equivalence-class-final EC1))) (equivalence-class-final EC2)))))
-        (define (same-equivalence-non-final)
-          (and (= (length (equivalence-class-non-final EC1)) (length (equivalence-class-non-final EC2)))
-               (list? (andmap (λ (s1) (member s1 (equivalence-class-non-final EC2))) (equivalence-class-non-final EC1)))))
-        (and (same-equivalence-non-final) (same-equivalence-final)))
-      (cond [(or (and (>= (length LoEC) 2)
-                  (same-equivalence-class? (first LoEC) (second LoEC)))
-                 (= (length LoEC) 4))
-             (first LoEC)]
-            [(ormap (λ (s) (> (set-count s) 1)) (equivalence-class-final (first LoEC)))
-             (let ([new-ec-for-non-finals (make-next-equivalence-class
-                                           (first LoEC)
-                                           (equivalence-class-non-final (first LoEC))
-                                           (equivalence-class (list) (equivalence-class-final (first LoEC)))
-                                           transition-table #f)]
-                   [new-ec-for-finals (make-next-equivalence-class
-                                       (first LoEC)
-                                       (equivalence-class-final (first LoEC))
-                                       (equivalence-class (list) (list) #;(equivalence-class-final (first LoEC)))
-                                       transition-table
-                                       #t)])
-               
-               (make-equivalence-classes-helper
-                      (cons (struct-copy equivalence-class
-                                   (first LoEC)
-                                   [non-final (equivalence-class-non-final new-ec-for-non-finals)]
-                                   [final (remove-duplicates
-                                           (append (filter (λ (s) (not (member s (equivalence-class-final (first LoEC)))))
-                                                           (equivalence-class-final new-ec-for-non-finals))
-                                                   (equivalence-class-non-final new-ec-for-finals)
-                                                   (equivalence-class-final new-ec-for-finals)))])
-                      LoEC)))]
-            [else (make-equivalence-classes-helper (cons (make-next-equivalence-class (first LoEC)
-                                                                                      (equivalence-class-non-final (first LoEC))
-                                                                                      (equivalence-class (list)
-                                                                                                         (equivalence-class-final (first LoEC)))
-                                                                                      transition-table
-                                                                                      #f)
-                                                         LoEC))])) 
-    (make-equivalence-classes-helper (list first-equivalence-class))))
-
-(struct state-pair (s1 s2 marked?) #:transparent)
-
+;;all-pairs | all of the state-pairs after each iteration of filling the table | (listof state-pair) 
 (struct state-pairings (all-pairs) #:transparent)
 
-(define (unchecked->dfa old-dfa)
-  (dfa (fsa-getstates old-dfa)
-       (fsa-getalphabet old-dfa)
-       (fsa-getstart old-dfa)
-       (fsa-getfinals old-dfa)
-       (fsa-getrules old-dfa)
+;;new-symbol | the new state symbol that represents all of the states that got merged | symbol
+;;old-symbols | all of the symbols that merged into one state | (listof state)
+(struct merged-state (new-symbol old-symbols) #:transparent)
+
+;;states | the states of the dfa | (listof state)
+;;alphabet | the alphabet that the dfa reads | (list of symbol)
+;;start | the starting state of the dfa | state
+;;finals | the final states of the dfa| (listof finals)
+;;rules | the rules that the dfa must follow | (listof rule)
+;;no-dead | the symbol of the dead state | symbol
+(struct dfa (states alphabet start finals rules no-dead) #:transparent)
+
+;;unchecked-dfa -> dfa-struct
+;;Purpose: Converts the given unchecked-dfa to a dfa struct
+(define (unchecked->dfa M)
+  (dfa (fsa-getstates M)
+       (fsa-getalphabet M)
+       (fsa-getstart M)
+       (fsa-getfinals M)
+       (fsa-getrules M)
        'no-dead))
 
-;;table filling method
-;;dfa -> dfa
-;;Purpose: If possible minimizes the given dfa, by merging equivalent states and removing unreachable states
+(define e-queue '())
+
+(define qfirst first)
+
+(define qempty? empty?)
+
+;;(queueof X) (queue X) -> (queueof X)
+;;Purpose: Adds the X to the back of the given (queueof X) 
+(define (enqueue queue x)
+  (append queue x))
+
+;;(queueof X) -> (queueof X)
+;;Purpose: Removes the first element of the given (queueof X) 
+(define (dequeue queue)
+  (rest queue))
+
 (define (minimize-dfa M)
+  ;;dfa -> dfa
+  ;;Purpose: Removes any unreachable states
+  (define (remove-unreachables M)
+    ;;state (listof rule) (listof path) -> boolean
+    ;;Purpose: Determines if the given state is reachable from the start state
+    (define (reachable-from-start? destination rules paths)  
+      ;; path -> boolean
+      ;; Purpose: Determines if the given path has reached the destination state
+      (define (reached-destination? path)
+        (eq? (third (first path)) destination))
+      ;;start destination path -> path
+      ;; Purpose: Updates the path to the destination state
+      (define (reachable-from-start-helper path)
+        (let* ([last-rules-used (first path)]
+               [usable-rules (filter (λ (rule) (and (eq? (third last-rules-used) (first rule))
+                                                    (not (member rule path))))
+                                     rules)])
+          (for/list ([last-rule last-rules-used]
+                     [connected-rules usable-rules])
+            (cons connected-rules path))))
+      (cond [(ormap reached-destination? paths) #t]
+            [(qempty? paths) #f]
+            [else (reachable-from-start? destination
+                                         rules
+                                         (enqueue (dequeue paths) (reachable-from-start-helper (qfirst paths))))]))
+    (let* ([states (fsa-getstates M)]
+           [start (fsa-getstart M)]
+           [rules (fsa-getrules M)]
+           [starter-rules (filter-map (λ (rule) (and (eq? (first rule) start)
+                                                     (list rule))) rules)]
+           [reachable-states (filter (λ (state) (or (eq? state start)
+                                                    (reachable-from-start? state rules starter-rules))) states)]
+           [usable-rules (filter (λ (r) (ormap (λ (s) (eq? (first r) s)) reachable-states)) rules)])
+      (make-unchecked-dfa reachable-states
+                          (fsa-getalphabet M)
+                          (fsa-getstart M)
+                          (filter (λ (f) (member f reachable-states)) (fsa-getfinals M))
+                          usable-rules
+                          'no-dead)))
+  ;;dfa -> (hash state rules)
+  ;;Purpose: Makes a transition table with the states and its applicable rules
+  (define (make-transition-table dfa)
+    (let ([states (fsa-getstates dfa)]
+          [rules (fsa-getrules dfa)])
+      (foldl (λ (state hash)
+               (let ([applicable-rules (filter-map (λ (rule) (and (eq? state (first rule))
+                                                                  (list (second rule) (third rule))))
+                                                   rules)])
+                 (hash-set hash state applicable-rules)))
+             (hash)
+             states)))
+  ;;dfa -> (listof state-pair)
+  ;;Purpose: Makes the state table needed to minimize the dfa
+  (define (make-states-table dfa transition-table)
+    ;;(listof state-pair) (listof state-pair) -> (listof state-pair)
+    ;;Purpose: Makes half of the state-pairing table
+    (define (make-half-table loSP new-table)
+      (cond [(empty? loSP) new-table]
+            [(boolean? (member (first loSP) new-table (λ (sp1 sp2) (and (eq? (state-pair-s1 sp1) (state-pair-s2 sp2))
+                                                                        (eq? (state-pair-s2 sp1) (state-pair-s1 sp2))))))
+             (make-half-table (rest loSP) (cons (first loSP) new-table))]
+            [else (make-half-table (rest loSP) new-table)]))
+    ;;state-pair -> state-pair
+    ;;Purpose: Creates the destination state-pairs using the given state-pair and destination state-pairs to the orignal-state-pair
+    (define (make-destination-pairs sp)
+      (let* ([ump-s1-transitions (hash-ref transition-table (state-pair-s1 sp))]
+             [ump-s2-transitions (hash-ref transition-table (state-pair-s2 sp))]
+             [state-pairs-from-transitions (map (λ (x) (let ([s1-tran (filter (λ (tran) (eq? x (first tran))) ump-s1-transitions)]
+                                                             [s2-tran (filter (λ (tran) (eq? x (first tran))) ump-s2-transitions)])
+                                                         (state-pair (second (first s1-tran)) (second (first s2-tran)) #f 'none)))
+                                                (fsa-getalphabet dfa))])
+        (struct-copy state-pair sp [destination-pairs state-pairs-from-transitions])))
+    (let* ([states (fsa-getstates dfa)]
+           [init-states-pairing (for*/list ([s1 states]
+                                            [s2 states]
+                                            #:unless (eq? s1 s2))
+                                  (make-destination-pairs (state-pair s1 s2 #f 'none)))]
+           [other-half-of-table (make-half-table init-states-pairing '())])
+      (filter (λ (sp) (not (member sp other-half-of-table))) init-states-pairing)))
+  ;; merged-state state-pair -> boolean
+  ;; Purpose: Determines if given state-pair shares at least one state with the given merged-state
+  (define (at-least-one-state-matches? merged-state unmarked-pair)
+    (or (set-member? (merged-state-old-symbols merged-state) (state-pair-s1 unmarked-pair))
+        (set-member? (merged-state-old-symbols merged-state) (state-pair-s2 unmarked-pair))))
+  ;;state-pair final-states -> state-pair
+  ;;Purpose: Marks if the given state-pair if only one of the states is a final state
+  (define (mark-states-table pairing finals)
+    (if (or (and (list? (member (state-pair-s1 pairing) finals))
+                 (boolean? (member (state-pair-s2 pairing) finals)))
+          
+            (and (list? (member (state-pair-s2 pairing) finals))
+                 (boolean? (member (state-pair-s1 pairing) finals))))
+        (struct-copy state-pair pairing [marked? #t])
+        pairing))
+  ;;(listof state-pairings) transition-table alphabet -> state-pairings
+  ;; Purpose: Updates the marks of the given (listof state-pairings) if applicable, terminates when two pairings are identical.
+  (define (make-matches loSP transition-table alphabet)
+    ;;(listof state-pair) (listof state-pair) (listof state-pair) -> state-pairings
+    ;;Purpose: Updates the unmarked-pairs to become marked-pairs if applicable.
+    (define (update-pairs marked-pairs unmarked-pairs remaining-unmarked-pairs)
+      ;;state-pair (listof state-pair) transition-table alphabet -> boolean
+      ;;Purpose: Determines if the given state-pair needs to be marked.
+      (define (update-mark? unmarked-pair)
+        (ormap (λ (sp) (list? (member sp marked-pairs (λ (sp1 sp2) (or (and (eq? (state-pair-s1 sp1) (state-pair-s1 sp2))
+                                                                            (eq? (state-pair-s2 sp1) (state-pair-s2 sp2)))
+                                                                       (and (eq? (state-pair-s1 sp1) (state-pair-s2 sp2))
+                                                                            (eq? (state-pair-s2 sp1) (state-pair-s1 sp2))))))))
+               (state-pair-destination-pairs unmarked-pair)))
+      (cond [(empty? unmarked-pairs) (state-pairings (append marked-pairs remaining-unmarked-pairs))]
+            [(update-mark? (first unmarked-pairs))
+             (update-pairs (cons (struct-copy state-pair (first unmarked-pairs) [marked? #t]) marked-pairs)
+                           (rest unmarked-pairs)
+                           remaining-unmarked-pairs)]
+            [else (update-pairs marked-pairs
+                                (rest unmarked-pairs)
+                                (cons (first unmarked-pairs) remaining-unmarked-pairs))]))
+    ;;(listof state-pairings) (listof state-pairings) -> boolean
+    ;; Purpose: Determines if the two given state-pairings are the same
+    (define (same-markings? loSP1 loSP2)
+      (let ([unmarked-SP1 (filter (λ (sp) (not (state-pair-marked? sp))) loSP1)]
+            [unmarked-SP2 (filter (λ (sp) (not (state-pair-marked? sp))) loSP2)]
+            [marked-SP1 (filter (λ (sp) (state-pair-marked? sp)) loSP1)]
+            [marked-SP2 (filter (λ (sp) (state-pair-marked? sp)) loSP2)])
+        (and (andmap (λ (sp) (list? (member sp unmarked-SP2))) unmarked-SP1)
+             (andmap (λ (sp) (list? (member sp marked-SP2))) marked-SP1))))
+    (if (and (>= (length loSP) 2)
+             (same-markings? (state-pairings-all-pairs (first loSP)) (state-pairings-all-pairs (second loSP))))
+        (first loSP)
+        (let ([marked-pairs (filter (λ (sp) (state-pair-marked? sp)) (state-pairings-all-pairs (first loSP)))]
+              [unmarked-pairs (filter (λ (sp) (not (state-pair-marked? sp))) (state-pairings-all-pairs (first loSP)))])
+          (make-matches (cons (update-pairs marked-pairs unmarked-pairs '()) loSP)
+                        transition-table
+                        alphabet))))
+  
+  ;; (listof state-pairings) dfa transtition-table -> dfa
+  ;;Purpose: Converts the (listof state-pairings), dfa, and transition table into an equivalent minimized (if possible) dfa.
+  (define (table->dfa loSP old-dfa transition-table)
+    ;;state (listof merged-state) -> state
+    ;; Purpose: Searches for the merged-state that contains the given state
+    (define (search-for-merged-state old-state merged-states)
+      (first (filter-map (λ (ms) (and (set-member? (merged-state-old-symbols ms) old-state)
+                                      (merged-state-new-symbol ms)))                
+                         merged-states)))
+    ;;dfa (listof state-pair) (listof merged-state) -> (listof merged-state)
+    ;;Purpose: Accumulates the conversion of state-pairs into merged-states
+    (define (accumulate-unmarked-pairs unmarked-pairs acc)
+      ;; state-pair (listof merged-state) -> boolean
+      ;; Purpose: Determines if given state-pair has any overlap (at least one same state) with any state-pair in the given (listof state-pairings)
+      (define (overlap? unmarked-pair loSP)
+        (ormap (λ (sp) (at-least-one-state-matches? sp unmarked-pair)) loSP))
+      ;;dfa state-pair (listof merged-state) -> (listof merged-state)
+      ;;Purpose: Merges the state-pair into its overlapping pair and updates the given (listof merged-state) to contain the new merged-state
+      (define (merge-pairs unmarked-pair loSP)
+        ;;dfa state-pair merged-state -> merged-state
+        ;;Purpose: Updates the given merged state to contain the states from the given state-pair
+        (define (update-merged-state unmarked-pair overlapped-pair)
+          (let* ([start (fsa-getstart old-dfa)]
+                 [finals (fsa-getfinals old-dfa)]
+                 [ump-s1 (state-pair-s1 unmarked-pair)]
+                 [ump-s2 (state-pair-s2 unmarked-pair)]
+                 [new-old-symbols-set (set-add (set-add (merged-state-old-symbols overlapped-pair) ump-s1) ump-s2)])
+            (cond [(and (or (eq? ump-s1 start) (eq? ump-s2 start))
+                        (not (eq? (merged-state-new-symbol overlapped-pair) start)))
+                   (struct-copy merged-state overlapped-pair
+                                [new-symbol start]
+                                [old-symbols new-old-symbols-set])]
+                  [(and (or (member ump-s1 finals) (member ump-s2 finals))
+                        (not (member (merged-state-new-symbol overlapped-pair) finals)))
+                   (struct-copy merged-state overlapped-pair
+                                [new-symbol (if (member ump-s1 finals) ump-s1 ump-s2)]
+                                [old-symbols new-old-symbols-set])]
+                  [else (struct-copy merged-state overlapped-pair [old-symbols new-old-symbols-set])])))
+        (let* ([overlapped-pair (first (filter (λ (sp) (at-least-one-state-matches? sp unmarked-pair)) loSP))]
+               [new-merged-state (update-merged-state unmarked-pair overlapped-pair)])
+          (map (λ (sp) (if (equal? overlapped-pair sp) new-merged-state sp)) loSP)))
+      ;;dfa state-pair -> merged-state
+      ;;Purpose: Converts a state pair into a merged-state
+      (define (make-merged-state unmarked-pair)
+        (let ([start (fsa-getstart old-dfa)]
+              [finals (fsa-getfinals old-dfa)]
+              [ump-s1 (state-pair-s1 unmarked-pair)]
+              [ump-s2 (state-pair-s2 unmarked-pair)])
+          (cond [(or (eq? ump-s1 start)
+                     (eq? ump-s2 start))
+                 (merged-state start (set ump-s1 ump-s2))]
+                [(or (member ump-s1 finals)
+                     (member ump-s2 finals))
+                 (merged-state (if (member ump-s1 finals)
+                                   ump-s1
+                                   ump-s2)
+                               (set ump-s1 ump-s2))]
+                [else (merged-state ump-s1 (set (state-pair-s1 unmarked-pair) ump-s2))])))
+      (cond [(empty? unmarked-pairs) acc]
+            [(overlap? (first unmarked-pairs) acc)
+             (accumulate-unmarked-pairs (rest unmarked-pairs) (merge-pairs (first unmarked-pairs) acc))]
+            [(accumulate-unmarked-pairs (rest unmarked-pairs) (cons (make-merged-state (first unmarked-pairs)) acc))]))
+    (let* ([states (fsa-getstates old-dfa)]
+           [finals (fsa-getfinals old-dfa)]
+           [marked-pairs (filter (λ (sp) (state-pair-marked? sp)) loSP)]
+           [unmarked-pairs (filter (λ (sp) (not (state-pair-marked? sp))) loSP)]
+           [merged-unmarked-pairs (accumulate-unmarked-pairs unmarked-pairs '())]
+           [states-that-were-merged (set->list (foldl (λ (mp acc) (set-remove (set-union acc (merged-state-old-symbols mp))
+                                                                              (merged-state-new-symbol mp)))
+                                                      (set) merged-unmarked-pairs))]
+           [remaining-states (filter (λ (s) (not (member s states-that-were-merged))) states)]
+           [new-finals (filter (λ (s) (member s finals)) remaining-states)]
+           [table->rules (append-map identity
+                                     (hash-map transition-table
+                                               (λ (key val)
+                                                 (if (list? (member key remaining-states))
+                                                     (map (λ (r)
+                                                            (if (list? (member (second r) remaining-states))
+                                                                (cons key r)
+                                                                (list key (first r) (search-for-merged-state (second r) merged-unmarked-pairs))))
+                                                          val)
+                                                     '()))))])
+      (make-unchecked-dfa remaining-states
+                          (fsa-getalphabet old-dfa)
+                          (fsa-getstart old-dfa)
+                          new-finals
+                          table->rules
+                          'no-dead)))
   (let* ([dfa (remove-unreachables (ndfa->dfa M))]
          [transition-table (make-transition-table dfa)]
          [finals (fsa-getfinals dfa)]
-         [states-table (map (λ (sp) (mark-states-table sp finals)) (make-states-table dfa))]
-         [filled-table (make-matches (list (state-pairings states-table)) transition-table (fsa-getalphabet dfa))])
-   (table->dfa (state-pairings-all-pairs filled-table) dfa transition-table)))
-
-;; (listof state-pairings) dfa transtition-table -> dfa
-;;Purpose: Converts the (listof state-pairings), dfa, and transition table into an equivalent minimized (if possible) dfa.
-(define (table->dfa loSP old-dfa transition-table)
-  ;;state (listof merged-state) -> state
-  ;; Purpose: Searches for the merged-state that contains the given state
-  (define (search-for-merged-state old-state merged-states)
-    (first (filter-map (λ (ms) (and (set-member? (merged-state-old-symbols ms) old-state)
-                                    (merged-state-new-symbol ms)))                
-                       merged-states)))
-  
-  (let* ([states (fsa-getstates old-dfa)]
-         [finals (fsa-getfinals old-dfa)]
-         [marked-pairs (filter (λ (sp) (state-pair-marked? sp)) loSP)]
-         [unmarked-pairs (filter (λ (sp) (not (state-pair-marked? sp))) loSP)]
-         [merged-unmarked-pairs (accumulate-unmarked-pairs old-dfa unmarked-pairs '())]
-         [states-that-were-merged (set->list (foldl (λ (mp acc) (set-remove (set-union acc (merged-state-old-symbols mp))
-                                                                            (merged-state-new-symbol mp)))
-                                                    (set) merged-unmarked-pairs))]
-         [remaining-states (filter (λ (s) (not (member s states-that-were-merged))) states)]
-         [new-finals (filter (λ (s) (member s finals)) remaining-states)]
-         [table->rules (foldl (λ (row acc)
-                                  (if (list? (member (first row) remaining-states))
-                                      (append (map (λ (r) (if (list? (member (second r) remaining-states))
-                                                              (cons (first row) r)
-                                                              (list (first row) (first r) (search-for-merged-state (second r)
-                                                                                                                   merged-unmarked-pairs))))
-                                                   (second row)) acc)
-                                      acc))
-                                '()
-                                transition-table)])
-   (make-unchecked-dfa remaining-states
-                        (fsa-getalphabet old-dfa)
-                        (fsa-getstart old-dfa)
-                        new-finals
-                        table->rules
-                        'no-dead)))
-
-;; merged-state state-pair -> boolean
-;; Purpose: Determines if given state-pair shares at least one state with the given merged-state
-(define (at-least-one-state-matches? merged-state unmarked-pair)
-  (or (set-member? (merged-state-old-symbols merged-state) (state-pair-s1 unmarked-pair))
-      (set-member? (merged-state-old-symbols merged-state) (state-pair-s2 unmarked-pair))))
-
-;; state-pair (listof merged-state) -> boolean
-;; Purpose: Determines if given state-pair has any overlap (at least one same state) with any state-pair in the given (listof state-pairings)
-(define (overlap? unmarked-pair loSP)
-  (ormap (λ (sp) (at-least-one-state-matches? sp unmarked-pair)) loSP))
-
-;;dfa state-pair (listof merged-state) -> (listof merged-state)
-;;Purpose: Merges the state-pair into its overlapping pair and updates the given (listof merged-state) to contain the new merged-state
-(define (merge-pairs dfa unmarked-pair loSP)
-  (let* ([overlapped-pair (first (filter (λ (sp) (at-least-one-state-matches? sp unmarked-pair)) loSP))]
-         [new-merged-state (update-merged-state dfa unmarked-pair overlapped-pair)])
-    (map (λ (sp) (if (equal? overlapped-pair sp) new-merged-state sp)) loSP)))
-
-;;dfa state-pair merged-state -> merged-state
-;;Purpose: Updates the given merged state to contain the states from the given state-pair
-(define (update-merged-state dfa unmarked-pair overlapped-pair)
-  (let* ([start (fsa-getstart dfa)]
-         [finals (fsa-getfinals dfa)]
-         [ump-s1 (state-pair-s1 unmarked-pair)]
-         [ump-s2 (state-pair-s2 unmarked-pair)]
-         [new-old-symbols-set (set-add (set-add (merged-state-old-symbols overlapped-pair) ump-s1) ump-s2)])
-    (cond [(and (or (eq? ump-s1 start) (eq? ump-s2 start))
-                (not (eq? (merged-state-new-symbol overlapped-pair) start)))
-           (struct-copy merged-state overlapped-pair
-                        [new-symbol start]
-                        [old-symbols new-old-symbols-set])]
-          [(and (or (member ump-s1 finals) (member ump-s2 finals))
-                (not (member (merged-state-new-symbol overlapped-pair) finals)))
-           (struct-copy merged-state overlapped-pair
-                        [new-symbol (if (member ump-s1 finals) ump-s1 ump-s2)]
-                        [old-symbols new-old-symbols-set])]
-           [else (struct-copy merged-state overlapped-pair [old-symbols new-old-symbols-set])])))
-
-
-           
-;;dfa state-pair -> merged-state
-;;Purpose: Converts a state pair into a merged-state
-(define (make-merged-state dfa unmarked-pair)
-  (let ([start (fsa-getstart dfa)]
-        [finals (fsa-getfinals dfa)]
-        [ump-s1 (state-pair-s1 unmarked-pair)]
-        [ump-s2 (state-pair-s2 unmarked-pair)])
-    (cond [(or (eq? ump-s1 start)
-               (eq? ump-s2 start))
-           (merged-state start (set ump-s1 ump-s2))]
-          [(or (member ump-s1 finals)
-               (member ump-s2 finals))
-          (merged-state (if (member ump-s1 finals)
-                            ump-s1
-                            ump-s2)
-                        (set ump-s1 ump-s2))]
-          [else (merged-state ump-s1 (set (state-pair-s1 unmarked-pair) ump-s2))])))
-                     
-;;dfa (listof state-pair) (listof merged-state) -> (listof merged-state)
-;;Purpose: Accumulates the conversion of state-pairs into merged-states
-(define (accumulate-unmarked-pairs dfa unmarked-pairs acc)
-  (cond [(empty? unmarked-pairs) acc]
-        [(overlap? (first unmarked-pairs) acc)
-         (accumulate-unmarked-pairs dfa (rest unmarked-pairs) (merge-pairs dfa (first unmarked-pairs) acc))]
-        [(accumulate-unmarked-pairs dfa (rest unmarked-pairs) (cons (make-merged-state dfa (first unmarked-pairs)) acc))]))
-
-;;state-pair final-states -> state-pair
-;;Purpose: Marks if the given state-pair if only one of the states is a final state
-(define (mark-states-table pairing finals)
-  (if (or (and (list? (member (state-pair-s1 pairing) finals))
-               (boolean? (member (state-pair-s2 pairing) finals)))
-          
-          (and (list? (member (state-pair-s2 pairing) finals))
-               (boolean? (member (state-pair-s1 pairing) finals))))
-      (struct-copy state-pair pairing [marked? #t])
-      pairing))
-
-;;(listof state-pairings) transition-table alphabet -> state-pairings
-;; Purpose: Updates the marks of the given (listof state-pairings) if applicable, terminates when two pairings are identical.
-(define (make-matches loSP transition-table alphabet)
-  ;;(listof state-pair) (listof state-pair) (listof state-pair) -> state-pairings
-  ;;Purpose: Updates the unmarked-pairs to become marked-pairs if applicable.
-  (define (update-pairs marked-pairs unmarked-pairs remaining-unmarked-pairs)
-    (cond [(empty? unmarked-pairs) (state-pairings (append marked-pairs remaining-unmarked-pairs))]
-          [(update-mark? (first unmarked-pairs) marked-pairs transition-table alphabet)
-           (update-pairs (cons (struct-copy state-pair (first unmarked-pairs) [marked? #t]) marked-pairs)
-                         (rest unmarked-pairs)
-                         remaining-unmarked-pairs)]
-          [else (update-pairs marked-pairs
-                         (rest unmarked-pairs)
-                         (cons (first unmarked-pairs) remaining-unmarked-pairs))]))
-  (if (and (>= (length loSP) 2)
-           (same-markings? (state-pairings-all-pairs (first loSP)) (state-pairings-all-pairs (second loSP))))
-     (first loSP)
-      (let ([marked-pairs (filter (λ (sp) (state-pair-marked? sp)) (state-pairings-all-pairs (first loSP)))]
-            [unmarked-pairs (filter (λ (sp) (not (state-pair-marked? sp))) (state-pairings-all-pairs (first loSP)))])
-        (make-matches (cons (update-pairs marked-pairs unmarked-pairs '()) loSP)
-                      transition-table
-                      alphabet))))
-
-;;(listof state-pairings) (listof state-pairings) -> boolean
-;; Purpose: Determines if the two given state-pairings are the same
-(define (same-markings? loSP1 loSP2)
-  (let ([unmarked-SP1 (filter (λ (sp) (not (state-pair-marked? sp))) loSP1)]
-        [unmarked-SP2 (filter (λ (sp) (not (state-pair-marked? sp))) loSP2)]
-        [marked-SP1 (filter (λ (sp) (state-pair-marked? sp)) loSP1)]
-        [marked-SP2 (filter (λ (sp) (state-pair-marked? sp)) loSP2)])
-    (and (andmap (λ (sp) (list? (member sp unmarked-SP2))) unmarked-SP1)
-         (andmap (λ (sp) (list? (member sp marked-SP2))) marked-SP1))))
-
-;;state-pair (listof state-pair) transition-table alphabet -> boolean
-;;Purpose: Determines if the given state-pair needs to be marked.
-(define (update-mark? unmarked-pair marked-pairs transition-table alphabet)
-  (let* ([ump-s1-transitions (first (filter (λ (transition) (eq? (first transition) (state-pair-s1 unmarked-pair))) transition-table))]
-         [ump-s2-transitions (first (filter (λ (transition) (eq? (first transition) (state-pair-s2 unmarked-pair))) transition-table))]
-         [state-pairs-from-transitions (map (λ (x) (let ([s1-tran (filter (λ (tran) (eq? x (first tran))) (second ump-s1-transitions))]
-                                                         [s2-tran (filter (λ (tran) (eq? x (first tran))) (second ump-s2-transitions))])
-                                                     (state-pair (second (first s1-tran)) (second (first s2-tran)) #f)))
-                                            alphabet)])
-    (ormap (λ (sp) (list? (member sp marked-pairs (λ (sp1 sp2) (or (and (eq? (state-pair-s1 sp1) (state-pair-s1 sp2))
-                                                                        (eq? (state-pair-s2 sp1) (state-pair-s2 sp2)))
-                                                                   (and (eq? (state-pair-s1 sp1) (state-pair-s2 sp2))
-                                                                        (eq? (state-pair-s2 sp1) (state-pair-s1 sp2))))))))
-           state-pairs-from-transitions)))
-  
-
-;;dfa -> (listof state-pair)
-;;Purpose: Makes the state table needed to minimize the dfa
-(define (make-states-table dfa)
-  ;;(listof state-pair) (listof state-pair) -> (listof state-pair)
-  ;;Purpose: Makes half of the state-pairing table
-  (define (make-half-table loSP new-table)
-    (cond [(empty? loSP) new-table]
-          [(boolean? (member (first loSP) new-table (λ (sp1 sp2) (and (eq? (state-pair-s1 sp1) (state-pair-s2 sp2))
-                                                            (eq? (state-pair-s2 sp1) (state-pair-s1 sp2))))))
-           (make-half-table (rest loSP) (cons (first loSP) new-table))]
-          [else (make-half-table (rest loSP) new-table)]))
-  (let* ([states (fsa-getstates dfa)]
-         [init-states-pairing (for*/list ([s1 states]
-                                          [s2 states]
-                                          #:unless (eq? s1 s2))
-                                (state-pair s1 s2 #f))]
-         [other-half-of-table (make-half-table init-states-pairing '())])
-    (filter (λ (sp) (not (member sp other-half-of-table))) init-states-pairing)))  
-      
-
-
-
-#|
-"minimize 4 - moore"
-(define minimize4-test (map (λ (M) (if (boolean? (test-equiv-fsa (ndfa->dfa M) (minimize-dfa4 M)))
-                                       (status (M 'whatami) #t)
-                                       (status (M 'whatami) #f))) listofmachines))
-"all passed?"
-(andmap (λ (s) (status-result s)) minimize4-test)
-
-"total"
-(length listofmachines)
-"pass"
-(length (filter (λ (s) (status-result s)) minimize4-test))
-"fail"
-(- (length listofmachines) (length (filter (λ (s) (status-result s)) minimize4-test)))
-"success rate"
-(* 100 (/ (length (filter (λ (s) (status-result s)) minimize4-test)) (length listofmachines)))
-
-|#
+         [init-states-table (make-states-table dfa transition-table)]
+         [states-table (map (λ (sp) (mark-states-table sp finals)) init-states-table)]
+         [filled-table (make-matches (list (state-pairings states-table)) transition-table (fsa-getalphabet dfa))]
+         [new-M (table->dfa (state-pairings-all-pairs filled-table) dfa transition-table)])
+    new-M))

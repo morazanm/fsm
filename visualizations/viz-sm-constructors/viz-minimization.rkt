@@ -12,6 +12,7 @@
          "../viz-lib/bounding-limits.rkt"
          "../viz-lib/zipper.rkt")
 
+(provide minimization-viz)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;CONSTANTS;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -136,12 +137,6 @@ ismg "finished machine"
 ;;Purpose: Removes the first element of the given (queueof X) 
 (define (dequeue queue)
   (rest queue))
-
-;;dfa dfa -> boolean
-;;Purpose: Determines if the two dfa have any changes
-(define (machine-changed? old-M new-M)
-  (and (test-equiv-fsa old-M new-M)
-       (not (= (length (fsa-getstates old-M)) (length (fsa-getstates new-M))))))
 
 ;;dfa -> dfa
 ;;Purpose: If possible minimizes the given dfa, by merging equivalent states and removing unreachable states
@@ -425,7 +420,6 @@ ismg "finished machine"
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;VIZ-FUNCTIONS;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-
 (define viz-go-next
   (go-next E-SCENE-WIDTH
            E-SCENE-HEIGHT
@@ -646,7 +640,7 @@ ismg "finished machine"
 ;;Purpose: Draws the informative messages using the given imsg-state
 (define (draw-imsg imsg-state)
 
-  (define phase0-imsg (text "Input Machine" 20 BLACK))
+  (define PHASE0-IMSG (text "Input Machine" 20 BLACK))
 
   ;;(listof state) -> string
   ;;Purpose: Converts the given (listof state) into a string
@@ -666,7 +660,7 @@ ismg "finished machine"
                              "are unreachable states"))
                  20 BLACK)))
   
-  (define phase2-imsg (text "Created state pairing table" 20 BLACK))
+  (define PHASE2-IMSG (text "Created state pairing table" 20 BLACK))
 
   ;;state-pair -> string
   ;;Purpose: Makes the state pair readable
@@ -714,9 +708,9 @@ ismg "finished machine"
               "This machine cannot be minimized")
           20 BLACK))
   (let ([current-phase (zipper-current (imsg-state-phase imsg-state))])
-    (cond [(= (phase-number current-phase) 0) phase0-imsg]
+    (cond [(= (phase-number current-phase) 0) PHASE0-IMSG]
           [(= (phase-number current-phase) 1) (make-phase1-imsg (phase-attributes current-phase))]
-          [(= (phase-number current-phase) 2) phase2-imsg]
+          [(= (phase-number current-phase) 2) PHASE2-IMSG]
           [(= (phase-number current-phase) 3) (make-phase3-imsg (phase-attributes current-phase))]
           [(= (phase-number current-phase) 4) (make-phase4-imsg (phase-attributes current-phase))]
           [(= (phase-number current-phase) 5) (make-phase5-imsg (phase-attributes current-phase))]
@@ -773,6 +767,12 @@ ismg "finished machine"
 ;; fsa -> void
 ;; Purpose: Displays the process of minimizing a dfa
 (define (minimization-viz M)
+  ;;dfa dfa -> boolean
+  ;;Purpose: Determines if the two dfa have any changes
+  (define (machine-changed? old-M new-M)
+    (and (test-equiv-fsa old-M new-M)
+         (not (= (length (fsa-getstates old-M)) (length (fsa-getstates new-M))))))
+  
   ;; dfa -> (vectorof (vectorof marking))
   ;; Purpose: Creates the representation of the state pairing table
   (define (make-table M)
@@ -917,9 +917,6 @@ ismg "finished machine"
          [phase-6 (list (phase 6 (last rebuilding-machines) filled-table (phase-6-attributes can-be-minimized?)))]
          [all-phases (append phase-0 phase-1 phase-2 phase-3 phase-4 phase-5 phase-6)]
          [graphs (make-main-graphic all-phases)])
-    
-    #;(test-equiv-fsa unchecked-M minimized-M)
-    
     (run-viz graphs
              (lambda () (graph->bitmap (first graphs)))
              MIDDLE-E-SCENE
@@ -962,44 +959,3 @@ ismg "finished machine"
                                         [E-KEY-DIMS viz-reset-zoom identity]
                                         [F-KEY-DIMS viz-max-zoom-in identity]))
              'minimization-viz)))
-
-
-(define EX4 (make-unchecked-dfa '(A B C D E F G)
-                                '(0 1)
-                                'A
-                                '(B C G)
-                                '((A 0 B) (A 1 C)
-                                          (B 0 D) (B 1 E)
-                                          (C 0 E) (C 1 D)
-                                          (D 0 G) (D 1 G)
-                                          (E 0 G) (E 1 G)
-                                          (F 0 D) (F 1 E)
-                                          (G 0 G) (G 1 G))
-                                'no-dead))
-
-(define EX5 (make-unchecked-dfa '(A B C D E F G H I)
-                                '(0 1)
-                                'A
-                                '(B C G)
-                                '((A 0 B) (A 1 C)
-                                          (B 0 D) (B 1 E)
-                                          (C 0 E) (C 1 D)
-                                          (D 0 G) (D 1 G)
-                                          (E 0 G) (E 1 G)
-                                          (F 0 D) (F 1 E)
-                                          (H 0 F) (H 1 I)
-                                          (I 0 H) (I 1 F)
-                                          (G 0 G) (G 1 G))
-                                'no-dead))
-
-
-(define EX6 (make-unchecked-dfa '(A B C D E)
-                                '(0 1)
-                                'A
-                                '(E)
-                                '((A 0 B) (A 1 C)
-                                          (B 0 B) (B 1 D)
-                                          (C 0 B) (C 1 C)
-                                          (D 0 B) (D 1 E)
-                                          (E 0 B) (E 1 C))
-                                'no-dead))
