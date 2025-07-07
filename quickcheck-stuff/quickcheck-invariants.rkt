@@ -2,8 +2,8 @@
 (require rackcheck "reg-exp-function.rkt" "testing-file-for-sm-test-invs.rkt")
 
 (define (translate-regexp regexp)
-  (cond [(null-regexp? (gen:list (gen:symbol (gen:const "∅") 1) 1))]
-        [(singleton-regexp? regexp) (gen:list (gen:symbol (gen:const (singleton-regexp-a regexp)) 1) 1)]
+  (cond [(null-regexp? (gen:list (gen:symbol (gen:const (first (string->list "∅"))) 1) 1))]
+        [(singleton-regexp? regexp) (gen:list (gen:symbol (gen:const (first (string->list (symbol->string (singleton-regexp-a regexp))))) 1) 1)]
         [(concat-regexp? regexp) (gen:tuple (translate-regexp (concat-regexp-r1 regexp)) (translate-regexp (concat-regexp-r2 regexp)))]
         [(union-regexp? regexp) (gen:choice (translate-regexp (union-regexp-r1 regexp)) (translate-regexp (union-regexp-r2 regexp)))]
         [(kleenestar-regexp? regexp) (gen:bind gen:natural (λ (x) (gen:list (translate-regexp regexp) x)))]
