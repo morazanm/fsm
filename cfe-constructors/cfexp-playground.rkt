@@ -220,7 +220,7 @@
 
 
 ;;CFE->CFG
-
+(define thesis-cfg-converted (cfg->cfe thesis-cfg1))
 
 (define thesis-cfe-converted (cfe->cfg thesis-cfe))
 

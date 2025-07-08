@@ -3,8 +3,7 @@
 (require "../fsm-core/private/constants.rkt"
          "../fsm-core/private/cfg.rkt"
          "../fsm-core/private/misc.rkt"
-         racket/hash
-         racket/string)
+         racket/hash)
 
 (provide null-cfexp
          empty-cfexp
@@ -84,7 +83,7 @@
   (foldl (λ (cfe env)
            (let ([new-cfe-env (hash-map/copy (cfexp-env cfe)
                                              (λ (k v) (if (hash-has-key? env k)
-                                                          (values (gen-state (hash-keys env)) v)
+                                                          (values (gen-nt (hash-keys env)) v)
                                                           (values k v))))])
              (hash-union env new-cfe-env)))
          (hash)
@@ -118,10 +117,9 @@
 (define (update-binding! cfe bindee-id binding)
   (let ([env (cfexp-env cfe)])
     (begin
-      #;(if (hash-has-key? env bindee-id)
-          (hash-set! env bindee-id (cons binding (hash-ref env bindee-id)))
-          (set! env (env-cfexp bindee-id binding)))
-      (set! env (env-cfexp bindee-id (if (hash-has-key? env bindee-id) (cons binding (hash-ref env bindee-id)) binding)))
+      (set! env (env-cfexp bindee-id (if (hash-has-key? env bindee-id)
+                                         (cons binding (hash-ref env bindee-id))
+                                         binding)))
       (set-cfexp-env! cfe env)
       (set! cfe (mk-var-cfexp env bindee-id)))))
           
@@ -234,17 +232,18 @@
                                                            (update-binding! (hash-ref variables key) key value)
                                                            (values key (hash-ref variables key)))))])
      (hash-ref updated-bindings start)))
-
-
-(define (printable-helper locfe connector)
-  (if (= (length locfe) 1)
-      (printable-cfexp (first locfe))
-      (string-append (printable-cfexp (first locfe))
-                     connector
-                     (printable-helper (rest locfe) connector))))
       
-
+;;cfe -> string
+;;Purpose: Converts the given cfe into a string to make it readable
 (define (printable-cfexp cfe)
+  ;;(listof cfe) string -> string
+  ;;Purpose: Converts and appends all of the cfes in the given (listof cfe) 
+  (define (printable-helper locfe connector)
+    (if (= (length locfe) 1)
+        (printable-cfexp (first locfe))
+        (string-append (printable-cfexp (first locfe))
+                       connector
+                       (printable-helper (rest locfe) connector))))
   (define NULL-REGEXP-STRING "∅")
   (define EMPTY-REGEXP-STRING (symbol->string EMP))
   (cond [(mk-null-cfexp? cfe) NULL-REGEXP-STRING]
@@ -257,7 +256,7 @@
   
 
 ;;cfe -> cfg
-;;Purpose: Converts the given cfe into its corresponding cfe
+;;Purpose: Converts the given cfe into its corresponding cfg
 (define (cfe->cfg cfe #:debug[debug #f])
   ;;vars    | the accumulated variables found from traversing the given cfe  | (listof var-cfexp)
   ;;singles | the accumulated singletons found from traversing the given cfe | (listof singleton-cfexp)
@@ -335,7 +334,7 @@
            '()
            lovcfe))
 
-  ;;nonterminal (queueof cfe) (listof rule)
+  ;;nonterminal (queueof cfe) (listof rule) -> (listof rule)
   ;;Purpose: Converts each cf in the (queueof cfe) into the proper grammar rules
   (define (remake-rules nt rules-to-convert finished-rules)
     (if (empty? rules-to-convert)
@@ -345,7 +344,7 @@
               (remake-rules nt (enqueue (dequeue rules-to-convert) (mk-union-cfexp-locfe cfe)) finished-rules)
               (remake-rules nt (dequeue rules-to-convert) (cons (cfe->rule nt cfe) finished-rules))))))
 
-  ;;non-terminal cfe
+  ;;non-terminal cfe -> rule
   ;;Purpose: Converts the cfe into a grammar rule using the given non-terminal
   (define (cfe->rule nt cfe)
     ;;if union found in concat split union and make concat using every branch
@@ -366,9 +365,19 @@
          [alphabet (remove-duplicates (map mk-singleton-cfexp-char singletons))]
          [rules (variables->rules variables '())]
          [nts (remove-duplicates (map mk-var-cfexp-cfe variables))]
-         [start-nt (cond [(mk-var-cfexp? cfe) (mk-var-cfexp-cfe cfe)]
+         [starting-nt (cond [(mk-var-cfexp? cfe) (mk-var-cfexp-cfe cfe)]
                          [(= (length nts) 1) (first nts)]
-                         [else (gen-state extracted-components)])])
+                         [else (gen-nt extracted-components)])])
     (if debug
-        (cfg nts alphabet rules start-nt)
-        (make-unchecked-cfg nts alphabet rules start-nt))))
+        (cfg nts alphabet rules starting-nt)
+        (make-unchecked-cfg nts alphabet rules starting-nt))))
+
+;; pda -> cfe
+;;Purpose: Converts the given pda into a cfe
+(define (pda->cfe pda)
+  pda)
+
+;;cfe -> pda
+;;Purpose: Converts the given cfe into a pda
+(define (cfe->pda cfe)
+  cfe)
