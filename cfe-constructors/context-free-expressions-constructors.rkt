@@ -18,6 +18,9 @@
          var-cfexp ;;change to remove struct out
          cfg->cfe
          cfe->cfg
+         printable-cfexp ;;temp
+         cfexp ;;temp
+         unchecked->cfg ;;temp
          #;env-cfexp)
 
 ;;a context-free expression is either:
@@ -107,16 +110,18 @@
 ;;cfe-id cfe -> env
 ;;Purpose: Creates an environment where the given cfe-id is the key and cfe is the value
 (define (env-cfexp cfe-id binding)
-  (hash cfe-id (list binding)))
+  (let ([binding (if (list? binding) binding (list binding))])
+    (hash cfe-id binding)))
 
 ;;var-cfexp cfe -> var-cfexp
 ;;Purpose: Creates a binding where the cfe is bound to the given var-cfexp's environment
 (define (update-binding! cfe bindee-id binding)
   (let ([env (cfexp-env cfe)])
     (begin
-      (if (hash-has-key? env bindee-id)
+      #;(if (hash-has-key? env bindee-id)
           (hash-set! env bindee-id (cons binding (hash-ref env bindee-id)))
           (set! env (env-cfexp bindee-id binding)))
+      (set! env (env-cfexp bindee-id (if (hash-has-key? env bindee-id) (cons binding (hash-ref env bindee-id)) binding)))
       (set-cfexp-env! cfe env)
       (set! cfe (mk-var-cfexp env bindee-id)))))
           
@@ -169,7 +174,10 @@
         [(mk-union-cfexp? cfe) (gen-cfexp-word (pick-cfexp cfe) MAX-KLEENESTAR-REPS)]
         [else (gen-cfe-kleene-word cfe MAX-KLEENESTAR-REPS gen-cfexp-word)]))
 
-(define-struct cfg (nts signa rules start) #:transparent)
+(struct cfg (nts sigma rules start) #:transparent)
+
+(define (unchecked->cfg G)
+  (cfg (cfg-get-v G) (cfg-get-alphabet G) (cfg-get-rules G) (cfg-get-start G)))
 
 ;;context-free grammar -> cfe
 ;;Purpose: Converts the given cfg its equivalent cfe
@@ -215,56 +223,152 @@
                                          (rule->expression (first RHS)))))))
   
   (let* ([nts (cfg-get-v G)]
-         [alphabet (cfg-get-alphabet G)]
          [rules (make-hash-table nts (λ (x) (filter-map (λ (rule) (and (eq? (first rule) x)
                                                                        (explode (symbol->string (third rule))))) (cfg-get-rules G))))]
          [start (cfg-get-start G)]
-         [singletons (make-hash-table alphabet singleton-cfexp)]
+         [singletons (make-hash-table (cfg-get-alphabet G) singleton-cfexp)]
          [variables (make-hash-table nts var-cfexp)]
          [rules->cfexp (make-cfexps-frm-rules rules singletons variables)]
-         [updated-bindings (hash-map/copy rules->cfexp (λ (key values)
-                                  (begin
-                                    (update-binding! (hash-ref variables key) key values)
-                                    (values key (hash-ref variables key)))))])
+         [updated-bindings (hash-map/copy rules->cfexp (λ (key value)
+                                                         (begin
+                                                           (update-binding! (hash-ref variables key) key value)
+                                                           (values key (hash-ref variables key)))))])
      (hash-ref updated-bindings start)))
+
+
+(define (printable-helper locfe connector)
+  (if (= (length locfe) 1)
+      (printable-cfexp (first locfe))
+      (string-append (printable-cfexp (first locfe))
+                     connector
+                     (printable-helper (rest locfe) connector))))
+      
+
+(define (printable-cfexp cfe)
+  (define NULL-REGEXP-STRING "∅")
+  (define EMPTY-REGEXP-STRING (symbol->string EMP))
+  (cond [(mk-null-cfexp? cfe) NULL-REGEXP-STRING]
+        [(mk-empty-cfexp? cfe) EMPTY-REGEXP-STRING]
+        [(mk-singleton-cfexp? cfe) (symbol->string (mk-singleton-cfexp-char cfe))]
+        [(mk-var-cfexp? cfe) (symbol->string (mk-var-cfexp-cfe cfe))]
+        [(mk-concat-cfexp? cfe) (string-append "(" (printable-helper (mk-concat-cfexp-locfe cfe) "") ")")]
+        [(mk-union-cfexp? cfe) (string-append "(" (printable-helper (mk-union-cfexp-locfe cfe) " ∪ ") ")")]
+        [else (gen-cfe-kleene-word cfe gen-cfexp-word)]))
   
 
-(define (cfe->cfg cfe)
- (define-struct pair-cfe (cfe-sym env) #:transparent)
+;;cfe -> cfg
+;;Purpose: Converts the given cfe into its corresponding cfe
+(define (cfe->cfg cfe #:debug[debug #f])
+  ;;vars    | the accumulated variables found from traversing the given cfe  | (listof var-cfexp)
+  ;;singles | the accumulated singletons found from traversing the given cfe | (listof singleton-cfexp)
+  (struct extraction-results (vars singles) #:transparent)
 
-  (define (get-symbol cfe)
-    (cond [(mk-null-cfexp? cfe) 'null]
-          [(mk-empty-cfexp? cfe) EMP]
-          [(mk-singleton-cfexp? cfe) (mk-singleton-cfexp-char cfe)]
-          [(mk-var-cfexp? cfe) (mk-var-cfexp-cfe cfe)]
-          [(mk-concat-cfexp? cfe) (map extract-data (mk-concat-cfexp-locfe cfe))]
-          [(mk-union-cfexp? cfe)  (map extract-data (mk-union-cfexp-locfe cfe))]
-          [else (get-symbol (mk-kleene-cfexp-cfe cfe))]))
+  (define e-queue '())
 
-  (define (get-cfe-symbol cfe)
-    (cond [(mk-null-cfexp? cfe) 'null]
-          [(mk-empty-cfexp? cfe) EMP]
-          [(mk-singleton-cfexp? cfe) (mk-singleton-cfexp-char cfe)]
-          [(mk-var-cfexp? cfe) (extract-all-cfexp (cfexp-env cfe) (list (extract-data cfe)))]
-          [(mk-concat-cfexp? cfe) (flatten (map get-cfe-symbol (mk-concat-cfexp-locfe cfe)))]
-          [(mk-union-cfexp? cfe) (flatten (map get-cfe-symbol (mk-union-cfexp-locfe cfe)))]
-          [else (get-cfe-symbol (mk-kleene-cfexp-cfe cfe))]))
+  (define qfirst first)
 
-  (define (extract-data cfe)
-    (pair-cfe (get-symbol cfe) cfe))
-  
-  (define (base-case? cfe)
-    (or (mk-null-cfexp? cfe)
-        (mk-empty-cfexp? cfe)
-        (mk-singleton-cfexp? cfe)))
-  
-  (define (extract-all-cfexp cfe-env acc)
-    (foldl (λ (cfe acc) (flatten (cons (extract-all-cfexp (cfexp-env cfe) (list (extract-data cfe)))#;(if (not (base-case? cfe))
-                                           (extract-all-cfexp (cfexp-env cfe) (list (extract-data cfe)))
-                                           (extract-data cfe)) acc)))
-             acc
-             (flatten (hash-values cfe-env)))
-    #;(flatten (hash-values cfe-env)))
-  
-  (let* ([all-cfes (flatten (extract-all-cfexp (cfexp-env cfe) (list (extract-data cfe))))])
-    all-cfes))
+  (define qempty? empty?)
+
+  ;;(queueof X) -> (queueof X)
+  ;;Purpose: Removes the first element from the queue
+  (define (dequeue qox)
+    (rest qox))
+
+  ;;(queueof X) X -> (queueof X)
+  ;;Purpose: Adds the given X to the back of the queue
+  (define (enqueue qox x)
+    (let ([x (if (list? x) x (list x))])
+      (append qox x)))
+
+  ;;cfe -> extraction-results
+  ;;Purpose: Extracts all var-cfexp and singleton-cfexp from the given cfe
+  (define (extract-var-and-singles-cfe cfe)
+    (let ([init-queue (foldl (λ (env acc)
+                               (enqueue acc env))
+                             e-queue
+                             (hash-values (cfexp-env cfe)))])
+      (extract-var-and-singles init-queue
+                               (update-extraction-results cfe (extraction-results '() '()))
+                               (list cfe))))
+
+  ;;cfe extraction-results -> extraction-results
+  ;;Purpose: Updates the given extraction-results to add the given cfe if it is a singleton or variable
+  (define (update-extraction-results cfe er)
+    (cond [(mk-var-cfexp? cfe) (struct-copy extraction-results
+                                            er
+                                            [vars (cons cfe (extraction-results-vars er))])]
+          [(mk-singleton-cfexp? cfe) (struct-copy extraction-results
+                                                  er
+                                                  [singles (cons cfe (extraction-results-singles er))])]
+          [else er]))
+
+  ;;(queueof cfe) extraction-results (listof cfe) -> extraction-results
+  ;;Purpose: Extracts the cfe and adds it to the extraction-results if its a singleton or variable
+  (define (extract-var-and-singles qocfe extract-res visited)
+    (if (qempty? qocfe)
+        extract-res
+        (let* ([cfe (qfirst qocfe)]
+               [cfes-to-add (extract-cfe-data cfe)]
+               [new-queue (enqueue (dequeue qocfe)
+                                   (filter (λ (cfe) (not (member cfe visited))) cfes-to-add))]
+               [new-acc (update-extraction-results cfe extract-res)]
+               [new-visited (cons cfe visited)])
+          (extract-var-and-singles new-queue new-acc new-visited))))
+
+  ;;cfe -> (listof cfe)
+  ;;Purpose: Extracts the sub-expressions from the given cfe
+  (define (extract-cfe-data cfe)
+    (cond [(mk-concat-cfexp? cfe) (mk-concat-cfexp-locfe cfe)]
+          [(mk-union-cfexp? cfe) (mk-union-cfexp-locfe cfe)]
+          [(mk-kleene-cfexp? cfe) (list (mk-kleene-cfexp-cfe cfe))]
+          [(mk-var-cfexp? cfe) (foldl (λ (env acc)
+                                        (enqueue acc env))
+                                      e-queue
+                                      (hash-values (cfexp-env cfe)))]
+          [else '()]))
+
+  ;;(listof var-cfexp) (listof rule) -> (listof rule)
+  ;;Purpose: Converts every var-cfexp into the corresponding grammar rule
+  (define (variables->rules lovcfe results)
+    (foldl (λ (vcfe res)
+             (append (remake-rules (mk-var-cfexp-cfe vcfe) (first (hash-values (cfexp-env vcfe))) '()) res))
+           '()
+           lovcfe))
+
+  ;;nonterminal (queueof cfe) (listof rule)
+  ;;Purpose: Converts each cf in the (queueof cfe) into the proper grammar rules
+  (define (remake-rules nt rules-to-convert finished-rules)
+    (if (empty? rules-to-convert)
+        finished-rules
+        (let ([cfe (first rules-to-convert)])
+          (if (mk-union-cfexp? cfe)
+              (remake-rules nt (enqueue (dequeue rules-to-convert) (mk-union-cfexp-locfe cfe)) finished-rules)
+              (remake-rules nt (dequeue rules-to-convert) (cons (cfe->rule nt cfe) finished-rules))))))
+
+  ;;non-terminal cfe
+  ;;Purpose: Converts the cfe into a grammar rule using the given non-terminal
+  (define (cfe->rule nt cfe)
+    ;;if union found in concat split union and make concat using every branch
+    (let ([RHS (cond [(mk-empty-cfexp? cfe) EMP]
+                     [(mk-singleton-cfexp? cfe) (mk-singleton-cfexp-char cfe)]
+                     [(mk-var-cfexp? cfe) (mk-var-cfexp-cfe cfe)]
+                     [(mk-concat-cfexp? cfe) (string->symbol (foldr (λ (cfe acc)
+                                                                      (string-append (symbol->string (if (mk-singleton-cfexp? cfe)
+                                                                                                         (mk-singleton-cfexp-char cfe)
+                                                                                                         (mk-var-cfexp-cfe cfe))) acc))
+                                                                    ""
+                                                                    (mk-concat-cfexp-locfe cfe)))]
+                     [else (error (format "unsuitable cfe ~a" cfe))])])
+      (list nt ARROW RHS)))
+  (let* ([extracted-components (extract-var-and-singles-cfe cfe)]
+         [variables (extraction-results-vars extracted-components)]
+         [singletons (extraction-results-singles extracted-components)]
+         [alphabet (remove-duplicates (map mk-singleton-cfexp-char singletons))]
+         [rules (variables->rules variables '())]
+         [nts (remove-duplicates (map mk-var-cfexp-cfe variables))]
+         [start-nt (cond [(mk-var-cfexp? cfe) (mk-var-cfexp-cfe cfe)]
+                         [(= (length nts) 1) (first nts)]
+                         [else (gen-state extracted-components)])])
+    (if debug
+        (cfg nts alphabet rules start-nt)
+        (make-unchecked-cfg nts alphabet rules start-nt))))
