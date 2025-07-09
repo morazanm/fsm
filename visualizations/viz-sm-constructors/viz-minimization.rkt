@@ -603,7 +603,7 @@ ismg "finished machine"
         (match sym
           [BLANK-SPACE base-square-img]
           [BLACK (overlay (square 40 'solid BLACK) (square 45 'solid 'gray))]
-          [MARK (overlay (text "X" 38 'red) base-square-img)]
+          [NEW-MARK (overlay (text "X" 38 'red) base-square-img)]
           [MARK (overlay (text "X" 38 BLACK) base-square-img)]
           [_ (overlay (text (symbol->string sym) 38 BLACK) (if (member sym finals) final-state-square-img base-square-img))])))
     (if (= (sub1 (vector-length row)) idx)
@@ -845,8 +845,8 @@ ismg "finished machine"
           (define (choose-mark-for-row current-table-mark)
             (match
                 current-table-mark
-              [BLANK-SPACE MARK]
-              [MARK MARK]
+              [BLANK-SPACE NEW-MARK]
+              [NEW-MARK MARK]
               [_ MARK]))
           (let* ([current-column-ref (vector-ref row column-id)])
             (vector-set/copy row column-id (choose-mark-for-row current-column-ref))))
