@@ -653,12 +653,12 @@ ismg "finished machine"
   ;;phase-attributes -> image
   ;;Purpose: Makes the imsg for phase 1
   (define (make-phase1-imsg phase-attribute)
-    (above (text "Removed unreachable states" 20 BLACK)
-           (text (format "~a ~a" (convert-to-string (phase-1-attributes-unreachable-state phase-attribute))
-                         (if (= (length (phase-1-attributes-unreachable-state phase-attribute)) 1)
-                             "is an unreachable state"
-                             "are unreachable states"))
-                 20 BLACK)))
+    (text (format "~a ~a" 
+                  (if (= (length (phase-1-attributes-unreachable-state phase-attribute)) 1)
+                      "Removed the unreachable state:"
+                      "Removed unreachable states:")
+                  (convert-to-string (phase-1-attributes-unreachable-state phase-attribute)))
+          20 BLACK))
   
   (define PHASE2-IMSG (text "Created state pairing table" 20 BLACK))
 
