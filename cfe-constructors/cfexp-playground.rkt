@@ -4,6 +4,7 @@
           "context-free-expressions-constructors.rkt"
           "../fsm-core/private/cfg.rkt"
           "../visualizations/viz-grammar-constructors/cfg-derive-leftmost.rkt"
+          "../sm-graph.rkt"
           rackunit)
 
 (define EMPTY (empty-cfexp))

@@ -2,6 +2,7 @@
 
 (require "../fsm-core/private/constants.rkt"
          "../fsm-core/private/cfg.rkt"
+         "../fsm-core/private/pda.rkt"
          "../fsm-core/private/misc.rkt"
          racket/hash)
 
@@ -17,6 +18,8 @@
          var-cfexp ;;change to remove struct out
          cfg->cfe
          cfe->cfg
+         pda->cfe
+         cfe->pda
          printable-cfexp ;;temp
          cfexp ;;temp
          unchecked->cfg ;;temp
@@ -375,9 +378,9 @@
 ;; pda -> cfe
 ;;Purpose: Converts the given pda into a cfe
 (define (pda->cfe pda)
-  pda)
+  (cfg->cfe (pda->cfg pda)))
 
 ;;cfe -> pda
 ;;Purpose: Converts the given cfe into a pda
 (define (cfe->pda cfe)
-  cfe)
+  (cfg->pda (cfe->cfg cfe)))
