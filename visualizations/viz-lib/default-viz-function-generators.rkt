@@ -79,7 +79,7 @@
                              (if (< (viz-state-scale-factor-floor a-vs) unnormalized-scale)
                                  unnormalized-scale
                                  (viz-state-scale-factor-floor a-vs))]
-                            [else 1]))]
+                            [else unnormalized-scale]))]
       (if (= new-scale (viz-state-scale-factor a-vs))
           a-vs
           (let* [(scaled-image (scale new-scale (viz-state-curr-image a-vs)))

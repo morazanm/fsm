@@ -1,27 +1,17 @@
 #lang racket/base
 (require (for-syntax syntax/parse
                      racket/base
-                     "viz-state.rkt"
-                     )
-         (only-in racket/gui
-                  get-display-size
-                  get-display-count)
+                     "viz-state.rkt")
          "../2htdp/universe.rkt"
          "../2htdp/image.rkt"
          "viz-state.rkt"
          "bounding-limits.rkt"
-         "default-viz-function-generators.rkt")
+         "default-viz-function-generators.rkt"
+         "os-dependent-constants.rkt")
 
 (provide create-viz-process-key
          create-viz-draw-world
          create-viz-process-tick)
-
-(define-values (WINDOW-WIDTH WINDOW-HEIGHT)
-  (if (>= (get-display-count) 1)
-      (let-values ([(pre-window-width pre-window-height)
-                    (with-handlers ([exn:fail? (lambda (e) (values 1200 500))]) (get-display-size))])
-        (values (min 2000 pre-window-width) (min 2000 pre-window-height)))
-      (values 1200 500)))
 
 (define-syntax (create-viz-process-key stx)
   (syntax-parse stx
@@ -94,9 +84,15 @@
       (overlay/align
        "middle"
        "bottom"
-       (above PARSE-TREE-IMG
-              ((informative-messages-draw-component (viz-state-informative-messages a-vs))
-               (informative-messages-component-state (viz-state-informative-messages a-vs)))
-              (square INS-TOOLS-BUFFER 'solid 'white)
-              (instructions-graphic-img (viz-state-instructions-graphic a-vs)))
-       WINDOW-FRAME))))
+       ;; scale-factor * display-scaling = 1
+       (above (scale (/ 1 SCREEN-SCALING)
+                     PARSE-TREE-IMG)
+              (scale (/ 1 SCREEN-SCALING)
+                     ((informative-messages-draw-component (viz-state-informative-messages a-vs))
+                      (informative-messages-component-state (viz-state-informative-messages a-vs))))
+              (scale (/ 1 SCREEN-SCALING)
+                     (square INS-TOOLS-BUFFER 'solid 'white))
+              (scale (/ 1 SCREEN-SCALING)
+                     (instructions-graphic-img (viz-state-instructions-graphic a-vs))))
+       (scale (/ 1 SCREEN-SCALING)
+              WINDOW-FRAME)))))
