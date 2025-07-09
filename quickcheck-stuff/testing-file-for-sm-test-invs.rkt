@@ -1481,9 +1481,9 @@
 
 ;; States: 
 ;;   S: ci = empty AND stack = empty, start and final state
-;;   A: ci = a+ AND stack = amount of as to be matched with a b AND (length stack) => 1
-;;   B: ci = a+b+ AND stack = amount of as to be matched with a b
-;;   C: ci = aibj where i≤j≤2i AND stack = empty, final state
+;;   A: ci = a^i AND stack = a^k AND i <= k <= 2i
+;;   B: ci = a^ib^j AND stack = a^k AND i <= j+k <= 2i
+;;   C: ci = a^ib^j where i≤j≤2i AND stack = empty, final state
 
 (define AiBj (make-ndpda '(S A B C)
                          '(a b)
@@ -1683,27 +1683,31 @@ this means that w
 ;;   times as many as than b}. Follow all the steps of the design recipe
 
 ;; States:
-;;   S: ci = empty AND stack = empty
-;;   A: ci = (a*b*)* AND stack = amount of as that have to be
-;;      matched with a b AND amount of bs that have to be matched with 3 as
-;;   B: ci = 3 times more as than bs AND stack = empty
+;;   S: ci = amount of as read divided by 3 is 0
+;;   A: amount of as read divided by 3 is 1
+;;   B: read a b and as read, when divided by 3, is 0
+;;   C: amount of as read divided by 3 is 2
 (define 3xa-b (make-ndpda '(S A B C)
                           '(a b)
                           '(a b)
                           'S
                           '(S)
                           `(((S a ,EMP) (A ,EMP))
+                            ((S a (a)) (A ,EMP))
+                            ((S b (b)) (S ,EMP))
                             ((S b ,EMP) (B (a a a)))
                             ((A b (b)) (A ,EMP))
                             ((A b ,EMP) (A (a a a)))
+                            ((A a (a)) (C ,EMP))
                             ((A a ,EMP) (C ,EMP))
                             ((B b (b)) (B ,EMP))
                             ((B b ,EMP) (B (a a a)))
-                            ((B a ,EMP) (A ,EMP))
+                            ((B a (a)) (A ,EMP))
                             ((C b (b)) (C ,EMP))
                             ((C b ,EMP) (C (a a a)))
-                            ((C a ,EMP) (S (b))))))
-#|                          
+                            ((C a ,EMP) (S (b)))
+                            ((C a (a)) (S ,EMP)))))
+#|
 ;; tests for 3xa-b
 (check-equal? (sm-apply 3xa-b '() '()) 'accept)
 (check-equal? (sm-apply 3xa-b '(b a a a) '()) 'accept)
@@ -1714,8 +1718,5 @@ this means that w
 (check-equal? (sm-apply 3xa-b '(a) '()) 'reject)
 (check-equal? (sm-apply 3xa-b '(b) '()) 'reject)
 
-
-
 |#
-
 
