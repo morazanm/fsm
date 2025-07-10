@@ -28,7 +28,9 @@
          (gen:const '())]))
 
 (define (testing-function state regexp inv tests)
-  (let [(machine (regexp->fsa regexp))]
+  (let* [(ddd (displayln regexp))
+         (machine (regexp->fsa regexp))
+         ]
     (check-property
      (make-config #:tests tests)
      (property #:name (format "~a-invariant" state)
@@ -43,4 +45,6 @@
   (for ([inv (in-list loi)])
     (hash-set! state2inv (first inv) (second inv)))
   (for ([regexp (in-list los&regexp)])
+    (displayln (second regexp))
+    (displayln "")
     (testing-function (first regexp) (second regexp) (hash-ref state2inv (first regexp)) tests)))

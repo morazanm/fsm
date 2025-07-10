@@ -140,7 +140,8 @@
           ;; Purpose: To return a list of all regular expressions that can be made from the given machine
           ;; Accumulator Invariant: accum = list of all regular expressions that can be made from the given machine
           (define (get-all-reg-expr-helper los accum)
-            (if (empty? los) accum
+            (if (empty? los)
+                accum
                 (local [;; all paths that reach the first of the los
                         (define paths-to-first-los (filter (λ (path) (eq? (third (last path)) (first los))) all-paths))
                       
@@ -152,7 +153,7 @@
                         ;; all states to needed for all possible paths to get to the first of los
                         (define states-to-first-los (filter (λ (state) (or (member? state (map (λ (rule) (first rule)) rules-for-first-los))
                                                                            (member? state (map (λ (rule) (third rule)) rules-for-first-los))))
-                                                              states))
+                                                            states))
                         ;; final states for the new machine 
                         (define finals-in-first-los (filter (λ (a-final-state) (member? a-final-state states-to-first-los)) (sm-finals machine-with-states-that-reach-finals)))
                         
@@ -163,10 +164,12 @@
                                                                            (list (first los))
                                                                            rules-for-first-los))
                         (define regexp-first-los (simplify-regexp (fsa->regexp machine-only-paths-to-first-los)))]
-                (get-all-reg-expr-helper (rest los)
-                                         (cons (list (first los) regexp-first-los) accum)))))]
-    (if (empty? paths-to-start-state) (get-all-reg-expr-helper states-no-start-state (list (list (sm-start machine-with-states-that-reach-finals)
-                                                                                                 (empty-regexp))))
+                  (get-all-reg-expr-helper (rest los)
+                                           (cons (list (first los) regexp-first-los) accum)))))]
+    (if (empty? paths-to-start-state)
+        (get-all-reg-expr-helper states-no-start-state
+                                 (list (list (sm-start machine-with-states-that-reach-finals)
+                                             (empty-regexp))))
         (get-all-reg-expr-helper states '()))))
    
 
