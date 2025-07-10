@@ -16,7 +16,7 @@
 (define C (singleton-cfexp 'c))
 
 ;; w = ww^r
-(define WWR 
+(define WWR
   (local [(define WWR (var-cfexp 'WWR))
 
           (define AHA (concat-cfexp A WWR A))

@@ -4,6 +4,9 @@
          "../fsm-core/private/cfg.rkt"
          "../fsm-core/private/pda.rkt"
          "../fsm-core/private/misc.rkt"
+         "../fsm-core/private/macros/shared/shared-predicates.rkt"
+         "../fsm-core/private/macros/shared/shared-flat-contracts.rkt"
+         "../fsm-core/private/macros/error-formatting.rkt"
          racket/hash)
 
 (provide null-cfexp
@@ -75,9 +78,29 @@
 (define (singleton-cfexp a-char)
   (mk-singleton-cfexp (empty-cfexp-env) a-char))
 
+(define (test-blame-format blame value message)
+  (format "~s: ~a" message value))
+
+;;A contract to determine of the given symbol for a var-cfexp is valid
+(define var-cfexp/c
+  (->i ([symbol (make-flat-contract
+                 #:name 'is-valid-fsm-symbol?
+                 #:first-order (λ (x) (valid-state? x))
+   
+                 #:projection (λ (blame)
+                                (λ (x)
+                    
+                                  (current-blame-format test-blame-format #;format-error)
+                                  (raise-blame-error
+                                   blame
+                                   x
+                                   "The given symbol is not a valid fsm symbol."))))])
+       [result mk-var-cfexp?]))
+
 ;;symbol -> variable-cfexp
 ;;Purpose: A wrapper to create a variable-cfexp
-(define (var-cfexp symbol)
+(define/contract (var-cfexp symbol)
+  var-cfexp/c
   (mk-var-cfexp (empty-cfexp-env) symbol))
 
 ;;(listof cfexp) -> env
@@ -125,6 +148,9 @@
                                          binding)))
       (set-cfexp-env! cfe env)
       (set! cfe (mk-var-cfexp env bindee-id)))))
+
+
+
           
 ;;singleton-cfe -> word
 ;;Purpose: Extracts the singleton 
