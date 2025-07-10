@@ -143,17 +143,25 @@
             (if (empty? los)
                 accum
                 (local [;; all paths that reach the first of the los
-                        (define paths-to-first-los (filter (λ (path) (eq? (third (last path)) (first los))) all-paths))
+                        (define paths-to-first-los (filter
+                                                    (λ (path) (eq? (third (last path)) (first los)))
+                                                    all-paths))
                       
                         
                         ;; all rules used for all the paths of the first of the los (used to filter out rules that aren't used)
-                        (define rules-for-first-los (remove-duplicates (apply append paths-to-first-los)))
+                        (define rules-for-first-los
+                          (remove-duplicates (apply append paths-to-first-los)))
                         
                         
                         ;; all states to needed for all possible paths to get to the first of los
-                        (define states-to-first-los (filter (λ (state) (or (member? state (map (λ (rule) (first rule)) rules-for-first-los))
-                                                                           (member? state (map (λ (rule) (third rule)) rules-for-first-los))))
-                                                            states))
+                        (define states-to-first-los
+                          (filter (λ (state) (or (member? state
+                                                          (map (λ (rule) (first rule))
+                                                               rules-for-first-los))
+                                                 (member? state
+                                                          (map (λ (rule) (third rule))
+                                                               rules-for-first-los))))
+                                  states))
                         ;; final states for the new machine 
                         (define finals-in-first-los (filter (λ (a-final-state) (member? a-final-state states-to-first-los)) (sm-finals machine-with-states-that-reach-finals)))
                         
@@ -163,7 +171,10 @@
                                                                            (sm-start machine-with-states-that-reach-finals)
                                                                            (list (first los))
                                                                            rules-for-first-los))
-                        (define regexp-first-los (simplify-regexp (fsa->regexp machine-only-paths-to-first-los)))]
+                        (define regexp-first-los
+                          (simplify-regexp (fsa->regexp machine-only-paths-to-first-los)))
+                        #;(define ddd (displayln regexp-first-los))
+                        ]
                   (get-all-reg-expr-helper (rest los)
                                            (cons (list (first los) regexp-first-los) accum)))))]
     (if (empty? paths-to-start-state)
