@@ -83,7 +83,7 @@
 
 ;;A contract to determine of the given symbol for a var-cfexp is valid
 (define var-cfexp/c
-  (->i ([symbol (make-flat-contract
+  (-> (make-flat-contract
                  #:name 'is-valid-fsm-symbol?
                  #:first-order (λ (x) (valid-state? x))
    
@@ -94,8 +94,8 @@
                                   (raise-blame-error
                                    blame
                                    x
-                                   "The given symbol is not a valid fsm symbol."))))])
-       [result mk-var-cfexp?]))
+                                   "The given symbol is not a valid fsm symbol."))))
+      mk-var-cfexp?))
 
 ;;symbol -> variable-cfexp
 ;;Purpose: A wrapper to create a variable-cfexp
