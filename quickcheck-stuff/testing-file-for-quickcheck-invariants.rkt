@@ -1,7 +1,7 @@
 #lang fsm
 (require "quickcheck-invariants.rkt")
 (provide (all-defined-out))
-
+ 
 ;; USEFUL FUNCTIONS
 
 ;; word word -> Boolean
