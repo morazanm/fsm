@@ -29,10 +29,7 @@
          (gen:const '())]))
 
 (define (testing-function state regexp inv tests)
-  (let* [#;(ddd (displayln regexp))
-         #;(dd  (displayln (gen-regexp-word regexp)))
-         (machine (regexp->fsa regexp))
-         ]
+  (let [(machine (regexp->fsa regexp))]
     (check-property
      (make-config #:tests tests)
      (property #:name (format "~a-invariant" state)
@@ -47,7 +44,4 @@
   (for ([inv (in-list loi)])
     (hash-set! state2inv (first inv) (second inv)))
   (for ([regexp (in-list los&regexp)])
-    (displayln (format "testing:\n ~s \nprintable: \n ~s \n" regexp (printable-regexp regexp)))
     (testing-function (first regexp) (second regexp) (hash-ref state2inv (first regexp)) tests)))
-
-(quickcheck-invs EVEN-NUM-Bs LOI-EVEN-Bs)
