@@ -3,11 +3,10 @@
          rackunit
          racket/list
          "reg-exp-function.rkt"
+         "testing-file-for-sm-test-invs.rkt"
          "../fsm-core/private/regexp.rkt"
          "../fsm-core/private/fsa.rkt"
          "../fsm-core/private/sm-apply.rkt")
-(provide quickcheck-invs)
-
 
 (define MAX-KLEENE-LENGTH 20)
 (define (translate-regexp regexp)
