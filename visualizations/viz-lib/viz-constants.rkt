@@ -10,6 +10,7 @@
 (define E-SCENE-WIDTH (* 0.95 WINDOW-WIDTH))
 (define FONT-SIZE 20)
 (define TAPE-SIZE 42)
+(define TM-TAPE-SIZE 24)
 (define HEDGE-COLOR 'violet)
 (define YIELD-COLOR 'orange)
 (define PERCENT-BORDER-GAP 0.9)
