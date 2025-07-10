@@ -647,7 +647,16 @@
                                   new-final)))
     
     ;(printable-regexp
-     (simplify-regexp (second (first final-graph)))));)
+    (if (null? final-graph)
+        (null-regexp)
+        
+    (simplify-regexp (second (first final-graph))))));)
+
+(define M (make-unchecked-ndfa '(S A B)
+                               '(a b)
+                               'S
+                               '(B)
+                               `((S a A))))
   
 ; regexp --> fsa
 (define (regexp->fsa r)
