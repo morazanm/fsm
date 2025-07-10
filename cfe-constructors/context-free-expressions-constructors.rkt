@@ -79,10 +79,10 @@
   (mk-singleton-cfexp (empty-cfexp-env) a-char))
 
 (define (test-blame-format blame value message)
-  (format "~s: ~a" message value))
+  (format "~a: ~a" message value))
 
 ;;A contract to determine of the given symbol for a var-cfexp is valid
-(define var-cfexp/c
+#;(define var-cfexp/c
   (-> (make-flat-contract
                  #:name 'is-valid-fsm-symbol?
                  #:first-order (λ (x) (valid-state? x))
@@ -94,13 +94,18 @@
                                   (raise-blame-error
                                    blame
                                    x
-                                   "The given symbol is not a valid fsm symbol."))))
+                                   "The given symbol is not a valid fsm symbol"))))
       mk-var-cfexp?))
 
 ;;symbol -> variable-cfexp
 ;;Purpose: A wrapper to create a variable-cfexp
-(define/contract (var-cfexp symbol)
+#;(define/contract (var-cfexp symbol)
   var-cfexp/c
+  (mk-var-cfexp (empty-cfexp-env) symbol))
+
+;;symbol -> variable-cfexp
+;;Purpose: A wrapper to create a variable-cfexp
+(define (var-cfexp symbol)
   (mk-var-cfexp (empty-cfexp-env) symbol))
 
 ;;(listof cfexp) -> env
@@ -404,7 +409,8 @@
 ;; pda -> cfe
 ;;Purpose: Converts the given pda into a cfe
 (define (pda->cfe pda)
-  (cfg->cfe (pda->cfg pda)))
+  (pda->cfg pda)
+  #;(cfg->cfe (pda->cfg pda)))
 
 ;;cfe -> pda
 ;;Purpose: Converts the given cfe into a pda

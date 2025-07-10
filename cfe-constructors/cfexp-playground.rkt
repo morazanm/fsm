@@ -3,6 +3,7 @@
 (require  "../fsm-core/private/constants.rkt"
           "context-free-expressions-constructors.rkt"
           "../fsm-core/private/cfg.rkt"
+          "../fsm-core/private/pda.rkt"
           "../visualizations/viz-grammar-constructors/cfg-derive-leftmost.rkt"
           "../sm-graph.rkt"
           rackunit)
@@ -17,33 +18,33 @@
 
 ;; w = ww^r
 (define WWR
-  (local [(define WWR (var-cfexp 'WWR))
+  (local [(define WWR (var-cfexp 'S))
 
           (define AHA (concat-cfexp A WWR A))
 
           (define BHB (concat-cfexp B WWR B))]
     (begin
-      (update-binding! WWR 'WWR (union-cfexp EMPTY AHA BHB))
+      (update-binding! WWR 'S (union-cfexp EMPTY AHA BHB))
       WWR)))
 
 ;;w = a^nb^n
 (define ANBN
-  (local [(define ANBN (var-cfexp 'ANBN))
+  (local [(define ANBN (var-cfexp 'S))
 
           (define ASB (concat-cfexp A ANBN B))]
     (begin
-      (update-binding! ANBN 'ANBN (union-cfexp EMPTY ASB))
+      (update-binding! ANBN 'S (union-cfexp EMPTY ASB))
       ANBN)))
 
 (define WWRUANBN (union-cfexp WWR ANBN))
 
 ;;w = a^2ib^i
 (define A2iBi
-  (local [(define A2iBi (var-cfexp 'A2iBi))
+  (local [(define A2iBi (var-cfexp 'S))
 
           (define EUAAKB (union-cfexp EMPTY (concat-cfexp A A A2iBi B)))]
     (begin
-      (update-binding! A2iBi 'A2iBi EUAAKB)
+      (update-binding! A2iBi 'S EUAAKB)
       A2iBi)))
 
 ;;w = A^iB^j | i <= j <= 2i
@@ -218,6 +219,8 @@
                (check-grammar g cfe))])
     ;(displayln res)
     (andmap list? res)))
+
+
 
 
 ;;CFE->CFG
