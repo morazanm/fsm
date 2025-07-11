@@ -255,17 +255,24 @@
                                          (rule->expression (first RHS)))))))
   
   (let* ([nts (cfg-get-v G)]
-         [rules (make-hash-table nts (λ (x) (filter-map (λ (rule) (and (eq? (first rule) x)
-                                                                       (explode (symbol->string (third rule))))) (cfg-get-rules G))))]
+         [rules (make-hash-table nts (λ (x) (filter-map (λ (rule) (and (eq? (first rule) x) 
+                                                                       (if (eq? (third rule) x)
+                                                                           (third rule)
+                                                                           (explode (symbol->string (third rule))))))
+                                                        (cfg-get-rules G))))]
          [start (cfg-get-start G)]
          [singletons (make-hash-table (cfg-get-alphabet G) singleton-cfexp)]
          [variables (make-hash-table nts var-cfexp)]
-         [rules->cfexp (make-cfexps-frm-rules rules singletons variables)]
-         [updated-bindings (hash-map/copy rules->cfexp (λ (key value)
+         #;[rules->cfexp (make-cfexps-frm-rules rules singletons variables)]
+         #;[updated-bindings (hash-map/copy rules->cfexp (λ (key value)
                                                          (begin
                                                            (update-binding! (hash-ref variables key) key value)
                                                            (values key (hash-ref variables key)))))])
-     (hash-ref updated-bindings start)))
+    #;(displayln updated-bindings)
+    #;(displayln start)
+     #;(hash-ref updated-bindings start)
+    #;rules
+    (unchecked->cfg G)))
       
 ;;cfe -> string
 ;;Purpose: Converts the given cfe into a string to make it readable
@@ -409,7 +416,7 @@
 ;; pda -> cfe
 ;;Purpose: Converts the given pda into a cfe
 (define (pda->cfe pda)
-  (pda->cfg pda)
+ (pda->cfg pda) ;<-need to fix 
   #;(cfg->cfe (pda->cfg pda)))
 
 ;;cfe -> pda

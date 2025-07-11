@@ -228,3 +228,9 @@
 
 (define thesis-cfe-converted (cfe->cfg thesis-cfe))
 
+
+(define GSI (pda->cfe (cfe->pda S1)))
+
+(define G (cfg-rename-nts (cfg-get-v GSI) GSI))
+
+(cfg-derive G '())
