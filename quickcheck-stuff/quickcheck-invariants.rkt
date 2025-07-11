@@ -9,6 +9,10 @@
 (provide quickcheck-invs)
 
 (define MAX-KLEENE-LENGTH 20)
+
+;; regexp -> generator
+;; Purpose: To translate the given regexp into a generator, that generates
+;;          words that are in the language in the regular expression
 (define (translate-regexp regexp)
   (cond [(null-regexp? regexp)
          (gen:const '∅)]
@@ -27,6 +31,8 @@
         [(empty-regexp? regexp)
          (gen:const '())]))
 
+;; state regexp invariant natnum -> throw error
+;; Purpose: To test if a word generated from the given regexp holds for the invariant of the state
 (define (testing-function state regexp inv tests)
   (let [(machine (regexp->fsa regexp))]
     (check-property
@@ -37,6 +43,8 @@
                              (eq? (sm-apply machine translated-regexp)
                                   'accept))))))
 
+;; machine (listof (state invariant)) natnum -> throw error
+;; Purpose: To quickcheck the invariants of the states of the given machine
 (define (quickcheck-invs machine loi #:num-tests [tests 1000])
   (define state2inv (make-hash))
   (define los&regexp (get-all-reg-expr machine))
@@ -44,3 +52,5 @@
     (hash-set! state2inv (first inv) (second inv)))
   (for ([regexp (in-list los&regexp)])
     (testing-function (first regexp) (second regexp) (hash-ref state2inv (first regexp)) tests)))
+
+
