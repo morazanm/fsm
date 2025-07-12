@@ -5,6 +5,7 @@
 #lang racket/base
 
 (require
+  "private/cyk.rkt"
   "private/fsa.rkt"
   "private/cfg.rkt"
   "private/pda.rkt" 
@@ -77,7 +78,7 @@
  grammar-union grammar-concat grammar-kleenestar
    
  ; grammar observers
- grammar-derive grammar-type
+ grammar-derive grammar-derive? grammar-type
  grammar-nts grammar-sigma grammar-rules grammar-start 
 
  ; grammar testers
@@ -406,6 +407,15 @@
         [(cfg? g) (cfg-derive g w)]
         [(csg? g) (csg-derive g w)]
         [else (error (format "Unknown grammar type"))]))
+
+(define (grammar-derive? g w)
+  (cond [(rg? g) (list? (rg-derive g w))]
+        [(cfg? g) (if (empty? w)
+                      (list? (cfg-derive g w))
+                      (cyk g w))]
+        [(csg? g) (list? (csg-derive g w))]
+        [else (error (format "Error in grammar-derive: unknown grammar type"))]))
+                  
   
 ; grammar grammar word --> boolean
 (define (grammar-both-derive g1 g2 w)
