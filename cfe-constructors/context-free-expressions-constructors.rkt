@@ -4,9 +4,8 @@
          "../fsm-core/private/cfg.rkt"
          "../fsm-core/private/pda.rkt"
          "../fsm-core/private/misc.rkt"
-         "../fsm-core/private/macros/shared/shared-predicates.rkt"
-         "../fsm-core/private/macros/shared/shared-flat-contracts.rkt"
-         "../fsm-core/private/macros/error-formatting.rkt"
+         "cfexp-contracts.rkt"
+         "cfexp-structs.rkt"
          racket/hash)
 
 (provide null-cfexp
@@ -37,32 +36,6 @@
 ;; 6. union
 ;; 7. kleene
 
-(struct cfexp ([env #:mutable]) #:transparent)
-
-;;hash ;;Purpose: To represent an empty environment
-(define (empty-cfexp-env) (hash))
-
-;;null-cfexp ;;Purpose: Only contains an environment
-(struct mk-null-cfexp cfexp () #:transparent)
-
-;;empty-cfexp ;;Purpose: A cfexp to represent the empty word
-(struct mk-empty-cfexp cfexp () #:transparent)
-
-;;singleton-cfexp ;;Purpose: A cfexp to represnt a single word
-(struct mk-singleton-cfexp cfexp (char) #:transparent)
-
-;;concat-cfexp ;;Purpose: A cfexp to represent the concatentation of cfexps
-(struct mk-concat-cfexp cfexp (locfe) #:transparent)
-
-;;union-cfexp ;;Purpose: A cfexp to represent the union of cfexps
-(struct mk-union-cfexp cfexp (locfe) #:transparent)
-
-;;Kleene-cfexp ;;Purpose: A cfexp to represent the Kleen of a cfexp
-(struct mk-kleene-cfexp cfexp (cfe) #:transparent)
-
-;;variable-cfexp ;;Purpose: A cfexp to represent a variable that needs to be substituted
-(struct mk-var-cfexp cfexp (cfe) #:transparent)
-
 ;; -> null-cfexp
 ;;Purpose: A wrapper to create a null-cfexp
 (define (null-cfexp)
@@ -75,37 +48,14 @@
 
 ;; symbol -> singleton-cfexp
 ;;Purpose: A wrapper to create a singleton-cfexp
-(define (singleton-cfexp a-char)
+(define/contract (singleton-cfexp a-char)
+  singleton-cfexp/c 
   (mk-singleton-cfexp (empty-cfexp-env) a-char))
 
-(define (test-blame-format blame value message)
-  (format "~a: ~a" message value))
-
-;;A contract to determine of the given symbol for a var-cfexp is valid
-#;(define var-cfexp/c
-  (-> (make-flat-contract
-                 #:name 'is-valid-fsm-symbol?
-                 #:first-order (λ (x) (valid-state? x))
-   
-                 #:projection (λ (blame)
-                                (λ (x)
-                    
-                                  (current-blame-format test-blame-format #;format-error)
-                                  (raise-blame-error
-                                   blame
-                                   x
-                                   "The given symbol is not a valid fsm symbol"))))
-      mk-var-cfexp?))
-
 ;;symbol -> variable-cfexp
 ;;Purpose: A wrapper to create a variable-cfexp
-#;(define/contract (var-cfexp symbol)
-  var-cfexp/c
-  (mk-var-cfexp (empty-cfexp-env) symbol))
-
-;;symbol -> variable-cfexp
-;;Purpose: A wrapper to create a variable-cfexp
-(define (var-cfexp symbol)
+(define/contract (var-cfexp symbol)
+  var-cfexp/c 
   (mk-var-cfexp (empty-cfexp-env) symbol))
 
 ;;(listof cfexp) -> env
@@ -122,19 +72,22 @@
 
 ;; . cfexp -> concat-cfexp
 ;;Purpose: A wrapper to create a concat-cfexp
-(define (concat-cfexp . cfexp)
+(define/contract (concat-cfexp . cfexp)
+  concat-cfexp/c
   (let ([cfexp (flatten cfexp)])
     (mk-concat-cfexp (merge-env cfexp) cfexp)))
 
 ;; . cfexp -> union-cfexp
 ;;Purpose: A wrapper to create a union-cfexp
-(define (union-cfexp . cfexp)
+(define/contract (union-cfexp . cfexp)
+  union-cfexp/c
   (let ([cfexp (flatten cfexp)])
     (mk-union-cfexp (merge-env cfexp) cfexp)))
 
 ;;cfexp -> Kleene-cfexp
 ;;Purpose: A wrapper to create a Kleene-cfexp
-(define (kleene-cfexp cfe)
+(define/contract (kleene-cfexp cfe)
+  kleene-cfexp/c
   (mk-kleene-cfexp (cfexp-env cfe) cfe))
 
 ;;cfe-id cfe -> env
@@ -143,9 +96,10 @@
   (let ([binding (if (list? binding) binding (list binding))])
     (hash cfe-id binding)))
 
-;;var-cfexp cfe -> var-cfexp
+;;var-cfexp symbol cfe -> var-cfexp
 ;;Purpose: Creates a binding where the cfe is bound to the given var-cfexp's environment
-(define (update-binding! cfe bindee-id binding)
+(define/contract (update-binding! cfe bindee-id binding)
+  update-binding!/c
   (let ([env (cfexp-env cfe)])
     (begin
       (set! env (env-cfexp bindee-id (if (hash-has-key? env bindee-id)
@@ -154,9 +108,6 @@
       (set-cfexp-env! cfe env)
       (set! cfe (mk-var-cfexp env bindee-id)))))
 
-
-
-          
 ;;singleton-cfe -> word
 ;;Purpose: Extracts the singleton 
 (define (convert-singleton cfe)

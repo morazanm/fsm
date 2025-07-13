@@ -4,7 +4,7 @@
           "context-free-expressions-constructors.rkt"
           "../fsm-core/private/cfg.rkt"
           "../fsm-core/private/pda.rkt"
-          "../visualizations/viz-grammar-constructors/cfg-derive-leftmost.rkt"
+          ;"../visualizations/viz-grammar-constructors/cfg-derive-leftmost.rkt"
           "../sm-graph.rkt"
           rackunit)
 
@@ -15,6 +15,12 @@
 (define B (singleton-cfexp 'b))
 
 (define C (singleton-cfexp 'c))
+
+(define P (var-cfexp 'P))
+
+(update-binding! P 'P C)
+
+
 
 ;; w = ww^r
 (define WWR
@@ -49,7 +55,7 @@
 
 ;;w = A^iB^j | i <= j <= 2i
 (define AiBj
-  (local [(define AiBj (var-cfexp 'AiBj))
+  (local [(define AiBj (var-cfexp 'A))
 
           (define AIB (concat-cfexp A AiBj B))
 
@@ -57,7 +63,7 @@
 
           (define EUAIBUAIBB (union-cfexp EMPTY AIB AIBB))]
     (begin
-      (update-binding! AiBj 'AiBj EUAIBUAIBB)
+      (update-binding! AiBj 'A EUAIBUAIBB)
       AiBj)))
 
 
@@ -161,11 +167,11 @@
 
 ;;w = (ab)*c
 (define AB^NC
-  (local [(define AB^NC (var-cfexp 'AB^NC))
+  (local [(define AB^NC (var-cfexp 'S))
 
           (define ABX (concat-cfexp A B AB^NC))]
     (begin
-      (update-binding! AB^NC 'AB^NC (union-cfexp C ABX))
+      (update-binding! AB^NC 'S (union-cfexp C ABX))
       AB^NC)))
 
 ;;w = (ab)*c
@@ -224,6 +230,7 @@
 
 
 ;;CFE->CFG
+#|
 (define thesis-cfg-converted (cfg->cfe thesis-cfg1))
 
 (define thesis-cfe-converted (cfe->cfg thesis-cfe))
@@ -234,3 +241,4 @@
 (define G (cfg-rename-nts (cfg-get-v GSI) GSI))
 
 (cfg-derive G '())
+|#
