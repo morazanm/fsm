@@ -147,7 +147,8 @@
 
 ;; cfe [natnum] -> word
 ;; Purpose: Generates a word using 
-(define (gen-cfexp-word cfe . reps)
+(define/contract (gen-cfexp-word cfe . reps)
+  gen-cfexp-word/c
   (define MAX-KLEENESTAR-REPS (if (empty? reps) 20 (first reps)))
   (cond [(mk-null-cfexp? cfe) (error "A word cannot be generated using the null-regexp.")]
         [(mk-empty-cfexp? cfe) EMP]

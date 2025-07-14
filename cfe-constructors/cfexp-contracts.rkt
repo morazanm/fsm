@@ -11,7 +11,8 @@
          union-cfexp/c
          var-cfexp/c
          kleene-cfexp/c
-         update-binding!/c)
+         update-binding!/c
+         gen-cfexp-word/c)
 
 
 (define (cfexp? cfe)
@@ -180,5 +181,13 @@
 (define update-binding!/c
   (-> is-var-cfexp?/c
       (and/c (is-symbol?/c "update-binding! expects a symbol as the second input, given") is-a-valid-symbol/c)
-     (is-cfexp/c "update-binding! expects a cfe as the third input, given") 
+      (is-cfexp/c "update-binding! expects a cfe as the third input, given") 
       void?))
+
+
+(define gen-cfexp-word/c
+  (->* (cfexp?)
+       #:rest (listof natural-number/c)
+       (or/c (listof symbol?)
+             symbol?
+             string?)))
