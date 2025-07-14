@@ -14,22 +14,23 @@
          update-binding!/c
          gen-cfexp-word/c)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;PREDICATES;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define (cfexp? cfe)
-  (or (mk-null-cfexp? cfe)
-      (mk-empty-cfexp? cfe) 
-      (mk-singleton-cfexp? cfe)
-      (mk-var-cfexp? cfe) 
-      (mk-concat-cfexp? cfe) 
-      (mk-union-cfexp? cfe) 
-      (mk-kleene-cfexp? cfe)))
+;;X -> boolean
+;;Purpose: Determines if the the given x is a cfexp
+(define (cfexp? x)
+  (or (mk-null-cfexp? x)
+      (mk-empty-cfexp? x) 
+      (mk-singleton-cfexp? x)
+      (mk-var-cfexp? x) 
+      (mk-concat-cfexp? x) 
+      (mk-union-cfexp? x) 
+      (mk-kleene-cfexp? x)))
 
-(define (format-value-in-message blame value message)
-  (format message value))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;CONTRACTS;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define (format-message-only blame value message)
-  (format-start-error blame value message))
-
+;; string -> flat-contract
+;;Purpose: Creates a flat contract that determines if the input is a symbol
 (define (is-symbol?/c message)
   (make-flat-contract
           #:name 'is-symbol?
@@ -41,7 +42,8 @@
                             blame
                             symbol
                             message)))))
-
+;;-> flat-contract
+;;Purpose: Creates a flat contract that determines if the input is a structure
 (define is-struct/c
   (make-flat-contract
    #:name 'is-struct?
@@ -54,6 +56,8 @@
                      x
                      "Expected a structure, given")))))
 
+;; string -> flat-contract
+;;Purpose: Creates a flat contract that determines if the input is a cfexp
 (define (is-cfexp/c message)
   (and/c is-struct/c
          (make-flat-contract
@@ -67,30 +71,36 @@
                             x
                             message))))))
 
+;;-> flat-contract
+;;Purpose: Creates a flat contract that determines if the input is a valid fsm symbol
 (define is-a-valid-symbol/c
   (make-flat-contract
           #:name 'is-symbol?
           #:first-order valid-state?
           #:projection (λ (blame)
-                         (λ (symbol)
-                           (current-blame-format format-message-only)
+                         (λ (val)
+                           (current-blame-format format-start-error)
                            (raise-blame-error
                             blame
-                            symbol
-                            (format "The given symbol, ~a, is not a valid FSM symbol. A valid FSM symbol is either:\n an uppercase letter [A-Z] or an uppercase letter [A-Z], a dash, and number." symbol))))))
+                            val
+                            (format "The given symbol, ~a, is not a valid FSM symbol. A valid FSM symbol is either:\n an uppercase letter [A-Z] or an uppercase letter [A-Z], a dash, and number." val))))))
 
+;;string -> flat-contract
+;;Purpose: Creates a flat contract that determines if the input is a list
 (define (is-a-list/c cfe-type)
     (make-flat-contract
      #:name 'is-a-list/c
-     #:first-order (lambda (x) (list? x))
+     #:first-order (lambda (val) (list? val))
      #:projection (lambda (blame)
-                    (lambda (x)
+                    (lambda (val)
                       (current-blame-format format-error)
                       (raise-blame-error
                        blame
-                       x
+                       val
                        (format "~a expects an arbitrary amount of cfes, given" cfe-type))))))
 
+;;(X -> Boolean) string string string -> flat-contract
+;;Purpose: Creates a flat contract that determines if the input is a listof X that satistfies the given predicate
 (define (valid-listof/c predicate cfe-type field-name element-name)
   (make-flat-contract
    #:name (string->symbol (format "valid-~a" field-name))
@@ -108,30 +118,82 @@
                              element-name
                              field-name))))))
 
+;;-> flat-contract
+;;Purpose: Creates a flat contract that determines if the input is a symbol or natural number
 (define valid-singleton-input
   (make-flat-contract
    #:name 'is-valid-singleton-input
-   #:first-order (or/c symbol? number?)
+   #:first-order (or/c symbol? natural-number/c)
    #:projection (λ (blame)
-                  (λ (symbol)
+                  (λ (val)
                     (current-blame-format format-error)
                     (raise-blame-error
                      blame
-                     symbol
+                     val
                      "singleton-cfexp expected a symbol [a-Z] or number [0-9] as input, given")))))
 
-(define singleton-cfexp/c
-  (-> (and/c valid-singleton-input
-             (make-flat-contract
+;;-> flat-contract
+;;Purpose: Creates a flat contract that determines if the input is a valid alphabet symbol
+(define valid-singleton-exp
+  (make-flat-contract
               #:name 'is-valid-singleton-exp?
               #:first-order valid-alpha?
               #:projection (λ (blame)
-                             (λ (symbol)
+                             (λ (val)
                                (current-blame-format format-error)
                                (raise-blame-error
                                 blame
-                                symbol
+                                val
                                 "singleton-cfexp expected a symbol [a-Z] or number [0-9] as input, given")))))
+
+;;-> flat-contract
+;;Purpose: Creates a flat contract that determines if the input is a var-cfexp
+(define is-var-cfexp?/c
+  (and/c (is-cfexp/c "update-binding! expects a cfe as the first input, given")
+         (make-flat-contract
+          #:name 'is-var-cfexp?
+          #:first-order mk-var-cfexp?
+          #:projection (λ (blame)
+                         (λ (val)
+                           (current-blame-format format-error)
+                           (raise-blame-error
+                            blame
+                            val
+                            "update-binding! expects a var-cfexp as the first input, given"))))))
+
+;;-> flat-contract
+;;Purpose: Creates a flat contract that determines if the input is cfexp
+(define valid-kleene-exp
+  (make-flat-contract
+          #:name 'is-cfe-for-kleene?
+          #:first-order cfexp?
+          #:projection (λ (blame)
+                         (λ (val)
+                           (current-blame-format format-error)
+                           (raise-blame-error
+                            blame
+                            val
+                            "kleene-cfexp expects a cfe as input, given")))))
+
+;;-> flat-contract
+;;Purpose: Creates a flat contract that determines if the input is natural number
+(define nat-num/c
+  (make-flat-contract
+   #:name 'is-natural-number?
+   #:first-order natural-number/c
+   #:projection (λ (blame)
+                  (λ (value)
+                    (current-blame-format format-error)
+                    (raise-blame-error
+                     blame
+                     value
+                     "Expected a natural number, given")))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;COMBINATOR CONTRACTS;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define singleton-cfexp/c
+  (-> (and/c valid-singleton-input
+             valid-singleton-exp)
       mk-singleton-cfexp?))
 
 (define concat-cfexp/c
@@ -144,50 +206,26 @@
                         (valid-listof/c cfexp? "union-cfexp" "list of cfes" "cfe"))
       mk-union-cfexp?))
 
-;;A contract to determine of the given symbol for a var-cfexp is valid
 (define var-cfexp/c
   (-> (and/c (is-symbol?/c "var-cfexp expects a symbol as input, given")
          is-a-valid-symbol/c)
   mk-var-cfexp?))
 
-
 (define kleene-cfexp/c
-  (-> (make-flat-contract
-          #:name 'is-cfe-for-kleene?
-          #:first-order cfexp?
-          #:projection (λ (blame)
-                         (λ (symbol)
-                           (current-blame-format format-error)
-                           (raise-blame-error
-                            blame
-                            symbol
-                            "kleene-cfexp expects a cfe as input, given"))))
-         mk-kleene-cfexp?))
-
-
-(define is-var-cfexp?/c
-  (and/c (is-cfexp/c "update-binding! expects a cfe as the first input, given")
-         (make-flat-contract
-          #:name 'is-var-cfexp?
-          #:first-order mk-var-cfexp?
-          #:projection (λ (blame)
-                         (λ (symbol)
-                           (current-blame-format format-error)
-                           (raise-blame-error
-                            blame
-                            symbol
-                            "update-binding! expects a var-cfexp as the first input, given"))))))
+  (-> valid-kleene-exp
+      mk-kleene-cfexp?))
 
 (define update-binding!/c
   (-> is-var-cfexp?/c
-      (and/c (is-symbol?/c "update-binding! expects a symbol as the second input, given") is-a-valid-symbol/c)
+      (and/c (is-symbol?/c "update-binding! expects a symbol as the second input, given")
+             is-a-valid-symbol/c)
       (is-cfexp/c "update-binding! expects a cfe as the third input, given") 
       void?))
 
-
 (define gen-cfexp-word/c
-  (->* (cfexp?)
-       #:rest (listof natural-number/c)
-       (or/c (listof symbol?)
-             symbol?
+  (->* ((is-cfexp/c "gen-cfexp-word expects a cfe as input, given"))
+       #:rest (listof nat-num/c)
+       (or/c symbol?
+             (listof symbol?)
+             (listof nat-num/c)
              string?)))

@@ -16,8 +16,7 @@
          kleene-cfexp
          update-binding!
          gen-cfexp-word
-         empty-cfexp-env
-         var-cfexp ;;change to remove struct out
+         var-cfexp 
          cfg->cfe
          cfe->cfg
          pda->cfe
@@ -25,7 +24,7 @@
          printable-cfexp ;;temp
          cfexp ;;temp
          unchecked->cfg ;;temp
-         #;env-cfexp)
+         )
 
 ;;a context-free expression is either:
 ;; 1. null (base case)
