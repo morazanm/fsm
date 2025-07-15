@@ -1,5 +1,5 @@
 #lang fsm
-(require "quickcheck-invariants.rkt")
+(require "quickcheck-invariants.rkt" "reg-exp-function.rkt")
 (provide (all-defined-out))
  
 ;; USEFUL FUNCTIONS

@@ -1,5 +1,5 @@
 #lang racket/base
-(provide get-all-reg-expr)
+(provide get-all-reg-expr remove-states-that-cannot-reach-finals)
 (require rackunit)
 (require racket/list)
 (require "../fsm-core/interface.rkt"
@@ -112,14 +112,21 @@
                      '()))
 
 
-;; ndfa -> ndfa
+;; ndfa -> ndfa or symbol
 ;; Purpose: Takes in ndfa and remove states and rules that can't reach a final state
 (define (remove-states-that-cannot-reach-finals a-ndfa)
   (define paths-that-end-in-finals (filter (λ (x) (member? (third (last x)) (sm-finals a-ndfa)))
                                            (find-paths a-ndfa)))
+  
   (define new-rules (remove-duplicates (apply append paths-that-end-in-finals)))
+  
   (define new-states (remove-duplicates (append-map (λ (x) (list (car x) (third x))) new-rules)))
-  (make-ndfa new-states (sm-sigma a-ndfa) (sm-start a-ndfa) (sm-finals a-ndfa) new-rules))
+
+  (define new-finals (filter (λ (final-state) (member? final-state new-states)) (sm-finals a-ndfa)))
+
+  (if (member? (sm-start a-ndfa) new-states)
+      (make-ndfa new-states (sm-sigma a-ndfa) (sm-start a-ndfa) new-finals new-rules)
+      (null-regexp)))
 
 
 
@@ -129,50 +136,60 @@
 (define (get-all-reg-expr a-machine)
   (define machine-with-states-that-reach-finals (remove-states-that-cannot-reach-finals a-machine))
 
-  (define all-paths (find-paths machine-with-states-that-reach-finals))
-          
-  (define states (sm-states machine-with-states-that-reach-finals))
-          
-  ;; have to filter out starting state since there is no path to it
-  (define states-no-start-state (filter (λ (state) (not (eq? state (sm-start machine-with-states-that-reach-finals)))) states))
-
-  ;;paths to start state
-  (define paths-to-start-state (filter (λ (path) (eq? (third (last path)) (sm-start machine-with-states-that-reach-finals))) all-paths))
-          
-  (define rules (sm-rules machine-with-states-that-reach-finals))
-
   ;; (listof symbols) (listof regexp) -> (listof (listof symbol regexp))
-  ;; Purpose: To return a list of all regular expressions that can be made from the given machine
-  ;; Accumulator Invariant: accum = list of all regular expressions that can be made from the given machine
-  (define (get-all-reg-expr-helper los accum)
-    (if (empty? los)
-        accum
-        ;; all paths that reach the first of the los
-        (let* [(paths-to-first-los (filter (λ (path) (eq? (third (last path)) (car los))) all-paths))
+             ;; Purpose: To return a list of all regular expressions that can be made from the given machine
+             ;; Accumulator Invariant: accum = list of all regular expressions that can be made from the given machine
+             (define (get-all-reg-expr-helper los accum all-paths states)
+               (if (empty? los)
+                   accum
+                   ;; all paths that reach the first of the los
+                   (let* [(paths-to-first-los (filter (λ (path) (eq? (third (last path)) (car los))) all-paths))
                       
                         
-               ;; all rules used for all the paths of the first of the los (used to filter out rules that aren't used)
-               (rules-for-first-los (remove-duplicates (apply append paths-to-first-los)))
+                          ;; all rules used for all the paths of the first of the los (used to filter out rules that aren't used)
+                          (rules-for-first-los (remove-duplicates (apply append paths-to-first-los)))
                         
                         
-               ;; all states to needed for all possible paths to get to the first of los
-               (states-to-first-los (filter (λ (state) (or (member? state (map (λ (rule) (car rule)) rules-for-first-los))
-                                                           (member? state (map (λ (rule) (third rule)) rules-for-first-los))))
-                                            states))
-               ;; final states for the new machine 
-               (finals-in-first-los (filter (λ (a-final-state) (member? a-final-state states-to-first-los)) (sm-finals machine-with-states-that-reach-finals)))
+                          ;; all states to needed for all possible paths to get to the first of los
+                          (states-to-first-los (filter (λ (state) (or (member? state (map (λ (rule) (car rule)) rules-for-first-los))
+                                                                      (member? state (map (λ (rule) (third rule)) rules-for-first-los))))
+                                                       states))
+                          ;; final states for the new machine 
+                          (finals-in-first-los (filter (λ (a-final-state) (member? a-final-state states-to-first-los)) (sm-finals machine-with-states-that-reach-finals)))
                         
-               ;; updated machine with new rules and new states                                          
-               (machine-only-paths-to-first-los
-                (make-ndfa states-to-first-los
-                           (sm-sigma machine-with-states-that-reach-finals)
-                           (sm-start machine-with-states-that-reach-finals)
-                           (list (car los))
-                           rules-for-first-los))
-               (regexp-first-los (simplify-regexp (fsa->regexp machine-only-paths-to-first-los)))]
-          (get-all-reg-expr-helper (cdr los)
-                                   (cons (list (car los) regexp-first-los) accum)))))
-  (if (empty? paths-to-start-state)
-      (get-all-reg-expr-helper states-no-start-state (list (list (sm-start machine-with-states-that-reach-finals)
-                                                                 (empty-regexp))))
-      (get-all-reg-expr-helper states '())))
+                          ;; updated machine with new rules and new states                                          
+                          (machine-only-paths-to-first-los
+                           (make-ndfa states-to-first-los
+                                      (sm-sigma machine-with-states-that-reach-finals)
+                                      (sm-start machine-with-states-that-reach-finals)
+                                      (list (car los))
+                                      rules-for-first-los))
+                          (regexp-first-los (simplify-regexp (fsa->regexp machine-only-paths-to-first-los)))]
+                     (get-all-reg-expr-helper (cdr los)
+                                              (cons (list (car los) regexp-first-los) accum)
+                                              all-paths
+                                              states))))
+  
+  (if (eq? machine-with-states-that-reach-finals (null-regexp))
+      (null-regexp)
+      (let* [(all-paths (find-paths machine-with-states-that-reach-finals))
+             
+             (states (sm-states machine-with-states-that-reach-finals))
+             
+             ;; have to filter out starting state since there is no path to it
+             (states-no-start-state (filter (λ (state) (not (eq? state (sm-start machine-with-states-that-reach-finals)))) states))
+
+             ;;paths to start state
+             (paths-to-start-state (filter (λ (path) (eq? (third (last path)) (sm-start machine-with-states-that-reach-finals))) all-paths))
+          
+             (rules (sm-rules machine-with-states-that-reach-finals))
+
+             ]
+
+             (if (empty? paths-to-start-state)
+                 (get-all-reg-expr-helper states-no-start-state
+                                          (list (list (sm-start machine-with-states-that-reach-finals)
+                                                                            (empty-regexp)))
+                                          all-paths
+                                          states)
+                 (get-all-reg-expr-helper states '() all-paths states)))))
