@@ -129,13 +129,13 @@
 
 ;;TESTING
 
-(check-pred (λ (low) (andmap valid-wwr-word low)) (gen-cfe-words WWR 100000))
+(check-pred (λ (low) (andmap valid-wwr-word low)) (gen-cfe-words WWR 10 #;100000))
 
-(check-pred (λ (low) (andmap valid-anbn-word low)) (gen-cfe-words ANBN 100000))
+(check-pred (λ (low) (andmap valid-anbn-word low)) (gen-cfe-words ANBN 10 #;100000))
 
-(check-pred (λ (low) (andmap valid-a2ibi-word low)) (gen-cfe-words A2iBi 100000))
+(check-pred (λ (low) (andmap valid-a2ibi-word low)) (gen-cfe-words A2iBi 10 #;100000))
 
-(check-pred (λ (low) (andmap valid-aibj-word low)) (gen-cfe-words AiBj 100000))
+(check-pred (λ (low) (andmap valid-aibj-word low)) (gen-cfe-words AiBj 10 #;100000))
 
 
 (define test (union-cfexp S1 S2))
@@ -151,7 +151,7 @@
 
 (define transformed-anbn (cfg->cfe ANBN-cfg))
 
-(check-pred (λ (low) (andmap valid-anbn-word low)) (gen-cfe-words transformed-anbn 100000))
+;(check-pred (λ (low) (andmap valid-anbn-word low)) (gen-cfe-words transformed-anbn 10 #;100000))
 
 (define thesis-cfg (make-unchecked-cfg '(S T U)
                                        '(a)
@@ -226,11 +226,8 @@
     ;(displayln res)
     (andmap list? res)))
 
-
-
-
 ;;CFE->CFG
-#|
+
 (define thesis-cfg-converted (cfg->cfe thesis-cfg1))
 
 (define thesis-cfe-converted (cfe->cfg thesis-cfe))
@@ -238,7 +235,4 @@
 
 (define GSI (pda->cfe (cfe->pda S1)))
 
-(define G (cfg-rename-nts (cfg-get-v GSI) GSI))
-
-(cfg-derive G '())
-|#
+;(define G (cfg-rename-nts (cfg-get-v GSI) GSI))

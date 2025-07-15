@@ -164,25 +164,39 @@
 
 ;;context-free grammar -> cfe
 ;;Purpose: Converts the given cfg its equivalent cfe
-(define (cfg->cfe G)
-
+(define/contract (cfg->cfe G)
+ cfg->cfe/c
   ;;(listof X) (X -> Y) -> (hash X . Y)
   (define (make-hash-table lox f)
     (foldl (λ (x h)
-             (hash-set h x (f x)))
+             (hash-set h x (f x))
+             #;(let ([res (f x)])
+               (if (empty? res)
+                   h
+                   (hash-set h x res))))
            (hash)
            lox))
 
   ;;string -> (listof symbol)
   ;;Purpose: Seperates every character in the given string and puts them into a list
-  (define (explode string)
+  (define (explode string nts)
     ;;natnum (listof symbol) -> (listof symbol)
     ;;Purpose: Seperates every character in the given string and puts them into a list
     ;;acc = the character in the string from [idx..(string-length string)]
     (define (explode-helper idx acc)
       (if (= idx 0)
           acc
-          (explode-helper (sub1 idx) (cons (string->symbol (substring string (sub1 idx) idx)) acc))))
+          (let* ([next-sym (substring string (sub1 idx) idx)]
+                 [res (cond [(member (string->symbol string) nts) (list (string->symbol string))]
+                            ;;exploiting fact that the RHS of cfg rules converted from simple pda rules will structure terminal followed by nonterminal
+                            [(string<=? "0" next-sym "9") (list (string->symbol (substring string 0 1)) (string->symbol (substring string 1)))] 
+                            [else (string->symbol next-sym)])]
+                 [new-acc (if (list? res) res (cons res acc))]
+                 [new-idx (if (list? res) 0 (sub1 idx))])
+            ;(displayln string)
+            ;(displayln (substring string 0 1))
+            ;(displayln (substring string 1))
+            (explode-helper new-idx new-acc))))
     (explode-helper (string-length string) '()))
 
   ;;(hash nts . (listof symbol)) (hash symbol . singleton-cfe)) (hash nts . variable-cfe)) -> (hash nts . cfe))
@@ -193,7 +207,8 @@
     (define (convert-to-expression RHS-of-rule)
       (cond [(eq? RHS-of-rule EMP) (empty-cfexp)]
             [(hash-has-key? singletons RHS-of-rule) (hash-ref singletons RHS-of-rule)]
-            [else (hash-ref variables RHS-of-rule)]))
+            [(hash-has-key? variables RHS-of-rule) (hash-ref variables RHS-of-rule)]
+            [else (error (format "unreadable RHS: ~a" RHS-of-rule))]))
     ;;(listof symbol) -> cfe
     ;;Purpose: Translates the given (listof symbol) into its corresponding cfe
     (define (rule->expression RHS-of-rule)
@@ -201,29 +216,43 @@
           (convert-to-expression (first RHS-of-rule))
           (concat-cfexp (map (λ (sym) (convert-to-expression sym)) RHS-of-rule))))
     (hash-map/copy rules (λ (nts RHS)
-                           (values nts (if (> (length RHS) 1)
-                                         (union-cfexp (map (λ (rule) (rule->expression rule)) RHS))
-                                         (rule->expression (first RHS)))))))
+                           (values nts (cond [(empty? RHS) (null-cfexp)]
+                                             [(= (length RHS) 1) (rule->expression (first RHS))]
+                                             [else (union-cfexp (map (λ (rule) (rule->expression rule)) RHS))])))))
+  ;; symbol -> boolean
+  ;;Purpose: Determines if the given symbol is a valid state or alphabet symbol
+  (define (valid-RHS? sym)
+    (or (valid-alpha? sym)
+        (valid-state? sym)))
   
   (let* ([nts (cfg-get-v G)]
-         [rules (make-hash-table nts (λ (x) (filter-map (λ (rule) (and (eq? (first rule) x) 
-                                                                       (if (eq? (third rule) x)
-                                                                           (third rule)
-                                                                           (explode (symbol->string (third rule))))))
-                                                        (cfg-get-rules G))))]
+         [start (cfg-get-start G)]
+         [needs-converting? (not (andmap valid-state? nts))]
+         [G (if needs-converting? (cfg-rename-nts nts G) G)]
+         [nts (if needs-converting? (cons start (cfg-get-v G)) (cfg-get-v G))]
+         [rules (make-hash-table nts (λ (nt) (filter #;any/c list? (filter-map (λ (rule) (and (eq? (first rule) nt) 
+                                                                                      (let* ([new-RHS (explode (symbol->string (third rule)) nts)]
+                                                                                             [res (if (or (equal? new-RHS (list EMP))
+                                                                                                          (andmap valid-RHS? new-RHS)) new-RHS void)])
+                                                                                        #;(displayln nt)
+                                                                                        #;(displayln res)
+                                                                                        res
+                                                                                        #;new-RHS)))
+                                                                       (cfg-get-rules G)))))]
          [start (cfg-get-start G)]
          [singletons (make-hash-table (cfg-get-alphabet G) singleton-cfexp)]
          [variables (make-hash-table nts var-cfexp)]
-         #;[rules->cfexp (make-cfexps-frm-rules rules singletons variables)]
-         #;[updated-bindings (hash-map/copy rules->cfexp (λ (key value)
+         [rules->cfexp (make-cfexps-frm-rules rules singletons variables)]
+         [updated-bindings (hash-map/copy rules->cfexp (λ (key value)
                                                          (begin
                                                            (update-binding! (hash-ref variables key) key value)
                                                            (values key (hash-ref variables key)))))])
     #;(displayln updated-bindings)
     #;(displayln start)
-     #;(hash-ref updated-bindings start)
-    #;rules
-    (unchecked->cfg G)))
+     (hash-ref updated-bindings start)
+    ;rules
+    ;nts
+    #;(unchecked->cfg G)))
       
 ;;cfe -> string
 ;;Purpose: Converts the given cfe into a string to make it readable
@@ -249,7 +278,8 @@
 
 ;;cfe -> cfg
 ;;Purpose: Converts the given cfe into its corresponding cfg
-(define (cfe->cfg cfe #:debug[debug #f])
+(define/contract (cfe->cfg cfe #:debug[debug #f])
+  cfe->cfg/c
   ;;vars    | the accumulated variables found from traversing the given cfe  | (listof var-cfexp)
   ;;singles | the accumulated singletons found from traversing the given cfe | (listof singleton-cfexp)
   (struct extraction-results (vars singles) #:transparent)
@@ -366,11 +396,13 @@
 
 ;; pda -> cfe
 ;;Purpose: Converts the given pda into a cfe
-(define (pda->cfe pda)
- (pda->cfg pda) ;<-need to fix 
-  #;(cfg->cfe (pda->cfg pda)))
+(define/contract (pda->cfe pda)
+  pda->cfe/c
+ #;(pda->cfg pda) ;<-need to fix 
+  (cfg->cfe (pda->cfg pda)))
 
 ;;cfe -> pda
 ;;Purpose: Converts the given cfe into a pda
-(define (cfe->pda cfe)
+(define/contract (cfe->pda cfe)
+  cfe->pda/c
   (cfg->pda (cfe->cfg cfe)))

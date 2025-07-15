@@ -1,8 +1,10 @@
 #lang racket/base
 
 (require "../fsm-core/private/macros/shared/shared-predicates.rkt"
-         "../fsm-core/private/macros/shared/shared-flat-contracts.rkt"
+        "../fsm-core/private/macros/rules/rules-flat-contracts.rkt"
          "../fsm-core/private/macros/error-formatting.rkt"
+         "../fsm-core/private/grammar-getters.rkt"
+         "../fsm-core/private/cfg.rkt"
          "cfexp-structs.rkt"
          racket/contract)
 
@@ -12,7 +14,15 @@
          var-cfexp/c
          kleene-cfexp/c
          update-binding!/c
-         gen-cfexp-word/c)
+         gen-cfexp-word/c
+         valid-state?
+         valid-alpha?
+         correct-cfg-rules/c
+         cfe->cfg/c
+         cfg->cfe/c
+         pda->cfe/c
+         cfe->pda/c
+         )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;PREDICATES;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -90,7 +100,7 @@
 (define (is-a-list/c cfe-type)
     (make-flat-contract
      #:name 'is-a-list/c
-     #:first-order (lambda (val) (list? val))
+     #:first-order (lambda (val) (or (list? val) (listof list?)))
      #:projection (lambda (blame)
                     (lambda (val)
                       (current-blame-format format-error)
@@ -189,6 +199,36 @@
                      value
                      "Expected a natural number, given")))))
 
+;; string -> flat-contract
+;;Purpose: Creates a flat contract that determines if the input is a cfg
+(define (is-ndpda? message)
+  (and/c procedure? 
+         (make-flat-contract
+          #:name 'is-ndpda?
+          #:first-order ndpda?
+          #:projection (λ (blame)
+                         (λ (x)
+                           (current-blame-format format-error)
+                           (raise-blame-error
+                            blame
+                            x
+                            message))))))
+
+;; string -> flat-contract
+;;Purpose: Creates a flat contract that determines if the input is a pda
+(define (is-cfg? message)
+  (and/c is-struct/c
+         (make-flat-contract
+          #:name 'is-cfg?
+          #:first-order cfg?
+          #:projection (λ (blame)
+                         (λ (x)
+                           (current-blame-format format-error)
+                           (raise-blame-error
+                            blame
+                            x
+                            message))))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;COMBINATOR CONTRACTS;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define singleton-cfexp/c
@@ -198,12 +238,14 @@
 
 (define concat-cfexp/c
   (->* () #:rest (and/c (is-a-list/c "concat-cfexp")
-                        (valid-listof/c cfexp? "concat-cfexp" "list of cfes" "cfe"))
+                        (or/c (valid-listof/c cfexp? "concat-cfexp" "list of cfes" "cfe")
+                              (valid-listof/c (listof cfexp?) "concat-cfexp" "list of cfes" "cfe")))
       mk-concat-cfexp?))
 
 (define union-cfexp/c
   (->* () #:rest (and/c (is-a-list/c "union-cfexp")
-                        (valid-listof/c cfexp? "union-cfexp" "list of cfes" "cfe"))
+                        (or/c (valid-listof/c cfexp? "union-cfexp" "list of cfes" "cfe")
+                              (valid-listof/c (listof cfexp?) "union-cfexp" "list of cfes" "cfe")))
       mk-union-cfexp?))
 
 (define var-cfexp/c
@@ -229,3 +271,19 @@
              (listof symbol?)
              (listof nat-num/c)
              string?)))
+
+(define cfe->cfg/c
+  (-> (is-cfexp/c "cfe->cfg expects a cfe as input, given")
+      (is-cfg? "cfe->cfg broke its own contract, should produce a cfg instead of")))
+
+(define cfg->cfe/c
+  (-> (is-cfg? "cfg->cfe expects a cfg as input, given")
+      (is-cfexp/c "cfg->cfe broke its own contract, should produce a cfexp instead of")))
+
+(define pda->cfe/c
+  (-> (is-ndpda? "pda->cfe expects a pda as input, given")
+      (is-cfexp/c "pda->cfe broke its own contract, should produce a cfexp instead of")))
+
+(define cfe->pda/c
+  (-> (is-cfexp/c "cfe->pda expects a cfe as input, given")
+      (is-ndpda? "cfe->pda broke its own contract, should produce a pda instead of")))
