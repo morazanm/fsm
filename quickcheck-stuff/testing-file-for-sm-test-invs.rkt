@@ -1364,8 +1364,8 @@
 
 ;; States
 ;;   S: stack is empty AND ci is empty ,start state and final state
-;;   A: ci = the stack reversed
-;;   B: ci = (append w v) AND w = stack^R v^R
+;;   A: ci = the stack reversed (w^R
+;;   B: ci = (append w m v) AND w = stack^R m v^R
 ;;   C: stack = empty AND ci is a palindrome (append w w^R), final state 
 (define palindrome-pda (make-ndpda '(S A B C)
                                    '(a b)
@@ -1462,9 +1462,9 @@
 ;; Purpose: To determine if the given word and stack belongs in C
 ;;          (stack = empty AND ci = ww^R)
 (define (C-INV-PALINDROME-PDA ci stack)
-    (and (empty? stack)
-         (or (empty? ci)
-             (equal? ci (reverse ci)))))
+  (and (empty? stack)
+       (or (empty? ci)
+           (equal? ci (reverse ci)))))
 
 ;; tests for C-INV-PALINDROME-PDA
 (check-equal? (C-INV-PALINDROME-PDA '() '()) #t)
@@ -1473,6 +1473,70 @@
 (check-equal? (C-INV-PALINDROME-PDA '(a a a a a) '()) #t)
 (check-equal? (C-INV-PALINDROME-PDA '(a b a b) '()) #f)
 (check-equal? (C-INV-PALINDROME-PDA '(a a a b) '(a a b)) #f)
+
+
+;; PROOF for palindrome-pda
+
+;; The state invariants hold when M accepts w
+#|
+
+((S ,EMP ,EMP) (A ,EMP)): By inductive hypothesis, S-INV holds. This
+guarentees that ci = '() and stack = '(). After using the transition rule,
+ci = '() and stack = '(). A-INV holds since the consumed input is the reverse
+of the stack. Thus, A-INV holds after the transition rule.
+
+((A a ,EMP) (A (a))): By inductive hypothesis, A-INV holds. This
+guarentees that ci is the reverse of the stack. After using the transition rule,
+we read an a and push an a onto the stack, making the stack the
+reverse of the consumed input, and with this, A-INV holds.
+Thus, A-INV holds after the transition rule is used. 
+
+((A b ,EMP) (A (b))): By inductive hypothesis, A-INV holds. This guareentees
+that the ci is the reverse of the stack. After using the transition rule, we read
+a b and push a b onto the stack. With this, the stack is the reverse of the
+consumed input, making A-INV hold. Thus, A-INV holds after the transition
+rule is used. 
+
+((A a ,EMP) (B,EMP)): By inductive hypothesis, A-INV holds. This
+guarentees that the ci is the reverse of the stack. After using the
+transition rule, an a is read and nothing is pushed and popped onto
+the stack. B-INV holds since ci = (append w m v) AND w = stack^R m v^R.
+In this case, w is the reverse of the stack and v = '(), and m = a, making the
+B-INV hold. Thus, B-INV holds after the transition rule. 
+
+((A b ,EMP) (B ,EMP)): By inductive hypothesis, A-INV holds. This
+guarentees that the ci is the reverse of the stack. After using the
+transition rule, a b is read and nothing is pushed and popped onto
+the stack. B-INV holds since ci = (append w m v) AND w = stack^R m v^R.
+ci = (stack^R v) is the reverse of the stack and v = '(), with v being
+the letters that were matched with the stack and m = b. Thus, B-INV holds
+after the transition rule.
+
+((A ,EMP ,EMP) (B ,EMP)): By inductive hypothesis , A-INV holds. This
+guarentees that the ci = stack^R. After using this transition rule,
+the ci = stack^R and the stack remains the same since nothing is pushed
+or popped. w = stack^R m v^R and ci = (append w m v), with m = '() and v = '(). 
+Thus, B-INV holds after the transition rule is used. 
+
+((B a (a)) (B ,EMP)): By inductive hypothesis, B-INV holds. This
+guareentees that ci = (append w m v) AND w = stack^R m v^R. After
+using this transition rule, ci = (append w m v) AND w = stack^R m v^R.
+Thus, B-INV holds after the transition rule. 
+
+((B b (b)) (B ,EMP)): By inductive hypothesis, B-INV holds. This
+guareentees that ci = (append w m v) AND w = stack^R m v^R. After
+this transition rule, ci = (append w m v) AND w = stack^R m v^R. Thus,
+B-INV holds after the transition rule. 
+
+((B ,EMP ,EMP) (C ,EMP)): By inductive hypothesis, B-INV holds. This
+guareentees that ci = (append w m v) AND w = stack^R m v^R. After
+this transition rule, ci = (append w m v) AND w = stack^R m v^R. Since
+C is a final state, the stack must be empty for the word to be accepted,
+and for the word to be accepted, it must be a palindrone. Thus,
+C-INV holds after the transition rule. 
+
+
+|#
 
 
 
@@ -1532,10 +1596,10 @@
 
 ;; word stack -> Boolean
 ;; Purpose: To determine if the given word and stack belongs in A
-;;          ci = a+ AND stack = amount of as to be matched with a b AND (length stack) => 1
+;;          ci = a+ AND (length ci) <= (length stack) <= (* 2 (length ci))
 (define (A-INV-AiBj ci stack)
   (and (andmap (λ (x) (eq? 'a x)) ci)
-       (< 0 (length ci))))
+       (<= (length ci) (length stack) (* 2 (length ci)))))
 
 ;; tests for A-INV-AiBj
 (check-equal? (A-INV-AiBj '(a) '(a a)) #t)
@@ -1549,14 +1613,13 @@
 
 ;; word stack -> Boolean
 ;; Purpose: To determine if the given word and stack belongs in B
-;;          (ci = a+b+ AND stack = amount of as to be matched with a b)
+;;          (ci = a^ib^j AND stack = a^k AND i <= j+k <= 2i)
 (define (B-INV-AiBj ci stack)
-  (local [(define num-as (length (takef ci (λ (x) (eq? x 'a)))))
-          (define num-bs (length (drop ci num-as)))]
-  (and (< 0 num-as)
-       (< 0 num-bs)
-       (< 1 (length ci))
-       (<= num-as num-bs (* 2 num-as)))))
+  (let* [(As (takef ci (λ (x) (eq? x 'a))))
+         (Bs (takef (drop ci (length As)) (λ (x) (eq? x 'b))))]
+    (and (equal? (append As Bs) ci)
+         (<= (length As) (+ (length Bs) (length stack)) (* 2 (length As)))
+         )))
 
 ;; tests for B-INV-AiBj
 (check-equal? (B-INV-AiBj '(a a b b) '()) #t)
@@ -1571,13 +1634,12 @@
 
 ;; word stack -> Boolean
 ;; Purpose: To determine if the given word and stack belongs in C
-;;          (ci = aibj where i≤j≤2i AND stack = empty)
+;;          (ci = a^ib^j where i≤j≤2i AND stack = empty)
 (define (C-INV-AiBj ci stack)
-  (local [(define num-as (length (takef ci (λ (x) (eq? x 'a)))))
-          (define num-bs (length (drop ci num-as)))]
-    (and (< 0 num-as)
-         (<= num-as num-bs)
-         (<= num-bs (* 2 num-as))
+  (let* [(As (takef ci (λ (x) (eq? x 'a))))
+         (Bs (takef (drop ci (length As)) (λ (x) (eq? x 'b))))]
+    (and (<= (length As) (length Bs) (* 2 (length As)))
+         (equal? ci (append As Bs))
          (empty? stack))))
 
 ;; tests for C-INV-AiBj
@@ -1603,49 +1665,55 @@ This establishes the base case.
 
 Proof invariants hold after each transition that consumes input:
 
+((S ,EMP ,EMP) (A ,EMP)): By inductive hypothesis, S-INV holds. This
+guareentees that ci = '() and s = '(). After using this rule, ci = '()
+and stack = '(). A-holds, because ci = a^i AND stack = a^k AND i <= k <= 2i.
+Since there have been no as read and nothing added to the stack, i <= k <= 2i holds,
+since 0 <= 0 <= 0. Thus, A-INV holds after the transition rule is used. 
+
 ((S a ,EMP) (A (a))): By inductive hypothesis, S-INV holds.
 This guarantees that ci = '() and s = '(). After using this
-rule, ci = '(a) and s = '(a). A-INV holds, because ci = a+
-AND stack = amount of as to be matched with a b AND (length stack) => 1.
-Thus, A-INV holds after the transition rule is used. 
+rule, ci = '(a) and s = '(a). A-INV holds, because ci = a^i
+AND stack = a^k AND i <= k <= 2i. Thus, A-INV holds after the
+transition rule is used. 
 
 ((S a ,EMP) (A (a a))): By inductive hypothesis, S-INV holds. S-INV
 guarantees that ci = '() and s = '(). After using this rule, ci = '(a)
-and stack = '(a a). A-INV holds, because ci = a+ AND stack = amount
-of as to be matched with a b AND (length stack) => 1. Thus, A-INV holds
-after the transition rule is used. 
+and stack = '(a a). A-INV holds, because ci = a^i AND stack = a^k AND
+i <= k <= 2i. Thus, A-INV holds after the transition rule is used. 
 
-((A a ,EMP) (A (a))): By inductivve hypothesis, A-INV holds. A-INV
-guarantees that ci = a+ AND stack = amount of as that have to be matched 
-with a b AND (length stack) => 1. By reading an a and pushing an a to the
-stack, we still have ci = a+ AND stack = amount of as that have to matced
-with a b AND (length stack) => 1. Thus, A-INV holds after the transition rule
+((A a ,EMP) (A (a))): By inductive hypothesis, A-INV holds. A-INV
+guarantees that ci = a^i AND stack = a^k AND i <= k <= 2i. By reading
+an a and pushing an a to the stack, we still have ci = a^i AND
+stack = a^k AND i <= k <= 2i. Thus, A-INV holds after the transition rule
 is used. 
 
 ((A a ,EMP) (A (a a))): By inductivve hypothesis, A-INV holds. A-INV
-guarentees that ci = a+ AND stack = amount of as that have to be matched
-with a b AND (length stack) => 1. By reading an a and pushing 2 as to the stack
-, we still have ci = a+ AND stack = amount of as that have to be matched
-with a b AND (length stack) => 1. Thus, A-INV holds after the transition rule
-is used.
+guarentees that ci = a^i AND stack = a^k AND i <= k <= 2i. By reading
+an a and pushing 2 as to the stack, we still have ci = a^i AND stack = a^k
+AND i <= k <= 2i. Thus, A-INV holds after the transition rule is used.
+
+((A ,EMP ,EMP) (B ,EMP)): By inductive hypothesis, A-INV holds. A-INV
+guarentees that ci = a^i AND stack = a^k AND i <= k <= 2i. By reading, popping,
+and pushing nothing to the stack, B-INV holds since ci = a^ib^j AND stack = a^k
+AND i <= j+k <= 2i. Thus, B-INV holds after the transition rule is used. 
 
 ((A b (a)) (B ,EMP)): By inductive hypothesis, A-INV holds. A-INV
-guarentees that ci = a+ AND stack = amount of as that have to be mached with
-a b AND (length stack) => 1. By reading a b and popping an a from the stack, 
-B-INV holds since ci = a+b+ AND stack = amount of as to be matched with a b. Thus,
-B-INV holds after the trannsition rule is used. 
+guarentees that  ci = a^i AND stack = a^k AND i <= k <= 2i. By reading
+a b and popping an a from the stack, B-INV holds since ci = a^ib^j AND stack = a^k
+AND i <= j+k <= 2i. B-INV holds after the trannsition rule is used. 
 
 ((B b (a)) (B ,EMP)): By inductive hypothesis, B-INV holds. B-INV guarentees that
-ci = a+b+ AND stack = amount of as that have to be matched with a b.
-By reading a b and popping an a from the stack, B-INV holds since ci = a+b+ AND stack = amount
-of as to be matched with a b. Thus, B-INV holds after the transition rule is used.
+ci = a^ib^j AND stack = a^k AND i <= j+k <= 2i. By reading a b and popping an a
+from the stack, B-INV still holds since ci = a^ib^j AND stack = a^k
+AND i <= j+k <= 2i . Thus, B-INV holds after the transition rule is used.
 
 ((B ,EMP ,EMP) (C ,EMP)): By inductive hypothesis, B-INV holds. B-INV guarentees that
-ci = a+b+ AND stack = amount of as that have to be matched with a b
-before using this transition. Reading nothing and not changing the stack means that ci = a+b+ after the transition. Recall that M is
+ci = a^ib^j AND stack = a^k AND i <= j+k <= 2i before using this transition.
+Reading nothing and not changing the stack means that ci = a^ib^j after the transition. Recall that M is
 nondetermintistic and uses such transtion only to move to C (the final state)
-and accept. This means that s must be empty and, there for ci = aibj, where i <= j <= 2i.
-Thus, C-INV holds. 
+and accept. This means that s must be empty and, therefore ci = a^ib^j, where i <= j <= 2i.
+Thus, C-INV holds after this transtition rule is used. 
 
 
 
@@ -1653,28 +1721,27 @@ PROVING L = L(M)
 
 w∈L ⇔ w∈L(M)
 
-(⇒) Assume w∈L. This means that w = aibj, where i <= j <= 2i. Given that state invariants
+(⇒) Assume w∈L. This means that w = a^ib^j, where i <= j <= 2i. Given that state invariants
 always hold, the following computation takes place:
-(S aibj EMP) -|ˆ∗ (A bj (amount of as to be matched with bs))
--| (B b+ (amount of as to be matched with bs)) -|ˆ∗ (C EMP EMP)
+(S a^ib^j EMP) -|ˆ∗ (A b^j a^j) -| (B b+ a^k) -|ˆ∗ (C EMP EMP)
 Therefore, w∈L(M).
 
 (⇐) Assume w∈L(M). This means that M halts in C, a final state,
-with an empty stack having consumed w, or M halts in S, a final state
-. Given that the state invariants always hold, we may conclude that
-w = aibj, where i <= j <= 2i. Therefore, w∈L
+with an empty stack having consumed w. Given that the state invariants
+always hold, we may conclude that w = a^ib^j, where i <= j <= 2i. Therefore, w∈L
 
 
 w∈/L ⇔ w∈/L(M)
 Proof
+
 (⇒) Assume w∈/L. This means w 
 ≠ aibj, where i <= j <= 2i. Given that the state invariant
 predicates always hold, there is no computation that has M consume w and
-end in C or S with an empty stack. Therefore, w∈/L(M).
-(⇐) Assume w∈/L(M). This means that M cannot transition into C or S with an
+end in C with an empty stack. Therefore, w∈/L(M).
+
+(⇐) Assume w∈/L(M). This means that M cannot transition into C with an
 empty stack having consumed w. Given that the state invariants always hold,
-this means that w 
-≠ aibj, where i <= j <= 2i. Thus, w∈/L.
+this means that w ≠ aibj, where i <= j <= 2i. Thus, w∈/L.
 
 |#
 

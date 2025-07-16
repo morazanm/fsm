@@ -38,10 +38,8 @@
     (check-property
      (make-config #:tests tests)
      (property #:name (format "~a-invariant" state)
-               ([translated-regexp (gen:map (translate-regexp regexp) flatten)])
-               (check-equal? (inv translated-regexp)
-                             (eq? (sm-apply machine translated-regexp)
-                                  'accept))))))
+               ([generated-word (gen:map (translate-regexp regexp) flatten)])
+               (inv generated-word)))))
 
 ;; machine (listof (state invariant)) natnum -> throw error
 ;; Purpose: To quickcheck the invariants of the states of the given machine
@@ -52,5 +50,8 @@
     (hash-set! state2inv (first inv) (second inv)))
   (for ([regexp (in-list los&regexp)])
     (testing-function (first regexp) (second regexp) (hash-ref state2inv (first regexp)) tests)))
+
+
+
 
 
