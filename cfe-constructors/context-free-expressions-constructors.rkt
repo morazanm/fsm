@@ -188,8 +188,10 @@
           acc
           (let* ([next-sym (substring string (sub1 idx) idx)]
                  [res (cond [(member (string->symbol string) nts) (list (string->symbol string))]
-                            ;;exploiting fact that the RHS of cfg rules converted from simple pda rules will structure terminal followed by nonterminal
-                            [(string<=? "0" next-sym "9") (list (string->symbol (substring string 0 1)) (string->symbol (substring string 1)))] 
+                            ;;exploiting fact that the RHS of cfg rules converted from simple pda
+                            ;;rules will structure terminal followed by nonterminal
+                            [(string<=? "0" next-sym "9")
+                             (list (string->symbol (substring string 0 1)) (string->symbol (substring string 1)))] 
                             [else (string->symbol next-sym)])]
                  [new-acc (if (list? res) res (cons res acc))]
                  [new-idx (if (list? res) 0 (sub1 idx))])
@@ -398,7 +400,8 @@
 ;;Purpose: Converts the given pda into a cfe
 (define/contract (pda->cfe pda)
   pda->cfe/c
- #;(pda->cfg pda) ;<-need to fix 
+ #;(pda->cfg pda) ;<-need to fix
+  ;;rename nts before going into cfg-cfe, use hash to keep track of nts and sub 
   (cfg->cfe (pda->cfg pda)))
 
 ;;cfe -> pda
