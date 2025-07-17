@@ -398,11 +398,48 @@
 
 ;; pda -> cfe
 ;;Purpose: Converts the given pda into a cfe
-(define/contract (pda->cfe pda)
+#;(define/contract (pda->cfe pda)
   pda->cfe/c
  #;(pda->cfg pda) ;<-need to fix
   ;;rename nts before going into cfg-cfe, use hash to keep track of nts and sub 
   (cfg->cfe (pda->cfg pda)))
+
+
+(define (rename-nts-helper old-nts new-nts acc)
+  (if (empty? old-nts)
+      acc
+      (let* ([translated-nt (gen-nt new-nts)]
+             [new-acc (hash-set acc (first old-nts) translated-nt)]
+             [new-nts (cons translated-nt new-nts)])
+        (rename-nts-helper (rest old-nts) new-nts new-acc))))
+
+
+(define (rename-nts G)
+  (rename-nts-helper (cfg-nts G) '() (hash)))
+
+
+(define (rebuild-cfg improper-cfg nts-mapping)
+  (let ([sigma (cfg-sigma improper-cfg)])
+  (make-unchecked-cfg (hash-values nts-mapping)
+                      sigma
+                      (map (λ (rule)
+                             (list (hash-ref nts-mapping (first rule))
+                                   (second rule)
+                                   (let ([RHS (symbol->list (third rule))])
+                                     (if (member (first RHS) sigma)
+                                         (los->symbol (cons (first RHS) (symbol->list (hash-ref nts-mapping (los->symbol (rest RHS))))))
+                                         (hash-ref nts-mapping (los->symbol (rest RHS)))))))
+                           (cfg-rules improper-cfg))
+                      (hash-ref nts-mapping (cfg-start improper-cfg)))))
+                      ;(hash-map (λ (old-nt new-nt)
+                                  
+
+
+(define (pda->cfe pda)
+  (let* ([G (unchecked->cfg (pda->cfg pda))]
+         [renamed-nts-mapping (rename-nts G)]
+         #;[proper-cfg (rebuild-cfg G renamed-nts-mapping)])
+   renamed-nts-mapping  #;(values renamed-nts-mapping #;(cfg-rules G) (cfg-nts G) #;renamed-nts-mapping)))
 
 ;;cfe -> pda
 ;;Purpose: Converts the given cfe into a pda
