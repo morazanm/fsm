@@ -10,12 +10,12 @@
 
 (define MAX-KLEENE-LENGTH 20)
 
-;; regexp -> generator
+;; regexp -> generator throw error
 ;; Purpose: To translate the given regexp into a generator, that generates
 ;;          words that are in the language in the regular expression
 (define (translate-regexp regexp)
-  (cond [(null-regexp? regexp)
-         (gen:const '∅)]
+  (cond [(equal? null-regexp regexp)
+         (error "cannot generate a word for the null-regexp")]
         [(singleton-regexp? regexp)
          (gen:const (string->symbol (singleton-regexp-a regexp)))]
         [(concat-regexp? regexp)

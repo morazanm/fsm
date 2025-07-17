@@ -1556,9 +1556,11 @@ C-INV holds after the transition rule.
                          '(S C)
                          `(((S a ,EMP) (A (a)))
                            ((S a ,EMP) (A (a a)))
+                           ((S ,EMP ,EMP) (A ,EMP))
                            ((A a ,EMP) (A (a)))
                            ((A a ,EMP) (A (a a)))
                            ((A b (a)) (B ,EMP))
+                           ((A ,EMP ,EMP) (B ,EMP))
                            ((B b (a)) (B ,EMP))
                            ((B ,EMP ,EMP) (C ,EMP))
                            )))
@@ -1596,7 +1598,7 @@ C-INV holds after the transition rule.
 
 ;; word stack -> Boolean
 ;; Purpose: To determine if the given word and stack belongs in A
-;;          ci = a+ AND (length ci) <= (length stack) <= (* 2 (length ci))
+;;          ci = a^i AND stack = a^k AND i <= k <= 2i
 (define (A-INV-AiBj ci stack)
   (and (andmap (λ (x) (eq? 'a x)) ci)
        (<= (length ci) (length stack) (* 2 (length ci)))))
@@ -1606,7 +1608,7 @@ C-INV holds after the transition rule.
 (check-equal? (A-INV-AiBj '(a a) '(a a a a)) #t)
 (check-equal? (A-INV-AiBj '(a a a) '(a a a a a a)) #t)
 (check-equal? (A-INV-AiBj '(a a a a) '(a a a a a a a a)) #t)
-(check-equal? (A-INV-AiBj '() '()) #f)
+(check-equal? (A-INV-AiBj '() '()) #t)
 (check-equal? (A-INV-AiBj '() '(a)) #f)
 (check-equal? (A-INV-AiBj '(a b) '(a a)) #f)
 
@@ -1624,10 +1626,10 @@ C-INV holds after the transition rule.
 ;; tests for B-INV-AiBj
 (check-equal? (B-INV-AiBj '(a a b b) '()) #t)
 (check-equal? (B-INV-AiBj '(a b) '(a)) #t)
-(check-equal? (B-INV-AiBj '(a a a b b b) '(a a a a)) #t)
+(check-equal? (B-INV-AiBj '(a a a b b b) '(a a a)) #t)
 (check-equal? (B-INV-AiBj '(a a b b b) '(a)) #t)
-(check-equal? (B-INV-AiBj '(a a b b) '(a a a)) #t)
-(check-equal? (B-INV-AiBj '(a a b) '(a a a)) #f)
+(check-equal? (B-INV-AiBj '(a a b b) '(a a)) #t)
+(check-equal? (B-INV-AiBj '(a a b) '(a a a a)) #f)
 (check-equal? (B-INV-AiBj '(a a b b b b b b) '()) #f)
 (check-equal? (B-INV-AiBj '(a b b b b b b b b b) '()) #f)
 
@@ -1649,7 +1651,7 @@ C-INV holds after the transition rule.
 (check-equal? (C-INV-AiBj '(a a b b b b) '()) #t)
 (check-equal? (C-INV-AiBj '(a a b b b) '()) #t)
 (check-equal? (C-INV-AiBj '(a b b b) '()) #f)
-(check-equal? (C-INV-AiBj '() '()) #f)
+(check-equal? (C-INV-AiBj '() '()) #t)
 (check-equal? (C-INV-AiBj '(a b b) '(a)) #f)
 (check-equal? (C-INV-AiBj '(a b b) '(a a)) #f)
 
@@ -1674,13 +1676,13 @@ since 0 <= 0 <= 0. Thus, A-INV holds after the transition rule is used.
 ((S a ,EMP) (A (a))): By inductive hypothesis, S-INV holds.
 This guarantees that ci = '() and s = '(). After using this
 rule, ci = '(a) and s = '(a). A-INV holds, because ci = a^i
-AND stack = a^k AND i <= k <= 2i. Thus, A-INV holds after the
+AND stack = a^k AND i <= k <= 2i, since 1 <= 1 <= 2. Thus, A-INV holds after the
 transition rule is used. 
 
 ((S a ,EMP) (A (a a))): By inductive hypothesis, S-INV holds. S-INV
 guarantees that ci = '() and s = '(). After using this rule, ci = '(a)
 and stack = '(a a). A-INV holds, because ci = a^i AND stack = a^k AND
-i <= k <= 2i. Thus, A-INV holds after the transition rule is used. 
+i <= k <= 2i, since 1 <= 2 <= 2. Thus, A-INV holds after the transition rule is used. 
 
 ((A a ,EMP) (A (a))): By inductive hypothesis, A-INV holds. A-INV
 guarantees that ci = a^i AND stack = a^k AND i <= k <= 2i. By reading
@@ -1688,7 +1690,7 @@ an a and pushing an a to the stack, we still have ci = a^i AND
 stack = a^k AND i <= k <= 2i. Thus, A-INV holds after the transition rule
 is used. 
 
-((A a ,EMP) (A (a a))): By inductivve hypothesis, A-INV holds. A-INV
+((A a ,EMP) (A (a a))): By inductive hypothesis, A-INV holds. A-INV
 guarentees that ci = a^i AND stack = a^k AND i <= k <= 2i. By reading
 an a and pushing 2 as to the stack, we still have ci = a^i AND stack = a^k
 AND i <= k <= 2i. Thus, A-INV holds after the transition rule is used.
@@ -1723,7 +1725,7 @@ w∈L ⇔ w∈L(M)
 
 (⇒) Assume w∈L. This means that w = a^ib^j, where i <= j <= 2i. Given that state invariants
 always hold, the following computation takes place:
-(S a^ib^j EMP) -|ˆ∗ (A b^j a^j) -| (B b+ a^k) -|ˆ∗ (C EMP EMP)
+(S a^ib^j EMP) -|ˆ∗ (A b^j a^j) -| (B b^k a^k) -|ˆ∗ (C EMP EMP)
 Therefore, w∈L(M).
 
 (⇐) Assume w∈L(M). This means that M halts in C, a final state,
