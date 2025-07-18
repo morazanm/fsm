@@ -45,7 +45,7 @@
 ;; Purpose: To quickcheck the invariants of the states of the given machine
 (define (quickcheck-invs machine loi #:num-tests [tests 1000])
   (define state2inv (make-hash))
-  (define los&regexp (get-all-reg-expr machine))
+  (define los&regexp (get-all-regexp machine))
   (for ([inv (in-list loi)])
     (hash-set! state2inv (first inv) (second inv)))
   (for ([regexp (in-list los&regexp)])
