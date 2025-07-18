@@ -498,6 +498,9 @@
 
 
 
+;(define no-contain-babab (make-dfa 
+
+
 
 ;                                               
 ;                                               
@@ -1553,7 +1556,7 @@ C-INV holds after the transition rule.
                          '(a b)
                          '(a)
                          'S
-                         '(S C)
+                         '(C)
                          `(((S a ,EMP) (A (a)))
                            ((S a ,EMP) (A (a a)))
                            ((S ,EMP ,EMP) (A ,EMP))
@@ -1668,54 +1671,50 @@ This establishes the base case.
 Proof invariants hold after each transition that consumes input:
 
 ((S ,EMP ,EMP) (A ,EMP)): By inductive hypothesis, S-INV holds. This
-guareentees that ci = '() and s = '(). After using this rule, ci = '()
-and stack = '(). A-holds, because ci = a^i AND stack = a^k AND i <= k <= 2i.
-Since there have been no as read and nothing added to the stack, i <= k <= 2i holds,
-since 0 <= 0 <= 0. Thus, A-INV holds after the transition rule is used. 
+guareentees that ci = '() and s = '(). After using this rule, ci = '() = a^i
+and stack = '() = a^k. A-holds, because i <= k <= 2i.
 
 ((S a ,EMP) (A (a))): By inductive hypothesis, S-INV holds.
 This guarantees that ci = '() and s = '(). After using this
-rule, ci = '(a) and s = '(a). A-INV holds, because ci = a^i
-AND stack = a^k AND i <= k <= 2i, since 1 <= 1 <= 2. Thus, A-INV holds after the
-transition rule is used. 
+rule, ci = '(a) = a^i and s = '(a) = a^k. A-INV holds, because ci = a^i
+AND stack = '() = a^k. Observe that i <= k <= 2i. Thus, A-INV holds. 
 
 ((S a ,EMP) (A (a a))): By inductive hypothesis, S-INV holds. S-INV
-guarantees that ci = '() and s = '(). After using this rule, ci = '(a)
-and stack = '(a a). A-INV holds, because ci = a^i AND stack = a^k AND
-i <= k <= 2i, since 1 <= 2 <= 2. Thus, A-INV holds after the transition rule is used. 
+guarantees that ci = '() and s = '(). After using this rule, ci = '(a) = a^i
+and stack = '(a a) = a^k. A-INV holds, because ci = a^i AND stack = a^k.
+Observe that i <= k <= 2i. Thus, A-INV holds. 
 
 ((A a ,EMP) (A (a))): By inductive hypothesis, A-INV holds. A-INV
 guarantees that ci = a^i AND stack = a^k AND i <= k <= 2i. By reading
-an a and pushing an a to the stack, we still have ci = a^i AND
-stack = a^k AND i <= k <= 2i. Thus, A-INV holds after the transition rule
-is used. 
+an a and pushing an a to the stack, we have ci = '(a^i a) = a^i+1 AND
+stack = '(a^k a) = a^k+1. Observe that i+1 <= k+1 <= 2(i+1). 
 
 ((A a ,EMP) (A (a a))): By inductive hypothesis, A-INV holds. A-INV
 guarentees that ci = a^i AND stack = a^k AND i <= k <= 2i. By reading
-an a and pushing 2 as to the stack, we still have ci = a^i AND stack = a^k
-AND i <= k <= 2i. Thus, A-INV holds after the transition rule is used.
+an a and pushing 2 as to the stack, we have ci = '(a^i a) AND stack = '(a^k a a)\
+= a^k+2. Observe that i+1 <= k+2 <= 2(i+1).
 
 ((A ,EMP ,EMP) (B ,EMP)): By inductive hypothesis, A-INV holds. A-INV
-guarentees that ci = a^i AND stack = a^k AND i <= k <= 2i. By reading, popping,
-and pushing nothing to the stack, B-INV holds since ci = a^ib^j AND stack = a^k
-AND i <= j+k <= 2i. Thus, B-INV holds after the transition rule is used. 
+guarentees that ci = a^i AND stack = a^k AND i <= k <= 2i. Observe that
+ci = a^ib^0 = a^ib^j. Since i <= 0 + k <= 2i, we have that i <= j+k <= 2i.
+Thus, B-INV holds.
 
 ((A b (a)) (B ,EMP)): By inductive hypothesis, A-INV holds. A-INV
-guarentees that  ci = a^i AND stack = a^k AND i <= k <= 2i. By reading
-a b and popping an a from the stack, B-INV holds since ci = a^ib^j AND stack = a^k
-AND i <= j+k <= 2i. B-INV holds after the trannsition rule is used. 
+guarentees that  ci = a^i = a^ib^0 AND stack = a^k AND i <= k <= 2i. By reading
+a b and popping an a from the stack, we have ci = a^ib^1 = a^ib^j+1 AND
+stack = a^k-1. Since i <= 1 + k-1 <= 2i, we have that i <= j+k <= 2i.
+Thus, B-INV holds.
 
 ((B b (a)) (B ,EMP)): By inductive hypothesis, B-INV holds. B-INV guarentees that
 ci = a^ib^j AND stack = a^k AND i <= j+k <= 2i. By reading a b and popping an a
-from the stack, B-INV still holds since ci = a^ib^j AND stack = a^k
-AND i <= j+k <= 2i . Thus, B-INV holds after the transition rule is used.
+from the stack, we have ci = a^ib^j+1 AND stack = a^k-1. Since i <= j+1 + k-1 <= 2i,
+we have that i <= j+k <= 2i. Thus B-INV holds. 
 
 ((B ,EMP ,EMP) (C ,EMP)): By inductive hypothesis, B-INV holds. B-INV guarentees that
-ci = a^ib^j AND stack = a^k AND i <= j+k <= 2i before using this transition.
-Reading nothing and not changing the stack means that ci = a^ib^j after the transition. Recall that M is
-nondetermintistic and uses such transtion only to move to C (the final state)
-and accept. This means that s must be empty and, therefore ci = a^ib^j, where i <= j <= 2i.
-Thus, C-INV holds after this transtition rule is used. 
+ci = a^ib^j AND stack = a^k AND i <= j+k <= 2i. Reading nothing and not changing the
+stack means that ci = a^ib^j after the transition. Recall that M is nondetermintistic
+and uses such transtion only to move to C (the final state) and accept. This means
+that s must be empty and, therefore ci = a^ib^j, where i <= j <= 2i. Thus, C-INV holds. 
 
 
 
@@ -1723,8 +1722,8 @@ PROVING L = L(M)
 
 w∈L ⇔ w∈L(M)
 
-(⇒) Assume w∈L. This means that w = a^ib^j, where i <= j <= 2i. Given that state invariants
-always hold, the following computation takes place:
+(⇒) Assume w∈L. This means that w = a^ib^j, where i <= j <= 2i. Given that state
+invariantsalways hold, the following computation takes place:
 (S a^ib^j EMP) -|ˆ∗ (A b^j a^j) -| (B b^k a^k) -|ˆ∗ (C EMP EMP)
 Therefore, w∈L(M).
 
@@ -1736,16 +1735,19 @@ always hold, we may conclude that w = a^ib^j, where i <= j <= 2i. Therefore, w�
 w∈/L ⇔ w∈/L(M)
 Proof
 
-(⇒) Assume w∈/L. This means w 
-≠ aibj, where i <= j <= 2i. Given that the state invariant
-predicates always hold, there is no computation that has M consume w and
-end in C with an empty stack. Therefore, w∈/L(M).
+(⇒) Assume w∈/L. This means w ≠ aibj, where i <= j <= 2i. Given that
+the state invariant predicates always hold, there is no computation
+that has M consume w and end in C with an empty stack. Therefore, w∈/L(M).
 
 (⇐) Assume w∈/L(M). This means that M cannot transition into C with an
 empty stack having consumed w. Given that the state invariants always hold,
 this means that w ≠ aibj, where i <= j <= 2i. Thus, w∈/L.
 
 |#
+
+
+
+
 
 
 ;; Let Σ = {a b}. Design and implement a pda for L = {w | w has 3
