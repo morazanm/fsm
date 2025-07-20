@@ -1,5 +1,5 @@
 #lang racket/base
-(provide get-all-regexp get-all-regexp-hash remove-states-that-cannot-reach-finals)
+(provide get-all-regexp remove-states-that-cannot-reach-finals)
 (require rackunit)
 (require racket/list)
 (require "../fsm-core/interface.rkt"
@@ -130,93 +130,10 @@
 
 
 
-
-;; machine -> (listof (listof symbol regexp))
-;; Purpose: To return a list of all regular expressions that can be made from the given machine
-(define (get-all-regexp a-machine)
-  (define machine-with-states-that-reach-finals (remove-states-that-cannot-reach-finals a-machine))
-  
-  ;; (listof symbols) (listof regexp) -> (listof (listof symbol regexp))
-  ;; Purpose: To return a list of all regular expressions that can be made from the given machine
-  ;; Accumulator Invariant: accum = list of all regular expressions that can be made from the given machine
-  (define (get-all-regexp-helper los accum all-paths states)
-    (if (empty? los)
-        accum
-        (let* [;; all paths that reach the first of the los
-               (paths-to-first-los (filter (λ (path) (eq? (third (last path)) (car los))) all-paths))
-                      
-                        
-               ;; all rules used for all the paths of the first of the los (used to filter out rules that aren't used)
-               (rules-for-first-los (remove-duplicates (apply append paths-to-first-los)))
-                        
-                        
-               ;; all states to needed for all possible paths to get to the first of los
-               (states-to-first-los (filter (λ (state) (or (member? state (map (λ (rule) (car rule)) rules-for-first-los))
-                                                           (member? state (map (λ (rule) (third rule)) rules-for-first-los))))
-                                            states))
-               ;; final states for the new machine 
-               (finals-in-first-los (filter (λ (a-final-state) (member? a-final-state states-to-first-los)) (sm-finals machine-with-states-that-reach-finals)))
-                        
-               ;; updated machine with new rules and new states                                          
-               (machine-only-paths-to-first-los
-                (make-ndfa states-to-first-los
-                           (sm-sigma machine-with-states-that-reach-finals)
-                           (sm-start machine-with-states-that-reach-finals)
-                           (list (car los))
-                           rules-for-first-los))
-               (regexp-first-los (simplify-regexp (fsa->regexp machine-only-paths-to-first-los)))]
-          (get-all-regexp-helper (cdr los)
-                                 (cons (list (car los) regexp-first-los) accum)
-                                 all-paths
-                                 states))))
-  
-  (if (eq? machine-with-states-that-reach-finals (null-regexp))
-      (null-regexp)
-      (let* [(all-paths (find-paths machine-with-states-that-reach-finals))
-             
-             (states (sm-states machine-with-states-that-reach-finals))
-             
-             ;; have to filter out starting state since there is no path to it
-             (states-no-start-state (filter (λ (state) (not (eq? state (sm-start machine-with-states-that-reach-finals)))) states))
-
-             ;;paths to start state
-             (paths-to-start-state (filter (λ (path) (eq? (third (last path)) (sm-start machine-with-states-that-reach-finals))) all-paths))
-          
-             (rules (sm-rules machine-with-states-that-reach-finals))
-
-             ]
-
-        (if (empty? paths-to-start-state)
-            (get-all-regexp-helper states-no-start-state
-                                   (list (list (sm-start machine-with-states-that-reach-finals)
-                                               (empty-regexp)))
-                                   all-paths
-                                   states)
-            (get-all-regexp-helper states '() all-paths states)))))
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 ;; machine -> hashtable
 ;; Purpose: To return a hashtable of all regular expressions that
 ;;          can be made from the given machine
-(define (get-all-regexp-hash a-machine)
+(define (get-all-regexp a-machine)
   (define machine-with-states-that-reach-finals (remove-states-that-cannot-reach-finals a-machine))
 
   (define state&its-machine (make-hash))
@@ -227,8 +144,8 @@
   (define (get-all-regexp-helper los all-paths states)
     (if (empty? los)
         state&its-machine
-        ;; all paths that reach the first of the los
-        (let* [(paths-to-first-los (filter (λ (path) (eq? (third (last path)) (car los))) all-paths))
+        (let* [;; all paths that reach the first of the los
+               (paths-to-first-los (filter (λ (path) (eq? (third (last path)) (car los))) all-paths))
                       
                         
                ;; all rules used for all the paths of the first of the los (used to filter out rules that aren't used)
@@ -274,11 +191,12 @@
              ]
 
         (if (empty? paths-to-start-state)
-            (begin (hash-set! state&its-machine(sm-start machine-with-states-that-reach-finals)
+            (begin (hash-set! state&its-machine
+                              (sm-start machine-with-states-that-reach-finals)
                               (empty-regexp))
                    (get-all-regexp-helper states-no-start-state
                                           all-paths
                                           states))
-            (get-all-regexp-helper states '() all-paths states)))))
+            (get-all-regexp-helper states all-paths states)))))
  
 

@@ -499,14 +499,19 @@
 
 ;; L = {w | w does not contain bababa}
 ;; States
-;; S: a*, baa is detected, or babaa is detected , start and final state
-;; A: last of ci is b and no bababa is detected, final state
-;; B: last of ci is ba and no bababa is detected, final state
-;; C: last of ci is bab and no bababa is detected, final state
-;; D: last of ci is baba and no bababa is detected, final state
-;; E: last of ci is babab and no bababa is detected, final state
-;; F: bababa has been detected, final state
-(define no-contain-bababa (make-dfa '(S A B C D E F)
+;; S: even number of bs, start and final state
+;; F: odd number of bs
+
+
+;; States
+;; S: b*, ab is detected, aabb is detected, or empty
+;; A: last of the ci is a and no aabab is detected
+;; B: last of ci is aa and no aabab is detected
+;; C: last of ci is aab and no aabab is detected
+;; D: last of ci is aaba and no aabab is detected
+;; E: aabab has been detected, final state
+
+(define no-contain-babab (make-dfa '(S A B C D E F)
                                    '(a b)
                                    'S
                                    '(S A B C D E)
@@ -519,184 +524,6 @@
                                      (F a F) (F b F))
                                    'no-dead
                                    ))
-
-;;tests for no-contain-bababa
-(check-equal? (sm-apply no-contain-bababa '()) 'accept)
-(check-equal? (sm-apply no-contain-bababa '(a)) 'accept)
-(check-equal? (sm-apply no-contain-bababa '(b)) 'accept)
-(check-equal? (sm-apply no-contain-bababa '(a a a)) 'accept)
-(check-equal? (sm-apply no-contain-bababa '(a b b)) 'accept)
-(check-equal? (sm-apply no-contain-bababa '(a b b a b a b)) 'accept)
-(check-equal? (sm-apply no-contain-bababa '(b a b a b a)) 'reject)
-(check-equal? (sm-apply no-contain-bababa '(a b a b a b a b b a)) 'reject)
-(check-equal? (sm-apply no-contain-bababa '(b b a b a b a a a b a b a b a)) 'reject)
-(check-equal? (sm-apply no-contain-bababa '(a b a b a b a b a b a a b b a)) 'reject)
-
-;; invariants for no-contains-bababa
-
-;; note: using auxilaries that were made for CONTAINS-aabab
-
-;; word -> Boolean
-;; Purpose: Determine if ci should be in S
-(define (S-INV-no-contain-bababa ci)
-  (and (not (contains? ci '(b a b a b a)))
-       (not (end-with? '(b) ci))
-       (not (end-with? '(b a) ci))
-       (not (end-with? '(b a b) ci))
-       (not (end-with? '(b a b a) ci))
-       (not (end-with? '(b a b a b) ci))))
-
-;; tests for S-INV-no-contain-bababa
-(check-equal? (S-INV-no-contain-bababa '()) #t)
-(check-equal? (S-INV-no-contain-bababa '(a)) #t)
-(check-equal? (S-INV-no-contain-bababa '(a a)) #t)
-(check-equal? (S-INV-no-contain-bababa '(b a a)) #t)
-(check-equal? (S-INV-no-contain-bababa '(b a b a a)) #t)
-(check-equal? (S-INV-no-contain-bababa '(b b a a b a a a a)) #t)
-(check-equal? (S-INV-no-contain-bababa '(b)) #f)
-(check-equal? (S-INV-no-contain-bababa '(b a b a a b a b)) #f)
-(check-equal? (S-INV-no-contain-bababa '(b a b a b a a a)) #f)
-(check-equal? (S-INV-no-contain-bababa '(b b a b a b a b b b a a b)) #f)
-(check-equal? (S-INV-no-contain-bababa '(a b a b a b a b a b)) #f)
-
-
-;; word -> Boolean
-;; Purpose: Determine if ci should be in A
-(define (A-INV-no-contain-bababa ci)
-  (and (not (contains? ci '(b a b a b a)))
-       (end-with? '(b) ci)
-       (not (end-with? '(b a) ci))
-       (not (end-with? '(b a b) ci))
-       (not (end-with? '(b a b a) ci))
-       (not (end-with? '(b a b a b) ci))))
-
-;; tests for A-INV-no-contains-bababa
-(check-equal? (A-INV-no-contain-bababa '(b)) #t)
-(check-equal? (A-INV-no-contain-bababa '(a a b a a b)) #t)
-(check-equal? (A-INV-no-contain-bababa '(b a a b)) #t)
-(check-equal? (A-INV-no-contain-bababa '(b b b b b b)) #t)
-(check-equal? (A-INV-no-contain-bababa '()) #f)
-(check-equal? (A-INV-no-contain-bababa '(a)) #f)
-(check-equal? (A-INV-no-contain-bababa '(b a)) #f)
-(check-equal? (A-INV-no-contain-bababa '(b a b)) #f)
-(check-equal? (A-INV-no-contain-bababa '(b a b a)) #f)
-(check-equal? (A-INV-no-contain-bababa '(b a b a b)) #f)
-(check-equal? (A-INV-no-contain-bababa '(b a b a b a)) #f)
-
-;; word -> Boolean
-;; Purpose: Determine if ci should be in B
-(define (B-INV-no-contain-bababa ci)
-  (and (not (contains? ci '(b a b a b a)))
-       (end-with? '(b a) ci)
-       (not (end-with? '(b a b) ci))
-       (not (end-with? '(b a b a) ci))
-       (not (end-with? '(b a b a b) ci))))
-
-;; tests for B-INV-no-contains-bababa
-(check-equal? (B-INV-no-contain-bababa '(b a)) #t)
-(check-equal? (B-INV-no-contain-bababa '(a a b a a b a)) #t)
-(check-equal? (B-INV-no-contain-bababa '(a a b a)) #t)
-(check-equal? (B-INV-no-contain-bababa '(b b b b b a)) #t)
-(check-equal? (B-INV-no-contain-bababa '(a b a b a a b a)) #t)
-(check-equal? (B-INV-no-contain-bababa '(a)) #f)
-(check-equal? (B-INV-no-contain-bababa '(b)) #f)
-(check-equal? (B-INV-no-contain-bababa '(b a b)) #f)
-(check-equal? (B-INV-no-contain-bababa '(b a b a)) #f)
-(check-equal? (B-INV-no-contain-bababa '(b a b a b)) #f)
-(check-equal? (B-INV-no-contain-bababa '(b a b a b a)) #f)
-
-
-;; word -> Boolean
-;; Purpose: Determine if ci should be in C
-(define (C-INV-no-contain-bababa ci)
-  (and (not (contains? ci '(b a b a b a)))
-       (end-with? '(b a b) ci)
-       (not (end-with? '(b a b a) ci))
-       (not (end-with? '(b a b a b) ci))))
-
-;; tests for C-INV-no-contains-bababa
-(check-equal? (C-INV-no-contain-bababa '(b a b)) #t)
-(check-equal? (C-INV-no-contain-bababa '(a a b a a b a b)) #t)
-(check-equal? (C-INV-no-contain-bababa '(a a b a b)) #t)
-(check-equal? (C-INV-no-contain-bababa '(b b b b b a b)) #t)
-(check-equal? (C-INV-no-contain-bababa '(a b a b a a b a b)) #t)
-(check-equal? (C-INV-no-contain-bababa '(a)) #f)
-(check-equal? (C-INV-no-contain-bababa '(b)) #f)
-(check-equal? (C-INV-no-contain-bababa '(b a)) #f)
-(check-equal? (C-INV-no-contain-bababa '(b a b a)) #f)
-(check-equal? (C-INV-no-contain-bababa '(b a b a b)) #f)
-(check-equal? (C-INV-no-contain-bababa '(b a b a b a)) #f)
-
-
-;; word -> Boolean
-;; Purpose: Determine if ci should be in D
-(define (D-INV-no-contain-bababa ci)
-  (and (not (contains? ci '(b a b a b a)))
-       (end-with? '(b a b a) ci)
-       (not (end-with? '(b a b a b) ci))))
-
-;; tests for D-INV-no-contains-bababa
-(check-equal? (D-INV-no-contain-bababa '(b a b a)) #t)
-(check-equal? (D-INV-no-contain-bababa '(a a b a a b a b a)) #t)
-(check-equal? (D-INV-no-contain-bababa '(a a b a b a)) #t)
-(check-equal? (D-INV-no-contain-bababa '(b b b b b a b a)) #t)
-(check-equal? (D-INV-no-contain-bababa '(a b a b a a b a b a)) #t)
-(check-equal? (D-INV-no-contain-bababa '(a)) #f)
-(check-equal? (D-INV-no-contain-bababa '(b)) #f)
-(check-equal? (D-INV-no-contain-bababa '(b a)) #f)
-(check-equal? (D-INV-no-contain-bababa '(b a b)) #f)
-(check-equal? (D-INV-no-contain-bababa '(b a b a b)) #f)
-(check-equal? (D-INV-no-contain-bababa '(b a b a b a)) #f)
-
-
-;; word -> Boolean
-;; Purpose: Determine if ci should be in E
-(define (E-INV-no-contain-bababa ci)
-  (and (not (contains? ci '(b a b a b a)))
-       (end-with? '(b a b a b) ci)))
-
-;; tests for E-INV-no-contains-bababa
-(check-equal? (E-INV-no-contain-bababa '(b a b a b)) #t)
-(check-equal? (E-INV-no-contain-bababa '(a a b a a b a b a b)) #t)
-(check-equal? (E-INV-no-contain-bababa '(a a b a b a b)) #t)
-(check-equal? (E-INV-no-contain-bababa '(b b b b b a b a b)) #t)
-(check-equal? (E-INV-no-contain-bababa '(a b a b a a b a b a b)) #t)
-(check-equal? (E-INV-no-contain-bababa '(a)) #f)
-(check-equal? (E-INV-no-contain-bababa '(b)) #f)
-(check-equal? (E-INV-no-contain-bababa '(b a)) #f)
-(check-equal? (E-INV-no-contain-bababa '(b a b)) #f)
-(check-equal? (E-INV-no-contain-bababa '(b a b a)) #f)
-(check-equal? (E-INV-no-contain-bababa '(b a b a b a)) #f)
-
-
-;; word -> Boolean
-;; Purpose: Determine if ci should be in F
-(define (F-INV-no-contain-bababa ci)
-  (contains? ci '(b a b a b a)))
-
-;; tests for F-INV-no-contains-bababa
-(check-equal? (F-INV-no-contain-bababa '(b a b a b a)) #t)
-(check-equal? (F-INV-no-contain-bababa '(a a b a a b a b a b a)) #t)
-(check-equal? (F-INV-no-contain-bababa '(a a b a b a b a)) #t)
-(check-equal? (F-INV-no-contain-bababa '(b b b b b a b a b a)) #t)
-(check-equal? (F-INV-no-contain-bababa '(a b a b a a b a b a b a)) #t)
-(check-equal? (F-INV-no-contain-bababa '(a)) #f)
-(check-equal? (F-INV-no-contain-bababa '(b)) #f)
-(check-equal? (F-INV-no-contain-bababa '(b a)) #f)
-(check-equal? (F-INV-no-contain-bababa '(b a b)) #f)
-(check-equal? (F-INV-no-contain-bababa '(b a b a)) #f)
-(check-equal? (F-INV-no-contain-bababa '(b a b a b)) #f)
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -1988,7 +1815,4 @@ this means that w ≠ aibj, where i <= j <= 2i. Thus, w∈/L.
 (check-equal? (sm-apply 3xa-b '(b) '()) 'reject)
 
 |#
-
-;; Let Σ = {a b}. Design and implement a pda for L = {a^nb^ma^n |n,m≥0}
-
 

@@ -41,17 +41,11 @@
                ([generated-word (gen:map (translate-regexp regexp) flatten)])
                (inv generated-word)))))
 
+
 ;; machine (listof (state invariant)) natnum -> throw error
 ;; Purpose: To quickcheck the invariants of the states of the given machine
-(define (quickcheck-invs machine loi #:num-tests [tests 1000])
-  (define state2inv (make-hash))
+(define (quickcheck-invs machine los&inv #:num-tests [tests 1000])
   (define los&regexp (get-all-regexp machine))
-  (for ([inv (in-list loi)])
-    (hash-set! state2inv (first inv) (second inv)))
-  (for ([regexp (in-list los&regexp)])
-    (testing-function (first regexp) (second regexp) (hash-ref state2inv (first regexp)) tests)))
-
-
-
-
-
+  (for ([inv (in-list
+                 los&inv)])
+    (testing-function (first inv) (hash-ref los&regexp (first inv)) (second inv) tests)))
