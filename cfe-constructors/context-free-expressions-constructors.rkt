@@ -4,6 +4,7 @@
          "../fsm-core/private/cfg.rkt"
          "../fsm-core/private/pda.rkt"
          "../fsm-core/private/misc.rkt"
+         "../fsm-core/private/word.rkt"
          "cfexp-contracts.rkt"
          "cfexp-structs.rkt"
          racket/hash)
@@ -157,10 +158,10 @@
         [(mk-union-cfexp? cfe) (gen-cfexp-word (pick-cfexp cfe) MAX-KLEENESTAR-REPS)]
         [else (gen-cfe-kleene-word cfe MAX-KLEENESTAR-REPS gen-cfexp-word)]))
 
-(struct cfg (nts sigma rules start) #:transparent)
+(struct CFG (nts sigma rules start) #:transparent)
 
 (define (unchecked->cfg G)
-  (cfg (cfg-get-v G) (cfg-get-alphabet G) (cfg-get-rules G) (cfg-get-start G)))
+  (CFG (cfg-get-v G) (cfg-get-alphabet G) (cfg-get-the-rules G) (cfg-get-start G)))
 
 ;;context-free grammar -> cfe
 ;;Purpose: Converts the given cfg its equivalent cfe
@@ -228,10 +229,6 @@
         (valid-state? sym)))
   
   (let* ([nts (cfg-get-v G)]
-         [start (cfg-get-start G)]
-         [needs-converting? (not (andmap valid-state? nts))]
-         [G (if needs-converting? (cfg-rename-nts nts G) G)]
-         [nts (if needs-converting? (cons start (cfg-get-v G)) (cfg-get-v G))]
          [rules (make-hash-table nts (λ (nt) (filter #;any/c list? (filter-map (λ (rule) (and (eq? (first rule) nt) 
                                                                                       (let* ([new-RHS (explode (symbol->string (third rule)) nts)]
                                                                                              [res (if (or (equal? new-RHS (list EMP))
@@ -393,7 +390,7 @@
                          [(= (length nts) 1) (first nts)]
                          [else (gen-nt extracted-components)])])
     (if debug
-        (cfg nts alphabet rules starting-nt)
+        (CFG nts alphabet rules starting-nt)
         (make-unchecked-cfg nts alphabet rules starting-nt))))
 
 ;; pda -> cfe
@@ -415,34 +412,428 @@
 
 
 (define (rename-nts G)
-  (rename-nts-helper (cfg-nts G) '() (hash)))
+  (rename-nts-helper (filter (λ (nt) (not (or (eq? nt EMP)
+                                              (member nt (CFG-sigma G)))))
+                             (CFG-nts G))
+                     '()
+                     (hash)))
 
 
 (define (rebuild-cfg improper-cfg nts-mapping)
-  (let ([sigma (cfg-sigma improper-cfg)])
+  (let ([sigma (CFG-sigma improper-cfg)])
   (make-unchecked-cfg (hash-values nts-mapping)
                       sigma
                       (map (λ (rule)
-                             (list (hash-ref nts-mapping (first rule))
-                                   (second rule)
-                                   (let ([RHS (symbol->list (third rule))])
-                                     (if (member (first RHS) sigma)
-                                         (los->symbol (cons (first RHS) (symbol->list (hash-ref nts-mapping (los->symbol (rest RHS))))))
-                                         (hash-ref nts-mapping (los->symbol (rest RHS)))))))
-                           (cfg-rules improper-cfg))
-                      (hash-ref nts-mapping (cfg-start improper-cfg)))))
+                             (list (hash-ref nts-mapping (cfg-rule-lhs rule))
+                                   ARROW
+                                   (let ([RHS (cfg-rule-rhs rule) #;(symbol->list (cfg-rule-rhs rule))])
+                                     (los->symbol (map (λ (r) (if (or (member r sigma)
+                                                                      (eq? r EMP))
+                                                     r
+                                                     (hash-ref nts-mapping r)))
+                                          RHS)))))
+                           (CFG-rules improper-cfg))
+                      (hash-ref nts-mapping (CFG-start improper-cfg)))))
                       ;(hash-map (λ (old-nt new-nt)
                                   
 
 
 (define (pda->cfe pda)
-  (let* ([G (unchecked->cfg (pda->cfg pda))]
+  (let* ([G #;(pda->cfg pda) (unchecked->cfg (pda->cfg pda))]
          [renamed-nts-mapping (rename-nts G)]
-         #;[proper-cfg (rebuild-cfg G renamed-nts-mapping)])
-   renamed-nts-mapping  #;(values renamed-nts-mapping #;(cfg-rules G) (cfg-nts G) #;renamed-nts-mapping)))
+         [proper-cfg (rebuild-cfg G renamed-nts-mapping)])
+    #;(cfg->cfe2 proper-cfg)
+    (unchecked->cfg proper-cfg)
+
+    #;(values
+     G
+     renamed-nts-mapping
+     (unchecked->cfg proper-cfg)
+     (cfg->cfe2 proper-cfg))
+    #;renamed-nts-mapping  #;(values renamed-nts-mapping #;(cfg-rules G) (cfg-nts G) #;renamed-nts-mapping))
+  #;(pda->cfg pda))
 
 ;;cfe -> pda
 ;;Purpose: Converts the given cfe into a pda
 (define/contract (cfe->pda cfe)
   cfe->pda/c
   (cfg->pda (cfe->cfg cfe)))
+
+; (listof pdarule) (listof state) --> (listof pdarule)
+      ; ASSUMPTION: The rules push < 2 elems
+      (define (gen-type2-rules rls K Gamma)
+        
+        ; pdarule -> (listof cfgrule)
+        (define (mk-type2-rules r)
+          
+          ; state --> (listof cfgrule)
+          (define (t2-maker s) 
+            (map (lambda (g) (cfg-rule (let* ((new-nt (los->symbol 
+                                                       (list (pdarule-fromstate r) 
+                                                             (if (eq? (pdarule-pop r) EMP) 
+                                                                 EMP 
+                                                                 (car (pdarule-pop r))) 
+                                                             s))))
+                                         new-nt)
+                                       (if (eq? (pdarule-readsymb r) EMP)
+                                           (list (los->symbol (list (pdarule-tostate r) g s)))
+                                           (list (pdarule-readsymb r) (los->symbol (list (pdarule-tostate r) g s))))))
+                 Gamma))
+          
+          (append-map (lambda (s) (t2-maker s)) K))
+        
+        (append-map (lambda (r) (mk-type2-rules r)) rls))
+
+
+; (listof pdarule) (listof state) --> (listof cfg-rule)
+      ; ASSUMPTION: The rules push 2 elems
+      (define (gen-type3-rules rls states)
+        
+        ; pdarule --> (listof cfg-rule)
+        (define (t3-maker r)
+          
+          ; state --> (listof cfg-rule)
+          (define (gen-t3 p)
+            (map (lambda (p1) (cfg-rule (los->symbol (list (pdarule-fromstate r) (if (eq? (pdarule-pop r) EMP) EMP (car (pdarule-pop r))) p))
+                                        (if (eq? (pdarule-readsymb r) EMP)
+                                            (list (los->symbol (list (pdarule-tostate r) (car (pdarule-push r)) p1))
+                                                  (los->symbol (list p1 (cadr (pdarule-push r)) p)))
+                                            (list (pdarule-readsymb r)
+                                                  (los->symbol (list (pdarule-tostate r) (car (pdarule-push r)) p1))
+                                                  (los->symbol (list p1 (cadr (pdarule-push r)) p))))))
+                 states))
+          
+          (append-map (lambda (p) (gen-t3 p)) states))
+        
+        (append-map (lambda (r) (t3-maker r)) rls))
+
+
+(define (push-length pushstuff)
+    (if (eq? pushstuff EMP) 0 (length pushstuff)))
+
+; (listof state) --> (listof cfg-rule)
+      (define (gen-type4-rules states) 
+        (map (lambda (s) (cfg-rule (los->symbol (list s EMP s)) (list EMP))) states))
+
+(define (cfgrules-pda->cfg sm m S Z)
+      
+  (let* ((R1 (list (cfg-rule S (list (los->symbol (list (pda-getstart m) Z (car (pda-getfinals sm))))))))
+         (R2 (gen-type2-rules (filter (lambda (r) (< (push-length (pdarule-push r)) 2))
+                                      (pda-getrules sm))
+                              (pda-getstates sm)
+                              (cons EMP (pda-getgamma sm))))
+         (R3 (gen-type3-rules (filter (lambda (r) (= (push-length (pdarule-push r)) 2))
+                                      (pda-getrules sm))
+                              (cons EMP (pda-getstates sm))))
+         (R4 (gen-type4-rules (pda-getstates sm)))
+         )
+    (append R1 R2 R3 R4)))
+
+
+(define (fsmlos->symbol l) 
+    (define (lostr->string l)
+      (cond [(null? l) ""]
+            [else (string-append (car l) (lostr->string (cdr l)))]))
+    (string->symbol (lostr->string (map symbol->string l))))
+
+(define (extract-nts-from-rule rule)
+  (cons (cfg-rule-lhs rule) (cfg-rule-rhs rule)))
+
+
+(define (pda->cfg m)
+    
+    ; (simple)ndpda symbol --> (listof cfg-rule)
+    
+    
+    (let* ((sm (pda->spda m))
+           (S (let ([states (remove-duplicates (append (pda-getstates m) (pda-getstates sm)))])
+                (if (member 'S states)
+                    (gen-nt states)
+                    'S)))
+           (Z (first (pda-getgamma sm)))
+           (SIGMA (pda-getalphabet sm))
+           (R (cfgrules-pda->cfg sm m S Z))
+           (V (remove-duplicates (append-map extract-nts-from-rule R)) #;(append (remove-duplicates (append-map extract-nts-from-rule R)) SIGMA))
+           )
+       (cfg V SIGMA R S)))
+
+
+
+; ndpda -> ndpda
+  ; convert the given pda into a simple pda
+  (define (pda->spda m)
+    
+    ;(listof pdarule) --> (listof pdarule)
+    (define (pdarules->simplepdarules rules newstart newgamma newstates)
+      
+      ; (listof symbol) state (listof pdarule) (listof state) --> (list (listof pdarule) (listof state))
+      (define (create-push-rules pushlist froms tos rls states)
+        (if (null? (cdr pushlist))
+            (cons (cons (list (list (car states) EMP EMP) (list tos pushlist)) rls)
+                  states)
+            (let* ((ns (gen-state states) #;(gen-symbol froms states))
+                   (newrule (list (list (car states) EMP EMP) (list ns (list (car pushlist))))))
+              (create-push-rules (cdr pushlist) froms tos (cons newrule rls) (cons ns states)))))
+      
+      ; (listof symbol) state (listof state) -->
+      ;pdarule --> (listof pdarule)
+      ; ASSUMPTION: r pushes 2 or more elements
+      (define (convert-push-rule r states)
+        (let* ((poplist (pdarule-pop r))
+               (pushstuff (reverse (pdarule-push r)))
+               (readelem (pdarule-readsymb r))
+               (froms (pdarule-fromstate r))
+               (tos (pdarule-tostate r))
+               (ns (gen-state states) #;(gen-symbol froms states))
+               (res (create-push-rules (cdr pushstuff) froms tos (list (list (list froms readelem poplist) (list ns (list (car pushstuff))))) (cons ns states))))
+          res))
+      
+      
+      
+      ; (listof pdarules) (listof pdarules) (listof state) --> (list (listof pdarule) (listof state))
+      (define (convert-push-rules rls savedrls states)
+        (if (null? rls)
+            (cons savedrls states)
+            (let* ((res (convert-push-rule (car rls) states))
+                   (newrls (car res))
+                   (newstates (cdr res)))
+              (convert-push-rules (cdr rls) (append savedrls newrls) newstates))))
+      
+      ; (listof symbol) (listof symbol) symbol state state (listof state) --> (list (listof pdarule) (listof state))
+      (define (create-pop-rules poplist pushstuff readelem froms tos rls states)
+        (if (null? (cdr poplist))
+            (cons (cons (list (list (car states) readelem poplist) (list tos pushstuff)) rls)
+                  states)
+            (let* ((ns (gen-state states) #;(gen-symbol froms states))
+                   (newrule (list (list (car states) EMP (list (car poplist))) (list ns EMP))))
+              (create-pop-rules (cdr poplist) pushstuff readelem froms tos (cons newrule rls) (cons ns states)))))
+      
+      ;pdarule  (listof state) --> (list (listof pdarule) state+))
+      ; ASSUMPTION: r pops 2 or more elements
+      (define (convert-pop-rule r states)
+        (let* ((poplist (pdarule-pop r))
+               (pushstuff (pdarule-push r))
+               (readelem (pdarule-readsymb r))
+               (froms (pdarule-fromstate r))
+               (tos (pdarule-tostate r))
+               (ns (gen-state states) #;(gen-symbol froms states))
+               (res (create-pop-rules (cdr poplist) pushstuff readelem froms tos (list (list (list froms EMP (list (car poplist))) (list ns EMP))) (cons ns states))))
+          res))
+      
+      ; (listof pdarules) (listof pdarules) (listof states) --> (list (listof pdarules) states+)
+      (define (convert-pop-rules rls rules states)
+        (if (null? rls)
+            (cons rules states)
+            (let* ((res (convert-pop-rule (car rls) states))
+                   (newrls (car res))
+                   (newstates (cdr res)))
+              (convert-pop-rules (cdr rls) (append newrls rules) newstates))))
+      
+      ; pdarule (listof pdarules) (listof symbol) --> (list (listof pdarule) state+)
+      (define (convert-emptypop-rule r rls gamma)
+        (if (null? gamma)
+            rls
+            (let ((newrule (list (list (pdarule-fromstate r) (pdarule-readsymb r) (list (car gamma)))
+                                 (list (pdarule-tostate r) 
+                                       (if (eq? (pdarule-push r) EMP)
+                                           (list (car gamma))
+                                           (list (car (pdarule-push r)) (car gamma)))))))
+              (convert-emptypop-rule r (cons newrule rls) (cdr gamma)))))
+      
+      ; (listof pdarules) (listof pdarules) (listof state) --> (listof pdarules)
+      (define (convert-emptypop-rules rls savedrules)
+        (if (null? rls)
+            savedrules
+            (let* ((res (convert-emptypop-rule (car rls) savedrules newgamma)))
+              (convert-emptypop-rules (cdr rls) res))))
+      
+      
+      (let* ((poprules (filter (lambda (r) (and (not (eq? (pdarule-pop r) EMP))
+                                                (>= (length (pdarule-pop r)) 2)))
+                               rules))
+             (res1 (convert-pop-rules poprules 
+                                      (filter (lambda (r) (not (member r poprules))) rules)
+                                      newstates))
+             (newpdarules1 (car res1))
+             (newpdastates1 (cdr res1))
+             (pushrules (filter (lambda (r) (and (not (eq? (pdarule-push r) EMP))
+                                                 (>= (length (pdarule-push r)) 2))) 
+                                newpdarules1))
+             (res2 (convert-push-rules pushrules
+                                       (filter (lambda (r) (not (member r pushrules))) newpdarules1)
+                                       newpdastates1))
+             (newpdarules2 (car res2))
+             (newpdastates2 (cdr res2))
+             (emptypoprules (filter (lambda (r) (and (not (eq? (pdarule-fromstate r) newstart))
+                                                     (eq? (pdarule-pop r) EMP))) 
+                                    newpdarules2))
+             (newpdarules3 (convert-emptypop-rules emptypoprules
+                                                   (filter (lambda (r) (not (member r emptypoprules))) newpdarules2))))
+        (cons newpdarules3 newpdastates2)))
+    
+    (let* ((newS (gen-state (pda-getstates m)))
+           (newF (gen-state (cons newS (pda-getstates m))))
+           (K (cons newS (cons newF (pda-getstates m))))
+           (sigma (pda-getalphabet m))
+           (Z (if (member 'Z (pda-getgamma m)) ;;keeps Z as bottom stack symbol if possible
+                  (gen-state (pda-getgamma m))
+                  'Z))
+           (gamma (cons Z (pda-getgamma m)))
+           (res (pdarules->simplepdarules (append (cons (list (list newS EMP EMP) 
+                                                              (list (pda-getstart m) (list Z)))
+                                                        (map (lambda (f) 
+                                                               (list (list f EMP (list Z)) (list newF EMP)))
+                                                             (pda-getfinals m)))
+                                                  (pda-getrules m)) 
+                                          newS 
+                                          gamma
+                                          K))
+           (delta (car res))
+           (finalK (cdr res)))
+      (make-unchecked-ndpda finalK sigma gamma newS (list newF) delta)))
+
+(struct pda (states alpha gamma start finals rules) #:transparent)
+
+(define (unchecked->pda m)
+  (pda (pda-getstates m)
+       (pda-getalphabet m)
+       (pda-getgamma m)
+       (pda-getstart m)
+       (pda-getfinals m)
+       (pda-getrules m)))
+
+
+(define EMPTY (empty-cfexp))
+
+(define A (singleton-cfexp 'a))
+
+(define B (singleton-cfexp 'b))
+
+(define C (singleton-cfexp 'c))
+
+(define S1
+  (let* ([ANBN (var-cfexp 'S)]
+         [ASB (concat-cfexp A ANBN B)])
+    (begin
+      (update-binding! ANBN 'S (union-cfexp EMPTY ASB))
+      ANBN)))
+
+;(unchecked->pda (pda->spda (cfe->pda S1)))
+
+;;(apply-pda (cfe->pda S1) '(a a a a b b b b))
+
+;;(apply-pda (pda->spda (cfe->pda S1)) '(a a a a b b b b))
+
+(define (cfg->cfe2 G)
+ 
+  ;;(listof X) (X -> Y) -> (hash X . Y)
+  (define (make-hash-table lox f)
+    (foldl (λ (x h)
+             (hash-set h x (f x))
+             #;(let ([res (f x)])
+               (if (empty? res)
+                   h
+                   (hash-set h x res))))
+           (hash)
+           lox))
+
+  ;;string -> (listof symbol)
+  ;;Purpose: Seperates every character in the given string and puts them into a list
+  (define (explode string nts)
+    ;;natnum (listof symbol) -> (listof symbol)
+    ;;Purpose: Seperates every character in the given string and puts them into a list
+    ;;acc = the character in the string from [idx..(string-length string)]
+    (define (explode-helper idx acc)
+      (if (= idx 0)
+          acc
+          (let* ([next-sym (substring string (sub1 idx) idx)]
+                 [res (cond [(member (string->symbol string) nts) (list (string->symbol string))]
+                            ;;exploiting fact that the RHS of cfg rules converted from simple pda
+                            ;;rules will structure terminal followed by nonterminal
+                            [(string<=? "0" next-sym "9")
+                             (list (string->symbol (substring string 0 1)) (string->symbol (substring string 1)))] 
+                            [else (string->symbol next-sym)])]
+                 [new-acc (if (list? res) res (cons res acc))]
+                 [new-idx (if (list? res) 0 (sub1 idx))])
+            ;(displayln string)
+            ;(displayln (substring string 0 1))
+            ;(displayln (substring string 1))
+            (explode-helper new-idx new-acc))))
+    (explode-helper (string-length string) '()))
+
+  ;;(hash nts . (listof symbol)) (hash symbol . singleton-cfe)) (hash nts . variable-cfe)) -> (hash nts . cfe))
+  ;;Purpose: Converts the RHS of cfg rules into cfes
+  (define (make-cfexps-frm-rules rules singletons variables)
+    ;;symbol -> cfe
+    ;;Purpose: Matches the given symbol with the corresponding cfe
+    (define (convert-to-expression RHS-of-rule)
+      (cond [(eq? RHS-of-rule EMP) (empty-cfexp)]
+            [(hash-has-key? singletons RHS-of-rule) (hash-ref singletons RHS-of-rule)]
+            [(hash-has-key? variables RHS-of-rule) (hash-ref variables RHS-of-rule)]
+            [else (error (format "unreadable RHS: ~a" RHS-of-rule))]))
+    ;;(listof symbol) -> cfe
+    ;;Purpose: Translates the given (listof symbol) into its corresponding cfe
+    (define (rule->expression RHS-of-rule)
+      (if (= (length RHS-of-rule) 1)
+          (convert-to-expression (first RHS-of-rule))
+          (concat-cfexp (map (λ (sym) (convert-to-expression sym)) RHS-of-rule))))
+    (hash-map/copy rules (λ (nts RHS)
+                           (values nts (cond [(empty? RHS) (empty-cfexp)]
+                                             [(= (length RHS) 1) (rule->expression (first RHS))]
+                                             [else (union-cfexp (map (λ (rule) (rule->expression rule)) RHS))])))))
+  ;; symbol -> boolean
+  ;;Purpose: Determines if the given symbol is a valid state or alphabet symbol
+  (define (valid-RHS? sym)
+    (or (valid-alpha? sym)
+        (valid-state? sym)))
+  
+  (let* ([nts (cfg-get-v G)]
+         [rules (make-hash-table nts (λ (nt) (filter-map (λ (rule) (and (eq? (first rule) nt)
+                                                                        (symbol->fsmlos (third rule)) #;(explode (symbol->string (third rule)) nts)
+                                                                                      #;(let* ([new-RHS (explode (symbol->string (third rule)) nts)]
+                                                                                             [res (if (or (equal? new-RHS (list EMP))
+                                                                                                          (andmap valid-RHS? new-RHS)) new-RHS void)])
+                                                                                        #;(displayln nt)
+                                                                                        #;(displayln res)
+                                                                                        res
+                                                                                        #;new-RHS)))
+                                                                       (cfg-get-rules G))))]
+         [start (cfg-get-start G)]
+         [singletons (make-hash-table (cfg-get-alphabet G) singleton-cfexp)]
+         [variables (make-hash-table nts var-cfexp)]
+         [rules->cfexp (make-cfexps-frm-rules rules singletons variables)]
+         [updated-bindings (hash-map/copy rules->cfexp (λ (key value)
+                                                         (begin
+                                                           (update-binding! (hash-ref variables key) key value)
+                                                           (values key (hash-ref variables key)))))])
+    #;(displayln updated-bindings)
+    #;(displayln start)
+     (hash-ref updated-bindings start)
+    ;rules
+    ;nts
+    #;(unchecked->cfg G)))
+
+(define (grammar-testequiv g1 g2 . l)
+  (let* ((numtests (if (null? l) NUM-TESTS (car l)))
+         (sigma1 (cfg-get-alphabet g1))
+         (sigma2 (cfg-get-alphabet g2))
+         (testlist (append (generate-words (floor (/ numtests 2)) sigma1 '())
+                           (generate-words (ceiling (/ numtests 2)) sigma2 '())))
+         (res1 (map (lambda (w) 
+                      (let ((r (cfg-derive g1 w)))
+                        (if (string? r) r (last r))))
+                    testlist))
+         (res2 (map (lambda (w) 
+                      (let ((r (cfg-derive g2 w)))
+                        (if (string? r) r (last r))))
+                    testlist))
+         (diffs (get-differences res1 res2 testlist)))
+    (if (null? diffs) true diffs)))
+
+(define cfe (pda->cfe (cfe->pda S1)))
+;(pda->cfe (cfe->pda S1))
+;cfe 
+;G
+;(cfg-derive G '(a b))
+;(gen-cfexp-word cfe)
+;(fsa-test-equivalence (cfe->pda S1) (pda->spda (cfe->pda S1)))
