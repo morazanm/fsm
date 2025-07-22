@@ -8,7 +8,8 @@
   "private/cyk.rkt"
   "private/fsa.rkt"
   "private/cfg.rkt"
-  "private/pda.rkt" 
+  "private/cfg-struct.rkt"
+  "private/pda.rkt"
   "private/regular-grammar.rkt"
   "private/csg.rkt"
   "private/tm.rkt" 
@@ -37,7 +38,8 @@
   "../visualizations/viz-grammar-constructors/rg-viz.rkt"
   "../visualizations/viz-grammar-constructors/cfg-viz.rkt"
   "../visualizations/viz-grammar-constructors/csg-viz.rkt"
-  "private/Chomsky-Greibach-CFG-Transformations/chomsky.rkt"
+  "private/chomsky.rkt"
+  ;"private/Chomsky-Greibach-CFG-Transformations/chomsky.rkt"
   "private/Chomsky-Greibach-CFG-Transformations/greibach.rkt"
   "private/fsmunit/check-accept-reject-macro.rkt"
   racket/list
@@ -412,7 +414,7 @@
   (cond [(rg? g) (list? (rg-derive g w))]
         [(cfg? g) (if (empty? w)
                       (list? (cfg-derive g w))
-                      (cyk g w))]
+                      (cyk (chomsky g) w))]
         [(csg? g) (list? (csg-derive g w))]
         [else (error (format "Error in grammar-derive: unknown grammar type"))]))
                   

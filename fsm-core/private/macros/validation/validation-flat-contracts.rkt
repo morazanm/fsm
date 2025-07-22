@@ -4,6 +4,7 @@
            "../../constants.rkt"
            "../../regular-grammar.rkt"
            "../../cfg.rkt"
+           "../../cfg-struct.rkt"
            "../../csg.rkt"
            racket/contract
            )

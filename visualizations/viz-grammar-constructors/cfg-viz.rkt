@@ -1,6 +1,6 @@
 #lang racket/base
 (require "../../fsm-gviz/private/lib.rkt"
-         "../../fsm-core/private/cfg.rkt"
+         "../../fsm-core/private/cfg-struct.rkt"
          "../../fsm-core/private/constants.rkt"
          "../../fsm-core/private/misc.rkt"
          "circular-queue-treelist.rkt"
