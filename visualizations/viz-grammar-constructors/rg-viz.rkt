@@ -17,24 +17,6 @@
 
 (define FNAME "fsm")
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define even-bs-odd-as
-  (make-unchecked-rg '(S A B C)
-           '(a b)
-           `((S ,ARROW aA) (S ,ARROW bB)
-                           (S ,ARROW a)
-                           (A ,ARROW aS)
-                           (A ,ARROW bC)
-                           (B ,ARROW aC)
-                           (B ,ARROW bS)
-                           (C ,ARROW aB)
-                           (C ,ARROW bA)
-                           (C ,ARROW b))
-           'S))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define FONT-SIZE 20)
 (define HEDGE-COLOR 'violet)
 (define YIELD-COLOR 'skyblue)
@@ -482,3 +464,17 @@
         (init-viz rg word w-der rules graphs broken-invariants #:special-graphs? 'rg #:cpu-cores cpu-cores)
         )))
 (define G (make-unchecked-rg '(S) '(a b) `((S ,ARROW ,EMP) (S ,ARROW aS)) 'S))
+
+(define even-bs-odd-as
+  (make-unchecked-rg '(S A B C)
+           '(a b)
+           `((S ,ARROW aA) (S ,ARROW bB)
+                           (S ,ARROW a)
+                           (A ,ARROW aS)
+                           (A ,ARROW bC)
+                           (B ,ARROW aC)
+                           (B ,ARROW bS)
+                           (C ,ARROW aB)
+                           (C ,ARROW bA)
+                           (C ,ARROW b))
+           'S))

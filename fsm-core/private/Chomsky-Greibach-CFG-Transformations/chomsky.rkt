@@ -2,7 +2,7 @@
 (require "../grammar-getters.rkt"
          "../misc.rkt"
          "../constants.rkt"
-         "../cfg.rkt"
+         "../cfg-struct.rkt"
          racket/list)
 (provide chomsky rm-empties)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

@@ -1,8 +1,9 @@
 #lang racket/base
 (require "../../fsm-gviz/private/lib.rkt"
-         "../../fsm-core/private/cfg.rkt"
+         "../../fsm-core/private/cfg-struct.rkt"
          "../../fsm-core/private/constants.rkt"
          "../../fsm-core/private/misc.rkt"
+         "../../fsm-core/private/chomsky.rkt"
          "circular-queue-treelist.rkt"
          "grammar-viz.rkt"
          "../viz-lib/zipper.rkt"
@@ -253,7 +254,9 @@
                                                     (not (member state broken-invariants?)))
                                                INVARIANT-HOLDS-COLOR])
                                  'shape 'circle
-                                 'label (string->symbol (string (string-ref (symbol->string state) 0)))
+                                 'label (string->symbol (list->string (takef (string->list (symbol->string state))
+                                                                                   (lambda (x) (not (equal? #\_ x))))
+                                                                                   ))
                                  'fontcolor 'black
                                  'font "Sans"
                                  'penwidth (cond
@@ -404,10 +407,10 @@
     (if result
         (begin
           (hash-set! hashtable nt (add1 result))
-          (string->symbol (format "~s~s" nt (add1 result))))
+          (string->symbol (format "~s_~s" nt (add1 result))))
         (begin
           (hash-set! hashtable nt 0)
-          (string->symbol (format "~s0" nt))))))
+          (string->symbol (format "~s_0" nt))))))
 
 ;; generate-levels-list-helper
 ;; (listof symbol) (listof (listof symbol)) (listof (listof symbol)) MutableHashTable ->
@@ -813,6 +816,10 @@
                                                       (rest (get-ordered-invariant-nodes
                                                              (cons (list (cfg-get-start cfg)) ordered-nodes)
                                                              invar-nodes)))))))]
+                   [removed-dashed-rank-node-lvls (map (lambda (x)
+                                                         (map (lambda (y)
+                                                                (map (lambda (z) (los->symbol (remove '- (symbol->list z)))) y)) x))
+                                                       rank-node-lvls)]
                    [graphs (map (lambda (dgrph node-lvls)
                                   (create-graph-structs dgrph
                                                         invariants
@@ -820,7 +827,7 @@
                                                         (cfg-get-start cfg)
                                                         node-lvls))
                                 lod
-                                rank-node-lvls)])
+                                removed-dashed-rank-node-lvls)])
               (init-viz cfg
                         word
                         w-der
@@ -829,7 +836,7 @@
                         broken-invariants
                         #:cpu-cores cpu-cores
                         #:special-graphs? 'cfg
-                        #:rank-node-lst rank-node-lvls))))
+                        #:rank-node-lst removed-dashed-rank-node-lvls))))
       (let ([derivation (if (equal? derv-type 'level-left)
                             (cfg-derive-level-leftmost cfg word)
                             (cfg-derive-level-rightmost cfg word))])
@@ -901,6 +908,10 @@
                                          (accumulate-previous-ranks
                                           (map (lambda (x) (map (lambda (y) (second y)) x)) renamed)
                                           (list (list (cfg-get-start cfg)))))]
+                   [removed-dashed-rank-node-lvls (map (lambda (x)
+                                                         (map (lambda (y)
+                                                                (map (lambda (z) (los->symbol (remove '- (symbol->list z)))) y)) x))
+                                                       rank-node-lvls)]
                    [graphs (map (lambda (dgrph node-lvls)
                                   (create-graph-structs dgrph
                                                         invariants
@@ -908,7 +919,7 @@
                                                         (cfg-get-start cfg)
                                                         node-lvls))
                                 lod
-                                rank-node-lvls)])
+                                removed-dashed-rank-node-lvls)])
               (init-viz cfg
                         word
                         w-der
@@ -916,7 +927,7 @@
                         graphs
                         broken-invariants
                         #:special-graphs? 'cfg
-                        #:rank-node-lst rank-node-lvls))))))
+                        #:rank-node-lst removed-dashed-rank-node-lvls))))))
 
 (define numb>numa
   (make-unchecked-cfg
