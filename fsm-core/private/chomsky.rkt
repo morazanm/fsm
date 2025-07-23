@@ -17,10 +17,32 @@
             (call-with-values (lambda () (values (cdr unprocessed-lst) pred-lst (cons (car unprocessed-lst) rest-lst))) filter-save-helper))))
   (call-with-values (lambda () (values lst '() '())) filter-save-helper))
 
+(define (gen-state disallowed)
+  (lambda ()
+    (define STS '(A B C D E F G H I J K L M N O P Q R S T U V W X Y Z))
+
+  ;; state natnum --> symbol
+  ;; Purpose: To append a dash and the given natnum to the given state
+  (define (concat-n s n)
+    (string->symbol (string-append (symbol->string s) "-" (number->string n))))
+
+  ;; natnum (listof states) --> state
+  ;; Purpose: Generate an allowed state
+  (define (gen-helper n s-choices)
+    (if (not (empty? s-choices))
+        (begin
+          (set-add! disallowed (first s-choices))
+          (first s-choices))
+        (gen-helper (add1 n)
+                    (filter (λ (s) (not (set-member? disallowed s)))
+                            (map (λ (s) (concat-n s n)) STS)))))
+
+  (gen-helper 0 (filter (λ (a) (not (set-member? disallowed a))) STS))))
+
 (define (chomsky G)
   (define alphabet-set (list->seteq (cfg-get-alphabet G)))
   (define (start-grammar G)
-    (let ((newS (generate-symbol (cfg-get-start G) (cfg-get-v G))))
+    (let ((newS (gen-nt (cfg-get-v G))))
       (make-cfg (cons newS (cfg-get-v G))
                 (cfg-get-alphabet G)
                 (cons (list newS ARROW (cfg-get-start G))
@@ -33,17 +55,10 @@
     (define ht (make-hash))
     (define nts (list->mutable-seteq (cfg-get-v G)))
     (define (populate-hash!)
-      (define (generate-symbol symb)
-        (let ([new-symb (if (set-member? nts symb)
-                            (string->symbol (string-append (symbol->string (gensym (string->symbol (string-append (symbol->string symb) "-"))))))
-                            symb)])
-          (if (not (set-member? nts new-symb))
-              new-symb
-              (generate-symbol symb))))
+      (define gen-nt (gen-state nts))
       (for ([sigma-elem (in-list (cfg-get-alphabet G))]
-            #:do [(define new-nt (generate-symbol (symbol-upcase sigma-elem)))])
-        (hash-set! ht sigma-elem new-nt)
-        (set-add! nts new-nt)))
+            #:do [(define new-nt (gen-nt))])
+        (hash-set! ht sigma-elem new-nt)))
 
     (define (convert-non-solitary rule ht)
       (list (first rule)
@@ -67,21 +82,13 @@
   ;; Assume: For all rhs, if length > 2 it contains only nts
   (define (bin-grammar G)
     (define nts (list->mutable-seteq (cfg-get-v G)))
-    (define (generate-symbol! symb)
-      (let ([new-symb (if (set-member? nts symb)
-                          (string->symbol (string-append (symbol->string (gensym (string->symbol (string-append (symbol->string symb) "-"))))))
-                          symb)])
-        (if (not (set-member? nts new-symb))
-            (begin
-              (set-add! nts new-symb)
-              new-symb)
-            (generate-symbol! symb))))
+    (define gen-nt (gen-state nts))
     
     (define (convert-rules rules)
       (define (convert-rule lhs rhs count)
         (if (= count 0)
             (list (list lhs ARROW (los->symbol rhs)))
-            (let ([new-nt (generate-symbol! 'T)])
+            (let ([new-nt (gen-nt)])
               (cons (list lhs ARROW (los->symbol (list (car rhs) new-nt)))
                     (convert-rule new-nt (cdr rhs)
                                   (sub1 count))))))
