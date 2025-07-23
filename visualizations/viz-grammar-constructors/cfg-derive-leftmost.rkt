@@ -10,81 +10,122 @@
          racket/set)
 
 (provide cfg-derive-leftmost)
-
 (define (cfg-derive-leftmost g w)
-  (define alphabet-set (list->set (cfg-get-alphabet g)))
-  (define nt-set (list->set (cfg-get-v g)))
-  (define nt-to-rhss-ht
-    (for/hasheq ([nt (in-list (cfg-get-v g))])
-      (values nt (map cfg-rule-rhs (filter (lambda (r) (eq? nt (cfg-rule-lhs r))) (cfg-get-the-rules g))))))
-  (define input-word-length (length w))
   ;; (listof symbol) -> Symbol
   ;; Purpose: Returns leftmost nonterminal
   (define (get-first-nt st)
     (cond
-      [(null? st) #f]
-      [(set-member? nt-set (car st)) (car st)]
+      [(empty? st) #f]
+      [(not (member (car st) (cfg-get-alphabet g))) (car st)]
       [else (get-first-nt (cdr st))]))
+
+  ;; (listof symbol) -> symbol
+  ;; Purpose: Returns rightmost nonterminal
+  (define (get-last-nt st)
+    (get-first-nt (reverse st)))
+
+  ;; symbol CFG -> (Listof CFG-rule)
+  ; A CFG-rule is a structure, (CFG-rule L R), where L is a symbol (non-terminal) and R
+  ; is a (listof symbol).
+  (define (get-rules nt g)
+    (filter (lambda (r) (eq? nt (cfg-rule-lhs r))) (cfg-get-the-rules g)))
 
   ; ASSUMPTION: state has at least one NT
   ;; (listof symbol)s (listof symbol)s -> (listof symbol)s
   ;; Purpose: Replaces the leftmost nonterminal with a righthand side of a rule
   (define (subst-first-nt state rght)
-    (if (set-member? nt-set (car state))
-        (if (eq? (car rght) EMP)
-            (cdr state)
-            (append rght (cdr state)))
-        (cons (car state) (subst-first-nt (cdr state) rght))))
+    (cond
+      [(not (member (car state) (cfg-get-alphabet g)))
+       (if (eq? (car rght) EMP) (cdr state) (append rght (cdr state)))]
+      [else (cons (car state) (subst-first-nt (cdr state) rght))]))
+
+  ; ASSUMPTION: state has at least one NT
+  ;; (listof symbol) (listof symbol) -> (listof symbol)
+  ;; Purpose: Replaces the rightmost nonterminal with a righthand side of a rule
+  (define (subst-last-nt state rght)
+    (reverse (subst-first-nt (reverse state) (reverse rght))))
 
   ; (listof (listof symbol)) --> (listof symbol)
   (define (get-starting-terminals st)
-    (if (empty? st)
-        '()
-        (if (not (set-member? nt-set (car st)))
-            (cons (car st) (get-starting-terminals (cdr st)))
-            '())))
+    (cond
+      [(not (member (car st) (cfg-get-alphabet g))) '()]
+      [else (cons (car st) (get-starting-terminals (cdr st)))]))
+
+  ; (listof (listof symbol)) natnum --> (listof symbol)
+  (define (get-first-n-terms w n)
+    (cond
+      [(= n 0) '()]
+      [else (cons (car w) (get-first-n-terms (cdr w) (- n 1)))]))
 
   ; (list (listof symbol)) --> boolean
   (define (check-terminals? st)
-    (define start-terms-st (get-starting-terminals st))
-    (define start-terms-st-len (length start-terms-st))
-    (if (> start-terms-st-len input-word-length)
-        #f
-        (equal? start-terms-st (take w start-terms-st-len))))
+    (let* ([start-terms-st (get-starting-terminals st)]
+           [start-terms-w (if (> (length start-terms-st) (length w))
+                              #f
+                              (get-first-n-terms w (length start-terms-st)))])
+      (cond
+        [(not start-terms-w) #f]
+        [else (equal? start-terms-st start-terms-w)])))
 
-  (define visited (mutable-set))
+  (define input-word-length (length w))
+
   ;; (Listof (List (Listof Symbol) (Listof Symbol))) (Listof (Listof (List (Listof Symbol) (Listof Symbol)))) CFG Boolean ->
   ;; (U (Listof (U (Listof Symbol) Symbol)) String))
-  (define (make-deriv derivs)
-    (if (qempty? derivs)
-        (format "~s is not in L(G)." w)
-        (let* ([fderiv (qpeek derivs)]
-               [state (car fderiv)]
-               [fnt (get-first-nt state)])
-          (if fnt
-              (make-deriv (foldr (lambda (val accum) (enqueue! accum val))
-                                 (dequeue! derivs)
-                                 (for/list ([rhs (in-list (hash-ref nt-to-rhss-ht fnt))]
-                                            #:do [(define new-state (subst-first-nt state rhs))]
-                                            #:when (and (not (set-member? visited new-state))
-                                                        (check-terminals? new-state)))
-                                   (set-add! visited new-state)
-                                   (cons new-state fderiv))))
-              (if (equal? w state)
-                  (append-map (lambda (l)
-                                (if (equal? w l)
-                                    (if (null? l)
-                                        (list EMP)
-                                        (list (los->symbol l)))
-                                    (list (los->symbol l)
-                                          ARROW)))
-                              (reverse fderiv))
-                  (make-deriv (dequeue! derivs)))))))
-  (if (> input-word-length 0)
+  (define (make-deriv visited derivs g chomsky)
+    ;; (Listof Symbol) (Listof Symbol) -> Natural
+    (define (count-terminals st sigma)
+      (length (filter (lambda (a) (member a sigma)) st)))
+    (cond
+      [(qempty? derivs) (format "~s is not in L(G)." w)]
+      [(or (and chomsky (> (length (first (first (qpeek derivs)))) (+ 2 input-word-length)))
+           (> (count-terminals (first (first (qpeek derivs))) (cfg-get-alphabet g))
+              input-word-length))
+       (make-deriv visited (dequeue! derivs) g chomsky)]
+      [else
+       (let* ([fderiv (qpeek derivs)] [state (first fderiv)] [fnt (get-first-nt (first state))])
+         (if (not fnt)
+             (if (equal? w (first state))
+                 (append-map (lambda (l)
+                               (if (equal? w (first l))
+                                   (if (null? l)
+                                       (list EMP)
+                                       (list (list (los->symbol (first l)) (los->symbol (second l)))))
+                                   (list (list (los->symbol (first l)) (los->symbol (second l)))
+                                         ARROW)))
+                             (reverse fderiv))
+                 (make-deriv visited (dequeue! derivs) g chomsky))
+             (let* ([rls (get-rules fnt g)]
+                    [rights (map cfg-rule-rhs rls)]
+                    [new-states
+                     (filter (lambda (st)
+                               (and (not (hash-ref visited st #f)) (check-terminals? (first state))))
+                             (map (lambda (rght) (list (subst-first-nt (first state) rght) rght))
+                                  rights))])
+
+               (make-deriv (begin
+                             (map (lambda (new-st) (hash-set! visited new-st 1)) new-states)
+                             visited)
+                           (let ([new-queue (dequeue! derivs)])
+                             (foldr (lambda (val accum) (enqueue! accum val))
+                                    new-queue
+                                    (map (lambda (st) (cons st fderiv)) new-states)))
+                           g
+                           chomsky))))]))
+  (if (empty? w)
+      (let ([deriv-queue (make-queue)])
+          (make-deriv (make-hash)
+                      (enqueue! deriv-queue (list (list (list (cfg-get-start g)) '())))
+                      g
+                      #f))
       (if (cyk (chomsky g) w)
-          (make-deriv (enqueue! (make-queue) (list (list (cfg-get-start g)))))
-          (format "~s is not in L(G)." w))
-      (make-deriv (enqueue! (make-queue) (list (list (cfg-get-start g)))))))
+        ;(if (string? ng-derivation)
+        ;ng-derivation
+        (let ([deriv-queue (make-queue)])
+          (make-deriv (make-hash)
+                      (enqueue! deriv-queue (list (list (list (cfg-get-start g)) '())))
+                      g
+                      #f))
+        (format "~s is not in L(G)." w))))
 
 (define even-bs-odd-as
   (make-unchecked-cfg '(S A B C)
@@ -110,4 +151,3 @@
                                          (T -> ,EMP))
                                        'S))
 ;(last (cfg-derive-leftmost cfg-moreAs-than-Bs '(a b b a a)))
-;(cfg-derive-leftmost even-bs-odd-as '(b b b a b))

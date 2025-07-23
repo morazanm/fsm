@@ -6,7 +6,9 @@
          racket/treelist
          "yield-struct.rkt"
          "../viz-lib/treelist-helper-functions.rkt"
-         racket/list)
+         racket/list
+         "../../fsm-core/private/cyk.rkt"
+         "../../fsm-core/private/chomsky.rkt")
 
 (provide cfg-derive-level-rightmost)
 
@@ -177,9 +179,21 @@
                                     new-derivs
                                     (map (lambda (yd) (cons yd current-deriv)) new-yields)))
                            g))))]))
-  (make-deriv (make-hash)
-              (enqueue! (make-queue) (list (list (yield (treelist (cfg-get-start g)) 0) '())))
-              g))
+  (if (empty? w)
+      (let ([deriv-queue (make-queue)])
+          (make-deriv (make-hash)
+                      (enqueue! deriv-queue (list (list (yield (treelist (cfg-get-start g)) 0) '())))
+                      g
+                      ))
+      (if (cyk (chomsky g) w)
+        ;(if (string? ng-derivation)
+        ;ng-derivation
+        (let ([deriv-queue (make-queue)])
+          (make-deriv (make-hash)
+                      (enqueue! deriv-queue (list (list (yield (treelist (cfg-get-start g)) 0) '())))
+                      g
+                      ))
+        (format "~s is not in L(G)." w))))
 
 (define testcfg
   (make-unchecked-cfg
