@@ -31,7 +31,7 @@
         [(empty-regexp? regexp)
          (gen:const '())]))
 
-;; state regexp invariant natnum -> throw error
+;; state regexp invariant natnum -> void throw error
 ;; Purpose: To test if a word generated from the given regexp holds for the invariant of the state
 (define (testing-function state regexp inv tests)
   (let [(machine (regexp->fsa regexp))]
@@ -42,7 +42,7 @@
                (inv generated-word)))))
 
 
-;; machine (listof (state invariant)) natnum -> throw error
+;; machine (listof (state invariant)) natnum -> void throw error 
 ;; Purpose: To quickcheck the invariants of the states of the given machine
 (define (quickcheck-invs machine los&inv #:num-tests [tests 1000])
   (define los&regexp (get-all-regexp machine))

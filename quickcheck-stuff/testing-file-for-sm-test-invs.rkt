@@ -507,18 +507,18 @@
 ;; E: last of ci is babab and no bababa is detected, final state
 ;; F: bababa has been detected, final state
 (define no-contain-bababa (make-dfa '(S A B C D E F)
-                                   '(a b)
-                                   'S
-                                   '(S A B C D E)
-                                   '((S a S) (S b A)
-                                     (A a B) (A b A)
-                                     (B a S) (B b C)
-                                     (C a D) (C b A)
-                                     (D a S) (D b E)
-                                     (E a F) (E b A)
-                                     (F a F) (F b F))
-                                   'no-dead
-                                   ))
+                                    '(a b)
+                                    'S
+                                    '(S A B C D E)
+                                    '((S a S) (S b A)
+                                              (A a B) (A b A)
+                                              (B a S) (B b C)
+                                              (C a D) (C b A)
+                                              (D a S) (D b E)
+                                              (E a F) (E b A)
+                                              (F a F) (F b F))
+                                    'no-dead
+                                    ))
 
 ;;tests for no-contain-bababa
 (check-equal? (sm-apply no-contain-bababa '()) 'accept)
@@ -1977,6 +1977,7 @@ this means that w ≠ aibj, where i <= j <= 2i. Thus, w∈/L.
                             ((C a ,EMP) (S (b)))
                             ((C a (a)) (S ,EMP)))))
 #|
+
 ;; tests for 3xa-b
 (check-equal? (sm-apply 3xa-b '() '()) 'accept)
 (check-equal? (sm-apply 3xa-b '(b a a a) '()) 'accept)
@@ -1989,6 +1990,252 @@ this means that w ≠ aibj, where i <= j <= 2i. Thus, w∈/L.
 
 |#
 
+
+
+
 ;; Let Σ = {a b}. Design and implement a pda for L = {a^nb^ma^n |n,m≥0}
+;; States:
+;;   S: ci = a* = a^n AND stack = a^n, start state
+;;   A: ci = a^nb* = a^nb^m AND stack = a^n
+;;   B: ci = a^nb^ma^k AND stack = a^n-k, final state
+(define A^nB^mA^n (make-ndpda '(S A B)
+                              '(a b)
+                              '(a)
+                              'S
+                              '(B)
+                              `(((S a ,EMP) (S (a)))
+                                ((S ,EMP ,EMP) (A ,EMP))
+                                ((S b ,EMP) (A ,EMP))
+                                ((A b ,EMP) (A ,EMP))
+                                ((A ,EMP ,EMP) (B ,EMP))
+                                ((A a (a)) (B ,EMP))
+                                ((B a (a)) (B ,EMP)))))
+
+;; tests for A^nB^mA^n
+(check-equal? (sm-apply A^nB^mA^n '()) 'accept)
+(check-equal? (sm-apply A^nB^mA^n '(a b a)) 'accept)
+(check-equal? (sm-apply A^nB^mA^n '(b)) 'accept)
+(check-equal? (sm-apply A^nB^mA^n '(a a b b a a)) 'accept)
+(check-equal? (sm-apply A^nB^mA^n '(a b b b b b b b a)) 'accept)
+(check-equal? (sm-apply A^nB^mA^n '(b b b b b b b b b)) 'accept)
+(check-equal? (sm-apply A^nB^mA^n '(a a a a b b a a)) 'reject)
+(check-equal? (sm-apply A^nB^mA^n '(a)) 'reject)
+(check-equal? (sm-apply A^nB^mA^n '(a a a)) 'reject)
+(check-equal? (sm-apply A^nB^mA^n '(b a)) 'reject)
+(check-equal? (sm-apply A^nB^mA^n '(a b)) 'reject)
+(check-equal? (sm-apply A^nB^mA^n '(a a a a a a a b a)) 'reject)
+(check-equal? (sm-apply A^nB^mA^n '(a b a b)) 'reject)
+(check-equal? (sm-apply A^nB^mA^n '(a a b a a a)) 'reject)
+
+;; invariants for A^nB^mA^n
+
+;; word stack -> Boolean
+;; Purpose: To determine if the given word and stack belongs in S
+;;   S: ci = a* = a^n AND stack = a^n, start state
+(define (S-INV-A^nB^mA^n ci stack)
+  (and (andmap (λ (x) (eq? 'a x)) ci)
+       (andmap (λ (x) (eq? 'a x)) stack)
+       (= (length stack) (length ci))))
+
+;; tests for S-INV-A^nB^mA^n
+(check-equal? (S-INV-A^nB^mA^n '() '()) #t)
+(check-equal? (S-INV-A^nB^mA^n '(a) '(a)) #t)
+(check-equal? (S-INV-A^nB^mA^n '(a a a) '(a a a)) #t)
+(check-equal? (S-INV-A^nB^mA^n '(a a a a) '(a a a a)) #t)
+(check-equal? (S-INV-A^nB^mA^n '(a) '()) #f)
+(check-equal? (S-INV-A^nB^mA^n '(b) '(a)) #f)
+(check-equal? (S-INV-A^nB^mA^n '(a) '(a a)) #f)
+(check-equal? (S-INV-A^nB^mA^n '(a b a) '()) #f)
 
 
+;; word stack -> Boolean
+;; Purpose: To determine if the given word and stack belongs in A
+;;   A: ci = a^nb* = a^nb^m AND stack = a^n
+(define (A-INV-A^nB^mA^n ci stack)
+  (let* [(As (takef ci (λ (x) (eq? x 'a))))
+         (Bs (takef (drop ci (length As)) (λ (x) (eq? x 'b))))]
+    (and (equal? As stack)
+         (equal? (append As Bs) ci))))
+
+;; tests for A-INV-A^nB^mA^n
+(check-equal? (A-INV-A^nB^mA^n '(b) '()) #t)
+(check-equal? (A-INV-A^nB^mA^n '(a) '(a)) #t)
+(check-equal? (A-INV-A^nB^mA^n '(a b b) '(a)) #t)
+(check-equal? (A-INV-A^nB^mA^n '(a a a b b b b b) '(a a a)) #t)
+(check-equal? (A-INV-A^nB^mA^n '(b b b b b b b b) '()) #t)
+(check-equal? (A-INV-A^nB^mA^n '(a a a a a a a b) '(a a a a a a a)) #t)
+(check-equal? (A-INV-A^nB^mA^n '() '()) #t)
+(check-equal? (A-INV-A^nB^mA^n '(a b a) '(a a)) #f)
+(check-equal? (A-INV-A^nB^mA^n '(a b a b) '()) #f)
+(check-equal? (A-INV-A^nB^mA^n '(a) '(a a)) #f)
+(check-equal? (A-INV-A^nB^mA^n '(a b b a a a) '(a)) #f)
+(check-equal? (A-INV-A^nB^mA^n '(a a b b b) '(a)) #f)
+
+
+;; word stack -> Boolean
+;; Purpose: To determine if the given word and stack belongs in B
+;;    B: ci = a^nb^ma^k AND stack = a^n-k
+(define (B-INV-A^nB^mA^n ci stack)
+  (let* [(As (takef ci (λ (x) (eq? x 'a))))
+         (Bs (takef (drop ci (length As)) (λ (x) (eq? x 'b))))
+         (As-after-Bs (takef (drop ci (length (append As Bs))) (λ (x) (eq? x 'a))))
+         (stack-all-as? (andmap (λ (x) (eq? 'a x)) stack))]
+    (or (and (equal? ci As)
+             (even? (length As))
+             stack-all-as?) 
+        (and (= (length stack) (- (length As) (length As-after-Bs)))
+             stack-all-as?
+             (equal? (append As Bs As-after-Bs) ci)))))
+
+  ;; tests for B-INV-A^nB^mA^n
+  (check-equal? (B-INV-A^nB^mA^n '() '()) #t)
+  (check-equal? (B-INV-A^nB^mA^n '(b) '()) #t)
+  (check-equal? (B-INV-A^nB^mA^n '(a b a) '()) #t)
+  (check-equal? (B-INV-A^nB^mA^n '(a a) '()) #t)
+  (check-equal? (B-INV-A^nB^mA^n '(a a a a) '()) #t)
+  (check-equal? (B-INV-A^nB^mA^n '(a a b b a a) '()) #t)
+  (check-equal? (B-INV-A^nB^mA^n '(a a a a a b b b a a a a a) '()) #t)
+  (check-equal? (B-INV-A^nB^mA^n '(a) '()) #f)
+  (check-equal? (B-INV-A^nB^mA^n '(a a a) '()) #f)
+  (check-equal? (B-INV-A^nB^mA^n '(b b a) '()) #f)
+  (check-equal? (B-INV-A^nB^mA^n '(a a b) '()) #f)
+  (check-equal? (B-INV-A^nB^mA^n '(a a a a a) '()) #f)
+  (check-equal? (B-INV-A^nB^mA^n '(b a b a) '()) #f)
+
+
+;; PROOF FOR A^nB^mA^n
+
+
+;; PROOF
+
+;; The state invariants hold when M accepts w
+#|
+
+Proof invariants hold after each transition that consumes input:
+
+When M starts, S-INV holds because ci = '() and s = '().
+This establishes the base case.
+
+((S a ,EMP) (S (a))): By inductive hypothesis, S-INV holds.
+S-INV guareentees that ci = a* = a^n AND stack = a^n. After
+using this rule, ci = a* = a^n+1 AND stack = a^n+1. Observe that
+ci = a* = a^n+1 AND stack = a^n+1. Thus, S-INV holds. 
+
+((S ,EMP ,EMP) (A ,EMP)): By inductive hypothesis, S-INV holds.
+S-INV guarentees that ci = a* = a^n AND stack = a^n. After using this
+rule, ci = a* = a^n AND stack = a^n. A-INV holds since ci = a^nb^0
+AND stack = a^n.
+
+((S b ,EMP) (A ,EMP)): By inductive hypothesis, S-INV holds. S-INV
+guarentees that ci = a* = a^n AND stack = a^n. After using this rule,
+ci = a^nb^1 and stack = a^n. Observe that ci = a^nb^1 = a^nb* = a^nb^m
+and stack = a^n. Thus, A-INV holds. 
+
+((A b ,EMP) (A ,EMP)): By inductive hypothesis A-INV holds. A-INV
+guarentees that ci = a^nb* = a^nb^m AND stack = a^n. After using this rule,
+ci = a^nb^m+1 and stack = a^n. Observe that we have ci = a^nb^m+1 =
+a^nb* and stack = a^n. Thus, A-INV holds. 
+
+((A ,EMP ,EMP) (B ,EMP)): By inductive hypothesis, A-INV holds. A-INV
+guarentees that ci = a^nb* = a^nb^m and stack = a^n. After using this
+rule, ci = a^nb^m AND stack = a^n. Observe that ci = a^nb^ma^0 = a^nb^ma^k
+AND stack = a^n-k = a^n-0. Thus, B-INV holds. 
+
+((A a (a)) (B ,EMP)): By inductive hypothesis, A-INV holds. A-INV
+guarentees that ci = a^nb* = a^nb^m AND stack = a^n. After using this
+rule, ci = a^nb^ma^1 = a^nb^ma^k AND stack = a^n-k. Thus, B-INV holds. 
+
+((B a (a)) (B ,EMP))))): By inductive hypothesis, B-INV holds. B-INV
+guarentees that ci = a^nb^ma^k AND stack = a^n-k. After using this rule,
+ci = a^nb^ma^k+1 AND stack = a^n-(k+1). Thus, B-INV holds. 
+
+
+PROVING L = L(M)
+
+w∈L ⇔ w∈L(M)
+
+(⇒) Assume w∈L. This means that w = a^nb^ma^n, where n, m => 0.
+Given that state invariants always hold, the following computation
+takes place:
+(S a^nb^ma^n '()) |-* (S b^ma^n a^n) |-* (A a^n a^n) |-* (B ,EMP ,EMP)
+Therefore, w∈L(M).
+
+(⇐) Assume w∈L(M). This means that M halts in B, a final state,
+with an empty stack having consumed w. Given that the state invariants
+always hold, we may conclude that w = a^nb^ma^n, where n, m => 0.
+Therefore, w∈L
+
+
+w∈/L ⇔ w∈/L(M)
+Proof
+
+(⇒) Assume w∈/L. This means w ≠ a^nb^ma^n, where n,m => 0. Given that
+the state invariant predicates always hold, there is no computation
+that has M consume w and end in B with an empty stack. Therefore, w∈/L(M).
+
+(⇐) Assume w∈/L(M). This means that M cannot transition into B with an
+empty stack having consumed w. Given that the state invariants always hold,
+this means that w ≠ a^nb^ma^n, where n,m => 0. nThus, w∈/L.
+
+|#
+
+
+
+;; Let Σ = {a b}. Design and implement a pda for L = {}.
+;; States:
+;;   S: (a*b*)*, start state
+(define accept-nothing (make-ndpda '(S)
+                                   '(a b)
+                                   '()
+                                   'S
+                                   '()
+                                   `(((S a ,EMP) (S ,EMP))
+                                     ((S b ,EMP) (S ,EMP)))))
+
+;; tests for accept-nothing
+(check-equal? (sm-apply accept-nothing '()) 'reject)
+(check-equal? (sm-apply accept-nothing '(a)) 'reject)
+(check-equal? (sm-apply accept-nothing '(b)) 'reject)
+(check-equal? (sm-apply accept-nothing '(a b a)) 'reject)
+(check-equal? (sm-apply accept-nothing '(b b b)) 'reject)
+(check-equal? (sm-apply accept-nothing '(a a a)) 'reject)
+(check-equal? (sm-apply accept-nothing '(a b a b a b a b a b)) 'reject)
+(check-equal? (sm-apply accept-nothing '(a a b b a a b b)) 'reject)
+(check-equal? (sm-apply accept-nothing '(a a b a a b)) 'reject)
+(check-equal? (sm-apply accept-nothing '(a b a b b b a a a b)) 'reject)
+(check-equal? (sm-apply accept-nothing '(a b a b b b b b a a a a b)) 'reject)
+
+;; invariants for accept-nothing
+
+;; word stack -> Boolean
+;; Purpose: Determines if the given word and stack belongs in S
+(define (S-INV-accept-nothing ci stack)
+  #t)
+
+;; tests for S-INV-accept-nothing
+(check-equal? (S-INV-accept-nothing '() '()) #t)
+(check-equal? (S-INV-accept-nothing '(a) '()) #t)
+(check-equal? (S-INV-accept-nothing '(b) '()) #t)
+(check-equal? (S-INV-accept-nothing '(a a) '()) #t)
+(check-equal? (S-INV-accept-nothing '(b b) '()) #t)
+(check-equal? (S-INV-accept-nothing '(a b) '()) #t)
+(check-equal? (S-INV-accept-nothing '(b a) '()) #t)
+(check-equal? (S-INV-accept-nothing '(a a a b b b) '()) #t)
+(check-equal? (S-INV-accept-nothing '(a b a b a b a) '()) #t)
+(check-equal? (S-INV-accept-nothing '(a a b b a a b b) '()) #t)
+(check-equal? (S-INV-accept-nothing '(a a b b b b b a a a) '()) #t)
+
+
+;; Proof for accept-nothing
+
+#|
+;; the state invariants hold when M accepts w
+
+
+
+
+|#
+
+
+
+  

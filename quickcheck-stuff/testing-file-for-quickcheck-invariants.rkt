@@ -274,7 +274,8 @@
 
 
 
-(define LOI-EVEN-Bs (list (list 'S EVEN-NUM-Bs-S-INV) (list 'F EVEN-NUM-Bs-F-INV)))
+(define LOI-EVEN-Bs (list (list 'S EVEN-NUM-Bs-S-INV)
+                          (list 'F EVEN-NUM-Bs-F-INV)))
 
 
 #| Sophia's version of CONTAINS-aabab
@@ -475,6 +476,141 @@
 ;; word -> Boolean
 ;; Purpose: Determine that only aabab is detected
 (define E2-INV contains-aabab?)
+
+
+
+;; L = {w | w has an even number of and an odd number of b}
+
+;; States
+;; S: even number of a and even number of b, start state
+;; M: odd number of a and odd number of b
+;; N: even number of a and odd number of b, final state
+;; P: odd number of a and even number of b
+
+(define EVEN-A-ODD-B (make-dfa '(S M N P)
+                               '(a b)
+                               'S
+                               '(N)
+                               '((S a P)
+                                 (S b N)
+                                 (M a N)
+                                 (M b P)
+                                 (N a M)
+                                 (N b S)
+                                 (P a S)
+                                 (P b M))
+                               'no-dead
+                               #:accepts '((b) (a a b) (a a a b a b b))
+                               #:rejects '(() (a b b a) (b a b b a a)
+                                           (a b) (a b b b b) (b a b b a a b))))
+
+;; Tests for EVEN-A-ODD-B
+(check-equal? (sm-apply EVEN-A-ODD-B '()) 'reject)
+(check-equal? (sm-apply EVEN-A-ODD-B '(a b b a)) 'reject)
+(check-equal? (sm-apply EVEN-A-ODD-B '(b a b b a a)) 'reject)
+(check-equal? (sm-apply EVEN-A-ODD-B '(a b)) 'reject)
+(check-equal? (sm-apply EVEN-A-ODD-B '(a b b b b)) 'reject)
+(check-equal? (sm-apply EVEN-A-ODD-B '(b a b b a a b)) 'reject)
+(check-equal? (sm-apply EVEN-A-ODD-B '(b)) 'accept)
+(check-equal? (sm-apply EVEN-A-ODD-B '(a a b)) 'accept)
+(check-equal? (sm-apply EVEN-A-ODD-B '(a a a b a b b)) 'accept)
+
+
+;; word --> Boolean
+;; Purpose: Determine if given word has an even number of a
+;;          and an odd number of b
+(define (S-INV-EVEN-A-ODD-B ci)
+  (and (even? (length (filter (λ (s) (eq? s 'a)) ci)))
+       (even? (length (filter (λ (s) (eq? s 'b)) ci)))))
+
+;; Tests for S-INV-EVEN-A-ODD-B
+(check-equal? (S-INV-EVEN-A-ODD-B '(a)) #f)
+(check-equal? (S-INV-EVEN-A-ODD-B '(a b b b a)) #f)
+(check-equal? (S-INV-EVEN-A-ODD-B '()) #t)
+(check-equal? (S-INV-EVEN-A-ODD-B '(a a b b)) #t)
+
+
+;; word --> Boolean
+;; Purpose: Determine if given word has an odd number of a
+;;          and an odd number of b
+(define (M-INV-EVEN-A-ODD-B ci)
+  (and (odd? (length (filter (λ (s) (eq? s 'a)) ci)))
+       (odd? (length (filter (λ (s) (eq? s 'b)) ci)))))
+
+;; Tests for M-INV-EVEN-A-ODD-B
+(check-equal? (M-INV-EVEN-A-ODD-B '(a)) #f)
+(check-equal? (M-INV-EVEN-A-ODD-B '(a b b b a)) #f)
+(check-equal? (M-INV-EVEN-A-ODD-B '(a b b b a a b)) #f)
+(check-equal? (M-INV-EVEN-A-ODD-B '(b a)) #t)
+(check-equal? (M-INV-EVEN-A-ODD-B '(b a a b a b)) #t)
+
+
+;; word --> Boolean
+;; Purpose: Determine if given word has an even number of a
+;;          and an odd number of b
+(define (N-INV-EVEN-A-ODD-B ci)
+  (and (even? (length (filter (λ (s) (eq? s 'a)) ci)))
+       (odd? (length (filter (λ (s) (eq? s 'b)) ci)))))
+
+;; Tests for N-INV-EVEN-A-ODD-B
+(check-equal? (N-INV-EVEN-A-ODD-B '()) #f)
+(check-equal? (N-INV-EVEN-A-ODD-B '(a b a b a)) #f)
+(check-equal? (N-INV-EVEN-A-ODD-B '(a b b a a b)) #f)
+(check-equal? (N-INV-EVEN-A-ODD-B '(b a a)) #t)
+(check-equal? (N-INV-EVEN-A-ODD-B '(a b a a b a b b b)) #t)
+
+
+;; word --> Boolean
+;; Purpose: Determine if given word has an odd number of a
+;;          and an even number of b
+(define (P-INV-EVEN-A-ODD-B ci)
+  (and (odd? (length (filter (λ (s) (eq? s 'a)) ci)))
+       (even? (length (filter (λ (s) (eq? s 'b)) ci)))))
+
+;; Tests for P-INV-EVEN-A-ODD-B
+(check-equal? (P-INV-EVEN-A-ODD-B '()) #f)
+(check-equal? (P-INV-EVEN-A-ODD-B '(a b)) #f)
+(check-equal? (P-INV-EVEN-A-ODD-B '(a b b a a b a)) #f)
+(check-equal? (P-INV-EVEN-A-ODD-B '(b a b)) #t)
+(check-equal? (P-INV-EVEN-A-ODD-B '(a b a a b b b)) #t)
+
+
+(check-equal? (sm-apply EVEN-A-ODD-B '()) 
+              'reject)
+(check-equal? (sm-apply EVEN-A-ODD-B '(a b b a)) 
+              'reject)
+(check-equal? (sm-apply EVEN-A-ODD-B '(b a b b a a)) 
+              'reject)
+(check-equal? (sm-apply EVEN-A-ODD-B '(a b)) 
+              'reject)
+(check-equal? (sm-apply EVEN-A-ODD-B '(a b b b b)) 
+              'reject)
+(check-equal? 
+  (sm-apply EVEN-A-ODD-B '(b a b b a a b)) 
+  'reject)
+
+
+
+(check-equal? (sm-apply EVEN-A-ODD-B '(b)) 
+              'accept)
+(check-equal? (sm-apply EVEN-A-ODD-B '(b b b)) 
+              'accept)
+(check-equal? (sm-apply EVEN-A-ODD-B '(a b b a b)) 
+              'accept)
+(check-equal? (sm-apply EVEN-A-ODD-B '(a a b)) 
+              'accept)
+(check-equal? 
+  (sm-apply EVEN-A-ODD-B '(a a a b a b b)) 
+  'accept)
+
+(check-accept? EVEN-A-ODD-B '(b) '(b b b) '(a b b a b) '(a a b) '(a a a b a b b))
+(check-reject? EVEN-A-ODD-B '() '(a b b a) '(b a b b a a) '(a b) '(a b b b b) '(b a b b a a b))
+
+(define LOI-EVEN-A-ODD-B (list (list 'S S-INV-EVEN-A-ODD-B)
+                               (list 'M M-INV-EVEN-A-ODD-B)
+                               (list 'N N-INV-EVEN-A-ODD-B)
+                               (list 'P P-INV-EVEN-A-ODD-B)))
+
 
 
 ;                                               
