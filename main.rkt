@@ -46,12 +46,13 @@
    combine-tms ctm-run
 
    ; grammar constructors
-   make-rg make-cfg make-csg 
+   make-rg make-cfg make-csg
+   make-grammar ;; new name for make-csg
    sm->grammar grammar-rename-nts 
    grammar-union grammar-concat grammar-kleenestar
    
    ; grammar observers
-   grammar-derive grammar-type
+   grammar-derive grammar-derive? grammar-type
    grammar-nts grammar-sigma grammar-rules grammar-start 
 
    ; grammar testers

@@ -17,33 +17,6 @@
 
 (provide csg-viz)
 
-(define anbn
-  (make-unchecked-csg
-   '(S A B)
-   '(a b)
-   (list (list 'S ARROW 'AaB) (list 'AaA ARROW 'aSb) (list 'AaA ARROW EMP) (list 'B ARROW 'A))
-   'S))
-
-
-
-(define anbncn
-  (make-unchecked-csg
-   '(S A B C G H I)
-   '(a b c)
-   `((S ,ARROW ABCS)
-     (S ,ARROW G)
-     (BA ,ARROW AB)
-     (CA ,ARROW AC)
-     (CB ,ARROW BC)
-     (CG ,ARROW Gc)
-     (BG ,ARROW BH)
-     (BH ,ARROW Hb)
-     (AH ,ARROW AI)
-     (AI ,ARROW Ia)
-     (I ,ARROW ,EMP)
-     )
-   'S))
-
 (define HEDGE-COLOR 'skyblue)
 
 (define YIELD-COLOR 'violet)
@@ -114,90 +87,12 @@
                (list
                 (list (los->symbol (first l)) (los->symbol (second l)) (los->symbol (third l)) (fourth l)))))
          result))))
-#;(define (csg-derive-edited g w)
-
-  ; csg-rule natnum (listof symbol) --> (listof (listof symbol))
-  (define (use-csg-rule r str i)
-
-    ; (listof symbol) (listof symbol) natnum --> (listof (listof symbol))
-    (define (helper lhs rhs i)
-      (cond
-        [(< (- (length (first str)) i) (length lhs)) '()]
-        [else
-         (let* ([subword (sublist (first str) i (length lhs))])
-           (cond
-             [(equal? lhs subword)
-              (if (equal? rhs (list EMP))
-                  (cons (list (subst-in-list (first str) i (length lhs) '()) lhs rhs)
-                        (helper lhs rhs (+ i 1)))
-                  (cons (list (subst-in-list (first str) i (length lhs) rhs) lhs rhs)
-                        (helper lhs rhs (+ i 1))))]
-             [else (helper lhs rhs (+ i 1))]))]))
-    (let ([res (helper (csg-rule-lhs r) (csg-rule-rhs r) i)]) res))
-
-  ; (listof symbol) (listof csg-rule) --> (listof (listof symbol))
-  (define (apply-one-step curr rls)
-    (cond
-      [(null? rls) '()]
-      [else (append (use-csg-rule (car rls) curr 0) (apply-one-step curr (cdr rls)))]))
-
-  ; (listof symbol) (listof (listof (listof symbol))) -> (listof (listof symbol))
-  (define (bfs-deriv generated-derivations tovisit)
-    (define (ins paths)
-      (define (insert path sortedpaths)
-        (cond
-          [(null? sortedpaths) (list path)]
-          [(< (length (car (first path))) (length (caar (first sortedpaths))))
-           (cons path sortedpaths)]
-          [else (cons (car sortedpaths) (insert path (cdr sortedpaths)))]))
-      (cond
-        [(null? paths) '()]
-        [else (insert (car paths) (ins (cdr paths)))]))
-
-    (cond
-      [(null? tovisit) '()]
-      [else
-       (let* ([firstpath (car tovisit)] [current (car firstpath)])
-         (cond
-           [(equal? w (first current)) firstpath]
-           [else
-            (let* ([new-words (apply-one-step current (csg-getrules g))]
-                   [newstrings (filter (lambda (s) (not (member (first s) generated-derivations)))
-                                       new-words)]
-                   [new-queue-paths (map (lambda (s) (cons s firstpath)) newstrings)]
-                   [newpaths (ins (append (cdr tovisit) new-queue-paths))])
-              (bfs-deriv (append (map first newstrings) generated-derivations) newpaths))]))]))
-
-  (let* ([res (bfs-deriv '() (list (list (list (list (csg-getstart g)) '() '()))))]
-         [result (reverse res)])
-    (if (null? result)
-        (format "~s is not in L(G)." w)
-        (append-map
-         (lambda (l)
-           (if (equal? w (first l))
-               (if (null? l)
-                   (list (list EMP))
-                   (list
-                    (list (los->symbol (first l)) (los->symbol (second l)) (los->symbol (third l)))))
-               (list
-                (list (los->symbol (first l)) (los->symbol (second l)) (los->symbol (third l))))))
-         result))))
 
 ;; symbol -> symbol
 ;; Just removes number renaming that we have to do for graphviz and returns the original symbol
 (define (undo-renaming symb)
-  (string->symbol (list->string (filter (lambda (x)
-                                          (not (or (equal? #\0 x)
-                                                   (equal? #\1 x)
-                                                   (equal? #\2 x)
-                                                   (equal? #\3 x)
-                                                   (equal? #\4 x)
-                                                   (equal? #\5 x)
-                                                   (equal? #\6 x)
-                                                   (equal? #\7 x)
-                                                   (equal? #\8 x)
-                                                   (equal? #\9 x))))
-                                        (string->list (symbol->string symb))))))
+  (string->symbol (list->string (takef (string->list (symbol->string symb)) (lambda (x) (not (equal? #\_ x))))
+                                )))
 
 ;; (listof symbols) (listof rules) MutableHashtable
 ;; Returns the levels for each graph needed to display the derivation
@@ -217,10 +112,10 @@
       (if result
           (begin
             (hash-set! hashtb nt (add1 result))
-            (string->symbol (format "~s~s" nt (add1 result))))
+            (string->symbol (format "~s_~s" nt (add1 result))))
           (begin
             (hash-set! hashtb nt 0)
-            (string->symbol (format "~s0" nt))))))
+            (string->symbol (format "~s_0" nt))))))
   ;; (listof symbols) (listof rules) MutableHashtable (listof symbol) (listof symbol) (listof edges)
   ;; Returns the levels for each graph needed to display the derivation
   (define (generate-levels-helper curr-state
@@ -234,8 +129,11 @@
         (list hex-nodes yield-nodes levels hedge-nodes)
         (let* ([curr-rule (first rules)]
                [idx-of-replaced (third curr-rule)]
-               [replaced-str-length (find-length (map undo-renaming curr-state) (symbol->fsmlos (first curr-rule)) (length (symbol->fsmlos (first curr-rule)))
-                                                 idx-of-replaced 0)]
+               [replaced-str-length (find-length (map undo-renaming curr-state)
+                                                 (symbol->fsmlos (first curr-rule))
+                                                 (length (symbol->fsmlos (first curr-rule)))
+                                                 idx-of-replaced
+                                                 0)]
                [all-before-to-be-replaced-symbols (take curr-state idx-of-replaced)]
                [to-be-replaced-symbols-plus-tail (drop curr-state idx-of-replaced)]
                   
@@ -454,7 +352,15 @@
          (lod (create-dgrphs (third renamed) (first renamed) (second renamed) (fourth renamed)))
          (graphs (map (lambda (x) (create-graph-structs x (if (empty? invariant)
                                                               'NO-INV
-                                                              (first invariant)))) lod))]
+                                                              (first invariant)))) lod))
+         (rank-node-lst (map (lambda (x y) (cons x (map list y)))
+                                   (second renamed)
+                                   (first renamed)))
+         (removed-dashes-rank-node-lst (map (lambda (x)
+                                              (map (lambda (y)
+                                                     (map (lambda (z) (los->symbol (remove '- (symbol->list z)))) y)) x))
+                                            rank-node-lst))]
+    
     (init-viz g
               w
               w-derv 
@@ -463,9 +369,7 @@
               'NO-INV
               #:cpu-cores cpu-cores
               #:special-graphs? 'cfg
-              #:rank-node-lst (map (lambda (x y) (cons x (map list y)))
-                                   (second renamed)
-                                   (first renamed)))))
+              #:rank-node-lst removed-dashes-rank-node-lst)))
 
 (define (anbncn-csg-G-INV yield)
   (if (member 'G yield)
@@ -476,10 +380,10 @@
       #f))
 
 (define anbncn-csg
-  (make-unchecked-csg '(S A B C G H I) 
+  (make-unchecked-csg '(S-1 A B C G H I) 
             '(a b c) 
-            `((S ,ARROW ABCS) 
-              (S ,ARROW G)
+            `((S-1 ,ARROW ABCS-1) 
+              (S-1 ,ARROW G)
               (BA ,ARROW AB) 
               (CA ,ARROW AC) 
               (CB ,ARROW BC)
@@ -489,7 +393,7 @@
               (H ,ARROW I)
               (AI ,ARROW Ia) 
               (I ,ARROW ,EMP)) 
-            'S))
+            'S-1))
 
 
 ;; generates word word-reversed word
@@ -547,3 +451,30 @@
                                        (IE ,ARROW Ei)
                                        (E ,ARROW ,EMP))
                                      'S))
+
+(define anbn
+  (make-unchecked-csg
+   '(S A B)
+   '(a b)
+   (list (list 'S ARROW 'AaB) (list 'AaA ARROW 'aSb) (list 'AaA ARROW EMP) (list 'B ARROW 'A))
+   'S))
+
+
+
+(define anbncn
+  (make-unchecked-csg
+   '(S A B C G H I)
+   '(a b c)
+   `((S ,ARROW ABCS)
+     (S ,ARROW G)
+     (BA ,ARROW AB)
+     (CA ,ARROW AC)
+     (CB ,ARROW BC)
+     (CG ,ARROW Gc)
+     (BG ,ARROW BH)
+     (BH ,ARROW Hb)
+     (AH ,ARROW AI)
+     (AI ,ARROW Ia)
+     (I ,ARROW ,EMP)
+     )
+   'S))

@@ -1,5 +1,5 @@
 #lang racket/base
-(require "cfg.rkt" "csg.rkt" "regular-grammar.rkt")
+(require "cfg-struct.rkt" "csg.rkt" "regular-grammar.rkt")
 (provide grammar-nts
          grammar-sigma
          grammar-rules
