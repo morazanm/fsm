@@ -40,6 +40,21 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;CONTRACTS;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; string -> flat-contract
+;;Purpose: Creates a flat contract to determine if the given list or listof list has at least 2 elements
+(define (at-least-two/c message)
+  (make-flat-contract
+   #:name 'at-least-two?
+   #:first-order (λ (x) (or (>= (length x) 2)
+                            (>= (length (car x)) 2)))
+   #:projection (λ (blame)
+                         (λ (symbol)
+                           (current-blame-format format-error)
+                           (raise-blame-error
+                            blame
+                            symbol
+                            (format "~a needs at least 2 cfes, given" message))))))
+
+;; string -> flat-contract
 ;;Purpose: Creates a flat contract that determines if the input is a symbol
 (define (is-symbol?/c message)
   (make-flat-contract
@@ -238,15 +253,19 @@
 
 (define concat-cfexp/c
   (->* () #:rest (and/c (is-a-list/c "concat-cfexp")
+                        (at-least-two/c "concat-cfexp")
                         (or/c (valid-listof/c cfexp? "concat-cfexp" "list of cfes" "cfe")
                               (valid-listof/c (listof cfexp?) "concat-cfexp" "list of cfes" "cfe")))
-      mk-concat-cfexp?))
+      (or/c mk-concat-cfexp?
+            mk-empty-cfexp?)))
 
 (define union-cfexp/c
   (->* () #:rest (and/c (is-a-list/c "union-cfexp")
-                        (or/c (valid-listof/c cfexp? "union-cfexp" "list of cfes" "cfe")
+                        (at-least-two/c "union-cfexp")
+                        (or/c (valid-listof/c cfexp? "union-cfexp" "list of cfes" "cfe") 
                               (valid-listof/c (listof cfexp?) "union-cfexp" "list of cfes" "cfe")))
-      mk-union-cfexp?))
+       (or/c mk-union-cfexp?
+             mk-empty-cfexp?)))
 
 (define var-cfexp/c
   (-> (and/c (is-symbol?/c "var-cfexp expects a symbol as input, given")

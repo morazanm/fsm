@@ -18,8 +18,9 @@
 
 (define P (var-cfexp 'P))
 
-(update-binding! P 'P C)
+;(update-binding! P 'P C)
 
+;P
 
 
 ;; w = ww^r
@@ -237,4 +238,4 @@
 
 ;(define G (cfg-rename-nts (cfg-get-v GSI) GSI))
 
-(pda->cfe (cfe->pda S1))
+;(gen-cfexp-word (pda->cfe (cfe->pda S1)))
