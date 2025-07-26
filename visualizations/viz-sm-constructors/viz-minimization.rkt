@@ -354,7 +354,8 @@ ismg "finished machine"
                                                      (map (λ (r)
                                                             (if (list? (member (second r) remaining-states))
                                                                 (cons key r)
-                                                                (list key (first r) (search-for-merged-state (second r) merged-unmarked-pairs))))
+                                                                (list key (first r)
+                                                                      (search-for-merged-state (second r) merged-unmarked-pairs))))
                                                           val)
                                                      '()))))])
       (list (make-unchecked-dfa remaining-states
@@ -873,8 +874,9 @@ ismg "finished machine"
       (if (empty? loRM)
           (reverse acc)
           (let* ([rebuild-M (first loRM)]
-                 [merged-state (filter (λ (ms) (or (member (merged-state-new-symbol ms) (dfa-states rebuild-M))
-                                                   (ormap (λ (state) (set-member? (merged-state-old-symbols ms) state)) (dfa-states rebuild-M))))
+                 [merged-state (filter (λ (ms)
+                                         (or (member (merged-state-new-symbol ms) (dfa-states rebuild-M))
+                                             (ormap (λ (state) (set-member? (merged-state-old-symbols ms) state)) (dfa-states rebuild-M))))
                                        loMS)]
                  [found-merged-state? (not (empty? merged-state))]
                  [new-phase (phase 5 (first loRM) state-pairing-table (phase-5-attributes

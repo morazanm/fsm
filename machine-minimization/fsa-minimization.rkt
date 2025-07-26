@@ -2,7 +2,9 @@
 
 (require "../fsm-core/private/fsa.rkt")
 
-(provide unchecked->dfa minimize-dfa dfa)
+(provide unchecked->dfa
+         minimize-dfa
+         dfa)
 
 ;;s1      | the first of the state in the state pair  | state
 ;;s2      | the second of the state in the state pair | state
@@ -51,6 +53,8 @@
 (define (dequeue queue)
   (rest queue))
 
+;;ndfa -> dfa
+;;Purpose: If possible, minimizes the given ndfa
 (define (minimize-dfa M)
   ;;dfa -> dfa
   ;;Purpose: Removes any unreachable states
