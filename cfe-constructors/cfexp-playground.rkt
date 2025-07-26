@@ -25,20 +25,17 @@
 
 ;; w = ww^r
 (define WWR
-  (local [(define WWR (var-cfexp 'S))
-
-          (define AHA (concat-cfexp A WWR A))
-
-          (define BHB (concat-cfexp B WWR B))]
+  (let* [(WWR (var-cfexp 'S))
+         (AHA (concat-cfexp A WWR A))
+         (BHB (concat-cfexp B WWR B))]
     (begin
       (update-binding! WWR 'S (union-cfexp EMPTY AHA BHB))
       WWR)))
 
 ;;w = a^nb^n
 (define ANBN
-  (local [(define ANBN (var-cfexp 'S))
-
-          (define ASB (concat-cfexp A ANBN B))]
+  (let* [(ANBN (var-cfexp 'S))
+         (ASB (concat-cfexp A ANBN B))]
     (begin
       (update-binding! ANBN 'S (union-cfexp EMPTY ASB))
       ANBN)))
@@ -47,40 +44,34 @@
 
 ;;w = a^2ib^i
 (define A2iBi
-  (local [(define A2iBi (var-cfexp 'S))
-
-          (define EUAAKB (union-cfexp EMPTY (concat-cfexp A A A2iBi B)))]
+  (let* [(A2iBi (var-cfexp 'S))
+         (EUAAKB (union-cfexp EMPTY (concat-cfexp A A A2iBi B)))]
     (begin
       (update-binding! A2iBi 'S EUAAKB)
       A2iBi)))
 
 ;;w = A^iB^j | i <= j <= 2i
 (define AiBj
-  (local [(define AiBj (var-cfexp 'A))
-
-          (define AIB (concat-cfexp A AiBj B))
-
-          (define AIBB (concat-cfexp A AiBj B B))
-
-          (define EUAIBUAIBB (union-cfexp EMPTY AIB AIBB))]
+  (let* [(AiBj (var-cfexp 'A))
+         (AIB (concat-cfexp A AiBj B))
+         (AIBB (concat-cfexp A AiBj B B))
+         (EUAIBUAIBB (union-cfexp EMPTY AIB AIBB))]
     (begin
       (update-binding! AiBj 'A EUAIBUAIBB)
       AiBj)))
 
 
 (define S1
-  (local [(define ANBN (var-cfexp 'S))
-
-          (define ASB (concat-cfexp A ANBN B))]
+  (let* [(ANBN (var-cfexp 'S))
+         (ASB (concat-cfexp A ANBN B))]
     (begin
       (update-binding! ANBN 'S (union-cfexp EMPTY ASB))
       ANBN)))
 
 
 (define S2
-  (local [(define BNAN (var-cfexp 'S))
-
-          (define BSA (concat-cfexp B BNAN A))]
+  (let* [(BNAN (var-cfexp 'S))
+         (BSA (concat-cfexp B BNAN A))]
     (begin
       (update-binding! BNAN 'S (union-cfexp EMPTY BSA))
       BNAN)))
@@ -92,7 +83,7 @@
   (define (loopinator-helper a-num acc)
     (if (= a-num 0)
         acc
-       (loopinator-helper (sub1 a-num) (cons (gen-cfexp-word cfe) acc))))
+        (loopinator-helper (sub1 a-num) (cons (gen-cfexp-word cfe) acc))))
   (remove-duplicates (loopinator-helper a-num '())))
 
 (define (valid-wwr-word w)
@@ -157,8 +148,8 @@
 (define thesis-cfg (make-unchecked-cfg '(S T U)
                                        '(a)
                                        `((S ,ARROW aST) (S ,ARROW U)
-                                         (T ,ARROW TU) (T ,ARROW S)
-                                         (U ,ARROW ,EMP))
+                                                        (T ,ARROW TU) (T ,ARROW S)
+                                                        (U ,ARROW ,EMP))
                                        'S))
 
 (define transformed-thesis (cfg->cfe thesis-cfg))
@@ -168,9 +159,8 @@
 
 ;;w = (ab)*c
 (define AB^NC
-  (local [(define AB^NC (var-cfexp 'S))
-
-          (define ABX (concat-cfexp A B AB^NC))]
+  (let* [(AB^NC (var-cfexp 'S))
+         (ABX (concat-cfexp A B AB^NC))]
     (begin
       (update-binding! AB^NC 'S (union-cfexp C ABX))
       AB^NC)))
@@ -182,32 +172,26 @@
                                  'X))
 ;;w = (abc)^na^n
 (define thesis-cfe
-  (local [(define X (var-cfexp 'X))
-
-          (define Y (var-cfexp 'Y))
-
-          (define ABY (concat-cfexp A B Y))
-
-          (define CXA (concat-cfexp C X A))]
-  (begin
-    (update-binding! X 'X (union-cfexp EMPTY ABY))
-    (update-binding! Y 'Y CXA)
-    X)))
+  (let* [(X (var-cfexp 'X))
+         (Y (var-cfexp 'Y))
+         (ABY (concat-cfexp A B Y))
+         (CXA (concat-cfexp C X A))]
+    (begin
+      (update-binding! X 'X (union-cfexp EMPTY ABY))
+      (update-binding! Y 'Y CXA)
+      X)))
 
 ;;w = (abc)^na^n
 (define thesis-cfe2
-  (local [(define X (var-cfexp 'X))
-
-          (define Y (var-cfexp 'Y))
-
-          (define ABY (concat-cfexp A B Y))
-
-          (define CXA (concat-cfexp C X A))]
-  (begin
-    (update-binding! X 'X EMPTY)
-    (update-binding! X 'X ABY)
-    (update-binding! Y 'Y CXA)
-    X)))
+  (let* [(X (var-cfexp 'X))
+         (Y (var-cfexp 'Y))
+         (ABY (concat-cfexp A B Y))
+         (CXA (concat-cfexp C X A))]
+    (begin
+      (update-binding! X 'X EMPTY)
+      (update-binding! X 'X ABY)
+      (update-binding! Y 'Y CXA)
+      X)))
 
 ;;w = (abc)^na^n
 (define thesis-cfg1 (make-unchecked-cfg '(X Y)

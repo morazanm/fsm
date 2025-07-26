@@ -72,8 +72,8 @@
          (hash)
          locfexp))
 
-;; . cfexp -> concat-cfexp
-;;Purpose: A wrapper to create a concat-cfexp
+;; . cfexp -> concat-cfexp/empty-cfexp
+;;Purpose: A wrapper to create a concat-cfexp unless all the given cfexps are empty-cfexp
 (define/contract (concat-cfexp . cfexp)
   concat-cfexp/c
   (let* ([cfexp (flatten cfexp)]
@@ -82,8 +82,8 @@
         (empty-cfexp)
         (mk-concat-cfexp (merge-env cfexp) cfexp))))
 
-;; . cfexp -> union-cfexp
-;;Purpose: A wrapper to create a union-cfexp
+;; . cfexp -> union-cfexp/empty-cfexp
+;;Purpose: A wrapper to create a union-cfexp unless all the given cfexps are empty-cfexp
 (define/contract (union-cfexp . cfexp)
   union-cfexp/c
   (let* ([cfexp (flatten cfexp)]
@@ -104,8 +104,8 @@
   (let ([binding (if (list? binding) binding (list binding))])
     (hash cfe-id binding)))
 
-;;var-cfexp symbol cfe -> var-cfexp
-;;Purpose: Creates a binding where the cfe is bound to the given var-cfexp's environment
+;;var-cfexp symbol cfe -> void
+;;Purpose: Creates a binding where the cfe is bound to the given var-cfexp's environment unless the binding is an empty-cfexp
 (define/contract (update-binding! cfe bindee-id binding)
   update-binding!/c
   (let ([env (cfexp-env cfe)])
@@ -120,13 +120,13 @@
 
 ;;singleton-cfe -> word
 ;;Purpose: Extracts the singleton 
-(define (convert-singleton cfe)
-  (list (mk-singleton-cfexp-char cfe)))
+(define (convert-singleton singleton-cfexp)
+  (list (mk-singleton-cfexp-char singleton-cfexp)))
 
 ;; union-cfexp --> cfexp
-;; Purpose: Return a randomly chosen sub-cfexp from the given union-cfexp
-(define (pick-cfexp cfexp)
-  (let* [(cfexps (mk-union-cfexp-locfe cfexp))
+;; Purpose: Return a randomly chosen sub-cfexp from the given union-cfexp weigthed towards a non-empty-cfexp
+(define (pick-cfexp union-cfexp)
+  (let* [(cfexps (mk-union-cfexp-locfe union-cfexp))
          (contains-empty? (ormap mk-empty-cfexp? cfexps))]
     (if contains-empty?
         (let ([filtered-empties (remove (empty-cfexp) cfexps)])
@@ -137,8 +137,8 @@
 
 ;;var-cfexp --> word
 ;;Purpose: Substitutes the given var-cfexp with it's environment bindings 
-(define (substitute-var cfe)
-  (let ([bindings (hash-ref (cfexp-env cfe) (mk-var-cfexp-cfe cfe))])
+(define (substitute-var var-cfexp)
+  (let ([bindings (hash-ref (cfexp-env var-cfexp) (mk-var-cfexp-cfe var-cfexp))])
     (gen-cfexp-word (list-ref bindings (random (length bindings))))))
 
 ;;concat-cfexp --> word
@@ -152,13 +152,13 @@
 ;; natnum kleene-star-cfexp (cfexp --> word) --> word
 ;; Purpose: Generate a word of arbitrary length in [0..reps+1] using
 ;;          given context-free expression and the given word-generating function
-(define (gen-cfe-kleene-word cfe reps gen-function)
+(define (gen-cfe-kleene-word kleene-cfexp reps gen-function)
   (let [(lst-words (filter
                     (λ (w) (not (eq? w EMP)))
                     (flatten
                      (build-list
                       (random (add1 reps))
-                      (λ (i) (gen-function (mk-kleene-cfexp-cfe cfe) reps))))))]
+                      (λ (i) (gen-function (mk-kleene-cfexp-cfe kleene-cfexp) reps))))))]
     (if (empty? lst-words) EMP lst-words)))
 
 ;; cfe [natnum] -> word
@@ -199,10 +199,13 @@
     (define (convert-to-expression RHS-of-rule)
       (cond [(eq? RHS-of-rule EMP) (empty-cfexp)]
             [(hash-has-key? singletons RHS-of-rule) (hash-ref singletons RHS-of-rule)]
-            [(hash-has-key? variables RHS-of-rule) (let* ([future-var-binding (hash-ref rules RHS-of-rule)]
-                                                          [only-empty? (and (= (length future-var-binding) 1)
-                                                                            (equal? (first future-var-binding) (list EMP)))])
-                                                     (if only-empty? (empty-cfexp) (hash-ref variables RHS-of-rule)))]
+            [(hash-has-key? variables RHS-of-rule)
+             (let* ([future-var-binding (hash-ref rules RHS-of-rule)]
+                    [only-empty? (and (= (length future-var-binding) 1)
+                                      (equal? (first future-var-binding) (list EMP)))])
+               (if only-empty?
+                   (empty-cfexp)
+                   (hash-ref variables RHS-of-rule)))]
             [else (error (format "unreadable RHS: ~a" RHS-of-rule))]))
     ;;(listof symbol) -> cfe
     ;;Purpose: Translates the given (listof symbol) into its corresponding cfe
@@ -291,14 +294,14 @@
 
   ;;cfe extraction-results -> extraction-results
   ;;Purpose: Updates the given extraction-results to add the given cfe if it is a singleton or variable
-  (define (update-extraction-results cfe er)
+  (define (update-extraction-results cfe extract-res)
     (cond [(mk-var-cfexp? cfe) (struct-copy extraction-results
-                                            er
-                                            [vars (cons cfe (extraction-results-vars er))])]
+                                            extract-res
+                                            [vars (cons cfe (extraction-results-vars extract-res))])]
           [(mk-singleton-cfexp? cfe) (struct-copy extraction-results
-                                                  er
-                                                  [singles (cons cfe (extraction-results-singles er))])]
-          [else er]))
+                                                  extract-res
+                                                  [singles (cons cfe (extraction-results-singles extract-res))])]
+          [else extract-res]))
 
   ;;(queueof cfe) extraction-results (listof cfe) -> extraction-results
   ;;Purpose: Extracts the cfe and adds it to the extraction-results if its a singleton or variable
@@ -513,13 +516,14 @@
           
         ; state --> (listof cfg-rule)
         (define (gen-t3 p)
-          (map (lambda (p1) (cfg-rule (los->symbol (list (pdarule-fromstate r) (if (eq? (pdarule-pop r) EMP) EMP (car (pdarule-pop r))) p))
-                                      (if (eq? (pdarule-readsymb r) EMP)
-                                          (list (los->symbol (list (pdarule-tostate r) (car (pdarule-push r)) p1))
-                                                (los->symbol (list p1 (cadr (pdarule-push r)) p)))
-                                          (list (pdarule-readsymb r)
-                                                (los->symbol (list (pdarule-tostate r) (car (pdarule-push r)) p1))
-                                                (los->symbol (list p1 (cadr (pdarule-push r)) p))))))
+          (map (lambda (p1)
+                 (cfg-rule (los->symbol (list (pdarule-fromstate r) (if (eq? (pdarule-pop r) EMP) EMP (car (pdarule-pop r))) p))
+                           (if (eq? (pdarule-readsymb r) EMP)
+                               (list (los->symbol (list (pdarule-tostate r) (car (pdarule-push r)) p1))
+                                     (los->symbol (list p1 (cadr (pdarule-push r)) p)))
+                               (list (pdarule-readsymb r)
+                                     (los->symbol (list (pdarule-tostate r) (car (pdarule-push r)) p1))
+                                     (los->symbol (list p1 (cadr (pdarule-push r)) p))))))
                states))
           
         (append-map (lambda (p) (gen-t3 p)) states))
