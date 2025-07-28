@@ -12,7 +12,6 @@
          "../viz-lib/bounding-limits-macro.rkt"
          "../viz-lib/viz.rkt"
          "../viz-lib/bounding-limits.rkt"
-         "../viz-lib/viz-imgs/cursor.rkt"
          "../viz-lib/zipper.rkt"
          racket/list
          racket/function)
@@ -427,6 +426,7 @@
              (lambda ()
                (apply above (map graph->bitmap (graph-struct-grph (make-init-grph-structure M N)))))
              MIDDLE-E-SCENE
+              E-SCENE-WIDTH E-SCENE-HEIGHT PERCENT-BORDER-GAP
              DEFAULT-ZOOM
              DEFAULT-ZOOM-CAP
              DEFAULT-ZOOM-FLOOR

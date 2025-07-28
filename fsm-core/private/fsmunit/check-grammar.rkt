@@ -7,6 +7,7 @@
          racket/list
          "../csg.rkt"
          "../cfg.rkt"
+         "../cfg-struct.rkt"
          "../regular-grammar.rkt"
          "check-accept-reject-failure-strings.rkt"
          "check-exn.rkt"

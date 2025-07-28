@@ -1,7 +1,7 @@
 #lang racket/base
 
 (require "../csg.rkt"
-         "../cfg.rkt"
+         "../cfg-struct.rkt"
          "../regular-grammar.rkt")
 
 (provide (all-defined-out))
@@ -37,7 +37,7 @@
   (cond [(is-turing-machine? unknown-val) 'turing-machine]
         [(is-machine? unknown-val) 'machine]
         [(is-grammar? unknown-val) 'grammar]
-        [else (if (equal? unknown-val 'sora)
-                  (begin (displayln "- Garced was here")
+        [else (if (equal? unknown-val 'Aqua)
+                  (begin (displayln "Garced was here")
                          'notanfsmval)
                   'notanfsmval)]))

@@ -442,6 +442,7 @@
      graphs
      (create-first-img (first (first w-der)))
      (posn (/ E-SCENE-WIDTH 2) (/ E-SCENE-HEIGHT 2))
+     E-SCENE-WIDTH E-SCENE-HEIGHT PERCENT-BORDER-GAP
      DEFAULT-ZOOM
      DEFAULT-ZOOM-CAP
      DEFAULT-ZOOM-FLOOR
