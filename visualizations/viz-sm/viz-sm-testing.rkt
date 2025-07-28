@@ -1071,6 +1071,12 @@
                        ((G ,BLANK) (F ,RIGHT)))
                      'S
                      '(F)))
+(define minimal-tm (make-tm '(S)
+                            '()
+                            `(((S ,BLANK) (S L)))
+                            'S
+                            '()))
+
 
 (define PR^N (make-tm '(S A B D E F G H I J K M N Q Y)
                       '(a b h i r)
@@ -1757,8 +1763,11 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;(sm-viz EVEN-AS-&-BS '(@ a b a b) #:head-pos 0)
+;(sm-viz minimal-tm '(@ _ a a))
+;(sm-viz more-a-than-b '(a a a a a b b))
+;(sm-viz DNA-SEQUENCE '(c g c g a t a t g c t a g c a t))
 ;(sm-viz anbncn `(,LM ,BLANK a b c) #:head-pos 1 #:cut-off 15)
-#;(sm-viz EQABC-ND `(,LM ,BLANK a a b b c c) #:head-pos 1)
+;(sm-viz EQABC-ND `(,LM ,BLANK a a b b c c) #:head-pos 1)
 #;(sm-viz EVEN-AS-&-BS `(,LM b a b a) #:head-pos 0 (list 'K EVEN-K-INV)
           (list 'H EVEN-H-INV)
           (list 'I BRK-EVEN-I-INV)

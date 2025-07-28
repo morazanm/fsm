@@ -856,9 +856,13 @@ type -> the type of the ndfa (ndfa/dfa) | symbol
                                    (text "Accept not traced" 20 (color-palette-legend-other-accept-color color-scheme))
                                    spacer
                                    (text "Reject not traced" 20 (color-palette-legend-other-reject-color color-scheme)))))])
-    
+    #;(map (λ (x) (λ (grph) (identity grph))) graphs)
+    ;(list->vector (map (lambda (x) (lambda (graph0 graph1) (above graph0 graph1))) graphs))
     (run-viz graphs
-             (lambda () (graph->bitmap (first graphs)))
+             (list->vector (map (λ (x) (λ (grph) (identity grph))) graphs)
+                           #;(map (λ (x) (λ (grph) (identity grph))) graphs))
+             #;(list->vector (map (lambda (x) (lambda (graph0 graph1) (above graph0 graph1))) graphs))
+             (lambda () (list (graph->bitmap (first graphs))))
              (posn (/ E-SCENE-WIDTH 2) (/ NDFA-E-SCENE-HEIGHT 2))
               E-SCENE-WIDTH NDFA-E-SCENE-HEIGHT PERCENT-BORDER-GAP
              DEFAULT-ZOOM

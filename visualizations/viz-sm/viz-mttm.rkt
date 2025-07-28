@@ -1124,7 +1124,8 @@ destination -> the rest of a mttm rule | half-rule
                                    spacer
                                    (text "Reject not traced" 20 (color-palette-legend-other-reject-color color-scheme)))))])
     (run-viz graphs
-             (lambda () (graph->bitmap (first graphs)))
+             (list->vector (map (λ (x) (λ (grph) (identity grph))) graphs))
+             (lambda () (list (graph->bitmap (first graphs))))
              (posn (/ E-SCENE-WIDTH 2) (/ MTTM-E-SCENE-HEIGHT 2))
               E-SCENE-WIDTH MTTM-E-SCENE-HEIGHT PERCENT-BORDER-GAP
              DEFAULT-ZOOM
