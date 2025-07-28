@@ -88,19 +88,21 @@
                                              #:rank-node-lst rank-node-lst
                                              #:graph-type special-graphs?
                                              #:cpu-cores cpu-cores)])
-                 (vector-set! res 0 first-img)
+                 #;(vector-set! res 0 first-img)
                  res))
-         (first-img-thunk (lambda () (apply (vector-ref graphic-formatters 0) ((vector-ref imgs 0)))))
-           (first-img (apply (vector-ref graphic-formatters 0) (load-image (cache-image (vector-ref imgs 0)))))
+         (first-img-cached (cache-image (vector-ref imgs 0))
+                           #;(lambda () (apply (vector-ref graphic-formatters 0) ((vector-ref imgs 0)))))
+           (first-img (load-image first-img-cached)
+                      #;(apply (vector-ref graphic-formatters 0) (load-image (cache-image (vector-ref imgs 0)))))
          (new-floor (find-new-floor first-img
                                     (* E-SCENE-WIDTH PERCENT-BORDER-GAP)
                                     (* E-SCENE-HEIGHT PERCENT-BORDER-GAP)))]
     (viz (viz-state (vector->vector-zipper imgs)
-                    'BEGIN
-                    first-img
-                    (cache-image (vector-ref imgs 1))
-                    (cache-image first-img-thunk)
-                    (cache-image (vector-ref imgs (sub1 (vector-length imgs))))
+                    'BEGIN ;; PREV
+                     first-img ;; CURR
+                    (cache-image (vector-ref imgs 1)) ;; NEXT
+                    first-img ;;  BEGIN
+                    (cache-image (vector-ref imgs (sub1 (vector-length imgs)))) ;; END
                     first-img
                     first-img-coord
                     DEFAULT-ZOOM
