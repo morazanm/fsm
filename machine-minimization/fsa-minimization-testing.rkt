@@ -395,7 +395,7 @@
       nd n nk ab*-U-ab*b*-ndfa PROP-BI DNA-SEQUENCE ND ND2 ND3 ND4 ND5 ENDS-WITH-TWO-Bs nd-a* missing-exactly-one EVEN-NUM-Bs M2))
 
 (struct status (M result) #:transparent)
-
+#|
 "minimize 5 - myhill-nerode"
 (define minimize5-test (map (λ (M) (if (boolean? (test-equiv-fsa (ndfa->dfa M) (minimize-dfa M)))
                 (status (M 'whatami) #t)
@@ -411,3 +411,5 @@
 (- (length listofmachines) (length (filter (λ (s) (status-result s)) minimize5-test)))
 "success rate"
 (* 100 (/ (length (filter (λ (s) (status-result s)) minimize5-test)) (length listofmachines)))
+|#
+(minimization-viz EX3-vid)
