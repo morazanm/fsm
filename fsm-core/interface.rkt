@@ -5,9 +5,11 @@
 #lang racket/base
 
 (require
+  "private/cyk.rkt"
   "private/fsa.rkt"
   "private/cfg.rkt"
-  "private/pda.rkt" 
+  "private/cfg-struct.rkt"
+  "private/pda.rkt"
   "private/regular-grammar.rkt"
   "private/csg.rkt"
   "private/tm.rkt" 
@@ -36,7 +38,8 @@
   "../visualizations/viz-grammar-constructors/rg-viz.rkt"
   "../visualizations/viz-grammar-constructors/cfg-viz.rkt"
   "../visualizations/viz-grammar-constructors/csg-viz.rkt"
-  "private/Chomsky-Greibach-CFG-Transformations/chomsky.rkt"
+  "private/chomsky.rkt"
+  ;"private/Chomsky-Greibach-CFG-Transformations/chomsky.rkt"
   "private/Chomsky-Greibach-CFG-Transformations/greibach.rkt"
   "private/fsmunit/check-accept-reject-macro.rkt"
   racket/list
@@ -71,12 +74,13 @@
  combine-tms ctm-run
 
  ; grammar constructors
- make-rg make-cfg make-csg 
+ make-rg make-cfg make-csg
+ make-grammar ;; a rename for make-csg
  sm->grammar grammar-rename-nts 
  grammar-union grammar-concat grammar-kleenestar
    
  ; grammar observers
- grammar-derive grammar-type
+ grammar-derive grammar-derive? grammar-type
  grammar-nts grammar-sigma grammar-rules grammar-start 
 
  ; grammar testers
@@ -405,6 +409,15 @@
         [(cfg? g) (cfg-derive g w)]
         [(csg? g) (csg-derive g w)]
         [else (error (format "Unknown grammar type"))]))
+
+(define (grammar-derive? g w)
+  (cond [(rg? g) (list? (rg-derive g w))]
+        [(cfg? g) (if (empty? w)
+                      (list? (cfg-derive g w))
+                      (cyk (chomsky g) w))]
+        [(csg? g) (list? (csg-derive g w))]
+        [else (error (format "Error in grammar-derive: unknown grammar type"))]))
+                  
   
 ; grammar grammar word --> boolean
 (define (grammar-both-derive g1 g2 w)
@@ -539,6 +552,18 @@
                            #:accepts [accepts '()]
                            #:rejects [rejects '()])
   make-csg/c
+  (begin
+    (displayln "Warning: This constructor is deprecated. Use make-grammar.")
+    (make-unchecked-csg nts sigma delta state))
+  )
+
+;;make-grammar V sigma R S), where V and sigma are a (listof symbol), R
+;; is a (listof csg-rule), and S is a symbol
+;; This is just a renaming for make-csg.
+(define/contract (make-grammar nts sigma delta state
+                               #:accepts [accepts '()]
+                               #:rejects [rejects '()])
+  make-csg/c
   (make-unchecked-csg nts sigma delta state)
   )
   
@@ -603,3 +628,5 @@
                   )
   kleenestar-regexp/c
   (make-unchecked-kleenestar a))
+
+

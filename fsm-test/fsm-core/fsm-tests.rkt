@@ -2,8 +2,6 @@
 
 (require "../../main.rkt")
 
-
-
 (module+ test
   (require rackunit)
 
@@ -663,10 +661,10 @@
                 (los->symbol '(a b b a a)))
   (check-equal? (last (grammar-derive cfg-moreAs-than-Bs '(a b b b a a a a)))
                 (los->symbol '(a b b b a a a a)))
-  ;(check-equal? (grammar-derive cfg-moreAs-than-Bs '(a b b a)) 
-  ;              "(a b b a) is not in L(G)") ;!!!!Runs forever? 
-  ;(check-equal? (grammar-derive cfg-moreAs-than-Bs '(a b b b)) 
-  ;              "(a b b b) is not in L(G)") ;!!!!! Runs forever?
+  (check-equal? (grammar-derive cfg-moreAs-than-Bs '(a b b a)) 
+                "(a b b a) is not in L(G).") ;!!!!Runs forever? 
+  (check-equal? (grammar-derive cfg-moreAs-than-Bs '(a b b b)) 
+                "(a b b b) is not in L(G).") ;!!!!! Runs forever?
 
   (define numb>numa (make-cfg '(S A)
                               '(a b)
@@ -692,11 +690,7 @@
 
   (check-equal? (last (grammar-derive numb>numa '(a b b a a b b a b b b)))
                 (los->symbol '(a b b a a b b a b b b)))
-
-  #;(check-equal? (grammar-derive cfg-moreBs-than-As '(a b b a b a)) 
-                  "(a b b a b a) is not in L(G)") ;runs forever
    
-
   (define cfg-1B-before-anA (make-cfg '(S A)
                                       '(a b)
                                       `((S -> AbaA)
@@ -769,6 +763,7 @@
   (check-equal? (last (grammar-derive cfg-test4 '(b b a a a))) (los->symbol '(b b a a a)))
   (check-equal? (grammar-derive cfg-test4 '(b b b a a a)) "(b b b a a a) is not in L(G)." )
   (check-equal? (grammar-derive cfg-test4 '()) "() is not in L(G).")
+
   ;{w| w = w reverse, that is, w is a plindrome} 
   (define cfg-test5 (make-cfg '(S)
                               '(a b)
@@ -812,17 +807,16 @@
   (check-equal? (last (grammar-derive cfg-test6 '( a b c c))) (los->symbol '( a b c c)))
   (check-equal? (last (grammar-derive cfg-test6 '( a b b c c))) (los->symbol '( a b b c c)))
 
-
   ;;; csg tests
 
-  (define CSG-an-bn (make-csg '(S) 
+  (define CSG-an-bn (make-grammar '(S) 
                               '(a b) 
                               (list (list 'S ARROW EMP) 
                                     (list 'aSb ARROW 'aaSbb) 
                                     (list 'S ARROW 'aSb)) 
                               'S))
 
-  (define CSG-an-bn-cn (make-csg '(S A B C G H I) 
+  (define CSG-an-bn-cn (make-grammar '(S A B C G H I) 
                                  '(a b c) 
                                  `( (S -> ABCS) (S -> G)
                                                 (BA -> AB) (CA -> AC) (CB -> BC)
