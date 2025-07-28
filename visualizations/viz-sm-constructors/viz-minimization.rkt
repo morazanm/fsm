@@ -621,7 +621,8 @@ ismg "finished machine"
     ;; phase -> graph-thunk
     ;;Purpose: Draws the transition diagram thunk of using the given phase
     (define (draw-graph)
-      (create-init-graph-struct (phase-M phase)))
+      (list (create-init-graph-struct (phase-M phase))
+            (square 10 'solid 'white)))
     ;; phase -> graph-thunk
     ;; Purpose: Draws the state-pairing table next to the transition diagram thunk using the given phase
     (define (draw-table-and-graph)
@@ -629,13 +630,35 @@ ismg "finished machine"
                              (state-pair-destination-pairs (phase-4-attributes-unmarked-pair (phase-attributes phase)))
                              '())])
         (create-init-graph-struct (phase-M phase) #:state-pair state-pairs)
-        #;(beside (create-init-graph-struct (phase-M phase) #:state-pair state-pairs)
-                  (square 10 'solid 'white)
-                  (draw-table (phase-state-pairing-table phase) (dfa-finals (phase-M phase))))))
+        (list (create-init-graph-struct (phase-M phase) #:state-pair state-pairs)
+              #;(square 10 'solid 'white)
+              (draw-table (phase-state-pairing-table phase) (dfa-finals (phase-M phase))))))
     (if (<= 2 (phase-number phase) 5)
         (draw-table-and-graph)
         (draw-graph)))
   (map (λ (phase) (draw-graphic phase)) loPhase))
+
+
+;;phase -> graph-thunk
+;;Purpose: Creates the transition diagram thunk and state pairing table using the given phase
+(define (make-main-graphics phase)
+  ;; phase -> graph-thunk
+  ;;Purpose: Draws the transition diagram thunk of using the given phase
+  (define (draw-graph)
+    (create-init-graph-struct (phase-M phase)))
+  ;; phase -> graph-thunk
+  ;; Purpose: Draws the state-pairing table next to the transition diagram thunk using the given phase
+  (define (draw-table-and-graph)
+    (let ([state-pairs (if (= (phase-number phase) 4)
+                           (state-pair-destination-pairs (phase-4-attributes-unmarked-pair (phase-attributes phase)))
+                           '())])
+      (beside (create-init-graph-struct (phase-M phase) #:state-pair state-pairs)
+              (square 10 'solid 'white)
+              (draw-table (phase-state-pairing-table phase) (dfa-finals (phase-M phase))))))
+  (if (<= 2 (phase-number phase) 5)
+      (draw-table-and-graph)
+      (draw-graph)))
+
 
 ;; imsg-state -> image
 ;;Purpose: Draws the informative messages using the given imsg-state
@@ -919,9 +942,29 @@ ismg "finished machine"
          [phase-6 (list (phase 6 (last rebuilding-machines) filled-table (phase-6-attributes can-be-minimized?)))]
          [all-phases (append phase-0 phase-1 phase-2 phase-3 phase-4 phase-5 phase-6)]
          [graphs (make-main-graphic all-phases)])
+    #;(list->vector (map (λ (x) (begin
+                                (if (list? x)
+                                    (displayln "graph+table")
+                                    (displayln "graph"))
+                                (λ (phse) (if (list? phse)
+                                              (displayln "graph+table")
+                                              (displayln "graph"))))) graphs))
     (run-viz graphs
-             (lambda () (graph->bitmap (first graphs)))
-             MIDDLE-E-SCENE
+             (list->vector (map (λ (x) (λ (graph table) (identity graph
+                                                                #;(square 10 'solid "white")
+                                                               #; table))
+                                  #;(λ (phse) (identity phse))
+                                  #;(if (list? x)
+                                           (λ (graph table) (beside graph
+                                                                    #;(square 10 'solid "white")
+                                                                    table))
+                                           (λ (phse) (identity phse))))
+                                graphs))
+             (lambda () (list (graph->bitmap (first (first graphs)))))
+             (posn (/ E-SCENE-WIDTH 2) (/ E-SCENE-HEIGHT 2)) ;;imgcoord
+             E-SCENE-WIDTH
+             E-SCENE-HEIGHT
+             PERCENT-BORDER-GAP
              DEFAULT-ZOOM
              DEFAULT-ZOOM-CAP
              DEFAULT-ZOOM-FLOOR
