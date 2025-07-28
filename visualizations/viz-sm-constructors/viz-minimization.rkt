@@ -949,8 +949,8 @@ ismg "finished machine"
                                 (λ (phse) (if (list? phse)
                                               (displayln "graph+table")
                                               (displayln "graph"))))) graphs))
-    (run-viz graphs
-             (list->vector (map (λ (x) (λ (graph table) (identity graph
+    (run-viz (map first graphs)
+             (list->vector (map (λ (x table) (λ (graph) (beside graph table
                                                                 #;(square 10 'solid "white")
                                                                #; table))
                                   #;(λ (phse) (identity phse))
@@ -959,7 +959,7 @@ ismg "finished machine"
                                                                     #;(square 10 'solid "white")
                                                                     table))
                                            (λ (phse) (identity phse))))
-                                graphs))
+                                graphs (map (lambda (x) (second x)) graphs)))
              (lambda () (list (graph->bitmap (first (first graphs)))))
              (posn (/ E-SCENE-WIDTH 2) (/ E-SCENE-HEIGHT 2)) ;;imgcoord
              E-SCENE-WIDTH
