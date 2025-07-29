@@ -701,7 +701,7 @@
         (run-viz
          grphs
          (list->vector (map (lambda (x) (lambda (graph0 graph1) (above graph0 graph1))) grphs))
-         (lambda () (list (graph->bitmap (first (first grphs)))
+         #;(lambda () (list (graph->bitmap (first (first grphs)))
                           (graph->bitmap (second (first grphs)))))
          MIDDLE-E-SCENE
          E-SCENE-WIDTH E-SCENE-HEIGHT PERCENT-BORDER-GAP

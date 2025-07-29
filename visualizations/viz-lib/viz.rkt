@@ -79,11 +79,16 @@
 ;; special-graphs - Boolean that lets us know we are using graphs meant for csgs
 ;; rank-node-lst - List of list of symbols that are in a specific order so that they are forced to be
 ;; in said order and positioned at the same level
-(define (run-viz graphs graphic-formatters first-img first-img-coord E-SCENE-WIDTH E-SCENE-HEIGHT PERCENT-BORDER-GAP
+(define (run-viz graphs graphic-formatters first-img-coord E-SCENE-WIDTH E-SCENE-HEIGHT PERCENT-BORDER-GAP
                  DEFAULT-ZOOM DEFAULT-ZOOM-CAP DEFAULT-ZOOM-FLOOR
                  imsg-struct instructions-struct draw-world process-key process-tick name
                  #:cpu-cores [cpu-cores #f] #:special-graphs? [special-graphs? 'rg] #:rank-node-lst [rank-node-lst '()])
-  (let* [(imgs (let ([res (create-graph-imgs graphs
+  (let* [(imgs (create-graph-imgs graphs
+                                  graphic-formatters
+                                  #:rank-node-lst rank-node-lst
+                                  #:graph-type special-graphs?
+                                  #:cpu-cores cpu-cores)
+               #;(let ([res (create-graph-imgs graphs
                                              graphic-formatters
                                              #:rank-node-lst rank-node-lst
                                              #:graph-type special-graphs?

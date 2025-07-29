@@ -859,10 +859,10 @@ type -> the type of the ndfa (ndfa/dfa) | symbol
     #;(map (λ (x) (λ (grph) (identity grph))) graphs)
     ;(list->vector (map (lambda (x) (lambda (graph0 graph1) (above graph0 graph1))) graphs))
     (run-viz graphs
-             (list->vector (map (λ (x) (λ (grph) (identity grph))) graphs)
+             (list->vector (map (λ (x) (λ (grph) grph)) graphs)
                            #;(map (λ (x) (λ (grph) (identity grph))) graphs))
              #;(list->vector (map (lambda (x) (lambda (graph0 graph1) (above graph0 graph1))) graphs))
-             (lambda () (list (graph->bitmap (first graphs))))
+             #;(lambda () (list (graph->bitmap (first graphs))))
              (posn (/ E-SCENE-WIDTH 2) (/ NDFA-E-SCENE-HEIGHT 2))
               E-SCENE-WIDTH NDFA-E-SCENE-HEIGHT PERCENT-BORDER-GAP
              DEFAULT-ZOOM
