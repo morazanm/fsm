@@ -601,12 +601,14 @@ ismg "finished machine"
     (define (draw-square sym)
       (let ([base-square-img (overlay (square 40 'solid 'white) (square 45 'solid 'gray))]
             [final-state-square-img (overlay (square 40 'solid 'lightorange) (square 45 'solid 'gray))])
-        (match sym
-          [BLANK-SPACE base-square-img]
-          [BLACK (overlay (square 40 'solid BLACK) (square 45 'solid 'gray))]
-          [NEW-MARK (overlay (text "X" 38 'red) base-square-img)]
-          [MARK (overlay (text "X" 38 BLACK) base-square-img)]
-          [_ (overlay (text (symbol->string sym) 38 BLACK) (if (member sym finals) final-state-square-img base-square-img))])))
+        (cond [(eq? sym BLANK-SPACE) base-square-img]
+              [(eq? sym BLACK) (overlay (square 40 'solid BLACK) (square 45 'solid 'gray))]
+              [(eq? sym MARK) (overlay (text "X" 38 BLACK) base-square-img)]
+              [(eq? sym NEW-MARK) (overlay (text "X" 38 'red) base-square-img)]
+              [else (overlay (text (symbol->string sym) 38 BLACK)
+                             (if (member sym finals)
+                                 final-state-square-img
+                                 base-square-img))])))
     (if (= (sub1 (vector-length row)) idx)
         (draw-square (vector-ref row idx))
         (beside (draw-square (vector-ref row idx)) (make-row row (add1 idx)))))
@@ -622,42 +624,19 @@ ismg "finished machine"
     ;;Purpose: Draws the transition diagram thunk of using the given phase
     (define (draw-graph)
       (list (create-init-graph-struct (phase-M phase))
-            (square 10 'solid 'white)))
+            (square 1 'solid 'white)))
     ;; phase -> graph-thunk
     ;; Purpose: Draws the state-pairing table next to the transition diagram thunk using the given phase
     (define (draw-table-and-graph)
       (let ([state-pairs (if (= (phase-number phase) 4)
                              (state-pair-destination-pairs (phase-4-attributes-unmarked-pair (phase-attributes phase)))
                              '())])
-        (create-init-graph-struct (phase-M phase) #:state-pair state-pairs)
         (list (create-init-graph-struct (phase-M phase) #:state-pair state-pairs)
-              #;(square 10 'solid 'white)
               (draw-table (phase-state-pairing-table phase) (dfa-finals (phase-M phase))))))
     (if (<= 2 (phase-number phase) 5)
         (draw-table-and-graph)
         (draw-graph)))
   (map (λ (phase) (draw-graphic phase)) loPhase))
-
-
-;;phase -> graph-thunk
-;;Purpose: Creates the transition diagram thunk and state pairing table using the given phase
-(define (make-main-graphics phase)
-  ;; phase -> graph-thunk
-  ;;Purpose: Draws the transition diagram thunk of using the given phase
-  (define (draw-graph)
-    (create-init-graph-struct (phase-M phase)))
-  ;; phase -> graph-thunk
-  ;; Purpose: Draws the state-pairing table next to the transition diagram thunk using the given phase
-  (define (draw-table-and-graph)
-    (let ([state-pairs (if (= (phase-number phase) 4)
-                           (state-pair-destination-pairs (phase-4-attributes-unmarked-pair (phase-attributes phase)))
-                           '())])
-      (beside (create-init-graph-struct (phase-M phase) #:state-pair state-pairs)
-              (square 10 'solid 'white)
-              (draw-table (phase-state-pairing-table phase) (dfa-finals (phase-M phase))))))
-  (if (<= 2 (phase-number phase) 5)
-      (draw-table-and-graph)
-      (draw-graph)))
 
 
 ;; imsg-state -> image
@@ -803,14 +782,15 @@ ismg "finished machine"
     ;; (listof state) natnum -> (vectorof (vectorof marking))
     ;; Purpose: Makes the state pairing table using given states 
     (define (make-table-helper states num-rows)
-      (build-vector num-rows (λ (row-num)
-                               (build-vector num-rows
-                                             (λ (col-num)
-                                               (let ([blank-tile-count (- (length states) (- num-rows row-num))])
-                                                 (cond [(= row-num 0) (if (= col-num 0) BLANK-SPACE (list-ref states (sub1 col-num)))]
-                                                       [(= col-num 0) (list-ref states (sub1 row-num))]
-                                                       [(<= col-num blank-tile-count) BLANK-SPACE]
-                                                       [else BLACK])))))))
+      (build-vector num-rows
+                    (λ (row-num)
+                      (build-vector num-rows
+                                    (λ (col-num)
+                                      (let ([blank-tile-count (- (length states) (- num-rows row-num))])
+                                        (cond [(= row-num 0) (if (= col-num 0) BLANK-SPACE (list-ref states (sub1 col-num)))]
+                                              [(= col-num 0) (list-ref states (sub1 row-num))]
+                                              [(<= col-num blank-tile-count) BLANK-SPACE]
+                                              [else BLACK])))))))
     (make-table-helper (dfa-states M) (add1 (length (dfa-states M)))))
 
   ;; dfa -> (listof dfa)
@@ -942,23 +922,11 @@ ismg "finished machine"
          [phase-6 (list (phase 6 (last rebuilding-machines) filled-table (phase-6-attributes can-be-minimized?)))]
          [all-phases (append phase-0 phase-1 phase-2 phase-3 phase-4 phase-5 phase-6)]
          [graphs (make-main-graphic all-phases)])
-    #;(list->vector (map (λ (x) (begin
-                                (if (list? x)
-                                    (displayln "graph+table")
-                                    (displayln "graph"))
-                                (λ (phse) (if (list? phse)
-                                              (displayln "graph+table")
-                                              (displayln "graph"))))) graphs))
-    (run-viz (map first graphs)
-             (list->vector (map (λ (x table) (λ (graph) (beside graph table
-                                                                #;(square 10 'solid "white")
-                                                               #; table))
-                                  #;(λ (phse) (identity phse))
-                                  #;(if (list? x)
-                                           (λ (graph table) (beside graph
-                                                                    #;(square 10 'solid "white")
-                                                                    table))
-                                           (λ (phse) (identity phse))))
+    (map phase-state-pairing-table all-phases)
+    #;(run-viz (map first graphs)
+             (list->vector (map (λ (x table) (λ (graph) (beside graph
+                                                                (square 10 'solid "white")
+                                                                table)))
                                 graphs (map (lambda (x) (second x)) graphs)))
              (lambda () (list (graph->bitmap (first (first graphs)))))
              (posn (/ E-SCENE-WIDTH 2) (/ E-SCENE-HEIGHT 2)) ;;imgcoord
