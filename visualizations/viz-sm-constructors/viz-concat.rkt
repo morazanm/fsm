@@ -367,11 +367,15 @@
 ;; concat-viz
 ;; fsa fsa -> void
 (define (concat-viz M N)
-  (let ([renamed-machine (if (ormap (λ (x) (member x (sm-states M))) (sm-states N))
+  (let* ([renamed-machine (if (ormap (λ (x) (member x (sm-states M))) (sm-states N))
                              (rename-states-fsa (sm-states M) N)
-                             N)])
-    (run-viz (map graph-struct-grph
-                  (list (make-init-grph-struct M N) (create-graph-structs M renamed-machine)))
+                             N)]
+         [graphs (map graph-struct-grph
+                  (list (make-init-grph-struct M N) (create-graph-structs M renamed-machine)))])
+    (run-viz graphs
+             (list->vector (map (lambda (x) (if (list? x)
+                                                (lambda (y z) (above y z))
+                                                (lambda (y) y))) graphs))
              (lambda ()
                (apply above (map graph->bitmap (graph-struct-grph (make-init-grph-struct M N)))))
              MIDDLE-E-SCENE

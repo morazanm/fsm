@@ -306,8 +306,10 @@
 ;; fsa -> void
 (define (complement-viz M)
   (if (eq? (sm-type M) 'dfa)
-      (run-viz
-       (map graph-struct-grph (list (make-init-grph-structure M) (create-graph-structure M)))
+      (let ([graphs (map graph-struct-grph (list (make-init-grph-structure M) (create-graph-structure M)))])
+       (run-viz
+       graphs
+       (list->vector (map (lambda (x) (lambda (y) y)) graphs))
        (lambda () (graph->bitmap (graph-struct-grph (make-init-grph-structure M))))
        MIDDLE-E-SCENE
        DEFAULT-ZOOM
@@ -349,13 +351,15 @@
                                   [R-KEY-DIMS viz-max-zoom-out identity]
                                   [E-KEY-DIMS viz-reset-zoom identity]
                                   [F-KEY-DIMS viz-max-zoom-in identity]))
-       'complement-viz)
+       'complement-viz))
 
-      (let ([machine (ndfa->dfa M)])
+      (let* ([machine (ndfa->dfa M)]
+             [graphs (list (graph-struct-grph (make-init-grph-structure M))
+                           (fsa->graph machine 0)
+                           (graph-struct-grph (create-graph-structure machine)))])
         (run-viz
-         (list (graph-struct-grph (make-init-grph-structure M))
-               (fsa->graph machine 0)
-               (graph-struct-grph (create-graph-structure machine)))
+         graphs
+         (list->vector (map (lambda (x) (lambda (y) y)) graphs))
          (lambda () (graph->bitmap (graph-struct-grph (make-init-grph-structure M))))
          MIDDLE-E-SCENE
          E-SCENE-WIDTH E-SCENE-HEIGHT PERCENT-BORDER-GAP
