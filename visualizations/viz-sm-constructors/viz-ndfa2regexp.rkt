@@ -518,7 +518,7 @@
   (run-viz
    graphs
    (list->vector (map (lambda (x) (lambda (y) y)) graphs))
-   (lambda () (sm-graph M))
+   #;(lambda () (sm-graph M))
    MIDDLE-E-SCENE
    E-SCENE-WIDTH E-SCENE-HEIGHT PERCENT-BORDER-GAP
    DEFAULT-ZOOM

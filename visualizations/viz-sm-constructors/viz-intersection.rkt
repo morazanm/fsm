@@ -462,7 +462,7 @@
      (list->vector (map (lambda (x) (if (list? x)
                                         (lambda (y z) (above y z))
                                         (lambda (y) y))) graphs))
-     (lambda ()
+     #;(lambda ()
        (apply above
               (map graph->bitmap (graph-struct-grph (make-init-grph-structure M renamed-machine)))))
      MIDDLE-E-SCENE

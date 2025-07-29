@@ -389,7 +389,7 @@
   (define graphs (list (create-init-graph-struct M) (create-graph-struct M)))
   (run-viz graphs
            (list->vector (map (lambda (x) (lambda (y) y)) graphs))
-           (lambda () (graph->bitmap (create-init-graph-struct M)))
+           #;(lambda () (graph->bitmap (create-init-graph-struct M)))
            MIDDLE-E-SCENE
            E-SCENE-WIDTH E-SCENE-HEIGHT PERCENT-BORDER-GAP
            DEFAULT-ZOOM

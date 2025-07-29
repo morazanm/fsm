@@ -13,7 +13,6 @@
          "../viz-lib/bounding-limits-macro.rkt"
          "../viz-lib/viz.rkt"
          "../viz-lib/bounding-limits.rkt"
-         "../viz-lib/viz-imgs/cursor.rkt"
          "../viz-lib/zipper.rkt"
          "../../sm-graph.rkt"
          racket/list
@@ -310,7 +309,7 @@
        (run-viz
        graphs
        (list->vector (map (lambda (x) (lambda (y) y)) graphs))
-       (lambda () (graph->bitmap (graph-struct-grph (make-init-grph-structure M))))
+       #;(lambda () (graph->bitmap (graph-struct-grph (make-init-grph-structure M))))
        MIDDLE-E-SCENE
        DEFAULT-ZOOM
        DEFAULT-ZOOM-CAP
@@ -360,7 +359,7 @@
         (run-viz
          graphs
          (list->vector (map (lambda (x) (lambda (y) y)) graphs))
-         (lambda () (graph->bitmap (graph-struct-grph (make-init-grph-structure M))))
+         #;(lambda () (graph->bitmap (graph-struct-grph (make-init-grph-structure M))))
          MIDDLE-E-SCENE
          E-SCENE-WIDTH E-SCENE-HEIGHT PERCENT-BORDER-GAP
          DEFAULT-ZOOM

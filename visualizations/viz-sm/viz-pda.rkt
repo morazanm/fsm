@@ -1113,8 +1113,8 @@ farthest-consumed-input | is the portion the ci that the machine consumed the mo
                                    spacer
                                    (text "Reject not traced" 20 (color-palette-legend-other-reject-color color-scheme)))))])
     (run-viz graphs
-             (list->vector (map (λ (x) (λ (grph) (identity grph))) graphs))
-             (lambda () (list (graph->bitmap (first graphs))))
+             (list->vector (map (λ (x) (λ (grph) grph)) graphs))
+             #;(lambda () (list (graph->bitmap (first graphs))))
              (posn (/ E-SCENE-WIDTH 2) (/ PDA-E-SCENE-HEIGHT 2))
               E-SCENE-WIDTH PDA-E-SCENE-HEIGHT PERCENT-BORDER-GAP
              DEFAULT-ZOOM
