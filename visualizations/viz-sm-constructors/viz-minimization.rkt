@@ -886,7 +886,6 @@ ismg "finished machine"
                                                                        (if found-merged-state? (first merged-state) merged-state)))])
             (make-phase-5-helper (rest loRM) (if found-merged-state? (remove (first merged-state) loMS) loMS) (cons new-phase acc)))))
     (make-phase-5-helper loRM loMS '()))
-  
   (let* ([unchecked-M M]
          [results-from-minimization (minimize-dfa unchecked-M)]
          [no-unreachables-M (minimization-results-unreachables-removed-M results-from-minimization)]
@@ -922,14 +921,13 @@ ismg "finished machine"
          [phase-6 (list (phase 6 (last rebuilding-machines) filled-table (phase-6-attributes can-be-minimized?)))]
          [all-phases (append phase-0 phase-1 phase-2 phase-3 phase-4 phase-5 phase-6)]
          [graphs (make-main-graphic all-phases)])
-    (map phase-state-pairing-table all-phases)
-    #;(run-viz (map first graphs)
+    (run-viz (map first graphs)
              (list->vector (map (λ (x table) (λ (graph) (beside graph
                                                                 (square 10 'solid "white")
                                                                 table)))
                                 graphs (map (lambda (x) (second x)) graphs)))
              (lambda () (list (graph->bitmap (first (first graphs)))))
-             (posn (/ E-SCENE-WIDTH 2) (/ E-SCENE-HEIGHT 2)) ;;imgcoord
+             (posn (/ E-SCENE-WIDTH 2) (/ E-SCENE-HEIGHT 2))
              E-SCENE-WIDTH
              E-SCENE-HEIGHT
              PERCENT-BORDER-GAP
