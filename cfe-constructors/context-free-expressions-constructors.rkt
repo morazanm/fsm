@@ -882,3 +882,30 @@
 
 ;(fsa-test-equivalence P (cfe->pda (pda->cfe P)))
 |#
+
+(define EMPTY (empty-cfexp))
+
+(define A (singleton-cfexp 'a))
+
+(define B (singleton-cfexp 'b))
+
+(define C (singleton-cfexp 'c))
+
+(define S1
+  (let* ([ANBN (var-cfexp 'S)]
+         [ASB (concat-cfexp A ANBN B)])
+    (begin
+      (update-binding! ANBN 'S (union-cfexp EMPTY ASB))
+      ANBN)))
+
+(define s1 (pda->cfe (cfe->pda S1)))
+
+
+(define P (make-unchecked-ndpda '(S)
+                                '(a b)
+                                '(a)
+                                'S
+                                '(S)
+                                `(((S a ,EMP) (S ,EMP)))))
+
+(define p-cfe (pda->cfe P))

@@ -189,7 +189,8 @@
 ;;-> flat-contract
 ;;Purpose: Creates a flat contract that determines if the input is cfexp
 (define valid-kleene-exp
-  (make-flat-contract
+  (and/c is-struct/c
+         (make-flat-contract
           #:name 'is-cfe-for-kleene?
           #:first-order cfexp?
           #:projection (λ (blame)
@@ -198,7 +199,7 @@
                            (raise-blame-error
                             blame
                             val
-                            "kleene-cfexp expects a cfe as input, given")))))
+                            "kleene-cfexp expects a cfe as input, given"))))))
 
 ;;-> flat-contract
 ;;Purpose: Creates a flat contract that determines if the input is natural number
