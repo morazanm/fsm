@@ -582,8 +582,21 @@ ismg "finished machine"
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;DRAWING FUNCTIONS;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-
-;; (vectorof (vectorof marking)) (listof state) -> image
+;;(listof phase) -> (listof graph-thunk)
+;;Purpose: Creates all of the graphics need for the visualization using the given (listof phase)
+(define (make-main-graphic loPhase)
+  ;;phase -> graph-thunk
+  ;;Purpose: Creates the transition diagram thunk and state pairing table using the given phase
+  (define (draw-graphic phase)
+    ;; phase -> graph-thunk
+    ;;Purpose: Draws the transition diagram thunk of using the given phase
+    (define (draw-graph)
+      (list (create-init-graph-struct (phase-M phase))
+            (square 1 'solid 'white)))
+    ;; phase -> graph-thunk
+    ;; Purpose: Draws the state-pairing table next to the transition diagram thunk using the given phase
+    (define (draw-table-and-graph)
+      ;; (vectorof (vectorof marking)) (listof state) -> image
 ;; Purpose: Draws the given table and distinguishes the final states from the remaining state
 (define (draw-table table finals)
   ;;natnum natum -> image
@@ -613,21 +626,6 @@ ismg "finished machine"
         (draw-square (vector-ref row idx))
         (beside (draw-square (vector-ref row idx)) (make-row row (add1 idx)))))
   (draw-table-helper (sub1 (vector-length table)) 0))
-
-;;(listof phase) -> (listof graph-thunk)
-;;Purpose: Creates all of the graphics need for the visualization using the given (listof phase)
-(define (make-main-graphic loPhase)
-  ;;phase -> graph-thunk
-  ;;Purpose: Creates the transition diagram thunk and state pairing table using the given phase
-  (define (draw-graphic phase)
-    ;; phase -> graph-thunk
-    ;;Purpose: Draws the transition diagram thunk of using the given phase
-    (define (draw-graph)
-      (list (create-init-graph-struct (phase-M phase))
-            (square 1 'solid 'white)))
-    ;; phase -> graph-thunk
-    ;; Purpose: Draws the state-pairing table next to the transition diagram thunk using the given phase
-    (define (draw-table-and-graph)
       (let ([state-pairs (if (= (phase-number phase) 4)
                              (state-pair-destination-pairs (phase-4-attributes-unmarked-pair (phase-attributes phase)))
                              '())])
@@ -926,7 +924,6 @@ ismg "finished machine"
                                                                 (square 10 'solid "white")
                                                                 table)))
                                 graphs (map (lambda (x) (second x)) graphs)))
-             (lambda () (list (graph->bitmap (first (first graphs)))))
              (posn (/ E-SCENE-WIDTH 2) (/ E-SCENE-HEIGHT 2))
              E-SCENE-WIDTH
              E-SCENE-HEIGHT
