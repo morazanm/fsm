@@ -138,6 +138,13 @@ destination -> the rest of a mttm rule | half-rule
   ;;the set of final states
   (define finals-set (list->seteq finals))
 
+  ;;(setof mttm-config) mttm-config -> boolean
+  ;;Purpose: Determines if the given mttm-config is a member of the given set
+  (define (set-member? st val)
+    (for/or ([elem (in-set st)])
+      (and (equal? (mttm-config-state elem) (mttm-config-state val))
+           (equal? (mttm-config-lotc  elem) (mttm-config-lotc  val)))))
+
   ;;(queueof computation) (treelistof computation) -> (listof computation)
   ;;Purpose: Makes all the computations based around the (queueof computation) and (listof rule)
   ;;     that are within the bounds of the max computation limit

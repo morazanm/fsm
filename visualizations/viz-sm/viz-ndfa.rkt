@@ -100,6 +100,13 @@ type -> the type of the ndfa (ndfa/dfa) | symbol
   ;;an empty set
   (define EMPTY-SET (set))
 
+  ;;(setof ndfa-config) ndfa-config -> boolean
+  ;;Purpose: Determines if the given ndfa-config is a member of the given set
+  (define (set-member st val)
+    (for/or ([elem (in-set st)])
+      (and (equal? (ndfa-config-state elem) (ndfa-config-state val))
+           (equal? (ndfa-config-word  elem) (ndfa-config-word  val)))))
+  
   ;;configuration word -> void
   ;;Purpose: updates the number of configurations using the given word as a key
   (define (update-hash a-config a-word)
@@ -109,7 +116,6 @@ type -> the type of the ndfa (ndfa/dfa) | symbol
                                   a-word
                                   EMPTY-SET)
                         a-config)))
-
   
   ;;(queueof computation) (treelistof computation) -> (listof (treelistof computation) hashtable)
   ;;Purpose: Traces all computations that the machine can make based on the starting state, word, and given rules
@@ -146,7 +152,7 @@ type -> the type of the ndfa (ndfa/dfa) | symbol
                      ;;(trreelistof configurations)
                      ;;Purpose: Makes new configurations using given word and connected-rules
                      [new-configs (treelist-filter (λ (new-c)
-                                                     (not (set-member? (computation-visited (qfirst QoC)) (treelist-last (computation-LoC new-c)))))
+                                                     (not (set-member (computation-visited (qfirst QoC)) (treelist-last (computation-LoC new-c)))))
                                                    (treelist-map (treelist-append connected-emp-rules connected-read-rules)
                                                                  (λ (rule) (apply-rule (qfirst QoC) rule))))])
                 (begin

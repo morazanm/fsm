@@ -169,6 +169,14 @@ farthest-consumed-input | is the portion the ci that the machine consumed the mo
   ;;set
   ;;the set of final states
   (define finals-set (list->seteq finals))
+  
+  ;;(setof pda-config) pda-config -> boolean
+  ;;Purpose: Determines if the given pda-config is a member of the given set
+  (define (set-member? st val)
+    (for/or ([elem (in-set st)])
+      (and (equal? (pda-config-state elem) (pda-config-state val))
+           (equal? (pda-config-word  elem) (pda-config-word  val))
+           (equal? (pda-config-stack elem) (pda-config-stack val)))))
 
   ;;(queueof computation) -> (listof computation hashtable)
   ;;Purpose: Makes all the computations based around the (queueof computation) and (listof rule)

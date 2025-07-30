@@ -190,16 +190,16 @@ action is the action to be performed on the tape | TM-ACTION
 
 ;; X (listof X) (X -> boolean) -> boolean
 ;;Purpose: Determine if X is in the given list
-(define (member? x lst eq-func) (for/or ([L lst]) (eq-func x L)))
+(define (member? x lst eq-func) (for/or ([L (in-list lst)]) (eq-func x L)))
 ;;(X -> boolean) (listof X) -> boolean
 ;;Purpose: Determines if X is is the given list
-(define (ormap f lst) (for/or ([L lst]) (f L)))
+(define (ormap f lst) (for/or ([L (in-list lst)]) (f L)))
 ;;(X -> Y) (listof X) -> (listof Y)
 ;;Purpose: maps the given functon over the list
-(define (map2 f lst) (for/list ([L lst]) (f L)))
+(define (map2 f lst) (for/list ([L (in-list lst)]) (f L)))
 ;;(X -> boolean) (listof X) -> (listof X)
 ;;Purpose: filters the list using the given predicate
-(define (filter f lst) (for/list ([L lst] #:when (f L)) L))
+(define (filter f lst) (for/list ([L (in-list lst)] #:when (f L)) L))
 
 ;;(X -> Y) (X -> Y) (X -> Y) (X -> Y) (listof (listof X)) -> (listof (listof X))
 ;;Purpose: filtermaps the given f-on-x on the given (listof (listof X))

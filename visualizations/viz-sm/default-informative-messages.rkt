@@ -372,9 +372,14 @@
              (text "All computations end in a non-final configuration and the machine rejects." FONT-SIZE REJECT-COLOR)]
             [(and (zipper-at-end? (imsg-state-tm-tape imsg-st))
                   (zipper-at-end? (imsg-state-tm-head-position imsg-st))
-                  (eq? (imsg-state-tm-machine-decision imsg-st) 'reject)
+                  (eq? (imsg-state-tm-machine-decision imsg-st) 'reached-final)
                   (eq? (tm-type (imsg-state-tm-M imsg-st)) 'tm))
              (text "The machine reaches a final state and halts." FONT-SIZE ACCEPT-COLOR)]
+            [(and (zipper-at-end? (imsg-state-tm-tape imsg-st))
+                  (zipper-at-end? (imsg-state-tm-head-position imsg-st))
+                  (eq? (imsg-state-tm-machine-decision imsg-st) 'halted)
+                  (eq? (tm-type (imsg-state-tm-M imsg-st)) 'tm))
+             (text "The machine did not reach a halting state." FONT-SIZE ACCEPT-COLOR)]
             [else (text "Word Status: accept " FONT-SIZE BLANK-COLOR)]))))
 
 (define (mttm-create-draw-informative-message imsg-st)

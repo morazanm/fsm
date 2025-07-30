@@ -130,6 +130,13 @@
   ;;the set of final states
   (define finals-set (list->seteq finals))
 
+  ;;(setof tm-config) tm-config -> boolean
+  ;;Purpose: Determines if the given tm-config is a member of the given set
+  (define (set-member? st val)
+    (for/or ([elem (in-set st)])
+      (and (equal? (tm-config-state         elem) (tm-config-state val))
+           (equal? (tm-config-head-position elem) (tm-config-head-position val))
+           (equal? (tm-config-tape          elem) (tm-config-tape val)))))
   
   ;;(queueof computation) (treelistof computation) -> (list (listof computation) hashtable)
   ;;Purpose: Makes all the computations based around the (queueof computation) and (listof rule)
@@ -146,23 +153,24 @@
           (if (or reached-threshold? (member? current-state finals eq?))
               (begin
                 ;(update-hash current-config current-tape)
-                (make-computations (dequeue QoC) (if (eq? current-state accepting-final)
-                                                     (struct-copy paths path
-                                                                  [accepting (treelist-add (paths-accepting path) (qfirst QoC))]
-                                                                  [reached-final? (cond [(paths-reached-final? path) (paths-reached-final? path)]
-                                                                                        [member-of-finals? #t]
-                                                                                        [else (paths-reached-final? path)])]
-                                                                  [cut-off? (cond [(paths-cut-off? path) (paths-cut-off? path)]
-                                                                                  [reached-threshold? #t]
-                                                                                  [else (paths-cut-off? path)])])
-                                                     (struct-copy paths path
-                                                                  [rejecting (treelist-add (paths-rejecting path) (qfirst QoC))]
-                                                                  [reached-final? (cond [(paths-reached-final? path) (paths-reached-final? path)]
-                                                                                        [member-of-finals? #t]
-                                                                                        [else (paths-reached-final? path)])]
-                                                                  [cut-off? (cond [(paths-cut-off? path) (paths-cut-off? path)]
-                                                                                  [reached-threshold? #t]
-                                                                                  [else (paths-cut-off? path)])]))))
+                (make-computations (dequeue QoC)
+                                   (if (eq? current-state accepting-final)
+                                       (struct-copy paths path
+                                                    [accepting (treelist-add (paths-accepting path) (qfirst QoC))]
+                                                    [reached-final? (cond [(paths-reached-final? path) (paths-reached-final? path)]
+                                                                          [member-of-finals? #t]
+                                                                          [else (paths-reached-final? path)])]
+                                                    [cut-off? (cond [(paths-cut-off? path) (paths-cut-off? path)]
+                                                                    [reached-threshold? #t]
+                                                                    [else (paths-cut-off? path)])])
+                                       (struct-copy paths path
+                                                    [rejecting (treelist-add (paths-rejecting path) (qfirst QoC))]
+                                                    [reached-final? (cond [(paths-reached-final? path) (paths-reached-final? path)]
+                                                                          [member-of-finals? #t]
+                                                                          [else (paths-reached-final? path)])]
+                                                    [cut-off? (cond [(paths-cut-off? path) (paths-cut-off? path)]
+                                                                    [reached-threshold? #t]
+                                                                    [else (paths-cut-off? path)])]))))
               (let* (;;(listof rules)
                      ;;Purpose: Filters all the rules that can be applied to the configuration by reading the element in the rule
                      [connected-read-rules (treelist-filter (λ (rule)
@@ -177,7 +185,8 @@
                 (begin
                   ;(update-hash current-config current-tape)
                   (if (treelist-empty? new-configs)
-                      (make-computations (dequeue QoC) (struct-copy paths path [rejecting (treelist-add (paths-rejecting path) (qfirst QoC))]))
+                      (make-computations (dequeue QoC)
+                                         (struct-copy paths path [rejecting (treelist-add (paths-rejecting path) (qfirst QoC))]))
                       (make-computations (enqueue new-configs (dequeue QoC)) path))))))))
   (let (;;computation
         ;;Purpose: The starting computation
@@ -897,9 +906,10 @@
                                                     accepting-trace))])
                              head-pos)]
          [all-head-pos (list->zipper tracked-head-pos)]
-         [machine-decision (if (not rejected?)
-                               'accept
-                               'reject)]
+         [machine-decision (cond [(not rejected?) 'accept]
+                                 [(and reached-final? (eq? (tm-type M) 'tm)) 'reached-final]
+                                 [(and (not reached-final?) (eq? (tm-type M) 'tm)) 'halted]
+                                 [else 'reject])]
          
          [tracked-trace (list (if (not rejected?) accepting-trace rejecting-trace))]
          ;;(listof number) ;;Purpose: Gets all the invariant configurations
@@ -940,6 +950,8 @@
                                    (text "Accept not traced" 20 (color-palette-legend-other-accept-color color-scheme))
                                    spacer
                                    (text "Reject not traced" 20 (color-palette-legend-other-reject-color color-scheme)))))])
+    ;all-paths
+    
    (run-viz graphs
             (list->vector (map (λ (x) (λ (grph) grph)) graphs))
              #;(lambda () (list (graph->bitmap (first graphs))))
