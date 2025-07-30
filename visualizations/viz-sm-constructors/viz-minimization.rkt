@@ -584,53 +584,57 @@ ismg "finished machine"
 
 ;;(listof phase) -> (listof graph-thunk)
 ;;Purpose: Creates all of the graphics need for the visualization using the given (listof phase)
-(define (make-main-graphic loPhase)
+(define (make-main-graphic loPhase state-table-mappings)
   ;;phase -> graph-thunk
   ;;Purpose: Creates the transition diagram thunk and state pairing table using the given phase
   (define (draw-graphic phase)
     ;; phase -> graph-thunk
     ;;Purpose: Draws the transition diagram thunk of using the given phase
     (define (draw-graph)
-      (list (create-init-graph-struct (phase-M phase))
+      (list (create-graph-struct (phase-M phase))
             (square 1 'solid 'white)))
     ;; phase -> graph-thunk
     ;; Purpose: Draws the state-pairing table next to the transition diagram thunk using the given phase
     (define (draw-table-and-graph)
       ;; (vectorof (vectorof marking)) (listof state) -> image
 ;; Purpose: Draws the given table and distinguishes the final states from the remaining state
-(define (draw-table table finals)
+(define (draw-table table finals state-pair)
   ;;natnum natum -> image
   ;;Purpose: Draws the given table row by row
-  (define (draw-table-helper row-amount idx)
-    (if (= row-amount idx)
-        (make-row (vector-ref table idx) 0)
-        (above (make-row (vector-ref table idx) 0)
-               (draw-table-helper row-amount (add1 idx)))))
-  ;;natnum natnum -> image
-  ;;Purpose: Draws the given row
-  (define (make-row row idx)
-    ;; symbol -> image
-    ;;Purpose: Draws a sqaure in the table using the given symbol
-    (define (draw-square sym)
-      (let ([base-square-img (overlay (square 40 'solid 'white) (square 45 'solid 'gray))]
-            [final-state-square-img (overlay (square 40 'solid 'lightorange) (square 45 'solid 'gray))])
-        (cond [(eq? sym BLANK-SPACE) base-square-img]
-              [(eq? sym BLACK) (overlay (square 40 'solid BLACK) (square 45 'solid 'gray))]
-              [(eq? sym MARK) (overlay (text "X" 38 BLACK) base-square-img)]
-              [(eq? sym NEW-MARK) (overlay (text "X" 38 'red) base-square-img)]
-              [else (overlay (text (symbol->string sym) 38 BLACK)
-                             (if (member sym finals)
-                                 final-state-square-img
-                                 base-square-img))])))
-    (if (= (sub1 (vector-length row)) idx)
-        (draw-square (vector-ref row idx))
-        (beside (draw-square (vector-ref row idx)) (make-row row (add1 idx)))))
+  (define (draw-table-helper row-amount row-idx)
+    ;;natnum natnum -> image
+    ;;Purpose: Draws the given row
+    (define (make-row row column-idx)
+      ;; symbol -> image
+      ;;Purpose: Draws a sqaure in the table using the given symbol
+      (define (draw-square sym)
+        (let* ([base-square-img (overlay (square 40 'solid 'white) (square 45 'solid 'gray))]
+               [select-square-img (overlay (square 40 'solid 'white) (square 45 'solid 'red))]
+               [final-state-square-img (overlay (square 40 'solid 'orange) (square 45 'solid 'gray))]
+               [current-pair? (and (not (list? state-pair))
+                                   (= (hash-ref state-table-mappings (state-pair-s1 state-pair)) row-idx)
+                                   (= (hash-ref state-table-mappings (state-pair-s2 state-pair)) column-idx))])
+          (cond [(eq? sym BLANK-SPACE) (if current-pair? select-square-img base-square-img)]
+                [(eq? sym BLACK) (overlay (square 40 'solid BLACK) (square 45 'solid 'gray))]
+                [(eq? sym MARK) (overlay (text "X" 38 BLACK) base-square-img)]
+                [(eq? sym NEW-MARK) (overlay (text "X" 38 'red) (if current-pair? select-square-img base-square-img))]
+                [else (overlay (text (symbol->string sym) 38 BLACK)
+                               (if (member sym finals)
+                                   final-state-square-img
+                                   base-square-img))])))
+      (if (= (sub1 (vector-length row)) column-idx)
+          (draw-square (vector-ref row column-idx))
+          (beside (draw-square (vector-ref row column-idx)) (make-row row (add1 column-idx)))))
+    (if (= row-amount row-idx)
+        (make-row (vector-ref table row-idx) 0)
+        (above (make-row (vector-ref table row-idx) 0)
+               (draw-table-helper row-amount (add1 row-idx)))))
   (draw-table-helper (sub1 (vector-length table)) 0))
-      (let ([state-pairs (if (= (phase-number phase) 4)
-                             (state-pair-destination-pairs (phase-4-attributes-unmarked-pair (phase-attributes phase)))
-                             '())])
-        (list (create-init-graph-struct (phase-M phase) #:state-pair state-pairs)
-              (draw-table (phase-state-pairing-table phase) (dfa-finals (phase-M phase))))))
+      (let ([state-pair (cond [(= (phase-number phase) 3) (phase-3-attributes-initial-pairings (phase-attributes phase))]
+                              [(= (phase-number phase) 4) (phase-4-attributes-unmarked-pair (phase-attributes phase))]
+                              [else '()])])
+        (list (create-graph-struct (phase-M phase) #:state-pair (if (= (phase-number phase) 4) state-pair '()) #;state-destintation-pairs)
+              (draw-table (phase-state-pairing-table phase) (dfa-finals (phase-M phase)) state-pair))))
     (if (<= 2 (phase-number phase) 5)
         (draw-table-and-graph)
         (draw-graph)))
@@ -719,7 +723,7 @@ ismg "finished machine"
 
 ;; ndfa -> graph-thunk
 ;;Purpose: Creates a graph-thunk using the given dfa and optional state-pair
-(define (create-init-graph-struct M #:state-pair [state-pair '()])
+(define (create-graph-struct M #:state-pair [state-pair '()])
   ;; graph (listof state) start (listof state) -> graph
   ;; Purpose: To make a node graph
   (define (make-node-graph graph los start finals)
@@ -730,6 +734,8 @@ ismg "finished machine"
                                    (cond [(eq? state start) 'darkgreen]
                                          [else BLACK])
                                    'shape (if (member state finals) 'doublecircle 'circle)
+                                   'style (if (member state finals) 'filled 'solid)
+                                   'fillcolor 'orange #;(if (member state finals) 'lightorange 'white)
                                    'label state
                                    'fontcolor BLACK
                                    'font "Sans")))
@@ -738,7 +744,7 @@ ismg "finished machine"
 
   ;; graph dfa (listof state-pair) -> graph
   ;; Purpose: To make an edge graph
-  (define (make-init-edge-graph graph state-pair)
+  (define (make-edge-graph graph state-pair)
     (foldl (λ (rule result)
              (add-edge result
                        (second rule)
@@ -746,7 +752,14 @@ ismg "finished machine"
                        (third rule)
                        #:atb (hash 'fontsize 20
                                    'style 'solid
-                                   'color (cond  [(ormap (λ (sp) (or (and (eq? (first rule) (state-pair-s1 sp))
+                                   'color (cond  [(and (not (list? state-pair))
+                                                       (or (eq? (first rule) (state-pair-s1 state-pair))
+                                                           (eq? (first rule) (state-pair-s2 state-pair))
+                                                           #;(and (eq? (first rule) (state-pair-s1 state-pair))
+                                                                (eq? (third rule) (state-pair-s2 state-pair)))
+                                                           #;(and (eq? (third rule) (state-pair-s1 state-pair))
+                                                                (eq? (first rule) (state-pair-s2 state-pair)))))
+                                                  #;(ormap (λ (sp) (or (and (eq? (first rule) (state-pair-s1 sp))
                                                                           (eq? (third rule) (state-pair-s2 sp)))
                                                                      (and (eq? (third rule) (state-pair-s1 sp))
                                                                           (eq? (first rule) (state-pair-s2 sp)))))
@@ -755,7 +768,7 @@ ismg "finished machine"
                                                  [else BLACK]))))
            graph
            (dfa-rules M)))
-  (make-init-edge-graph (make-node-graph (create-graph 'dgraph
+  (make-edge-graph (make-node-graph (create-graph 'dgraph
                                                        #:atb (hash 'rankdir "LR" 'font "Sans"))
                                          (dfa-states M)
                                          (dfa-start M)
@@ -855,7 +868,20 @@ ismg "finished machine"
         (let* ([row-id (hash-ref state-table-mappings (state-pair-s1 state-pairing))]
                [column-id (hash-ref state-table-mappings (state-pair-s2 state-pairing))]
                [current-row (vector-ref state-pairing-table row-id)])
-          (vector-set/copy state-pairing-table row-id (update-row current-row column-id))))
+          (vector-set/copy state-pairing-table
+                           #;(vector-map (λ (row)
+                                         (vector-map (λ (space) (if (eq? space NEW-MARK)
+                                                                    MARK
+                                                                    space))
+                                                     row))
+                                       state-pairing-table)
+                           row-id
+                           (update-row current-row
+                                       #;(vector-map (λ (space) (if (eq? space NEW-MARK)
+                                                                                           MARK
+                                                                                           space))
+                                                                              current-row)
+                                                                  column-id))))
       (if (empty? loSP)
           (phase-results (reverse acc) state-pairing-table)
           (let* ([state-pairing (first loSP)]
@@ -918,7 +944,9 @@ ismg "finished machine"
          [phase-5 (make-phase-5 rebuilding-machines merged-states filled-table)]
          [phase-6 (list (phase 6 (last rebuilding-machines) filled-table (phase-6-attributes can-be-minimized?)))]
          [all-phases (append phase-0 phase-1 phase-2 phase-3 phase-4 phase-5 phase-6)]
-         [graphs (make-main-graphic all-phases)])
+         [graphs (make-main-graphic all-phases state-table-mappings)])
+    ;all-phases
+    ;#;
     (run-viz (map first graphs)
              (list->vector (map (λ (x table) (λ (graph) (beside graph
                                                                 (square 10 'solid "white")
