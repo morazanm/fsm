@@ -46,6 +46,9 @@
 ;; Purpose: To quickcheck the invariants of the states of the given machine
 (define (quickcheck-invs machine los&inv #:num-tests [tests 1000])
   (define los&regexp (get-all-regexp machine))
+  (define los&inv-only-states-that-reach-finals
+    (filter (λ (s&inv) (hash-has-key? los&regexp (first s&inv))) los&inv))
   (for ([inv (in-list
-                 los&inv)])
+                 los&inv-only-states-that-reach-finals)])
     (testing-function (first inv) (hash-ref los&regexp (first inv)) (second inv) tests)))
+

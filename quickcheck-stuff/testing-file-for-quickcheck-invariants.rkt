@@ -144,7 +144,10 @@
   #true)
 
 
-(define LOI1 (list (list 'S S-INV) (list 'A A-INV) (list 'B B-INV) (list 'R R-INV)))
+(define LOI1 (list (list 'S S-INV)
+                   (list 'A A-INV)
+                   (list 'B B-INV)
+                   (list 'R R-INV)))
 
 
 
@@ -477,7 +480,12 @@
 ;; Purpose: Determine that only aabab is detected
 (define E2-INV contains-aabab?)
 
-
+(define LOI-CONTAINS-aabab (list (list 'S S2-INV)
+                                 (list 'A A2-INV)
+                                 (list 'B B2-INV)
+                                 (list 'C C2-INV)
+                                 (list 'D D2-INV)
+                                 (list 'E E2-INV)))
 
 ;; L = {w | w has an even number of and an odd number of b}
 
@@ -947,13 +955,13 @@
 
 ;; word -> Boolean
 ;; Purpose: To determine whether ci = ab*
-(define (aa-ab-D-INV ci)
+(define (aa-ab-D-INV ci)                ;; <-- this one is purposely broken
   (and (not (empty? ci))
        (eq? (first ci) 'a)
        (andmap (λ (el) (eq? el 'b)) ci)))
 
 
-(define LOI-aa*-bb* (list (list 'K  aa-ab-K-INV) (list 'B aa-ab-B-INV) (list 'D aa-ab-D-INV)))
+(define LOI-aa*-ab* (list (list 'K  aa-ab-K-INV) (list 'B aa-ab-B-INV) (list 'D aa-ab-D-INV)))
 
 
 
@@ -1043,6 +1051,11 @@
 (check-equal? (C-INV-EX-NDFA '(a c a b c)) #f)
 (check-equal? (C-INV-EX-NDFA '(c c)) #f)
 (check-equal? (C-INV-EX-NDFA '(a c c b)) #f)
+
+(define LOI-EX-NDFA (list (list 'S S-INV-EX-NDFA)
+                          (list 'A A-INV-EX-NDFA)
+                          (list 'B B-INV-EX-NDFA)
+                          (list 'C C-INV-EX-NDFA)))
 
 #| Sophia's version of EVEN-B-OR-A*-THEN-MULTIPLE-OF-3-C
 
@@ -1218,6 +1231,67 @@
     (and (or (C3-INV bcs) (A3-INV bcs))
          (andmap (λ (s) (eq? s 'c)) cs)
          (= (remainder (length cs) 3) 0))))
+
+(define LOI-M3 (list (list 'S S3-INV)
+                     (list 'A A3-INV)
+                     (list 'B B3-INV)
+                     (list 'C C3-INV)
+                     (list 'D D3-INV)
+                     (list 'E E3-INV)
+                     (list 'F F3-INV)))
+                     
+;; (a*Ub*)(c*Ud*)U(c*Ud*)a*
+
+;; States:
+;;  S: ci = empty
+;;  A: ci = c*
+;;  B: ci = d*
+;;  C: ci = a*
+;;  D: ci = b*
+;;  E: ci = b*c* or a*c*
+;;  F: ci = a*d* or b*d*
+;;  G: ci = c*a* or d*a*
+(define lots-of-kleenes (make-ndfa '(S A B C D E F G)
+                                   '(a b c d)
+                                   'S
+                                   '(S E F G)
+                                   `((S ,EMP A)
+                                     (S ,EMP B)
+                                     (S ,EMP C)
+                                     (S ,EMP D)
+                                     (A c A)
+                                     (A ,EMP G)
+                                     (B d B)
+                                     (B ,EMP G)
+                                     (C a C)
+                                     (C ,EMP E)
+                                     (C ,EMP F)
+                                     (D b D)
+                                     (D ,EMP E)
+                                     (D ,EMP F)
+                                     (E c E)
+                                     (F d F)
+                                     (G a G))))
+
+;; (a*Ub*)(c*Ud*)U(c*Ud*)a*
+;; tests for lots-of-kleenes
+(check-equal? (sm-apply lots-of-kleenes '()) 'accept)
+(check-equal? (sm-apply lots-of-kleenes '(a)) 'accept)
+(check-equal? (sm-apply lots-of-kleenes '(b)) 'accept)
+(check-equal? (sm-apply lots-of-kleenes '(c)) 'accept)
+(check-equal? (sm-apply lots-of-kleenes '(d)) 'accept)
+(check-equal? (sm-apply lots-of-kleenes '(a a a a)) 'accept)
+(check-equal? (sm-apply lots-of-kleenes '(a a c)) 'accept)
+(check-equal? (sm-apply lots-of-kleenes '(a a d d)) 'accept)
+(check-equal? (sm-apply lots-of-kleenes '(c c c c a)) 'accept)
+(check-equal? (sm-apply lots-of-kleenes '(d d d d a a a a)) 'accept)
+(check-equal? (sm-apply lots-of-kleenes '(a b)) 'reject)
+(check-equal? (sm-apply lots-of-kleenes '(c d)) 'reject)
+(check-equal? (sm-apply lots-of-kleenes '(c c c c d)) 'reject)
+(check-equal? (sm-apply lots-of-kleenes '(a a a a b b b)) 'reject)
+(check-equal? (sm-apply lots-of-kleenes '(b b b a a a)) 'reject)
+(check-equal? (sm-apply lots-of-kleenes '(d d d d d d c c)) 'reject)
+
 
 
 

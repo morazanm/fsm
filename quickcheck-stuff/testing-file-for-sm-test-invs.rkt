@@ -1034,13 +1034,13 @@
 
 ;; word -> Boolean
 ;; Purpose: To determine whether ci = ab*
-(define (aa-ab-D-INV ci)
+(define (aa-ab-D-INV ci)               ;; <-- this one is purposely broken
   (and (not (empty? ci))
        (eq? (first ci) 'a)
        (andmap (λ (el) (eq? el 'b)) ci)))
 
 
-(define LOI-aa*-bb* (list (list 'K  aa-ab-K-INV) (list 'B aa-ab-B-INV) (list 'D aa-ab-D-INV)))
+(define LOI-aa*-ab* (list (list 'K  aa-ab-K-INV) (list 'B aa-ab-B-INV) (list 'D aa-ab-D-INV)))
 
 
 
@@ -1305,6 +1305,14 @@
     (and (or (C3-INV bcs) (A3-INV bcs))
          (andmap (λ (s) (eq? s 'c)) cs)
          (= (remainder (length cs) 3) 0))))
+
+(define LOI-M3 (list (list 'S S3-INV)
+                     (list 'A A3-INV)
+                     (list 'B B3-INV)
+                     (list 'C C3-INV)
+                     (list 'D D3-INV)
+                     (list 'E E3-INV)
+                     (list 'F F3-INV)))
 
 (define RES2 (sm-test-invs M3
                            (list 'S S3-INV)
@@ -1946,53 +1954,6 @@ this means that w ≠ aibj, where i <= j <= 2i. Thus, w∈/L.
 
 
 
-
-
-;; Let Σ = {a b}. Design and implement a pda for L = {w | w has 3
-;;   times as many as than b}. Follow all the steps of the design recipe
-
-;; States:
-;;   S: ci = amount of as read divided by 3 is 0
-;;   A: amount of as read divided by 3 is 1
-;;   B: read a b and as read, when divided by 3, is 0
-;;   C: amount of as read divided by 3 is 2
-(define 3xa-b (make-ndpda '(S A B C)
-                          '(a b)
-                          '(a b)
-                          'S
-                          '(S)
-                          `(((S a ,EMP) (A ,EMP))
-                            ((S a (a)) (A ,EMP))
-                            ((S b (b)) (S ,EMP))
-                            ((S b ,EMP) (B (a a a)))
-                            ((A b (b)) (A ,EMP))
-                            ((A b ,EMP) (A (a a a)))
-                            ((A a (a)) (C ,EMP))
-                            ((A a ,EMP) (C ,EMP))
-                            ((B b (b)) (B ,EMP))
-                            ((B b ,EMP) (B (a a a)))
-                            ((B a (a)) (A ,EMP))
-                            ((C b (b)) (C ,EMP))
-                            ((C b ,EMP) (C (a a a)))
-                            ((C a ,EMP) (S (b)))
-                            ((C a (a)) (S ,EMP)))))
-#|
-
-;; tests for 3xa-b
-(check-equal? (sm-apply 3xa-b '() '()) 'accept)
-(check-equal? (sm-apply 3xa-b '(b a a a) '()) 'accept)
-(check-equal? (sm-apply 3xa-b '(a a a b) '()) 'accept)
-(check-equal? (sm-apply 3xa-b '(b a a b a a a a) '()) 'accept)
-(check-equal? (sm-apply 3xa-b '(a b a a) '()) 'accept)
-(check-equal? (sm-apply 3xa-b '(a a b b a a b a a a a a) '()) 'accept)
-(check-equal? (sm-apply 3xa-b '(a) '()) 'reject)
-(check-equal? (sm-apply 3xa-b '(b) '()) 'reject)
-
-|#
-
-
-
-
 ;; Let Σ = {a b}. Design and implement a pda for L = {a^nb^ma^n |n,m≥0}
 ;; States:
 ;;   S: ci = a* = a^n AND stack = a^n, start state
@@ -2231,6 +2192,7 @@ this means that w ≠ a^nb^ma^n, where n,m => 0. nThus, w∈/L.
 #|
 ;; the state invariants hold when M accepts w
 
+IT DOESN'T ACCEPT ANYTHING THO??????????????
 
 
 
@@ -2238,4 +2200,572 @@ this means that w ≠ a^nb^ma^n, where n,m => 0. nThus, w∈/L.
 
 
 
+;; Let Σ = {a b c d}. Design and implement a pda for
+;;   L={a^mb^nc^pd^q:m,n,p,q≥0 ∧ m+n=p+q}. Follow all the steps of
+;;   the design recipe
+;; States:
+;;  S: ci = a* = a^m AND stack = a^m, start state
+;;  A: ci = a^mb* = a^mb^n AND stack = a^m+n
+;;  B: ci = a^mb^nc* = a^mb^nc^p AND stack = a^m+n-p
+;;  C: ci = a^mb^nc^pd* = a^mb^nc^pd^q AND stack = a^m+n-p-q, final state
+(define a^mb^nc^pd^q (make-ndpda '(S A B C)
+                                 '(a b c d)
+                                 '(a)
+                                 'S
+                                 '(C)
+                                 `(((S a ,EMP) (S (a)))
+                                   ((S ,EMP ,EMP) (A ,EMP))
+                                   ((A b ,EMP) (A (a)))
+                                   ((A ,EMP ,EMP) (B ,EMP))
+                                   ((B c (a)) (B ,EMP))
+                                   ((B ,EMP ,EMP) (C ,EMP))
+                                   ((C d (a)) (C ,EMP)))))
+
+;; tests for a^mb^nc^pd^q
+(check-equal? (sm-apply a^mb^nc^pd^q '()) 'accept)
+(check-equal? (sm-apply a^mb^nc^pd^q '(a b c d)) 'accept)
+(check-equal? (sm-apply a^mb^nc^pd^q '(a a c c)) 'accept)
+(check-equal? (sm-apply a^mb^nc^pd^q '(b b d d)) 'accept)
+(check-equal? (sm-apply a^mb^nc^pd^q '(a a d d)) 'accept)
+(check-equal? (sm-apply a^mb^nc^pd^q '(b b c c)) 'accept)
+(check-equal? (sm-apply a^mb^nc^pd^q '(a a a b c d d d)) 'accept)
+(check-equal? (sm-apply a^mb^nc^pd^q '(a b b d d d)) 'accept)
+(check-equal? (sm-apply a^mb^nc^pd^q '(b b b c d d)) 'accept)
+(check-equal? (sm-apply a^mb^nc^pd^q '(a)) 'reject)
+(check-equal? (sm-apply a^mb^nc^pd^q '(b)) 'reject)
+(check-equal? (sm-apply a^mb^nc^pd^q '(c)) 'reject)
+(check-equal? (sm-apply a^mb^nc^pd^q '(d)) 'reject)
+(check-equal? (sm-apply a^mb^nc^pd^q '(a a a)) 'reject)
+(check-equal? (sm-apply a^mb^nc^pd^q '(a a a a c)) 'reject)
+(check-equal? (sm-apply a^mb^nc^pd^q '(a a a a b b c d)) 'reject)
+
+;; invariants for a^mb^nc^pd^q                                   
+
+;; word stack -> Boolean
+;; Purpose: Determines if the given word and stack belongs in S
+;;  (ci = a* = a^m AND stack = a^m)
+(define (S-INV-a^mb^nc^pd^q ci stack)
+  (and (andmap (λ (x) (eq? x 'a)) ci)
+       (andmap (λ (x) (eq? x 'a)) stack)
+       (equal? ci stack)))
+
+;; tests for S-INV-a^mb^nc^pd^q
+(check-equal? (S-INV-a^mb^nc^pd^q '() '()) #t)
+(check-equal? (S-INV-a^mb^nc^pd^q '(a) '(a)) #t)
+(check-equal? (S-INV-a^mb^nc^pd^q '(a a) '(a a)) #t)
+(check-equal? (S-INV-a^mb^nc^pd^q '(a a a a a) '(a a a a a)) #t)
+(check-equal? (S-INV-a^mb^nc^pd^q '(a a a a a a a a) '(a a a a a a a a)) #t)
+(check-equal? (S-INV-a^mb^nc^pd^q '(a) '()) #f)
+(check-equal? (S-INV-a^mb^nc^pd^q '() '(a)) #f)
+(check-equal? (S-INV-a^mb^nc^pd^q '(a a) '(a)) #f)
+(check-equal? (S-INV-a^mb^nc^pd^q '(a) '(a a)) #f)
+(check-equal? (S-INV-a^mb^nc^pd^q '(a a a) '()) #f)
+(check-equal? (S-INV-a^mb^nc^pd^q '(a a a a) '(a a a)) #f)
+
+
+;; word stack -> Boolean
+;; Purpose: Determines if the given word and stack belongs in A
+;;  (ci = a^mb* = a^mb^n AND stack = a^m+n)
+(define (A-INV-a^mb^nc^pd^q ci stack)
+  (let* [(As (takef ci (λ (x) (eq? x 'a))))
+         (Bs (takef (drop ci (length As)) (λ (x) (eq? x 'b))))]
+    (and (equal? (append As Bs) ci)
+         (andmap (λ (x) (eq? x 'a)) stack)
+         (= (length stack) (length ci)))))
   
+  
+;; tests for A-INV-a^mb^nc^pd^q
+(check-equal? (A-INV-a^mb^nc^pd^q '() '()) #t)
+(check-equal? (A-INV-a^mb^nc^pd^q '(a) '(a)) #t)
+(check-equal? (A-INV-a^mb^nc^pd^q '(b) '(a)) #t)
+(check-equal? (A-INV-a^mb^nc^pd^q '(a b) '(a a)) #t)
+(check-equal? (A-INV-a^mb^nc^pd^q '(a a a b b) '(a a a a a)) #t)
+(check-equal? (A-INV-a^mb^nc^pd^q '(a) '()) #f)
+(check-equal? (A-INV-a^mb^nc^pd^q '(b) '()) #f)
+(check-equal? (A-INV-a^mb^nc^pd^q '(a a) '(a)) #f)
+(check-equal? (A-INV-a^mb^nc^pd^q '(b b) '()) #f)
+(check-equal? (A-INV-a^mb^nc^pd^q '(a b a) '(a a a)) #f)
+
+;; word stack -> Boolean
+;; Purpose: Determines if the given word and stack belongs in B
+;;  (ci = a^mb^nc* = a^mb^nc^p AND stack = a^m+n-p)
+(define (B-INV-a^mb^nc^pd^q ci stack)
+  (let* [(As (takef ci (λ (x) (eq? x 'a))))
+         (Bs (takef (drop ci (length As)) (λ (x) (eq? x 'b))))
+         (Cs (takef (drop ci (+ (length As) (length Bs))) (λ (x) (eq? x 'c))))]
+    (and (equal? (append As Bs Cs) ci)
+         (andmap (λ (x) (eq? x 'a)) stack)
+         (= (length stack) (- (+ (length As) (length Bs)) (length Cs))))))
+  
+  
+;; tests for B-INV-a^mb^nc^pd^q
+(check-equal? (B-INV-a^mb^nc^pd^q '() '()) #t)
+(check-equal? (B-INV-a^mb^nc^pd^q '(a) '(a)) #t)
+(check-equal? (B-INV-a^mb^nc^pd^q '(b) '(a)) #t)
+(check-equal? (B-INV-a^mb^nc^pd^q '(a c) '()) #t)
+(check-equal? (B-INV-a^mb^nc^pd^q '(b c) '()) #t)
+(check-equal? (B-INV-a^mb^nc^pd^q '(a b c) '(a)) #t)
+(check-equal? (B-INV-a^mb^nc^pd^q '(a b b) '(a a a)) #t)
+(check-equal? (B-INV-a^mb^nc^pd^q '(c) '(a)) #f)
+(check-equal? (B-INV-a^mb^nc^pd^q '(a d) '()) #f)
+(check-equal? (B-INV-a^mb^nc^pd^q '(b d) '()) #f)
+(check-equal? (B-INV-a^mb^nc^pd^q '(a c c) '()) #f)
+(check-equal? (B-INV-a^mb^nc^pd^q '(b b c) '(a a)) #f)
+
+
+;; word stack -> Boolean
+;; Purpose: Determines if the given word and stack belongs in C
+;;  (ci = a^mb^nc^pd* = a^mb^nc^pd^q AND stack = a^m+n-p-q)
+(define (C-INV-a^mb^nc^pd^q ci stack)
+  (let* [(As (takef ci (λ (x) (eq? x 'a))))
+         (Bs (takef (drop ci (length As)) (λ (x) (eq? x 'b))))
+         (Cs (takef (drop ci (+ (length As) (length Bs))) (λ (x) (eq? x 'c))))
+         (Ds (takef (drop ci (+ (length As) (length Bs) (length Cs))) (λ (x) (eq? x 'd))))]
+    (and (equal? (append As Bs Cs Ds) ci)
+         (andmap (λ (x) (eq? x 'a)) stack)
+         (= (length stack) (- (+ (length As) (length Bs)) (length Cs) (length Ds))))))
+  
+  
+;; tests for C-INV-a^mb^nc^pd^q
+(check-equal? (C-INV-a^mb^nc^pd^q '() '()) #t)
+(check-equal? (C-INV-a^mb^nc^pd^q '(a c) '()) #t)
+(check-equal? (C-INV-a^mb^nc^pd^q '(a d) '()) #t)
+(check-equal? (C-INV-a^mb^nc^pd^q '(b c) '()) #t)
+(check-equal? (C-INV-a^mb^nc^pd^q '(b d) '()) #t)
+(check-equal? (C-INV-a^mb^nc^pd^q '(a) '(a)) #t)
+(check-equal? (C-INV-a^mb^nc^pd^q '(a a a d) '(a a)) #t)
+(check-equal? (C-INV-a^mb^nc^pd^q '(a a b c c d) '()) #t)
+(check-equal? (C-INV-a^mb^nc^pd^q '(a) '(a a)) #f)
+(check-equal? (C-INV-a^mb^nc^pd^q '(b b b) '(a a a a)) #f)
+(check-equal? (C-INV-a^mb^nc^pd^q '(a b c c c) '()) #f)
+(check-equal? (C-INV-a^mb^nc^pd^q '(a a a a d) '(a)) #f)
+(check-equal? (C-INV-a^mb^nc^pd^q '(d c b a) '()) #f)
+
+;; proof for a^mb^nc^pd^q
+
+;; PROOF
+
+;; The state invariants hold when M accepts w
+#|
+
+Proof invariants hold after each transition:
+
+When M starts, S-INV holds because ci = '() and s = '().
+This establishes the base case.
+
+((S a ,EMP) (S (a))): By inductive hypothesis, S-INV holds. S-INV
+guarentees that ci = a* = a^m AND stack = a^m. After using this rule,
+ci = a^m+1 = a* AND stack = a^m+1. Thus, S-INV holds.
+
+((S ,EMP ,EMP) (A ,EMP)): By inductive hypothesis, S-INV holds. S-INV
+guarentees that ci = a* = a^m AND stack = a^m. After using this rule,
+ci = a^m = a^mb^0 = a^mb^n AND stack = a^m = a^m+n. Thus, A-INV holds.
+
+((A b ,EMP) (A (a))): By inductive hypothesis, A-INV holds. A-inv
+guarentees that ci = a^mb* = a^mb^n AND stack = a^m+n. After using
+this rule, ci = a^mb^n+1 = a^mb* AND stack = a^m+n+1. Thus,
+A-INV holds.
+
+((A ,EMP ,EMP) (B ,EMP)): By inductive hypothesis, A-INV holds. A-INV
+guarentees that ci = a^mb* = a^mb^n AND stack = a^m+n. After using this
+rule, ci = a^mb^n = a^mb^nc^0 = a^mb^nc^p AND stack = a^m+n-p.
+Thus, B-INV holds. 
+
+((B c (a)) (B ,EMP)): By inductive hypothesis, B-INV holds. B-INV
+guarentees that ci = a^mb^nc* = a^mb^nc^p AND stack = a^m+n-p. After
+using this rule, ci = a^mb^nc^p+1 AND stack = a^m+n-(p+1). Thus, B-INV
+holds. 
+
+((B ,EMP ,EMP) (C ,EMP)): By inductive hypothesis, B-INV holds. B-INV
+guarentees that ci = a^mb^nc* = a^mb^nc^p AND stack = a^m+n-p. After using
+this rule, ci = a^mb^nc^pd^0 = a^mb^nc^pd^q AND stack = a^m+n-p-q. Thus,
+C-INV holds. 
+
+((C d (a)) (C ,EMP)): By inductive hypothesis, C-INV holds. C-INV guarentees
+that ci = a^mb^nc^pd* = a^mb^nc^pd^q AND stack = a^m+n-p-q. After using
+this rule, ci = a^mb^nc^pd^q+1 AND stack = a^m+n-p-(q+1). Thus, C-INV holds. 
+
+|#
+
+
+#|
+ word in language & word is in language of the machine
+
+w∈L -> w∈L(M):
+
+Assume that w∈L. This means that w = a^mb^nc^pd^q, where m+n = p+q.
+Given that the state invariants always hold, the following computation
+takes place:
+
+(S a^mb^nc^pd^q '()) |-* (S b^nc^pd^q a^m) |- (A c^pd^q a^m+n)
+|-* (B d^q a^m+n-p) |-* (C '() a^m+n-p-q)
+
+Therefore, w∈L(M).
+
+w∈L(M) -> w∈L:
+
+Assume w∈L(M). This means that M halts in C, a final state, with an empty
+stack and the word being entirely consumed. Given that the state invariants
+always hold, we can conclude that w = a^mb^nc^pd^q, where m+n= p+q. Thus,
+can can conclude w∈L.
+
+
+|#
+
+
+
+
+
+
+;; Let Σ = {a b}. Design and implement a pda for L = {w | w has 3
+;;   times as many as than b}. Follow all the steps of the design recipe
+
+;; States:
+;;   S: ci = amount of as read divided by 3 is 0
+;;   A: amount of as read divided by 3 is 1
+;;   B: read a b and as read, when divided by 3, is 0
+;;   C: amount of as read divided by 3 is 2
+(define 3xa-b (make-ndpda '(S A B C)
+                          '(a b)
+                          '(a b)
+                          'S
+                          '(S)
+                          `(((S a ,EMP) (A ,EMP))
+                            ((S a (a)) (A ,EMP))
+                            ((S b (b)) (S ,EMP))
+                            ((S b ,EMP) (B (a a a)))
+                            ((A b (b)) (A ,EMP))
+                            ((A b ,EMP) (A (a a a)))
+                            ((A a (a)) (C ,EMP))
+                            ((A a ,EMP) (C ,EMP))
+                            ((B b (b)) (B ,EMP))
+                            ((B b ,EMP) (B (a a a)))
+                            ((B a (a)) (A ,EMP))
+                            ((C b (b)) (C ,EMP))
+                            ((C b ,EMP) (C (a a a)))
+                            ((C a ,EMP) (S (b)))
+                            ((C a (a)) (S ,EMP)))))
+#|
+
+;; tests for 3xa-b
+(check-equal? (sm-apply 3xa-b '() '()) 'accept)
+(check-equal? (sm-apply 3xa-b '(b a a a) '()) 'accept)
+(check-equal? (sm-apply 3xa-b '(a a a b) '()) 'accept)
+(check-equal? (sm-apply 3xa-b '(b a a b a a a a) '()) 'accept)
+(check-equal? (sm-apply 3xa-b '(a b a a) '()) 'accept)
+(check-equal? (sm-apply 3xa-b '(a a b b a a b a a a a a) '()) 'accept)
+(check-equal? (sm-apply 3xa-b '(a) '()) 'reject)
+(check-equal? (sm-apply 3xa-b '(b) '()) 'reject)
+
+
+HAVE TO COME BACK TO THIS!!!!!!
+
+
+|#
+
+
+
+;; Let Σ={abc}. Design and implement a pda for
+;; L = {a^mb^nc^p : m,n,p≥0 ∧ (m = n ∨ n = p)}
+;; Follow all the steps of the design recipe
+
+;; States:
+;;  S: ci = '() AND stack = '(), start state
+;;  A: ci = a^m AND stack = a^m
+;;  B: ci = a^mb^n AND stack a^m-n
+;;  C: ci = a^mb^nc^p AND stack = a^m-n, final state
+;;  D: ci = a^m AND stack = '()
+;;  E: ci = a^mb^n AND stack = a^n
+;;  F: ci = a^mb^nc^p AND stack = a^n-p, final state
+(define a^mb^nc^p (make-ndpda '(S A B C D E F)
+                              '(a b c)
+                              '(a)
+                              'S
+                              '(C F)
+                              `(((S ,EMP ,EMP) (A ,EMP))
+                                ((S ,EMP ,EMP) (D ,EMP))
+                                ((A a ,EMP) (A (a)))
+                                ((A ,EMP ,EMP) (B ,EMP))
+                                ((B b (a)) (B ,EMP))
+                                ((B ,EMP ,EMP) (C ,EMP))
+                                ((C c ,EMP) (C ,EMP))
+                                ((D a ,EMP) (D ,EMP))
+                                ((D ,EMP ,EMP) (E ,EMP))
+                                ((E b ,EMP) (E (a)))
+                                ((E ,EMP ,EMP) (F ,EMP))
+                                ((F c (a)) (F ,EMP)))))
+
+;; tests for a^mb^nc^p
+(check-equal? (sm-apply a^mb^nc^p '()) 'accept)
+(check-equal? (sm-apply a^mb^nc^p '(a b)) 'accept)
+(check-equal? (sm-apply a^mb^nc^p '(b c)) 'accept)
+(check-equal? (sm-apply a^mb^nc^p '(a b c)) 'accept)
+(check-equal? (sm-apply a^mb^nc^p '(a a b b c)) 'accept)
+(check-equal? (sm-apply a^mb^nc^p '(a b b c c)) 'accept)
+(check-equal? (sm-apply a^mb^nc^p '(a a a b b b)) 'accept)
+(check-equal? (sm-apply a^mb^nc^p '(b b b c c c)) 'accept)
+(check-equal? (sm-apply a^mb^nc^p '(a)) 'accept)
+(check-equal? (sm-apply a^mb^nc^p '(c)) 'accept)
+(check-equal? (sm-apply a^mb^nc^p '(a c)) 'reject)
+(check-equal? (sm-apply a^mb^nc^p '(b)) 'reject)
+(check-equal? (sm-apply a^mb^nc^p '(b b b)) 'reject)
+(check-equal? (sm-apply a^mb^nc^p '(a a b c c)) 'reject)
+(check-equal? (sm-apply a^mb^nc^p '(a b b b c c)) 'reject)
+(check-equal? (sm-apply a^mb^nc^p '(a a a a a a b)) 'reject)
+(check-equal? (sm-apply a^mb^nc^p '(b b b b b b c)) 'reject)
+
+
+;; invariants for a^mb^nc^p
+
+;; word stack -> Boolean
+;; Purpose: Determines if the given word and stack belongs in S
+;;  (ci = '() AND stack = '())
+(define (S-INV-a^mb^nc^p ci stack)
+  (and (empty? ci)
+       (empty? stack)))
+
+;; tests for S-INV-a^mb^nc^p
+(check-equal? (S-INV-a^mb^nc^p '() '()) #t)
+(check-equal? (S-INV-a^mb^nc^p '(a a) '()) #f)
+(check-equal? (S-INV-a^mb^nc^p '(a a a) '(a)) #f)
+(check-equal? (S-INV-a^mb^nc^p '(a b c) '()) #f)
+(check-equal? (S-INV-a^mb^nc^p '(b) '()) #f)
+(check-equal? (S-INV-a^mb^nc^p '(c) '()) #f)
+(check-equal? (S-INV-a^mb^nc^p '(a b) '()) #f)
+(check-equal? (S-INV-a^mb^nc^p '(b c) '()) #f)
+ 
+
+;; word stack -> Boolean
+;; Purpose: Determines if the given word and stack belongs in A
+;;  (ci = a^m AND stack = a^m)
+(define (A-INV-a^mb^nc^p ci stack)
+  (and (andmap (λ (x) (eq? x 'a)) ci)
+       (andmap (λ (x) (eq? x 'a)) stack)
+       (= (length ci) (length stack))))
+
+;; tests for A-INV-a^mb^nc^p
+(check-equal? (A-INV-a^mb^nc^p '() '()) #t)
+(check-equal? (A-INV-a^mb^nc^p '(a) '(a)) #t)
+(check-equal? (A-INV-a^mb^nc^p '(a a a a) '(a a a a)) #t)
+(check-equal? (A-INV-a^mb^nc^p '(a a a a a) '(a a a a a)) #t)
+(check-equal? (A-INV-a^mb^nc^p '(b) '()) #f)
+(check-equal? (A-INV-a^mb^nc^p '(c) '()) #f)
+(check-equal? (A-INV-a^mb^nc^p '(a b) '(a)) #f)
+(check-equal? (A-INV-a^mb^nc^p '(a b b) '(a)) #f)
+
+
+;; word stack -> Boolean
+;; Purpose: Determines if the given word and stack belongs in B
+;;  (ci = a^mb^n AND stack a^m-n)
+(define (B-INV-a^mb^nc^p ci stack)
+  (let* [(As (takef ci (λ (x) (eq? x 'a))))
+         (Bs (takef (drop ci (length As)) (λ (x) (eq? 'b x))))]
+  (and (andmap (λ (x) (eq? x 'a)) stack)
+       (equal? ci (append As Bs))
+       (= (length stack) (- (length As) (length Bs))))))
+
+;; tests for B-INV-a^mb^nc^p
+(check-equal? (B-INV-a^mb^nc^p '() '()) #t)
+(check-equal? (B-INV-a^mb^nc^p '(a) '(a)) #t)
+(check-equal? (B-INV-a^mb^nc^p '(a b) '()) #t)
+(check-equal? (B-INV-a^mb^nc^p '(a a b) '(a)) #t)
+(check-equal? (B-INV-a^mb^nc^p '(a a b b) '()) #t)
+(check-equal? (B-INV-a^mb^nc^p '(b) '()) #f)
+(check-equal? (B-INV-a^mb^nc^p '(a) '(a a)) #f)
+(check-equal? (B-INV-a^mb^nc^p '(b) '(a)) #f)
+(check-equal? (B-INV-a^mb^nc^p '(a a b b b) '()) #f)
+(check-equal? (B-INV-a^mb^nc^p '(b b b a) '()) #f)
+
+
+;; word stack -> Boolean
+;; Purpose: Determines if the given word and stack belongs in C
+;;  (ci = a^mb^nc^p AND stack = a^m-n)
+(define (C-INV-a^mb^nc^p ci stack)
+  (let* [(As (takef ci (λ (x) (eq? x 'a))))
+         (Bs (takef (drop ci (length As)) (λ (x) (eq? 'b x))))
+         (Cs (takef (drop ci (+ (length As) (length Bs))) (λ (x) (eq? 'c x))))]
+  (and (andmap (λ (x) (eq? x 'a)) stack)
+       (equal? ci (append As Bs Cs))
+       (= (length stack) (- (length As) (length Bs))))))
+
+;; tests for C-INV-a^mb^nc^p
+(check-equal? (C-INV-a^mb^nc^p '() '()) #t)
+(check-equal? (C-INV-a^mb^nc^p '(c) '()) #t)
+(check-equal? (C-INV-a^mb^nc^p '(a b) '()) #t)
+(check-equal? (C-INV-a^mb^nc^p '(a b c) '()) #t)
+(check-equal? (C-INV-a^mb^nc^p '(a a b b c c) '()) #t)
+(check-equal? (C-INV-a^mb^nc^p '(a c) '()) #f)
+(check-equal? (C-INV-a^mb^nc^p '(b c) '()) #f)
+(check-equal? (C-INV-a^mb^nc^p '(b a) '()) #f)
+(check-equal? (C-INV-a^mb^nc^p '(a b) '(a)) #f)
+(check-equal? (C-INV-a^mb^nc^p '(a a a a a b b b b b c c) '(a)) #f)
+
+
+;; word stack -> Boolean
+;; Purpose: Determines if the given word and stack belongs in D
+;;  (ci = a^m AND stack = '())
+(define (D-INV-a^mb^nc^p ci stack)
+  (and (andmap (λ (x) (eq? x 'a)) ci)
+       (empty? stack)))
+
+;; tests for D-INV-a^mb^nc^p
+(check-equal? (D-INV-a^mb^nc^p '() '()) #t)
+(check-equal? (D-INV-a^mb^nc^p '(a) '()) #t)
+(check-equal? (D-INV-a^mb^nc^p '(a a a a) '()) #t)
+(check-equal? (D-INV-a^mb^nc^p '(a a a) '()) #t)
+(check-equal? (D-INV-a^mb^nc^p '(a b c) '()) #f)
+(check-equal? (D-INV-a^mb^nc^p '(a b) '()) #f)
+(check-equal? (D-INV-a^mb^nc^p '(a a a a b) '()) #f)
+(check-equal? (D-INV-a^mb^nc^p '(a) '(a)) #f)
+
+
+;; word stack -> Boolean
+;; Purpose: Determines if the given word and stack belongs in E
+;;  (ci = a^mb^n AND stack = a^n)
+(define (E-INV-a^mb^nc^p ci stack)
+  (let* [(As (takef ci (λ (x) (eq? x 'a))))
+         (Bs (takef (drop ci (length As)) (λ (x) (eq? 'b x))))]
+  (and (andmap (λ (x) (eq? x 'a)) stack)
+       (equal? ci (append As Bs))
+       (= (length stack) (length Bs)))))
+
+;; tests for E-INV-a^mb^nc^p
+(check-equal? (E-INV-a^mb^nc^p '() '()) #t)
+(check-equal? (E-INV-a^mb^nc^p '(b) '(a)) #t)
+(check-equal? (E-INV-a^mb^nc^p '(a b) '(a)) #t)
+(check-equal? (E-INV-a^mb^nc^p '(b b b b) '(a a a a)) #t)
+(check-equal? (E-INV-a^mb^nc^p '(a) '()) #t)
+(check-equal? (E-INV-a^mb^nc^p '(a) '(a)) #f)
+(check-equal? (E-INV-a^mb^nc^p '(b b) '(a)) #f)
+(check-equal? (E-INV-a^mb^nc^p '(a b c) '()) #f)
+(check-equal? (E-INV-a^mb^nc^p '(b b b c) '(a a)) #f)
+
+
+;; word stack -> Boolean
+;; Purpose: Determines if the given word and stack belongs in E
+;;  (ci = a^mb^nc^p AND stack = a^n-p)
+(define (F-INV-a^mb^nc^p ci stack)
+  (let* [(As (takef ci (λ (x) (eq? x 'a))))
+         (Bs (takef (drop ci (length As)) (λ (x) (eq? 'b x))))
+         (Cs (takef (drop ci (+ (length As) (length Bs))) (λ (x) (eq? 'c x))))]
+  (and (andmap (λ (x) (eq? x 'a)) stack)
+       (equal? ci (append As Bs Cs))
+       (= (length stack) (- (length Bs) (length Cs))))))
+
+;; tests for F-INV-a^mb^nc^p
+(check-equal? (F-INV-a^mb^nc^p '() '()) #t)
+(check-equal? (F-INV-a^mb^nc^p '(a) '()) #t)
+(check-equal? (F-INV-a^mb^nc^p '(b c) '()) #t)
+(check-equal? (F-INV-a^mb^nc^p '(b) '(a)) #t)
+(check-equal? (F-INV-a^mb^nc^p '(a b c) '()) #t)
+(check-equal? (F-INV-a^mb^nc^p '(a b b c c) '()) #t)
+(check-equal? (F-INV-a^mb^nc^p '(a a a) '()) #t)
+(check-equal? (F-INV-a^mb^nc^p '(b b b b c c) '(a a)) #t)
+(check-equal? (F-INV-a^mb^nc^p '(a b c c) '()) #f)
+(check-equal? (F-INV-a^mb^nc^p '(a a b b c) '()) #f)
+(check-equal? (F-INV-a^mb^nc^p '(a a a b c) '(a)) #f)
+(check-equal? (F-INV-a^mb^nc^p '(b b b b b c) '(a a a a a a a a)) #f)
+(check-equal? (F-INV-a^mb^nc^p '(a b b b b) '()) #f)
+
+
+;; PROOF
+
+
+
+
+;; PROOF
+
+;; The state invariants hold when M accepts w
+#|
+
+Proof invariants hold after each transition that consumes input:
+
+When M starts, S-INV holds because ci = '() and s = '().
+This establishes the base case.
+
+((S ,EMP ,EMP) (A ,EMP)): By inductive hypothesis, S-INV holds.
+S-INV guareentees that ci = '() AND stack = '(). After using this rule,
+ci = '() AND stack = '(). Observe that ci = a^0 = a^m AND stack = a^m.
+Thus, A-INV holds. 
+
+((S ,EMP ,EMP) (D ,EMP)): By inductive hypothesis, S-INV holds.
+S-INV guareentees that ci = '() AND stack = '(). After using this rule,
+ci = '() AND stack = '(). Observe that ci = a^0 = a^m AND stack = '().
+Thus, D-INV holds. 
+
+((A a ,EMP) (A (a))): By inductive hypothesis, A-INV holds.
+A-INV guareentees that ci = a^m AND stack = a^m. After using this
+rule, ci = a^m+1 AND stack = a^m+1. Thus, A-INV holds.
+
+((A ,EMP ,EMP) (B ,EMP)): By inductive hypothesis, A-INV holds.
+A-INV guareentees that ci = a^m AND stack = a^m. After using this
+rule, ci = a^m = a^mb^0 = a^mb^n AND stack = a^m = a^m-n.
+Thus, B-INV holds. 
+
+((B b (a)) (B ,EMP)): By inductive hypothesis, B-INV holds.
+B-INV guareentees that ci = a^mb^n AND stack = a^m-n. After using
+this rule, ci = a^mb^n+1 AND stack = a^m-(n+1). Thus, B-INV holds. 
+
+((B ,EMP ,EMP) (C ,EMP)): By inductive hypothesis, B-INV holds. 
+B-INV guareentees that ci = a^mb^n AND stack = a^m-n. After using
+this rule, ci = a^mb^nc^0 = a^mb^nc^p AND stack = a^m-n. Thus,
+C-INV holds. 
+
+((C c ,EMP) (C ,EMP)): By inductive hypothesis, C-INV holds.
+C-INV guareentees that ci = a^mb^nc^p AND stack = a^m-n. After
+using this rule, ci = a^mb^nc^p+1 AND stack = a^m-n. Thus,
+C-INV holds.
+
+((D a ,EMP) (D ,EMP)): By inductive hypothesis, D-INV holds.
+D-INV guareentees that ci = a^m AND stack = '(). After using this
+rule, ci = a^m+1 AND stack = '(). Thus, D-INV holds. 
+
+((D ,EMP ,EMP) (E ,EMP)): By inductive hypothesis, D-INV holds.
+D-INV guareentees that ci = a^m AND stack = '(). After using this
+rule, ci = a^mb^0 = a^mb^n AND stack = a^n. Thus, E-INV holds. 
+
+((E b ,EMP) (E (a))): By inductive hypothesis, E-INV holds.
+E-INV guareentees that ci = a^mb^n AND stack = a^n. After using
+this rule, ci = a^mb^n+1 AND stack = a^n+1. Thus, E-INV holds.
+
+((E ,EMP ,EMP) (F ,EMP)): By inductive hypothesis, E-INV holds.
+E-INV guareentees that ci = a^mb^n AND stack = a^n. After using
+this rule, ci = a^mb^nc^0 = a^mb^nc^p AND stack = a^n-p.
+Thus F-INV holds.
+
+((F c (a)) (F ,EMP)): BY inductive hypothesis, F-INV holds.
+F-INV guareentees that ci = a^mb^nc^p AND stack = a^n-p.
+After using this rule, ci= a^mb^nc^p+1 AND stack = a^n-(p+1).
+Thus F-INV holds. 
+
+
+PROVING L = L(M)
+
+w∈L ⇔ w∈L(M)
+
+(⇒) Assume w∈L. This means that w = a^mb^nc^p, where m,n,p≥0 ∧ (m = n ∨ n = p).
+Given that state invariants always hold, this means that M consumes all its input in
+either C or F. Since C and F are final states, w∈L(M).
+
+(⇐) Assume w∈L(M). This means that M halts in C or F, final states,
+with an empty stack having consumed w. Given that the state invariants
+always hold, we may conclude that w = a^mb^nc^p, where m,n,p≥0 ∧ (m = n ∨ n = p).
+Therefore, w∈L
+
+
+w∈/L ⇔ w∈/L(M)
+Proof
+
+(⇒) Assume w∈/L. This means w ≠ a^mb^nc^p, where m,n,p≥0 ∧ (m = n ∨ n = p).
+Given that the state invariant predicates always hold, there is no computation
+that has M consume w and end in C or F with an empty stack. Therefore, w∈/L(M).
+
+(⇐) Assume w∈/L(M). This means that M cannot transition into C or F with an
+empty stack having consumed w. Given that the state invariants always hold,
+this means that w ≠ a^mb^nc^p, where m,n,p≥0 ∧ (m = n ∨ n = p). Thus, w∈/L.
+
+|#
+
+
+
+
