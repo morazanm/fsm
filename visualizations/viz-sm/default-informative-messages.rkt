@@ -360,26 +360,18 @@
                                (tm-accepting-final (imsg-state-tm-M imsg-st)))))
              (text (format "There are computations that exceed the cut-off limit (~a)."
                            (imsg-state-tm-max-cmps imsg-st)) FONT-SIZE CUT-OFF-COLOR)]
-            [(and (zipper-at-end? (imsg-state-tm-tape imsg-st))
-                  (zipper-at-end? (imsg-state-tm-head-position imsg-st))
-                  (eq? (imsg-state-tm-machine-decision imsg-st) 'accept)
-                  (eq? (tm-type (imsg-state-tm-M imsg-st)) 'tm-language-recognizer))
-             (text "There is a computation that accepts." FONT-SIZE ACCEPT-COLOR)]
-            [(and (zipper-at-end? (imsg-state-tm-tape imsg-st))
-                  (zipper-at-end? (imsg-state-tm-head-position imsg-st))
-                  (eq? (imsg-state-tm-machine-decision imsg-st) 'reject)
-                  (eq? (tm-type (imsg-state-tm-M imsg-st)) 'tm-language-recognizer))
-             (text "All computations end in a non-final configuration and the machine rejects." FONT-SIZE REJECT-COLOR)]
-            [(and (zipper-at-end? (imsg-state-tm-tape imsg-st))
-                  (zipper-at-end? (imsg-state-tm-head-position imsg-st))
-                  (eq? (imsg-state-tm-machine-decision imsg-st) 'reached-final)
-                  (eq? (tm-type (imsg-state-tm-M imsg-st)) 'tm))
-             (text "The machine reaches a final state and halts." FONT-SIZE ACCEPT-COLOR)]
-            [(and (zipper-at-end? (imsg-state-tm-tape imsg-st))
-                  (zipper-at-end? (imsg-state-tm-head-position imsg-st))
-                  (eq? (imsg-state-tm-machine-decision imsg-st) 'halted)
-                  (eq? (tm-type (imsg-state-tm-M imsg-st)) 'tm))
-             (text "The machine did not reach a halting state." FONT-SIZE ACCEPT-COLOR)]
+            [(and (eq? (tm-type (imsg-state-tm-M imsg-st)) 'tm-language-recognizer)
+                  (zipper-at-end? (imsg-state-tm-tape imsg-st))
+                  (zipper-at-end? (imsg-state-tm-head-position imsg-st)))
+             (if (eq? (imsg-state-tm-machine-decision imsg-st) 'accept)
+                 (text "There is a computation that accepts." FONT-SIZE ACCEPT-COLOR)
+                 (text "All computations end in a non-final configuration and the machine rejects." FONT-SIZE REJECT-COLOR))]
+            [(and (eq? (tm-type (imsg-state-tm-M imsg-st)) 'tm)
+                  (zipper-at-end? (imsg-state-tm-tape imsg-st))
+                  (zipper-at-end? (imsg-state-tm-head-position imsg-st)))
+             (if (eq? (imsg-state-tm-machine-decision imsg-st) 'reached-final)
+                 (text "The machine reaches a final state and halts." FONT-SIZE ACCEPT-COLOR)
+                 (text "The machine did not reach a halting state." FONT-SIZE ACCEPT-COLOR))] 
             [else (text "Word Status: accept " FONT-SIZE BLANK-COLOR)]))))
 
 (define (mttm-create-draw-informative-message imsg-st)
@@ -470,17 +462,14 @@
                             (imsg-state-mttm-max-cmps imsg-st)) FONT-SIZE CUT-OFF-COLOR)]
              [(and (zipper-at-end? (imsg-state-mttm-tapes imsg-st))
                    (zipper-at-end? (imsg-state-mttm-head-positions imsg-st))
-                   (eq? (imsg-state-mttm-machine-decision imsg-st) 'accept)
                    (eq? (mttm-type (imsg-state-mttm-M imsg-st)) 'mttm-language-recognizer))
-              (text "There is a computation that accepts." FONT-SIZE ACCEPT-COLOR)]
+              (if (eq? (imsg-state-mttm-machine-decision imsg-st) 'accept)
+                  (text "There is a computation that accepts." FONT-SIZE ACCEPT-COLOR)
+                  (text "All computations end in a non-final configuration and the machine rejects." FONT-SIZE REJECT-COLOR))]
              [(and (zipper-at-end? (imsg-state-mttm-tapes imsg-st))
                    (zipper-at-end? (imsg-state-mttm-head-positions imsg-st))
-                   (eq? (imsg-state-mttm-machine-decision imsg-st) 'reject)
-                   (eq? (mttm-type (imsg-state-mttm-M imsg-st)) 'mttm-language-recognizer))
-              (text "All computations end in a non-final configuration and the machine rejects." FONT-SIZE REJECT-COLOR)]
-             [(and (zipper-at-end? (imsg-state-mttm-tapes imsg-st))
-                   (zipper-at-end? (imsg-state-mttm-head-positions imsg-st))
-                   (eq? (imsg-state-mttm-machine-decision imsg-st) 'reject)
                    (eq? (mttm-type (imsg-state-mttm-M imsg-st)) 'mttm))
-              (text "The machine reaches a final state and halts." FONT-SIZE ACCEPT-COLOR)]
+              (if (eq? (imsg-state-mttm-machine-decision imsg-st) 'reached-final)
+                  (text "The machine reaches a final state and halts." FONT-SIZE ACCEPT-COLOR)
+                  (text "The machine did not reach a halting state." FONT-SIZE ACCEPT-COLOR))]
              [else (text "Word Status: accept " FONT-SIZE BLANK-COLOR)])))))

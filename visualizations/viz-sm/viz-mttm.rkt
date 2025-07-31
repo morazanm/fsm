@@ -1067,9 +1067,10 @@ destination -> the rest of a mttm rule | half-rule
                                  
                              
          [all-head-pos (list->zipper tracked-head-pos)]
-         [machine-decision (if (not rejected?)
-                               'accept
-                               'reject)]
+         [machine-decision (cond [(not rejected?) 'accept]
+                                 [(and reached-final? (eq? (mttm-type M) 'mttm)) 'reached-final]
+                                 [(and (not reached-final?) (eq? (mttm-type M) 'mttm)) 'halted]
+                                 [else 'reject])]
          
          [tracked-trace (list (if (not rejected?) accepting-trace rejecting-trace))]
          ;;(listof (list config boolean)) ;;Purpose: Gets all the invariant configurations
