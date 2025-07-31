@@ -30,6 +30,8 @@
 
 (define qempty? empty?)
 
+(define FONT-SIZE 20)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;STRUCTS;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;;phase | all of the phases needed for the visualization | (zipperof phase)  
@@ -645,7 +647,7 @@ ismg "finished machine"
 ;;Purpose: Draws the informative messages using the given imsg-state
 (define (draw-imsg imsg-state)
 
-  (define PHASE0-IMSG (text "Input Machine" 20 BLACK))
+  (define PHASE0-IMSG (text "Input Machine" FONT-SIZE BLACK))
 
   ;;(listof state) -> string
   ;;Purpose: Converts the given (listof state) into a string
@@ -663,9 +665,9 @@ ismg "finished machine"
                       "Removed the unreachable state:"
                       "Removed unreachable states:")
                   (convert-to-string (phase-1-attributes-unreachable-state phase-attribute)))
-          20 BLACK))
+          FONT-SIZE BLACK))
   
-  (define PHASE2-IMSG (text "Created state pairing table" 20 BLACK))
+  (define PHASE2-IMSG (text "Created state pairing table" FONT-SIZE BLACK))
 
   ;;state-pair -> string
   ;;Purpose: Makes the state pair readable
@@ -675,14 +677,14 @@ ismg "finished machine"
   ;;phase-attributes -> image
   ;;Purpose: Makes the imsg for phase 3
   (define (make-phase3-imsg phase-attribute)
-    (above (text "Marking all state pairings that contain one final and one non-final state" 20 BLACK)
-           (text (format "State pair ~a is marked" (pretty-print-state-pair (phase-3-attributes-initial-pairings phase-attribute))) 20 BLACK)))
+    (above (text "Marking all state pairings that contain one final and one non-final state" FONT-SIZE BLACK)
+           (text (format "State pair ~a is marked" (pretty-print-state-pair (phase-3-attributes-initial-pairings phase-attribute))) FONT-SIZE BLACK)))
 
   ;;phase-attributes -> image
   ;;Purpose: Makes the imsg for phase 4
   (define (make-phase4-imsg phase-attribute)
     (let ([phase-4-state-pair (phase-4-attributes-unmarked-pair phase-attribute)])
-      (above (text "Attempting to mark all state pairings that are currently unmarked" 20 BLACK)
+      (above (text "Attempting to mark all state pairings that are currently unmarked" FONT-SIZE BLACK)
              (text (format (if (state-pair-marked? phase-4-state-pair)
                                "State pair ~a is marked because one of it's destination state pairing: ~a, is also marked"
                                "State pair ~a remains unmarked because both of it's destination state pairing: ~a, are also unmarked")
@@ -690,19 +692,19 @@ ismg "finished machine"
                            (string-append (pretty-print-state-pair (first (state-pair-destination-pairs phase-4-state-pair)))
                                           " and "
                                           (pretty-print-state-pair (second (state-pair-destination-pairs phase-4-state-pair)))))
-                   20 BLACK))))
+                   FONT-SIZE BLACK))))
 
   ;;phase-attributes -> image
   ;;Purpose: Makes the imsg for phase 5
   (define (make-phase5-imsg phase-attribute)
     (let ([merged-state (phase-5-attributes-merged-states phase-attribute)])
-      (above (text "Rebuilding the machine" 20 BLACK)
+      (above (text "Rebuilding the machine" FONT-SIZE BLACK)
              (if (empty? merged-state)
-                 (text "yler" 20 'white)
+                 (text "yler" FONT-SIZE 'white)
                  (text (format "States ~a have been merged to create state ~s"
                                (convert-to-string (set->list (merged-state-old-symbols merged-state)))
                                (merged-state-new-symbol merged-state))
-                       20
+                       FONT-SIZE
                        BLACK)))))
 
   ;;phase-attributes -> image
@@ -711,7 +713,7 @@ ismg "finished machine"
     (text (if (phase-6-attributes-minimized? phase-attribute)
               "Minimized Machine"
               "This machine cannot be minimized")
-          20 BLACK))
+          FONT-SIZE BLACK))
   (let ([current-phase (zipper-current (imsg-state-phase imsg-state))])
     (cond [(= (phase-number current-phase) 0) PHASE0-IMSG]
           [(= (phase-number current-phase) 1) (make-phase1-imsg (phase-attributes current-phase))]
@@ -735,7 +737,7 @@ ismg "finished machine"
                                          [else BLACK])
                                    'shape (if (member state finals) 'doublecircle 'circle)
                                    'style (if (member state finals) 'filled 'solid)
-                                   'fillcolor 'orange #;(if (member state finals) 'lightorange 'white)
+                                   'fillcolor 'orange
                                    'label state
                                    'fontcolor BLACK
                                    'font "Sans")))
@@ -750,7 +752,7 @@ ismg "finished machine"
                        (second rule)
                        (first rule)
                        (third rule)
-                       #:atb (hash 'fontsize 20
+                       #:atb (hash 'fontsize FONT-SIZE
                                    'style 'solid
                                    'color (cond  [(and (not (list? state-pair))
                                                        (or (eq? (first rule) (state-pair-s1 state-pair))
@@ -869,19 +871,8 @@ ismg "finished machine"
                [column-id (hash-ref state-table-mappings (state-pair-s2 state-pairing))]
                [current-row (vector-ref state-pairing-table row-id)])
           (vector-set/copy state-pairing-table
-                           #;(vector-map (λ (row)
-                                         (vector-map (λ (space) (if (eq? space NEW-MARK)
-                                                                    MARK
-                                                                    space))
-                                                     row))
-                                       state-pairing-table)
                            row-id
-                           (update-row current-row
-                                       #;(vector-map (λ (space) (if (eq? space NEW-MARK)
-                                                                                           MARK
-                                                                                           space))
-                                                                              current-row)
-                                                                  column-id))))
+                           (update-row current-row column-id))))
       (if (empty? loSP)
           (phase-results (reverse acc) state-pairing-table)
           (let* ([state-pairing (first loSP)]
