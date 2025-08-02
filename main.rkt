@@ -52,7 +52,7 @@
    grammar-union grammar-concat grammar-kleenestar
    
    ; grammar observers
-   grammar-derive grammar-type
+   grammar-derive grammar-derive? grammar-type
    grammar-nts grammar-sigma grammar-rules grammar-start 
 
    ; grammar testers

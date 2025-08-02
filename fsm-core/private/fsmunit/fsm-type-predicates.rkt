@@ -1,7 +1,7 @@
 #lang racket/base
 
 (require "../csg.rkt"
-         "../cfg.rkt"
+         "../cfg-struct.rkt"
          "../regular-grammar.rkt"
          "../regexp.rkt")
 
@@ -39,7 +39,7 @@
         [(is-grammar? unknown-val) 'grammar]
         [(regexp? unknown-val) 'regexp]
         [(procedure? unknown-val) 'inv]
-        [else (if (equal? unknown-val 'sora)
-                  (begin (displayln "- Garced was here")
+        [else (if (equal? unknown-val 'Aqua)
+                  (begin (displayln "Garced was here")
                          'notanfsmval)
                   'notanfsmval)]))

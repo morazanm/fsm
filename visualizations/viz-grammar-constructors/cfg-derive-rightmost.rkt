@@ -1,11 +1,13 @@
 #lang racket/base
 (require racket/treelist
-         "../../fsm-core/private/cfg.rkt"
+         "../../fsm-core/private/cfg-struct.rkt"
          "../../fsm-core/private/constants.rkt"
          "../../fsm-core/private/misc.rkt"
          "circular-queue-treelist.rkt"
          "../viz-lib/treelist-helper-functions.rkt"
          racket/list
+         "../../fsm-core/private/cyk.rkt"
+         "../../fsm-core/private/chomsky.rkt"
          )
 
 (provide cfg-derive-rightmost)
@@ -149,18 +151,18 @@
                                     (map (lambda (st) (cons st fderiv)) new-states)))
                            g
                            chomsky))))]))
-  (if (< (length w) 2)
-      (format "The word ~s is too short to test." w)
-      (let* (;; derive using g ONLY IF derivation found with g in CNF
-             #;(ng (convert-to-cnf g))
-             #;(ng-derivation (make-deriv (list (list (list (cfg-get-start ng)) '()))
-                                          (list (list (list (list (cfg-get-start ng)) '())))
-                                          ng
-                                          true)))
+  (if (empty? w)
+      (let ([deriv-queue (make-queue)])
+          (make-deriv (make-hash)
+                      (enqueue! deriv-queue (list (list (treelist (cfg-get-start g)) '())))
+                      g
+                      #f))
+      (if (cyk (chomsky g) w)
         ;(if (string? ng-derivation)
         ;ng-derivation
         (let ([deriv-queue (make-queue)])
           (make-deriv (make-hash)
                       (enqueue! deriv-queue (list (list (treelist (cfg-get-start g)) '())))
                       g
-                      #f)))))
+                      #f))
+        (format "~s is not in L(G)." w))))
