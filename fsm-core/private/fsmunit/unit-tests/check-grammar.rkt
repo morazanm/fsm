@@ -2,6 +2,7 @@
 
 (require "../../csg.rkt"
          "../../cfg.rkt"
+         "../../cfg-struct.rkt"
          "../../regular-grammar.rkt"
          "../../grammar-getters.rkt"
          "../fsm-error-types/grammar-error-types.rkt"

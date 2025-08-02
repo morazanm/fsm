@@ -1,7 +1,8 @@
 #lang racket/base
 
 (require "../fsm-error-types/invariant-error-types.rkt"
-         "../macro-subexpr-contract.rkt")
+         "../macro-subexpr-contract.rkt"
+         "../syntax-value-struct.rkt")
 
 (provide check-invariant)
 
@@ -18,11 +19,11 @@
                                 warn:fsm:app:inv:invalid-words
                                 inv)
                 (if accept?
-                    (property-check inv
+                    (property-check (val-stx-pair-val inv)
                                     words
                                     warn:fsm:app:inv:accept
                                     inv)
-                    (property-check (compose1 not inv)
+                    (property-check (compose1 not (val-stx-pair-val inv))
                                     words
                                     warn:fsm:app:inv:reject
                                     inv))))

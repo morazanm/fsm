@@ -3,23 +3,9 @@
 (require "../../interface.rkt"
          "interface.rkt")
 
-;; TESTING MACHINES
+;; TESTING
 
-#|
-
-2 Design and implement an ndfa for:
-(ab)*b* ∪ ab*
-
-S - ci = ε starting
-A - ci = (ab)*
-B - ci = (ab)*a 
-C - ci = (ab)*b* final
-D - ci = ε
-E - ci = ab* final
-
-|#
-
-    
+ #|
 (define AB*B*UAB*
   (make-ndfa '(S K B C H)
              '(a b)
@@ -33,8 +19,29 @@ E - ci = ab* final
                (C ,EMP H)
                (H b H))))
 
-(check-in-lang? (curry * 2) '(2))
-#|
+(define numb>numa
+  (make-cfg
+   '(S A)
+   '(a b)
+   `((S ,ARROW b) (S ,ARROW AbA) (A ,ARROW AaAbA) (A ,ARROW AbAaA) (A ,ARROW ,EMP) (A ,ARROW bA))
+   'S))
+
+(define (A-INV w)
+  (let ([as (filter (lambda (symb) (eq? symb 'a)) w)] [bs (filter (lambda (symb) (eq? symb 'b)) w)])
+    (>= (length bs) (length as))))
+
+(define (S-INV w)
+  (let ([as (filter (lambda (symb) (eq? symb 'a)) w)]
+        [bs (filter (lambda (symb) (eq? symb 'b)) w)]
+        [As (filter (lambda (symb) (eq? symb 'A)) w)])
+    (> (length bs) (length as))
+    ))
+
+(check-in-lang? A-INV '(a a b b) '(a b) '())
+(check-in-lang? S-INV '(a a b b b) '(b b) '(b b))
+
+(check-in-lang? (curry append '(2)) '(1))
+
 (check-in-lang? AB*B*UAB* '(a b a b a b b b b))
 (check-in-lang? AB*B*UAB* '())
 (check-in-lang? AB*B*UAB* '(a b b b b))
