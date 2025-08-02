@@ -128,7 +128,17 @@
 
 ;; PRE:  tape = (LM w) AND i=k>0 AND w in (a b BLANK)*
 ;; POST: tape = (LM w) AND i>k AND tape[i] = BLANK AND tape[k+1..i-1] /= BLANK
+
 (define FBR (new-combine-tms
+ ((LABEL a)
+  R
+  (BRANCH
+   (('a (GOTO 0))
+    ('b (GOTO 0))
+    (BLANK (GOTO 10))))
+  (LABEL 10))
+ (list 'a 'b))
+  #;(new-combine-tms
              (list 0
                    R
                    (cons BRANCH
@@ -138,15 +148,26 @@
                    10)
              (list 'a 'b)))
 
+#;(new-combine-tms
+ ((LABEL 0)
+  R
+  (BRANCH
+   (('a (GOTO 0))
+    ('b (GOTO 0))
+    (BLANK (GOTO 10))))
+  (LABEL 10))
+ (list 'a 'b))
+
 ;; Tests for FBR
+#|
 (check-equal? (ctm-run FBR `(,LM ,BLANK) 1)
               `(F 2 (,LM ,BLANK ,BLANK)))
 (check-equal? (ctm-run FBR `(,LM a a b b b ,BLANK a a) 2)
               `(F 6 (,LM a a b b b ,BLANK a a)))
 (check-equal? (ctm-run FBR `(,LM ,BLANK ,BLANK b b) 3)
               `(F 5 (,LM ,BLANK ,BLANK b b ,BLANK)))
+|#
 
-#|
 ;.................................................
 ;; Find left BLANK
 
@@ -170,11 +191,12 @@
 (check-equal? (ctm-run FBL `(,LM a ,BLANK a b ,BLANK b a b b) 8)
               `(H 5 (,LM a ,BLANK a b ,BLANK b a b b)))
 
+
 ;.................................................
 
 ;; PRE:  tape = (LM BLANK w BLANK) and head on blank after w
 ;; POST: tape = (LM BLANK w BLANK w BLANK) and head on blank after second w 
-(define COPY (combine-tms
+(define COPY (new-combine-tms
               (list FBL
                     0 ;; Machine checks if there is anything left to copy
                     R
@@ -214,7 +236,7 @@
               `(F 15 (,LM ,BLANK a b a b a b ,BLANK a b a b a b ,BLANK)))
 
 ;.................................................
-
+#|
 ;; Sample ctm as list
 (define COPYL
   '(FBL

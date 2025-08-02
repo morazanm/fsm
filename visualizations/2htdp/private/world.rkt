@@ -16,7 +16,8 @@
          mrlib/bitmap-label
          (only-in mrlib/image-core definitely-same-image?)
          string-constants
-         mrlib/gif)
+         mrlib/gif
+         "../../viz-lib/os-dependent-constants.rkt")
 
 ;                                     
 ;                                     
@@ -236,6 +237,8 @@
         (define frame
           (new
            (class frame%
+             (define/augment (display-changed)
+               (set-new-window-size))
              (super-new)
              (inherit move resize)
              (define/augment (on-close)

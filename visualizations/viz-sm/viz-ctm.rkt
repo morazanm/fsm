@@ -537,6 +537,7 @@
     (run-viz lographs
              (lambda () (graph->bitmap (first lographs)))
              MIDDLE-E-SCENE
+             E-SCENE-WIDTH E-SCENE-HEIGHT PERCENT-BORDER-GAP
              DEFAULT-ZOOM
              DEFAULT-ZOOM-CAP
              DEFAULT-ZOOM-FLOOR

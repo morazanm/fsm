@@ -1,17 +1,12 @@
 #lang racket/base
-(require "bounding-limits.rkt"
-         (only-in racket/gui
+(require (only-in racket/gui
                   get-display-size
-                  get-display-count))
-(provide (all-defined-out)) 
+                  get-display-count)
+         "os-dependent-constants.rkt")
 
-(define-values (WINDOW-WIDTH WINDOW-HEIGHT)
-  (if (>= (get-display-count) 1)
-      (with-handlers ([exn:fail? (lambda (e) (values 1200 500))]) (get-display-size))
-      #;(let-values ([(pre-window-width pre-window-height)
-                    (with-handlers ([exn:fail? (lambda (e) (values 1200 500))]) (get-display-size))])
-        (values (min 2000 pre-window-width) (min 2000 pre-window-height)))
-      (values 1200 500)))
+(provide (all-defined-out)
+         WINDOW-HEIGHT) 
+
 (define E-SCENE-WIDTH (* 0.95 WINDOW-WIDTH))
 (define FONT-SIZE 20)
 (define TAPE-SIZE 42)
