@@ -78,18 +78,7 @@
 ;; Symbol -> Symbol
 ;; Removes all numbers from the symbol (that were originally added for differentiating in graphviz)
 (define (undo-renaming symb)
-  (string->symbol (list->string (filter (lambda (x)
-                                          (not (or (equal? #\0 x)
-                                                   (equal? #\1 x)
-                                                   (equal? #\2 x)
-                                                   (equal? #\3 x)
-                                                   (equal? #\4 x)
-                                                   (equal? #\5 x)
-                                                   (equal? #\6 x)
-                                                   (equal? #\7 x)
-                                                   (equal? #\8 x)
-                                                   (equal? #\9 x))))
-                                        (string->list (symbol->string symb))))))
+  (string->symbol (list->string (takef (string->list (symbol->string symb)) (lambda (x) (not (equal? #\_ x)))))))
 
 ;; tree -> listof Symbol
 ;; Accumulates all of the leaf nodes in order (producing the yield of the tree)
