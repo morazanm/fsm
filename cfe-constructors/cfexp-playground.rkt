@@ -217,6 +217,11 @@
 
 (define thesis-cfe-converted (cfe->cfg thesis-cfe))
 
+;;TESTING
+
+;(check-equal? (grammar-checker thesis-cfg1 thesis-cfg-converted 10 #;100000) #t)
+
+;(check-equal? (grammar-checker thesis-cfe-converted thesis-cfe 10 #;100000) #t)
 
 ;(define GSI (pda->cfe (cfe->pda S1)))
 

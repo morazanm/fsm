@@ -4,10 +4,11 @@
          "../fsm-core/private/cfg.rkt"
          "../fsm-core/private/pda.rkt"
          "../fsm-core/private/misc.rkt"
-         "../fsm-core/private/word.rkt"
          "cfexp-contracts.rkt"
          "cfexp-structs.rkt"
-         racket/hash)
+         racket/treelist
+         ;racket/hash
+         )
 
 (provide null-cfexp
          empty-cfexp
@@ -41,113 +42,112 @@
 ;; -> null-cfexp
 ;;Purpose: A wrapper to create a null-cfexp
 (define (null-cfexp)
-  (mk-null-cfexp (empty-cfexp-env)))
+  (mk-null-cfexp))
 
 ;; -> empty-cfexp
 ;;Purpose: A wrapper to create a empty-cfexp
 (define (empty-cfexp)
-  (mk-empty-cfexp (empty-cfexp-env)))
+  (mk-empty-cfexp))
 
 ;; symbol -> singleton-cfexp
 ;;Purpose: A wrapper to create a singleton-cfexp
 (define/contract (singleton-cfexp a-char)
   singleton-cfexp/c 
-  (mk-singleton-cfexp (empty-cfexp-env) a-char))
+  (mk-singleton-cfexp a-char))
 
 ;;symbol -> variable-cfexp
 ;;Purpose: A wrapper to create a variable-cfexp
 (define/contract (var-cfexp symbol)
   var-cfexp/c 
-  (mk-var-cfexp (empty-cfexp-env) symbol))
+  (mk-var-cfexp (empty-cfexp-env) symbol #f))
 
-;;(listof cfexp) -> env
-;;Purpose: Merges all of the environments from the given (listof cfexp) in to one environment
-(define (merge-env locfexp)
-  (foldl (λ (cfe env)
-           (let ([new-cfe-env (hash-map/copy (cfexp-env cfe)
-                                             (λ (k v) (if (hash-has-key? env k)
-                                                          (values (gen-nt (hash-keys env)) v)
-                                                          (values k v))))])
-             (hash-union env new-cfe-env)))
-         (hash)
-         locfexp))
+
+(define (all-empty? locfe)
+  (andmap mk-empty-cfexp? locfe))
 
 ;; . cfexp -> concat-cfexp/empty-cfexp
 ;;Purpose: A wrapper to create a concat-cfexp unless all the given cfexps are empty-cfexp
-(define/contract (concat-cfexp . cfexp)
+(define/contract (concat-cfexp . cfexps)
   concat-cfexp/c
-  (let* ([cfexp (flatten cfexp)]
-         [all-empty? (andmap mk-empty-cfexp? cfexp)])
-    (if all-empty?
+  (if (all-empty? cfexps)
         (empty-cfexp)
-        (mk-concat-cfexp (merge-env cfexp) cfexp))))
+        (mk-concat-cfexp (list->vector cfexps))))
 
 ;; . cfexp -> union-cfexp/empty-cfexp
 ;;Purpose: A wrapper to create a union-cfexp unless all the given cfexps are empty-cfexp
-(define/contract (union-cfexp . cfexp)
+(define/contract (union-cfexp . cfexps)
   union-cfexp/c
-  (let* ([cfexp (flatten cfexp)]
-         [all-empty? (andmap mk-empty-cfexp? cfexp)])
-    (if all-empty?
+  (if (all-empty? cfexps)
         (empty-cfexp)
-        (mk-union-cfexp (merge-env cfexp) cfexp))))
+        (mk-union-cfexp (list->vector cfexps))))
 
-;;cfexp -> Kleene-cfexp
+;;cfexp -> Kleene-cfexp/empty-cfexpmessage
 ;;Purpose: A wrapper to create a Kleene-cfexp
 (define/contract (kleene-cfexp cfe)
   kleene-cfexp/c
-  (mk-kleene-cfexp (cfexp-env cfe) cfe))
+  (if (mk-empty-cfexp? cfe)
+      cfe
+      (mk-kleene-cfexp cfe)))
 
 ;;cfe-id cfe -> env
 ;;Purpose: Creates an environment where the given cfe-id is the key and cfe is the value
 (define (env-cfexp cfe-id binding)
-  (let ([binding (if (list? binding) binding (list binding))])
+  (let ([binding (if (vector? binding) binding (vector binding))])
     (hash cfe-id binding)))
 
 ;;var-cfexp symbol cfe -> void
 ;;Purpose: Creates a binding where the cfe is bound to the given var-cfexp's environment unless the binding is an empty-cfexp
 (define/contract (update-binding! cfe bindee-id binding)
   update-binding!/c
-  (let ([env (cfexp-env cfe)])
-    (if (mk-empty-cfexp? binding)
-        (set! cfe (empty-cfexp))
-        (begin
-          (set! env (env-cfexp bindee-id (if (hash-has-key? env bindee-id)
-                                             (cons binding (hash-ref env bindee-id))
-                                             binding)))
-          (set-cfexp-env! cfe env)
-          (set! cfe (mk-var-cfexp env bindee-id))))))
+  (let ([env (mk-var-cfexp-env cfe)])
+    (begin
+      (set! env (env-cfexp bindee-id (if (hash-has-key? env bindee-id)
+                                         (vector-extend (hash-ref env bindee-id)
+                                                        (add1 (vector-length (hash-ref env bindee-id)))
+                                                        binding)
+                                         binding)))
+      (set-mk-var-cfexp-only-empty?! cfe (and (= (vector-length (hash-ref env bindee-id)) 1)
+                                              (mk-empty-cfexp? (vector-ref (hash-ref env bindee-id) 0))))
+      (set-mk-var-cfexp-env! cfe env)
+      ;(set! cfe (mk-var-cfexp env bindee-id)) ;;may reinstate later, need to discuss whether a variable should overwrite
+      ;; for instance (update-binding! (var-cfexp 'S) 'K (union-cfexp A S A))<---- shouldnt be allowed!
+      )))
 
 ;;singleton-cfe -> word
 ;;Purpose: Extracts the singleton 
 (define (convert-singleton singleton-cfexp)
-  (list (mk-singleton-cfexp-char singleton-cfexp)))
+ (symbol->string (mk-singleton-cfexp-char singleton-cfexp)) #;(vector (mk-singleton-cfexp-char singleton-cfexp)))
 
-;; union-cfexp --> cfexp
+
+(define (contains-empty? Vocfe)
+  (for/or ([cfe (in-vector Vocfe)])
+    (or (mk-empty-cfexp? cfe)
+        (and (mk-var-cfexp? cfe)
+             (mk-var-cfexp-only-empty? cfe)))))
+
+;; Vocfexp --> cfexp
 ;; Purpose: Return a randomly chosen sub-cfexp from the given union-cfexp weigthed towards a non-empty-cfexp
-(define (pick-cfexp union-cfexp)
-  (let* [(cfexps (mk-union-cfexp-locfe union-cfexp))
-         (contains-empty? (ormap mk-empty-cfexp? cfexps))]
-    (if contains-empty?
-        (let ([filtered-empties (remove (empty-cfexp) cfexps)])
-          (if (< (random) 0.1)
+(define (pick-cfexp cfexps)
+  (if (contains-empty? cfexps)
+        (let ([filtered-empties (vector-filter-not mk-empty-cfexp? cfexps)])
+          (if (or (vector-empty? filtered-empties)
+                  (< (random) 0.1))
             (empty-cfexp)
-            (list-ref filtered-empties (random (length filtered-empties)))))
-        (list-ref cfexps (random (length cfexps))))))
+            (vector-ref filtered-empties (random (vector-length filtered-empties)))))
+        (vector-ref cfexps (random (vector-length cfexps)))))
 
 ;;var-cfexp --> word
 ;;Purpose: Substitutes the given var-cfexp with it's environment bindings 
-(define (substitute-var var-cfexp)
-  (let ([bindings (hash-ref (cfexp-env var-cfexp) (mk-var-cfexp-cfe var-cfexp))])
-    (gen-cfexp-word (list-ref bindings (random (length bindings))))))
+(define (substitute-var var-cfexp reps)
+  (let* ([bindings (hash-ref (mk-var-cfexp-env var-cfexp) (mk-var-cfexp-cfe var-cfexp))])
+    (gen-cfexp-word-helper (pick-cfexp bindings) #;(vector-ref bindings (random (vector-length bindings))) reps)))
 
 ;;concat-cfexp --> word
 ;;Purpose: Returns the concatenation of the sub context-free expressions 
 (define (gen-concat-word concat-cfexp gen-function reps)
-  (let [(res (filter (λ (w) (not (eq? w EMP)))
-                     (flatten (map (λ (cfe) (gen-function cfe reps))
-                                   (mk-concat-cfexp-locfe concat-cfexp)))))]
-      (if (empty? res) EMP res)))
+  (for/fold ([word ""])
+            ([cfe (in-vector (mk-concat-cfexp-locfe concat-cfexp))])
+    (string-append word (gen-function cfe reps))))
 
 ;; natnum kleene-star-cfexp (cfexp --> word) --> word
 ;; Purpose: Generate a word of arbitrary length in [0..reps+1] using
@@ -161,6 +161,16 @@
                       (λ (i) (gen-function (mk-kleene-cfexp-cfe kleene-cfexp) reps))))))]
     (if (empty? lst-words) EMP lst-words)))
 
+(define (string-empty? str)
+  (not (non-empty-string? str)))
+
+(define (string->word str)
+  (define (string->word-helper idx end-idx acc)
+    (if (= idx end-idx)
+        (reverse acc)
+        (string->word-helper (add1 idx) end-idx (cons (string->symbol (substring str idx (add1 idx))) acc))))
+  (string->word-helper 0 (string-length str) '()))
+
 ;; cfe [natnum] -> word
 ;; Purpose: Generates a word using 
 (define/contract (gen-cfexp-word cfe . reps)
@@ -168,11 +178,22 @@
   (define MAX-KLEENESTAR-REPS (if (empty? reps) MAX-KLEENESTAR-LIMIT (first reps)))
   (cond [(mk-null-cfexp? cfe) (error "A word cannot be generated using the null-regexp.")]
         [(mk-empty-cfexp? cfe) EMP]
+        [(mk-singleton-cfexp? cfe) (list (mk-singleton-cfexp-char cfe))]
+        [else (let ([res (gen-cfexp-word-helper cfe MAX-KLEENESTAR-REPS)])
+                (if (string-empty? res)
+                    EMP
+                    (string->word res)))]))
+
+
+(define (gen-cfexp-word-helper cfe reps)
+  (cond [(mk-null-cfexp? cfe) (error "A word cannot be generated using the null-regexp.")]
+        [(mk-empty-cfexp? cfe) ""]
         [(mk-singleton-cfexp? cfe) (convert-singleton cfe)]
-        [(mk-var-cfexp? cfe) (substitute-var cfe)]
-        [(mk-concat-cfexp? cfe) (gen-concat-word cfe gen-cfexp-word MAX-KLEENESTAR-REPS)]
-        [(mk-union-cfexp? cfe) (gen-cfexp-word (pick-cfexp cfe) MAX-KLEENESTAR-REPS)]
-        [else (gen-cfe-kleene-word cfe MAX-KLEENESTAR-REPS gen-cfexp-word)]))
+        [(mk-var-cfexp? cfe) (substitute-var cfe reps)]
+        [(mk-concat-cfexp? cfe) (gen-concat-word cfe gen-cfexp-word-helper reps)]
+        [(mk-union-cfexp? cfe) (gen-cfexp-word-helper (pick-cfexp (mk-union-cfexp-locfe cfe)) reps)]
+        [else (gen-cfe-kleene-word cfe reps gen-cfexp-word-helper)]))
+
 
 (struct CFG (nts sigma rules start) #:transparent)
 
@@ -181,8 +202,8 @@
 
 ;;context-free grammar -> cfe
 ;;Purpose: Converts the given cfg its equivalent cfe
-(define/contract (cfg->cfe G)
- cfg->cfe/c
+(define #;define/contract (cfg->cfe G)
+ ;cfg->cfe/c
   ;;(listof X) (X -> Y) -> (hash X . Y)
   ;;Purpose: Creates a hash table using the given (listof x) and function where x is a key and (f x) is the value
   (define (make-hash-table lox f)
@@ -212,12 +233,11 @@
     (define (rule->expression RHS-of-rule)
       (if (= (length RHS-of-rule) 1)
           (convert-to-expression (first RHS-of-rule))
-          #;(call-with-values ((λ (sym) (map convert-to-expression sym)) RHS-of-rule) concat-cfexp)
-          (concat-cfexp (map (λ (sym) (convert-to-expression sym)) RHS-of-rule))))
+          (apply concat-cfexp (map (λ (sym) (convert-to-expression sym)) RHS-of-rule))))
     (hash-map/copy rules (λ (nts RHS)
                            (values nts (cond [(empty? RHS) (error "invalid RHS")]
                                              [(= (length RHS) 1) (rule->expression (first RHS))]
-                                             [else (union-cfexp (map (λ (rule) (rule->expression rule)) RHS))])))))
+                                             [else (apply union-cfexp (map (λ (rule) (rule->expression rule)) RHS))])))))
   
   (let* ([nts (cfg-get-v G)]
          [rules (make-hash-table nts (λ (nt) (filter-map (λ (rule)
@@ -228,11 +248,14 @@
          [singletons (make-hash-table (cfg-get-alphabet G) singleton-cfexp)]
          [variables (make-hash-table nts var-cfexp)]
          [rules->cfexp (make-cfexps-frm-rules rules singletons variables)]
+         #;[updated-variables #;variables (hash-map/copy variables (λ (key value)
+                                                       (values key (if (mk-empty-cfexp? (hash-ref rules->cfexp key))
+                                                                      (empty-cfexp)
+                                                                      value))))]
          [updated-bindings (hash-map/copy rules->cfexp (λ (key value)
-                                                         (begin
-                                                           (update-binding! (hash-ref variables key) key value)
-                                                           (values key (hash-ref variables key)))))])
-    (hash-ref updated-bindings start)))
+                                                         (begin (update-binding! (hash-ref variables key) key value)
+                                                                (values key (hash-ref variables key)))))])
+     (hash-ref updated-bindings start)))
       
 ;;cfe -> string
 ;;Purpose: Converts the given cfe into a string to make it readable
@@ -287,7 +310,7 @@
     (let ([init-queue (foldl (λ (env acc)
                                (enqueue acc env))
                              e-queue
-                             (hash-values (cfexp-env cfe)))])
+                             (map vector->list (hash-values (mk-var-cfexp-env #;cfexp-env cfe))))])
       (extract-var-and-singles init-queue
                                (update-extraction-results cfe (extraction-results '() '()))
                                (list cfe))))
@@ -319,31 +342,31 @@
   ;;cfe -> (listof cfe)
   ;;Purpose: Extracts the sub-expressions from the given cfe
   (define (extract-cfe-data cfe)
-    (cond [(mk-concat-cfexp? cfe) (mk-concat-cfexp-locfe cfe)]
-          [(mk-union-cfexp? cfe) (mk-union-cfexp-locfe cfe)]
+    (cond [(mk-concat-cfexp? cfe) (vector->list (mk-concat-cfexp-locfe cfe))]
+          [(mk-union-cfexp? cfe) (vector->list (mk-union-cfexp-locfe cfe))]
           [(mk-kleene-cfexp? cfe) (list (mk-kleene-cfexp-cfe cfe))]
           [(mk-var-cfexp? cfe) (foldl (λ (env acc)
                                         (enqueue acc env))
                                       e-queue
-                                      (hash-values (cfexp-env cfe)))]
+                                      (map vector->list hash-values (mk-var-cfexp-env #;cfexp-env cfe)))]
           [else '()]))
 
   ;;(listof var-cfexp) (listof rule) -> (listof rule)
   ;;Purpose: Converts every var-cfexp into the corresponding grammar rule
   (define (variables->rules lovcfe results)
     (foldl (λ (vcfe res)
-             (append (remake-rules (mk-var-cfexp-cfe vcfe) (first (hash-values (cfexp-env vcfe))) '()) res))
+             (append (remake-rules (mk-var-cfexp-cfe vcfe) (vector->list (first (hash-values (mk-var-cfexp-env #;cfexp-env vcfe)))) '()) res))
            '()
            lovcfe))
 
   ;;nonterminal (queueof cfe) (listof rule) -> (listof rule)
   ;;Purpose: Converts each cf in the (queueof cfe) into the proper grammar rules
   (define (remake-rules nt rules-to-convert finished-rules)
-    (if (empty? rules-to-convert)
+    (if (qempty? rules-to-convert)
         finished-rules
-        (let ([cfe (first rules-to-convert)])
+        (let ([cfe (qfirst rules-to-convert)])
           (if (mk-union-cfexp? cfe)
-              (remake-rules nt (enqueue (dequeue rules-to-convert) (mk-union-cfexp-locfe cfe)) finished-rules)
+              (remake-rules nt (enqueue (dequeue rules-to-convert) (vector->list (mk-union-cfexp-locfe cfe))) finished-rules)
               (remake-rules nt (dequeue rules-to-convert) (cons (cfe->rule nt cfe) finished-rules))))))
 
   ;;non-terminal cfe -> rule
@@ -361,7 +384,7 @@
                                                                             (mk-var-cfexp-cfe cfe)))
                                                                        acc))
                                                                     ""
-                                                                    (mk-concat-cfexp-locfe cfe)))]
+                                                                    (vector->list (mk-concat-cfexp-locfe cfe))))]
                      [else (error (format "unsuitable cfe ~a" cfe))])])
       (list nt ARROW RHS)))
   (let* ([extracted-components (extract-var-and-singles-cfe cfe)]
@@ -463,13 +486,13 @@
 
 ;; pda -> cfe
 ;;Purpose: Converts the given pda into a cfe
-(define/contract (pda->cfe pda)
-  pda->cfe/c
+(define #;define/contract (pda->cfe pda)
+  ;pda->cfe/c
   (let* ([G (unchecked->cfg (pda2cfg pda))]
          [renamed-nts-mapping (rename-nts G)]
          [renamed-cfg (unchecked->cfg (rebuild-cfg G renamed-nts-mapping))]
          [proper-cfg (minimize-cfg renamed-cfg)])
-    (cfg->cfe proper-cfg)))
+   #;renamed-cfg (cfg->cfe proper-cfg)))
 
 ;;cfe -> pda
 ;;Purpose: Converts the given cfe into a pda
@@ -812,15 +835,15 @@
          (theta<=2-rules (generate-theta<=2-rules beta=1-rules
                                                   (extract-states beta=1-rules)))]
     (make-unchecked-ndpda (append (list  new-final new-start)
-                        (remove-duplicates
-                         (cons pstart (extract-states theta<=2-rules))))
+                                  (remove-duplicates
+                                   (cons pstart (extract-states theta<=2-rules))))
                         
-                psigma
-                (cons bottom pgamma)
-                new-start
-                (list new-final)
-                (cons initr (append theta<=2-rules frules)))))
-#|
+                          psigma
+                          (cons bottom pgamma)
+                          new-start
+                          (list new-final)
+                          (cons initr (append theta<=2-rules frules)))))
+
 (struct pda (states alpha gamma start finals rules) #:transparent)
 
 (define (unchecked->pda m)
@@ -830,7 +853,7 @@
        (pda-getstart m)
        (pda-getfinals m)
        (pda-getrules m)))
-
+#|
 
 (define EMPTY (empty-cfexp))
 
@@ -898,7 +921,14 @@
       (update-binding! ANBN 'S (union-cfexp EMPTY ASB))
       ANBN)))
 
-(define s1 (pda->cfe (cfe->pda S1)))
+(define s1
+  (pda->cfe (cfe->pda S1))
+  )
+
+(define ANBN-cfg (make-unchecked-cfg '(S)
+                                     '(a b)
+                                     `((S ,ARROW ,EMP) (S ,ARROW aSb))
+                                     'S))
 
 
 (define P (make-unchecked-ndpda '(S)

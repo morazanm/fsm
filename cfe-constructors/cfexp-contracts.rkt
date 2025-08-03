@@ -1,9 +1,7 @@
 #lang racket/base
 
 (require "../fsm-core/private/macros/shared/shared-predicates.rkt"
-        "../fsm-core/private/macros/rules/rules-flat-contracts.rkt"
          "../fsm-core/private/macros/error-formatting.rkt"
-         "../fsm-core/private/grammar-getters.rkt"
          "../fsm-core/private/cfg.rkt"
          "cfexp-structs.rkt"
          racket/contract)
@@ -15,9 +13,6 @@
          kleene-cfexp/c
          update-binding!/c
          gen-cfexp-word/c
-         valid-state?
-         valid-alpha?
-         correct-cfg-rules/c
          cfe->cfg/c
          cfg->cfe/c
          pda->cfe/c
@@ -112,17 +107,17 @@
 
 ;;string -> flat-contract
 ;;Purpose: Creates a flat contract that determines if the input is a list
-(define (is-a-list/c cfe-type)
+(define (is-a-list/c message)
     (make-flat-contract
      #:name 'is-a-list/c
-     #:first-order (lambda (val) (or (list? val) (listof list?)))
+     #:first-order (lambda (val) (list? val) #;(or (list? val) (listof list?)))
      #:projection (lambda (blame)
                     (lambda (val)
                       (current-blame-format format-error)
                       (raise-blame-error
                        blame
                        val
-                       (format "~a expects an arbitrary amount of cfes, given" cfe-type))))))
+                       message)))))
 
 ;;(X -> Boolean) string string string -> flat-contract
 ;;Purpose: Creates a flat contract that determines if the input is a listof X that satistfies the given predicate
@@ -253,7 +248,7 @@
       mk-singleton-cfexp?))
 
 (define concat-cfexp/c
-  (->* () #:rest (and/c (is-a-list/c "concat-cfexp")
+  (->* () #:rest (and/c (is-a-list/c "concat-cfexp expects an arbitrary amount of cfes, given")
                         (at-least-two/c "concat-cfexp")
                         (or/c (valid-listof/c cfexp? "concat-cfexp" "list of cfes" "cfe")
                               (valid-listof/c (listof cfexp?) "concat-cfexp" "list of cfes" "cfe")))
@@ -261,7 +256,7 @@
             mk-empty-cfexp?)))
 
 (define union-cfexp/c
-  (->* () #:rest (and/c (is-a-list/c "union-cfexp")
+  (->* () #:rest (and/c (is-a-list/c "union-cfexp expects an arbitrary amount of cfes, given")
                         (at-least-two/c "union-cfexp")
                         (or/c (valid-listof/c cfexp? "union-cfexp" "list of cfes" "cfe") 
                               (valid-listof/c (listof cfexp?) "union-cfexp" "list of cfes" "cfe")))
@@ -275,7 +270,8 @@
 
 (define kleene-cfexp/c
   (-> valid-kleene-exp
-      mk-kleene-cfexp?))
+      (or/c mk-kleene-cfexp?
+            mk-empty-cfexp?)))
 
 (define update-binding!/c
   (-> is-var-cfexp?/c
@@ -286,8 +282,12 @@
 
 (define gen-cfexp-word/c
   (->* ((is-cfexp/c "gen-cfexp-word expects a cfe as input, given"))
-       #:rest (listof nat-num/c)
-       (or/c symbol?
+       #:rest (and/c (is-a-list/c "gen-cfexp-word expects a natural number as an optional input, given")
+                     (listof nat-num/c))
+       any/c
+       #;(or/c symbol?
+             (treelist/c symbol?)
+             (treelist/c nat-num/c)
              (listof symbol?)
              (listof nat-num/c)
              string?)))
