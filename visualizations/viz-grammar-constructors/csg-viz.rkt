@@ -459,8 +459,6 @@
    (list (list 'S ARROW 'AaB) (list 'AaA ARROW 'aSb) (list 'AaA ARROW EMP) (list 'B ARROW 'A))
    'S))
 
-
-
 (define anbncn
   (make-unchecked-csg
    '(S A B C G H I)

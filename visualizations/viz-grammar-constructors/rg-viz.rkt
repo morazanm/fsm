@@ -62,19 +62,8 @@
 ;; Symbol -> Symbol
 ;; Removes all numbers from the symbol (that were originally added for differentiating in graphviz)
 (define (undo-renaming symb)
-  (string->symbol (list->string (filter (lambda (x)
-                                          (not (or (equal? #\0 x)
-                                                   (equal? #\1 x)
-                                                   (equal? #\2 x)
-                                                   (equal? #\3 x)
-                                                   (equal? #\4 x)
-                                                   (equal? #\5 x)
-                                                   (equal? #\6 x)
-                                                   (equal? #\7 x)
-                                                   (equal? #\8 x)
-                                                   (equal? #\9 x)
-                                                   (equal? #\- x))))
-                                        (string->list (symbol->string symb))))))
+  (string->symbol (list->string (takef (string->list (symbol->string symb)) (lambda (x) (not (equal? #\_ x))))
+                                )))
 
 ;; tree -> listof Symbol
 ;; Accumulates all of the leave nodes in order (producing the yield of the tree)
@@ -202,16 +191,26 @@
                                    (second (map symbol->string (take-right (second w-der) 2))))))
              (create-rules (rest w-der)))]))
 
+(define (rename-symbol nt hashtb)
+    (let ([result (hash-ref hashtb nt #f)])
+      (if result
+          (begin
+            (hash-set! hashtb nt (add1 result))
+            (string->symbol (format "~s_~s" nt (add1 result))))
+          (begin
+            (hash-set! hashtb nt 0)
+            (string->symbol (format "~s_0" nt))))))
+
 ;; rename-edges
 ;; (listof level) -> (listof level)
 ;; Purpose: To rename the nonterminals that reoccur in extracted edges
-(define (rename-edges exe)
+(define (rename-edges exe hash-nt)
   (define (rnm-lvl lvl acc)
     (cond
       [(empty? lvl) '()]
       [(= 1 (length lvl)) (list (list (first acc) (second (first lvl))) acc)]
       [(member (second (second lvl)) acc)
-       (let ([new-symbol (generate-symbol (second (second lvl)) acc)])
+       (let ([new-symbol (rename-symbol (second (second lvl)) hash-nt) #;(generate-symbol (second (second lvl)) acc)])
          (list (list (list (first acc) (second (first lvl))) (list (first acc) new-symbol))
                (cons new-symbol acc)))]
       [else
@@ -229,17 +228,17 @@
 ;; rename-nodes
 ;; (listof level) -> (listof level)
 ;; Purpose: To rename the terminals that reoccur in extracted edges
-(define (rename-nodes exe)
+(define (rename-nodes exe hash-nt)
   (define (rnm-lvl lvl acc)
     (cond
       [(empty? lvl) '()]
       [(and (symbol? (first lvl)) (member (second lvl) acc))
-       (let ([new-symbol (generate-symbol (second lvl) acc)])
+       (let ([new-symbol (rename-symbol (second lvl) hash-nt) #;(generate-symbol (second lvl) acc)])
          (list (list (first lvl) new-symbol) acc))]
       [(and (symbol? (first lvl)) (not (member (second lvl) acc)))
        (list (list (first lvl) (second lvl)) (cons (second lvl) acc))]
       [(member (second (first lvl)) acc)
-       (let ([new-symbol (generate-symbol (second (first lvl)) acc)])
+       (let ([new-symbol (rename-symbol (second (first lvl)) hash-nt) #;(generate-symbol (second (first lvl)) acc)])
          (list (list (list (first (first lvl)) new-symbol) (second lvl)) (cons new-symbol acc)))]
       [else (list (list (first lvl) (second lvl)) (cons (second (first lvl)) acc))]))
   (define (rnm-lvls exe accum)
@@ -312,7 +311,7 @@
                                                     (not (member state broken-invariants?)))
                                                INVARIANT-HOLDS-COLOR])
                                  'shape 'circle
-                                 'label (string->symbol (string (string-ref (symbol->string state) 0)))
+                                 'label (undo-renaming state) #;(string->symbol (string (string-ref (symbol->string state) 0)))
                                  'fontcolor 'black
                                  'font "Sans")))
          graph
@@ -436,7 +435,8 @@
                                                 (symbol->string (third x))))
                                (map second (rest derivation))))]
              [extracted-edges (create-edges w-der)]
-             [renamed (rename-nodes (rename-edges extracted-edges))]
+             [used-node-names (make-hash)]
+             [renamed (rename-nodes (rename-edges extracted-edges used-node-names) used-node-names)]
              [loe (map (λ (el) (if (symbol? (first el)) (list el '()) el)) renamed)]
              [loe-without-empty (map (λ (el) (if (symbol? (first el)) (list el) el)) renamed)]
              [yield-trees (map create-yield-tree
