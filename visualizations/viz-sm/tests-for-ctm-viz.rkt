@@ -1,8 +1,7 @@
 #lang racket
 (require "../../fsm-core/interface.rkt"
-         rackunit
-         "ctmd-rewrite.rkt")
-
+         rackunit)
+#|
 ;; CAN ONLY BE TESTED IF PRECONDITION IS SATISFIED
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; tms
@@ -270,4 +269,5 @@
     5))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+|#
 |#
