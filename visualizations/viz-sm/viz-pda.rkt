@@ -17,7 +17,6 @@
          "../../fsm-core/private/misc.rkt"
          "default-informative-messages.rkt"
          "testing-parameter.rkt"
-         ;profile-flame-graph
          (except-in "../viz-lib/viz-constants.rkt"
                     INS-TOOLS-BUFFER)
          "david-imsg-state.rkt"

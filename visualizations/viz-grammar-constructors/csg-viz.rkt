@@ -1,20 +1,13 @@
 #lang racket/base
 
 (require "../../fsm-gviz/private/lib.rkt"
-         "../../fsm-gviz/private/parallel.rkt"
          "../../fsm-core/private/csg.rkt"
          "../../fsm-core/private/constants.rkt"
          "../../fsm-core/private/misc.rkt"
-         "../viz-lib/viz.rkt"
          "../viz-lib/skew-binomial-heap.rkt"
          "grammar-viz.rkt"
-         "../viz-lib/zipper.rkt"
-         rackunit
          racket/list
-         racket/local
-         racket/set
-         racket/dict
-         profile-flame-graph)
+         racket/set)
 
 (provide csg-viz)
 
@@ -395,11 +388,6 @@
               (AI ,ARROW Ia) 
               (I ,ARROW ,EMP)) 
             'S-1))
-
-#;(profile-thunk (lambda () (csg-viz anbncn-csg '(a b c)))
-               #:svg-path (string->path "/home/sora/Pictures/viz-flame.svg")
-               #:preview? #t
-               )
 
 ;; generates word word-reversed word
 ;; S - Generates K, G, right hand marker R
