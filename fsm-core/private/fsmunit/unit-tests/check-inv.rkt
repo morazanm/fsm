@@ -25,7 +25,7 @@
                                              (not (null? (car words)))
                                              (list? (car (val-stx-pair-val (car words)))))
                                         (map (lambda (word-pair)
-                                               (lambda (x) ((val-stx-pair-val inv) x (cadr (val-stx-pair-val word-pair)))))
+                                               (lambda (x) ((val-stx-pair-val inv) (car x) (cadr (val-stx-pair-val word-pair)))))
                                              words)
                                         (val-stx-pair-val inv))
                                     words 
@@ -35,7 +35,7 @@
                                              (not (null? (car words)))
                                              (list? (car (val-stx-pair-val (car words)))))
                                         (map (lambda (word-pair)
-                                               (lambda (x) ((compose1 not (val-stx-pair-val inv)) x (cadr (val-stx-pair-val word-pair)))))
+                                               (lambda (x) ((compose1 not (val-stx-pair-val inv)) (car x) (cadr (val-stx-pair-val word-pair)))))
                                              words)
                                         (compose1 not (val-stx-pair-val inv)))
                                     words
