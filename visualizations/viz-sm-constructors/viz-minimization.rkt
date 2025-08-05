@@ -632,9 +632,9 @@ ismg "finished machine"
         (above (make-row (vector-ref table row-idx) 0)
                (draw-table-helper row-amount (add1 row-idx)))))
   (draw-table-helper (sub1 (vector-length table)) 0))
-      (let ([state-pair (cond [(= (phase-number phase) 3) (phase-3-attributes-initial-pairings (phase-attributes phase))]
-                              [(= (phase-number phase) 4) (phase-4-attributes-unmarked-pair (phase-attributes phase))]
-                              [else '()])])
+      (let ([state-pair (if (= (phase-number phase) 4)
+                            (phase-4-attributes-unmarked-pair (phase-attributes phase))
+                            '())])
         (list (create-graph-struct (phase-M phase) #:state-pair (if (= (phase-number phase) 4) state-pair '()) #;state-destintation-pairs)
               (draw-table (phase-state-pairing-table phase) (dfa-finals (phase-M phase)) state-pair))))
     (if (<= 2 (phase-number phase) 5)
@@ -847,10 +847,10 @@ ismg "finished machine"
 
   ;;natnum phase-attribute-struct dfa (vectorof (vectorof marking)) (listof state-pair) (hash state . natnum) -> (listof phase)
   ;;Purpose: Makes all of phase for the given natnum using the given dfa, state-table, (listof state-pair), and state-table-mappings 
-  (define (make-phase phase-id attribute-struct-id no-unreachables-M state-pairing-table loSP state-table-mappings)
+  (define (make-phase phase-id attribute-struct-id no-unreachables-M state-pairing-table loSP state-table-mappings seen-markings)
     ;; (vectorof (vectorof marking)) (listof state-pair) (listof phase) -> (listof phase)
     ;; Purpose: Makes the phase with the updated table and corresponding state pair
-    (define (make-phase-helper state-pairing-table loSP acc)
+    (define (make-phase-helper state-pairing-table loSP acc seen-markings)
       ;;(vectorof (vectorof marking)) state-pair (hash state . natnum) -> (vectorof (vectorof marking))
       ;; Purpose: Updates the given table using the given state pair and hash
       (define (make-mark-on-table state-pairing)
@@ -875,13 +875,16 @@ ismg "finished machine"
                            (update-row current-row column-id))))
       (if (empty? loSP)
           (phase-results (reverse acc) state-pairing-table)
-          (let* ([state-pairing (first loSP)]
-                 [new-table (if (state-pair-marked? state-pairing)
+          (let ([state-pairing (first loSP)])
+            (if (member state-pairing seen-markings)
+                (make-phase-helper state-pairing-table (rest loSP) acc seen-markings)
+                (let* ([new-table (if (state-pair-marked? state-pairing)
                                 (make-mark-on-table state-pairing)
                                 state-pairing-table)]
-                 [new-phase (phase phase-id no-unreachables-M new-table (attribute-struct-id state-pairing))])
-            (make-phase-helper new-table (rest loSP) (cons new-phase acc)))))
-    (make-phase-helper state-pairing-table loSP '()))
+                       [new-phase (phase phase-id no-unreachables-M new-table (attribute-struct-id state-pairing))]
+                       [updated-seen (if (state-pair-marked? state-pairing) (cons state-pairing seen-markings) seen-markings)])
+                  (make-phase-helper new-table (rest loSP) (cons new-phase acc) updated-seen))))))
+    (make-phase-helper state-pairing-table loSP '() seen-markings))
 
   ;; (listof dfa) (listof merged-state) (vectorof (vectorof marking)) -> (listof phase)
   ;; Purpose: Pairs a merged-state with a rebuild dfa that contains either the new merged state symbol or one of the states that got merged
@@ -924,10 +927,17 @@ ismg "finished machine"
                       '())]
          [phase-2 (list (phase 2 no-unreachables-M no-unreachables-M-state-pairing-table (phase-2-attributes)))]
          [phase3+new-table (make-phase 3 phase-3-attributes no-unreachables-M no-unreachables-M-state-pairing-table
-                                       final-non-final-pairings state-table-mappings)]
-         [phase-3 (phase-results-loPhase phase3+new-table)]
+                                       final-non-final-pairings state-table-mappings '())]
+         [phase-3 (list (last (phase-results-loPhase phase3+new-table)))]
          [table-with-initial-markings (phase-results-new-table phase3+new-table)]
-         [phase4+new-table (make-phase 4 phase-4-attributes no-unreachables-M table-with-initial-markings rest-loSP state-table-mappings)]
+         [phase4+new-table (make-phase 4
+                                       phase-4-attributes
+                                       no-unreachables-M
+                                       table-with-initial-markings
+                                       rest-loSP
+                                       state-table-mappings
+                                       (map (compose1 phase-3-attributes-initial-pairings phase-attributes)
+                                            (phase-results-loPhase phase3+new-table)))]
          [phase-4 (phase-results-loPhase phase4+new-table)]
          [filled-table (phase-results-new-table phase4+new-table)]
          [rebuilding-machines (reconstruct-machine minimized-M)]
@@ -936,6 +946,8 @@ ismg "finished machine"
          [phase-6 (list (phase 6 (last rebuilding-machines) filled-table (phase-6-attributes can-be-minimized?)))]
          [all-phases (append phase-0 phase-1 phase-2 phase-3 phase-4 phase-5 phase-6)]
          [graphs (make-main-graphic all-phases state-table-mappings)])
+    
+    
     ;all-phases
     ;#;
     (run-viz (map first graphs)
