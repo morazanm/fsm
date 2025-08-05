@@ -200,10 +200,13 @@
 (define (unchecked->cfg G)
   (CFG (cfg-get-v G) (cfg-get-alphabet G) (cfg-get-the-rules G) (cfg-get-start G)))
 
+(define (cfg->unchecked G)
+  (cfg (CFG-nts G) (CFG-sigma G) (CFG-rules G) (CFG-start G)))
+
 ;;context-free grammar -> cfe
 ;;Purpose: Converts the given cfg its equivalent cfe
-(define #;define/contract (cfg->cfe G)
- ;cfg->cfe/c
+(define/contract (cfg->cfe G)
+ cfg->cfe/c
   ;;(listof X) (X -> Y) -> (hash X . Y)
   ;;Purpose: Creates a hash table using the given (listof x) and function where x is a key and (f x) is the value
   (define (make-hash-table lox f)
@@ -235,7 +238,7 @@
           (convert-to-expression (first RHS-of-rule))
           (apply concat-cfexp (map (λ (sym) (convert-to-expression sym)) RHS-of-rule))))
     (hash-map/copy rules (λ (nts RHS)
-                           (values nts (cond [(empty? RHS) (error "invalid RHS")]
+                           (values nts (cond [(empty? RHS) (error (format "invalid RHS from nt: ~s" nts))]
                                              [(= (length RHS) 1) (rule->expression (first RHS))]
                                              [else (apply union-cfexp (map (λ (rule) (rule->expression rule)) RHS))])))))
   
@@ -248,10 +251,6 @@
          [singletons (make-hash-table (cfg-get-alphabet G) singleton-cfexp)]
          [variables (make-hash-table nts var-cfexp)]
          [rules->cfexp (make-cfexps-frm-rules rules singletons variables)]
-         #;[updated-variables #;variables (hash-map/copy variables (λ (key value)
-                                                       (values key (if (mk-empty-cfexp? (hash-ref rules->cfexp key))
-                                                                      (empty-cfexp)
-                                                                      value))))]
          [updated-bindings (hash-map/copy rules->cfexp (λ (key value)
                                                          (begin (update-binding! (hash-ref variables key) key value)
                                                                 (values key (hash-ref variables key)))))])
@@ -451,10 +450,10 @@
 ;;minimize-res minimize-res -> boolean
 ;;Purpose: Determines if the two given minimize-res are the same 
 (define (same-rules-and-nts? res1 res2)
-  (let ([nts1 (minimize-res-nts res1)]
-        [rules1 (minimize-res-rules res1)]
-        [nts2 (minimize-res-nts res2)]
-        [rules2 (minimize-res-rules res2)])
+  (let ([nts1 (CFG-nts #;minimize-res-nts res1)]
+        [rules1 (CFG-rules #;minimize-res-rules res1)]
+        [nts2 (CFG-nts #;minimize-res-nts res2)]
+        [rules2 (CFG-rules #;minimize-res-rules res2)])
     (and (andmap (λ (nt) (member? nt nts2)) nts1)
          (andmap (λ (nt) (member? nt nts1)) nts2)
          (andmap (λ (rule) (member? rule rules2)) rules1)
@@ -484,6 +483,123 @@
              [res (minimize-res new-nts new-rules)])
         (minimize-nts-and-rules new-nts new-rules sigma (cons res acc)))))
 
+
+(define (clean-up-cfg cfg acc)
+  (let* ([nts (CFG-nts cfg)]
+         [rules (CFG-rules cfg)]
+         [all-nts (remove-duplicates (filter-not (λ (nt) (member? nt (cons EMP (CFG-sigma cfg))))
+                                                 (append nts
+                                                         (append-map (λ (rl) (cons (cfg-rule-lhs rl) (cfg-rule-rhs rl))) rules))))]
+         [nt-hash (foldl (λ (nt ht)
+                           (hash-set ht nt (filter (λ (rl) (eq? nt (cfg-rule-lhs rl))) rules)))
+                         (hash)
+                         all-nts)]
+         [needed-nts (filter-not (λ (nt) (empty? (hash-ref nt-hash nt)))
+                                 (remove-duplicates (filter-not (λ (nt) (member? nt (cons EMP (CFG-sigma cfg))))
+                                                    (apply append
+                                                           (hash-map nt-hash (λ (key value)
+                                                                               (append-map (λ (rl)
+                                                                                             (cons (cfg-rule-lhs rl) (cfg-rule-rhs rl))) value)))))))]
+         [need-rules (filter (λ (rule) (and (member? (cfg-rule-lhs rule) needed-nts)
+                                            (andmap (λ (rhs)
+                                                      (or (member? rhs (cons EMP (CFG-sigma cfg)))
+                                                          (member? rhs needed-nts))) (cfg-rule-rhs rule))))
+                               rules)]
+         [new-cfg (CFG needed-nts (CFG-sigma cfg) need-rules (CFG-start cfg))])
+    ;(values (length nts) (length all-nts))
+    ;(filter-not (λ (nt) (member? nt all-nts)) nts)
+    (values rules nt-hash needed-nts (length needed-nts) need-rules)
+    #;(clean-up-cfg new-cfg (cons new-cfg acc)))
+  #;(if (and (>= (length acc) 2)
+           (same-rules-and-nts? (first acc) (second acc)))
+      (cfg->unchecked (first acc))
+  (let* ([nts (CFG-nts cfg)]
+         [rules (CFG-rules cfg)]
+         [all-nts (remove-duplicates (filter-not (λ (nt) (member? nt (cons EMP (CFG-sigma cfg))))
+                                                 (append nts
+                                                         (append-map (λ (rl) (cons (cfg-rule-lhs rl) (cfg-rule-rhs rl))) rules))))]
+         [nt-hash (foldl (λ (nt ht)
+                           (hash-set ht nt (filter (λ (rl) (eq? nt (cfg-rule-lhs rl))) rules)))
+                         (hash)
+                         all-nts)]
+         [needed-nts (filter-not (λ (nt) (empty? (hash-ref nt-hash nt)))
+                                 (remove-duplicates (filter-not (λ (nt) (member? nt (cons EMP (CFG-sigma cfg))))
+                                                    (apply append
+                                                           (hash-map nt-hash (λ (key value)
+                                                                               (append-map (λ (rl)
+                                                                                             (cons (cfg-rule-lhs rl) (cfg-rule-rhs rl))) value)))))))]
+         [need-rules (filter (λ (rule) (and (member? (cfg-rule-lhs rule) needed-nts)
+                                            (andmap (λ (rhs)
+                                                      (or (member? rhs (cons EMP (CFG-sigma cfg)))
+                                                          (member? rhs needed-nts))) (cfg-rule-rhs rule))))
+                               rules)]
+         [new-cfg (CFG needed-nts (CFG-sigma cfg) need-rules (CFG-start cfg))])
+    ;(values (length nts) (length all-nts))
+    ;(filter-not (λ (nt) (member? nt all-nts)) nts)
+    #;(values rules nt-hash needed-nts (length needed-nts) need-rules)
+    (clean-up-cfg new-cfg (cons new-cfg acc)))))
+
+
+(define (clean-up1 cfg)
+  (let ([sigma (cons EMP (CFG-sigma cfg))])
+    (clean-up2 (remove-useless-rules (CFG-start cfg) (CFG-nts cfg) (CFG-rules cfg) sigma) #;(CFG-rules cfg) sigma '())))
+  
+
+
+(define (clean-up2 rules needed seen)
+  (let* ([new-needed-nts (filter-not (λ (nt)
+                                       (member? nt seen))
+                                     (remove-duplicates (map cfg-rule-lhs (filter (λ (rule)
+                                                                 (ormap (λ (rhs) (member? rhs needed))
+                                                                        (cfg-rule-rhs rule)))
+                                                               rules))))])
+        (if (empty? new-needed-nts)
+            needed #;seen #;(values needed seen)
+            (clean-up2 rules (append needed new-needed-nts) (append seen new-needed-nts)))))
+
+(define (same-rules? rules1 rules2)
+  (and (andmap (λ (rule) (member? rule rules2)) rules1)
+       (andmap (λ (rule) (member? rule rules1)) rules2)))
+
+(define (remove-useless-rules start nts rules sigma)
+  (let* ([rhs-nts (remove-duplicates (append-map cfg-rule-rhs rules))]
+         [rules-that-can-be-generated (filter (λ (rule) (or (eq? (cfg-rule-lhs rule) start)
+                          (member? (cfg-rule-lhs rule) rhs-nts))) rules)]
+         [lhs-nts (map cfg-rule-lhs rules-that-can-be-generated)]
+         )
+       (remove-only-self-loops (remove-rules-without-nts lhs-nts rules-that-can-be-generated sigma '()) '())))
+
+(define (remove-rules-without-nts nts rules sigma acc)
+  (if (and (>= (length acc) 2)
+           (same-rules? (first acc) (second acc)))
+      (first acc)
+      (let* ([new-rules (filter (λ (rule)
+                                  (andmap (λ (rhs)
+                                            ;(displayln rhs)
+                                            (or (member? rhs sigma)
+                                                (member? rhs nts)))
+                                          (cfg-rule-rhs rule)))
+                                rules)]
+             [new-nts (map cfg-rule-lhs new-rules)])
+        (remove-rules-without-nts new-nts new-rules sigma (cons new-rules acc)))))
+
+(define (remove-only-self-loops rules new-rules)
+  (if (empty? rules)
+      new-rules
+      (let* ([rule-lhs (cfg-rule-lhs (first rules))]
+            [related-rules (filter (λ (rule) (eq? (cfg-rule-lhs rule) rule-lhs)) rules)]
+            [only-self-loop? (or (and (= (length related-rules) 1)
+                                      (not (member? rule-lhs (cfg-rule-rhs (first related-rules)))))
+                                 (and (> (length related-rules) 1)
+                                      (ormap (λ (rule) (not (member? rule-lhs (cfg-rule-rhs rule)))) related-rules)))])
+        (if (not only-self-loop?)
+            (remove-only-self-loops (rest rules) new-rules)
+            (remove-only-self-loops (rest rules) (cons (first rules) new-rules))))))
+
+
+
+            
+
 ;; pda -> cfe
 ;;Purpose: Converts the given pda into a cfe
 (define #;define/contract (pda->cfe pda)
@@ -491,8 +607,8 @@
   (let* ([G (unchecked->cfg (pda2cfg pda))]
          [renamed-nts-mapping (rename-nts G)]
          [renamed-cfg (unchecked->cfg (rebuild-cfg G renamed-nts-mapping))]
-         [proper-cfg (minimize-cfg renamed-cfg)])
-   #;renamed-cfg (cfg->cfe proper-cfg)))
+         #;[proper-cfg  (clean-up-cfg renamed-cfg '()) #;(minimize-cfg renamed-cfg)])
+   renamed-cfg #;(cfg->cfe proper-cfg)))
 
 ;;cfe -> pda
 ;;Purpose: Converts the given cfe into a pda
@@ -584,8 +700,7 @@
            (Z (first (pda-getgamma sm)))
            (SIGMA (pda-getalphabet sm))
            (R (cfgrules-pda->cfg sm S Z))
-           (V (remove-duplicates (append-map extract-nts-from-rule R))
-              #;(append (remove-duplicates (append-map extract-nts-from-rule R)) SIGMA))
+           (V (remove-duplicates (append-map extract-nts-from-rule R)))
            )
        (cfg V SIGMA R S)))
 
@@ -939,3 +1054,8 @@
                                 `(((S a ,EMP) (S ,EMP)))))
 
 (define p-cfe (pda->cfe P))
+
+
+
+
+    
