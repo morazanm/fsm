@@ -1003,6 +1003,19 @@ word are returned.
          If any word is generated, the test fails. If w is not
          in the grammar's language, the test may not terminate.
 
+@defproc[(check-inv-holds? [p procedure?]
+                           [w word] ...)
+         (void)]
+         Checks if the given invariant predicate holds for all the given words.
+         If the invariant predicate does not hold for any of the words, the
+         test fails.
+
+@defproc[(check-inv-fails? [p procedure?]
+                           [w word] ...)
+         (void)]
+         Checks if the given invariant predicate fails to hold for all
+         the given words. If the invariant predicate does hold for any
+         of the words, the test fails.
 
 @section{Some Useful Functions}
 

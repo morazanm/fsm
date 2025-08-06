@@ -518,6 +518,7 @@
    (list* (fsa->graph M 0) (map graph-struct-grph (create-graphs M)))
    (lambda () (sm-graph M))
    MIDDLE-E-SCENE
+   E-SCENE-WIDTH E-SCENE-HEIGHT PERCENT-BORDER-GAP
    DEFAULT-ZOOM
    DEFAULT-ZOOM-CAP
    DEFAULT-ZOOM-FLOOR

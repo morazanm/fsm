@@ -704,6 +704,7 @@
          grphs
          (lambda () (above (graph->bitmap (first (first grphs))) (graph->bitmap (second (first grphs)))))
          MIDDLE-E-SCENE
+         E-SCENE-WIDTH E-SCENE-HEIGHT PERCENT-BORDER-GAP
          DEFAULT-ZOOM
          DEFAULT-ZOOM-CAP
          DEFAULT-ZOOM-FLOOR

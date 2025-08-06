@@ -310,6 +310,7 @@
        (map graph-struct-grph (list (make-init-grph-structure M) (create-graph-structure M)))
        (lambda () (graph->bitmap (graph-struct-grph (make-init-grph-structure M))))
        MIDDLE-E-SCENE
+       E-SCENE-WIDTH E-SCENE-HEIGHT PERCENT-BORDER-GAP
        DEFAULT-ZOOM
        DEFAULT-ZOOM-CAP
        DEFAULT-ZOOM-FLOOR
