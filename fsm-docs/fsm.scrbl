@@ -3,7 +3,7 @@
 
 #lang scribble/manual
 
-@(require (for-label racket 2htdp/image) setup/collects)
+@(require (for-label 2htdp/image typed/racket/base))
 
 @title{FSM}
 @author[(author+email "Marco T. Morazán" "morazanm@shu.edu")]
@@ -1003,14 +1003,18 @@ word are returned.
          If any word is generated, the test fails. If w is not
          in the grammar's language, the test may not terminate.
 
-@defproc[(check-inv-holds? [p procedure?]
+@defproc[(check-inv-holds? [pred (U (-> word head-pos Boolean)
+                                    (-> (Listof (List head-pos word)) Boolean)
+                                    (-> word Boolean))]
                            [w word] ...)
          (void)]
          Checks if the given invariant predicate holds for all the given words.
          If the invariant predicate does not hold for any of the words, the
          test fails.
 
-@defproc[(check-inv-fails? [p procedure?]
+@defproc[(check-inv-fails? [pred (U (-> word head-pos Boolean)
+                                    (-> (Listof (List head-pos word)) Boolean)
+                                    (-> word Boolean))]
                            [w word] ...)
          (void)]
          Checks if the given invariant predicate fails to hold for all
