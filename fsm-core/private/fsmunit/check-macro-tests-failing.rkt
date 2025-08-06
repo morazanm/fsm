@@ -2,10 +2,1291 @@
 
 (require 
          "../../interface.rkt"
-         "interface.rkt")
+         "interface.rkt"
+         rackunit)
 
+;; DESIGN IDEA
+;; Need 4 tapes: input, as, bs, cs
+;; Start with (LM BLANK w) and i = 1 on tape 0
+;; Copy as to tape 1, bs to tape 2, and cs to tape 3
+;; Match a, b, c on tapes 1-3 and move heads 1, 2, 3 left
+;;  if mismatch reject
+;;  if BLANK on tapes 1-3 accept
+
+;; State Documentation
+;; S: tape 0 = (LM BLANK w) AND t0h = 1
+;;    tape 1-3 = (BLANK) AND t1h = t2h = t3h = 0
+;;
+;; C: tape 0 = (LM BLANK w) AND t0h = k >= 2
+;;    tape 1 = (BLANK a* BLANK) AND num a = num a in tape0[2..k-1] AND t1h = num a in tape1[2..k-1] + 1 AND tape1[t1h] = BLANK 
+;;    tape 2 = (BLANK b* BLANK) AND num b = num b in tape2[2..k-1] AND t2h = num b in tape2[2..k-1] + 1 AND tape1[t2h] = BLANK
+;;    tape 3 = (BLANK c* BLANK) AND num c = num c in tape3[2..k-1] AND t3h = num c in tape3[2..k-1] + 1 AND tape1[t3h] = BLANK
+;;
+;; D: tape 0 = (LM BLANK w) AND
+;;      t0h >= 2 AND
+;;      tape0[t0h] = a
+;;    tape 1 = (BLANK a* BLANK) AND 
+;;      num a = num a in tape1[2..t0h] AND
+;;      t1h = num a in tape1[2..t0h] + 1 AND
+;;      tape1[t1h] = a
+;;    tape 2 = (BLANK b* BLANK) AND 
+;;      num b = num b in tape2[2..t0h] AND
+;;      t2h = num b in tape2[2..t0h] + 1 AND
+;;      tape2[t2h] = BLANK
+;;    tape 3 = (BLANK c* BLANK) AND 
+;;      num c = num c in tape3[2..t0h] AND
+;;      t3h = num c in tape3[2..t0h] + 1 AND
+;;      tape3[t3h] = BLANK
+;;
+;; E: tape 0 = (LM BLANK w) AND
+;;      t0h >= 2 AND
+;;      tape0[t0h] = b
+;;    tape 1 = (BLANK a* BLANK) AND 
+;;      num a = num a in tape1[2..t0h] AND 
+;;      t1h = num a in tape1[2..t0h] + 1 AND 
+;;      tape1[t1h] = BLANK
+;;    tape 2 = (BLANK b* BLANK) AND 
+;;      num b = num b in tape2[2..t0h] AND 
+;;      t2h = num b in tape2[2..t0h] + 1 AND 
+;;      tape2[t2h] = b
+;;    tape 3 = (BLANK c* BLANK) AND 
+;;      num c = num c in tape3[2..t0h] AND 
+;;      t3h = num c in tape3[2..t0h] + 1 AND 
+;;      tape3[t3h] = BLANK
+;;
+;; F: tape 0 = (LM BLANK w) AND
+;;      t0h >= 2 AND
+;;      tape0[t0h] = c
+;;    tape 1 = (BLANK a* BLANK) AND 
+;;      num a = num a in tape1[2..t0h] AND 
+;;      t1h = num a in tape1[2..t0h] + 1 AND 
+;;      tape1[t1h] = BLANK
+;;    tape 2 = (BLANK b* BLANK) AND 
+;;      num b = num b in tape2[2..t0h] AND 
+;;      t2h = num b in tape2[2..t0h] + 1 AND 
+;;      tape2[t2h] = BLANK
+;;    tape 3 = (BLANK c* BLANK) AND 
+;;      num c = num c in tape3[2..t0h] AND 
+;;      t3h = num c in tape3[2..t0h] + 1 AND 
+;;      tape3[t3h] = c
+;;
+;; G: tape 0 = (LM BLANK w)
+;;    t1 = (BLANK a*)
+;;    t2 = (BLANK b*)
+;;    t3 = (BLANK c*)
+;;    num a in t0 = num a in t1
+;;    num b in t0 = num b in t2
+;;    num c in t0 = num c in t3
+;;    (= |as matched| |bs matched| |cs matched|)
+;;
+;; Y: num a in t0 = num a in t1
+;;    num b in t0 = num b in t2
+;;    num c in t0 = num c in t3
+;;    num a in t1 = num b in t2 = num c in t3
+;;
+;; N: num a in t0 = num a in t1
+;;    num b in t0 = num b in t2
+;;    num c in t0 = num c in t3
+;;    OR num a in t1 != num b in t2 
+;;       num b in t2 != num c in t3
+;;       num a in t1 != num c in t3
+
+
+
+;; A tape is a (listof symbol)
+;; A tape-config is a (list natnum tape)
+;;  interpretation: the natnum is the position of the head on the given tape
+
+;; State Documentation
+;; S: tape 0 = (LM BLANK w) AND i = 1
+;;    tape 1-3 = (BLANK) AND i = 0
+
+;; (listof tape-config) --> Boolean
+(define (S-INV tape-configs)
+  (let* [(t0c (first tape-configs))
+         (t1c (second tape-configs))
+         (t2c (third tape-configs))
+         (t3c (fourth tape-configs))
+         (t0h (first t0c))
+         (t0 (second t0c))
+         (t1h (first t1c))
+         (t1 (second t1c))
+         (t2h (first t2c))
+         (t2 (second t2c))
+         (t3h (first t3c))
+         (t3 (second t3c))]
+    (and (= t0h 1)
+         (= t1h 0)
+         (= t2h 0)
+         (= t3h 0)
+         (eq? (list-ref t0 t0h) BLANK)
+         (equal? `(,BLANK) t1)
+         (equal? `(,BLANK) t2)
+         (equal? `(,BLANK) t3))))
+
+(check-inv-fails? S-INV
+                  (list (list 1 `(,LM ,BLANK a b c))
+                           (list 0 `(,BLANK a))
+                           (list 0 `(,BLANK b))
+                           (list 0 `(,BLANK))))
+
+(check-inv-holds? S-INV
+                  (list (list 1 `(,LM ,BLANK a b c))
+                           (list 0 `(,BLANK))
+                           (list 0 `(,BLANK))
+                           (list 0 `(,BLANK))))
+
+;; (listof tape-config) --> Boolean
+(define (C-INV tape-configs)
+  (let* [(t0c (first tape-configs))
+         (t1c (second tape-configs))
+         (t2c (third tape-configs))
+         (t3c (fourth tape-configs))
+         (t0h (first t0c))
+         (t0 (second t0c))
+         (t1h (first t1c))
+         (t1 (second t1c))
+         (t2h (first t2c))
+         (t2 (second t2c))
+         (t3h (first t3c))
+         (t3 (second t3c))
+         (readt0 (take (rest (rest t0)) (- t0h 2)))] ;; head over unread element
+    (and (>= t0h 2)
+         (eq? (list-ref t1 t1h) BLANK)
+         (eq? (list-ref t2 t2h) BLANK)
+         (eq? (list-ref t3 t3h) BLANK)
+         (let [(written-t1 (rest (drop-right t1 1)))
+               (written-t2 (rest (drop-right t2 1)))
+               (written-t3 (rest (drop-right t3 1)))]
+           (andmap (λ (s) (eq? s 'a)) written-t1)
+           (andmap (λ (s) (eq? s 'b)) written-t2)
+           (andmap (λ (s) (eq? s 'c)) written-t3)
+           (= (length t1) (+ (length written-t1) 2))
+           (= (length t2) (+ (length written-t2) 2))
+           (= (length t3) (+ (length written-t3) 2)))
+         (equal? (filter (λ (s) (eq? s 'a)) readt0)
+                 (filter (λ (s) (eq? s 'a)) t1))
+         (equal? (filter (λ (s) (eq? s 'b)) readt0)
+                 (filter (λ (s) (eq? s 'b)) t2))
+         (equal? (filter (λ (s) (eq? s 'c)) readt0)
+                 (filter (λ (s) (eq? s 'c)) t3)))))
+
+
+
+
+
+(check-inv-fails? C-INV (list (list 2 `(,LM ,BLANK b b b))
+                           (list 0 `(,BLANK a a))
+                           (list 0 `(,BLANK ,BLANK))
+                           (list 0 `(,BLANK ,BLANK))))
+
+(check-inv-holds? C-INV
+                  (list (list 2 `(,LM ,BLANK b a c))
+                        (list 1 `(,BLANK ,BLANK))
+                        (list 1 `(,BLANK ,BLANK))
+                        (list 1 `(,BLANK ,BLANK)))
+                  (list (list 6 `(,LM ,BLANK b a b c a a b c))
+                        (list 2 `(,BLANK a ,BLANK))
+                        (list 3 `(,BLANK b b ,BLANK))
+                        (list 2 `(,BLANK c ,BLANK))))
+
+;; (listof tape-config) --> Boolean
+(define (D-INV tape-configs)
+  (let* [(t0c (first tape-configs))
+         (t1c (second tape-configs))
+         (t2c (third tape-configs))
+         (t3c (fourth tape-configs))
+         (t0h (first t0c))
+         (t0 (second t0c))
+         (t1h (first t1c))
+         (t1 (second t1c))
+         (t2h (first t2c))
+         (t2 (second t2c))
+         (t3h (first t3c))
+         (t3 (second t3c))
+         (readt0 (take (rest (rest t0)) (sub1 t0h)))] ;; t0 head over last read element
+    (and (>= t0h 2)
+         (eq? (list-ref t0 t0h) 'a)
+         (eq? (list-ref t1 t1h) 'a)
+         (eq? (list-ref t2 t2h) BLANK)
+         (eq? (list-ref t3 t3h) BLANK)
+         (let [(written-t1 (rest t1))
+               (written-t2 (rest (drop-right t2 1)))
+               (written-t3 (rest (drop-right t3 1)))]
+           (andmap (λ (s) (eq? s 'a)) written-t1)
+           (andmap (λ (s) (eq? s 'b)) written-t2)
+           (andmap (λ (s) (eq? s 'c)) written-t3)
+           (= (length t1) (+ (length written-t1) 1))
+           (= (length t2) (+ (length written-t2) 2))
+           (= (length t3) (+ (length written-t3) 2)))
+         (equal? (filter (λ (s) (eq? s 'a)) readt0)
+                 (filter (λ (s) (eq? s 'a)) t1))
+         (equal? (filter (λ (s) (eq? s 'b)) readt0)
+                 (filter (λ (s) (eq? s 'b)) t2))
+         (equal? (filter (λ (s) (eq? s 'c)) readt0)
+                 (filter (λ (s) (eq? s 'c)) t3)))))
+
+
+
+
+
+
+
+(check-inv-fails? D-INV
+                  (list (list 2 `(,LM ,BLANK b))
+                           (list 0 `(,BLANK a a))
+                           (list 0 `(,BLANK))
+                           (list 0 `(,BLANK)))
+                  (list (list 4 `(,LM ,BLANK b a c))
+                           (list 2 `(,BLANK a ,BLANK))
+                           (list 2 `(,BLANK b ,BLANK))
+                           (list 1 `(,BLANK ,BLANK))))
+
+(check-inv-holds? D-INV
+                  (list (list 2 `(,LM ,BLANK a a a b b b c c c))
+                           (list 1 `(,BLANK a))
+                           (list 1 `(,BLANK ,BLANK))
+                           (list 1 `(,BLANK ,BLANK)))
+                  (list (list 5 `(,LM ,BLANK c a b a b a))
+                           (list 2 `(,BLANK a a))
+                           (list 2 `(,BLANK b ,BLANK))
+                           (list 2 `(,BLANK c ,BLANK))))
+
+;; (listof tape-config) --> Boolean
+(define (E-INV tape-configs)
+  (let* [(t0c (first tape-configs))
+         (t1c (second tape-configs))
+         (t2c (third tape-configs))
+         (t3c (fourth tape-configs))
+         (t0h (first t0c))
+         (t0 (second t0c))
+         (t1h (first t1c))
+         (t1 (second t1c))
+         (t2h (first t2c))
+         (t2 (second t2c))
+         (t3h (first t3c))
+         (t3 (second t3c))
+         (readt0 (take (rest (rest t0)) (- t0h 1)))] ;; t0 head over last read element
+    (and (>= t0h 2)
+         (eq? (list-ref t0 t0h) 'b)
+         (eq? (list-ref t1 t1h) BLANK)
+         (eq? (list-ref t2 t2h) 'b)
+         (eq? (list-ref t3 t3h) BLANK)
+         (let [(written-t1 (rest (drop-right t1 1)))
+               (written-t2 (rest t2))
+               (written-t3 (rest (drop-right t3 1)))]
+           (andmap (λ (s) (eq? s 'a)) written-t1)
+           (andmap (λ (s) (eq? s 'b)) written-t2)
+           (andmap (λ (s) (eq? s 'c)) written-t3)
+           (= (length t1) (+ (length written-t1) 2))
+           (= (length t2) (+ (length written-t2) 1))
+           (= (length t3) (+ (length written-t3) 2)))
+         (equal? (filter (λ (s) (eq? s 'a)) readt0)
+                 (filter (λ (s) (eq? s 'a)) t1))
+         (equal? (filter (λ (s) (eq? s 'b)) readt0)
+                 (filter (λ (s) (eq? s 'b)) t2))
+         (equal? (filter (λ (s) (eq? s 'c)) readt0)
+                 (filter (λ (s) (eq? s 'c)) t3)))))
+
+(check-inv-fails? E-INV
+                 (list (list 2 `(,LM ,BLANK b))
+                           (list 0 `(,BLANK))
+                           (list 0 `(,BLANK))
+                           (list 0 `(,BLANK)))
+                 (list (list 4 `(,LM ,BLANK a c b))
+                           (list 2 `(,BLANK a ,BLANK))
+                           (list 1 `(,BLANK ,BLANK))
+                           (list 2 `(,BLANK c ,BLANK))))
+
+(check-inv-holds? E-INV
+                  (list (list 7 `(,LM ,BLANK a a a b b b c c c))
+                           (list 4 `(,BLANK a a a ,BLANK))
+                           (list 3 `(,BLANK b b b))
+                           (list 1 `(,BLANK ,BLANK)))
+                  (list (list 4 `(,LM ,BLANK a c b))
+                           (list 2 `(,BLANK a ,BLANK))
+                           (list 1 `(,BLANK b))
+                           (list 2 `(,BLANK c ,BLANK)))
+                  (list (list 6 `(,LM ,BLANK c a b a b a))
+                           (list 3 `(,BLANK a a ,BLANK))
+                           (list 2 `(,BLANK b b))
+                           (list 2 `(,BLANK c ,BLANK))))
+;; (listof tape-config) --> Boolean
+(define (F-INV tape-configs)
+  (let* [(t0c (first tape-configs))
+         (t1c (second tape-configs))
+         (t2c (third tape-configs))
+         (t3c (fourth tape-configs))
+         (t0h (first t0c))
+         (t0 (second t0c))
+         (t1h (first t1c))
+         (t1 (second t1c))
+         (t2h (first t2c))
+         (t2 (second t2c))
+         (t3h (first t3c))
+         (t3 (second t3c))
+         (readt0 (take (rest (rest t0)) (- t0h 1)))] ;; t0 head over last read element
+    (and (>= t0h 2)
+         (eq? (list-ref t0 t0h) 'c)
+         (eq? (list-ref t1 t1h) BLANK)
+         (eq? (list-ref t2 t2h) BLANK)
+         (eq? (list-ref t3 t3h) 'c)
+         (let [(written-t1 (rest (drop-right t1 1)))
+               (written-t2 (rest (drop-right t2 1)))
+               (written-t3 (rest t3))]
+           (andmap (λ (s) (eq? s 'a)) written-t1)
+           (andmap (λ (s) (eq? s 'b)) written-t2)
+           (andmap (λ (s) (eq? s 'c)) written-t3)
+           (= (length t1) (+ (length written-t1) 2))
+           (= (length t2) (+ (length written-t2) 2))
+           (= (length t3) (+ (length written-t3) 1)))
+         (equal? (filter (λ (s) (eq? s 'a)) readt0)
+                 (filter (λ (s) (eq? s 'a)) t1))
+         (equal? (filter (λ (s) (eq? s 'b)) readt0)
+                 (filter (λ (s) (eq? s 'b)) t2))
+         (equal? (filter (λ (s) (eq? s 'c)) readt0)
+                 (filter (λ (s) (eq? s 'c)) t3)))))
+
+(check-inv-fails? F-INV (list (list 2 `(,LM ,BLANK b))
+                           (list 0 `(,BLANK))
+                           (list 0 `(,BLANK))
+                           (list 0 `(,BLANK)))
+                  (list (list 2 `(,LM ,BLANK a c b))
+                           (list 2 `(,BLANK a ,BLANK))
+                           (list 1 `(,BLANK ,BLANK))
+                           (list 1 `(,BLANK ,BLANK))))
+
+(check-inv-holds? F-INV (list (list 9 `(,LM ,BLANK a a a b b b c c c))
+                           (list 4 `(,BLANK a a a ,BLANK))
+                           (list 4 `(,BLANK b b b ,BLANK))
+                           (list 1 `(,BLANK c c ,BLANK)))
+                  (list (list 3 `(,LM ,BLANK a c b))
+                           (list 2 `(,BLANK a ,BLANK))
+                           (list 1 `(,BLANK ,BLANK))
+                           (list 1 `(,BLANK c ,BLANK)))
+                  (list (list 7 `(,LM ,BLANK c a b a b c a))
+                           (list 3 `(,BLANK a a ,BLANK))
+                           (list 3 `(,BLANK b b ,BLANK))
+                           (list 2 `(,BLANK c c ,BLANK))))
+
+;; (listof tape-config) --> Boolean
+(define (G-INV tape-configs)
+  (let* [(t0c (first tape-configs))
+         (t1c (second tape-configs))
+         (t2c (third tape-configs))
+         (t3c (fourth tape-configs))
+         (t0h (first t0c))
+         (t0 (second t0c))
+         (t1h (first t1c))
+         (t1 (second t1c))
+         (t2h (first t2c))
+         (t2 (second t2c))
+         (t3h (first t3c))
+         (t3 (second t3c))]
+    (and (< t1h (length t1))
+         (< t2h (length t2))
+         (< t3h (length t3))
+         (let [(as-matched (if (= (length t1) 2)
+                               '()
+                               (drop-right (drop t1 (add1 t1h)) 1)))
+               (bs-matched (if (= (length t2) 2)
+                               '()
+                               (drop-right (drop t2 (add1 t2h)) 1)))
+               (cs-matched (if (= (length t3) 2)
+                               '()
+                               (drop-right (drop t3 (add1 t3h)) 1)))]
+           (and (= (length as-matched) (length bs-matched) (length cs-matched))
+                (andmap (λ (s) (eq? s 'a)) (rest (drop-right t1 1)))
+                (andmap (λ (s) (eq? s 'b)) (rest (drop-right t2 1)))
+                (andmap (λ (s) (eq? s 'c)) (rest (drop-right t3 1)))
+                (equal? (filter (λ (s) (eq? s 'a)) t0)
+                        (filter (λ (s) (eq? s 'a)) t1))
+                (equal? (filter (λ (s) (eq? s 'b)) t0)
+                        (filter (λ (s) (eq? s 'b)) t2))
+                (equal? (filter (λ (s) (eq? s 'c)) t0)
+                        (filter (λ (s) (eq? s 'c)) t3)))))))
+
+(check-inv-fails? G-INV
+                 (list (list 4 `(,LM ,BLANK b a a ,BLANK))
+                           (list 0 `(,BLANK a a ,BLANK))
+                           (list 0 `(,BLANK b ,BLANK))
+                           (list 0 `(,BLANK ,BLANK)))
+                 (list (list 2 `(,LM ,BLANK a c b))
+                           (list 1 `(,BLANK a ,BLANK))
+                           (list 0 `(,BLANK ,BLANK))
+                           (list 1 `(,BLANK c ,BLANK))))
+(check-inv-holds? G-INV
+                 (list (list 11 `(,LM ,BLANK a a a b b b c c c ,BLANK))
+                           (list 3 `(,BLANK a a a ,BLANK))
+                           (list 3 `(,BLANK b b b ,BLANK))
+                           (list 3 `(,BLANK c c c ,BLANK)))
+                 (list (list 5 `(,LM ,BLANK a c b ,BLANK))
+                           (list 0 `(,BLANK a ,BLANK))
+                           (list 0 `(,BLANK b ,BLANK))
+                           (list 0 `(,BLANK c ,BLANK)))
+                 (list (list 9 `(,LM ,BLANK c a b a b c a ,BLANK))
+                           (list 2 `(,BLANK a a a ,BLANK))
+                           (list 1 `(,BLANK b b ,BLANK))
+                           (list 1 `(,BLANK c c ,BLANK))))
+
+;; (listof tape-config) --> Boolean
+(define (Y-INV tape-configs)
+  (let* [(t0c (first tape-configs))
+         (t1c (second tape-configs))
+         (t2c (third tape-configs))
+         (t3c (fourth tape-configs))
+         (t0h (first t0c))
+         (t0 (second t0c))
+         (t1h (first t1c))
+         (t1 (second t1c))
+         (t2h (first t2c))
+         (t2 (second t2c))
+         (t3h (first t3c))
+         (t3 (second t3c))
+         (t0as (filter (λ (s) (eq? s 'a)) t0))
+         (t0bs (filter (λ (s) (eq? s 'b)) t0))
+         (t0cs (filter (λ (s) (eq? s 'c)) t0))]
+    (= (length t0as) (length t0bs) (length t0cs))))
+
+(check-inv-fails? Y-INV (list (list 4 `(,LM ,BLANK b a a ,BLANK))
+                           (list 0 `(,BLANK a a ,BLANK))
+                           (list 0 `(,BLANK b ,BLANK))
+                           (list 0 `(,BLANK ,BLANK)))
+                  (list (list 2 `(,LM ,BLANK a a b))
+                           (list 0 `(,BLANK a a ,BLANK))
+                           (list 0 `(,BLANK ,BLANK))
+                           (list 0 `(,BLANK c ,BLANK))))
+
+(check-inv-holds? Y-INV (list (list 11 `(,LM ,BLANK a a a b b b c c c ,BLANK))
+                           (list 0 `(,BLANK a a a ,BLANK))
+                           (list 0 `(,BLANK b b b ,BLANK))
+                           (list 0 `(,BLANK c c c ,BLANK)))
+                  (list (list 5 `(,LM ,BLANK a c b ,BLANK))
+                           (list 0 `(,BLANK a ,BLANK))
+                           (list 0 `(,BLANK b ,BLANK))
+                           (list 0 `(,BLANK c ,BLANK)))
+                  (list (list 8 `(,LM ,BLANK c a b a b c ,BLANK))
+                           (list 0 `(,BLANK a a ,BLANK))
+                           (list 0 `(,BLANK b b ,BLANK))
+                           (list 0 `(,BLANK c c ,BLANK))))
+;; (listof tape-config) --> Boolean
+(define (N-INV tape-configs)
+  (let* [(t0c (first tape-configs))
+         (t1c (second tape-configs))
+         (t2c (third tape-configs))
+         (t3c (fourth tape-configs))
+         (t0h (first t0c))
+         (t0 (second t0c))
+         (t1h (first t1c))
+         (t1 (second t1c))
+         (t2h (first t2c))
+         (t2 (second t2c))
+         (t3h (first t3c))
+         (t3 (second t3c))
+         (t0as (filter (λ (s) (eq? s 'a)) t0))
+         (t0bs (filter (λ (s) (eq? s 'b)) t0))
+         (t0cs (filter (λ (s) (eq? s 'c)) t0))]
+    (not (= (length t0as) (length t0bs) (length t0cs)))))
+
+(check-equal? (N-INV (list (list 5 `(,LM ,BLANK b c a ,BLANK))
+                           (list 0 `(,BLANK a ,BLANK))
+                           (list 0 `(,BLANK b ,BLANK))
+                           (list 0 `(,BLANK c ,BLANK))))
+              #f)
+
+(check-equal? (N-INV (list (list 2 `(,LM ,BLANK ,BLANK))
+                           (list 0 `(,BLANK ,BLANK))
+                           (list 0 `(,BLANK ,BLANK))
+                           (list 0 `(,BLANK ,BLANK))))
+              #f)
+
+(check-equal? (N-INV (list (list 5 `(,LM ,BLANK b a a ,BLANK))
+                           (list 2 `(,BLANK a a ,BLANK))
+                           (list 1 `(,BLANK b ,BLANK))
+                           (list 0 `(,BLANK ,BLANK))))
+              #t)
+
+(check-equal? (N-INV (list (list 7 `(,LM ,BLANK b a a c b ,BLANK))
+                           (list 1 `(,BLANK a a ,BLANK))
+                           (list 1 `(,BLANK b b ,BLANK))
+                           (list 0 `(,BLANK c ,BLANK))))
+              #t)
+
+(check-inv-fails? N-INV
+                 (list (list 5 `(,LM ,BLANK b c a ,BLANK))
+                           (list 0 `(,BLANK a ,BLANK))
+                           (list 0 `(,BLANK b ,BLANK))
+                           (list 0 `(,BLANK c ,BLANK)))
+                 (list (list 2 `(,LM ,BLANK ,BLANK))
+                           (list 0 `(,BLANK ,BLANK))
+                           (list 0 `(,BLANK ,BLANK))
+                           (list 0 `(,BLANK ,BLANK))))
+                 
+
+(check-inv-holds? N-INV
+                  (list (list 7 `(,LM ,BLANK b a a c b ,BLANK))
+                           (list 1 `(,BLANK a a ,BLANK))
+                           (list 1 `(,BLANK b b ,BLANK))
+                           (list 0 `(,BLANK c ,BLANK)))
+                  (list (list 5 `(,LM ,BLANK b a a ,BLANK))
+                           (list 2 `(,BLANK a a ,BLANK))
+                           (list 1 `(,BLANK b ,BLANK))
+                           (list 0 `(,BLANK ,BLANK))))
+         
+
+;; PRE: t0 = (LM BLANK w) AND t0h = 1
+(define EQABC (make-mttm '(S Y N C D E F G)
+                         '(a b c)
+                         'S
+                         '(Y N)
+                         (list ;; read all blanks and move all R
+                          (list (list 'S (list BLANK BLANK BLANK BLANK))
+                                (list 'C (list RIGHT RIGHT RIGHT RIGHT)))
+                          ;; read a on t0, copy to t1 and then move R on t0 and t1
+                          (list (list 'C (list 'a BLANK BLANK BLANK))
+                                (list 'D (list 'a 'a BLANK BLANK)))
+                          (list (list 'D (list 'a 'a BLANK BLANK))
+                                (list 'C (list RIGHT RIGHT BLANK BLANK)))
+                          ;; read b on t0, copy to t2 and then move R on t0 and t2
+                          (list (list 'C (list 'b BLANK BLANK BLANK))
+                                (list 'E (list 'b BLANK 'b BLANK)))
+                          (list (list 'E (list 'b BLANK 'b BLANK))
+                                (list 'C (list RIGHT BLANK RIGHT BLANK)))
+                          ;; read c on t0, copy to t3 and then move R on t0 and t3
+                          (list (list 'C (list 'c BLANK BLANK BLANK))
+                                (list 'F (list 'c BLANK BLANK 'c)))
+                          (list (list 'F (list 'c BLANK BLANK 'c))
+                                (list 'C (list RIGHT BLANK BLANK RIGHT)))
+                          ;; read BLANK on t0, move L on t1, t2 and t3
+                          (list (list 'C (list BLANK BLANK BLANK BLANK))
+                                (list 'G (list BLANK LEFT LEFT LEFT)))
+                          ;; read BLANK on all tapes, move to Y
+                          (list (list 'G (list BLANK BLANK BLANK BLANK))
+                                (list 'Y (list BLANK BLANK BLANK BLANK)))
+                          ;; read a, b, c on t1, t2, and t3 them move L on t1, t2, t3
+                          (list (list 'G (list BLANK 'a 'b 'c))
+                                (list 'G (list BLANK LEFT LEFT LEFT)))
+                          ;; too many of at least 1 letter
+                          (list (list 'G (list BLANK BLANK 'b 'c))
+                                (list 'N (list BLANK BLANK 'b 'c)))
+                          (list (list 'G (list BLANK 'a BLANK 'c))
+                                (list 'N (list BLANK 'a BLANK 'c)))
+                          (list (list 'G (list BLANK 'a 'b BLANK))
+                                (list 'N (list BLANK 'a 'b BLANK)))
+                          (list (list 'G (list BLANK BLANK BLANK 'c))
+                                (list 'N (list BLANK BLANK BLANK 'c)))
+                          (list (list 'G (list BLANK BLANK 'b BLANK))
+                                (list 'N (list BLANK BLANK 'b BLANK)))
+                          (list (list 'G (list BLANK 'a BLANK BLANK))
+                                (list 'N (list BLANK 'a BLANK BLANK))))
+                         4
+                         'Y))
+
+#;(check-reject? EQABC `((,LM ,BLANK a a b b a c c) 1))
+#;(check-reject? EQABC `((,LM ,BLANK a a b b a c c) 1)
+                     `((,LM ,BLANK a a a) 1)
+                     `((,LM ,BLANK c c a b b) 1))
+(check-accept? EQABC `((,LM ,BLANK) 1)
+                     `((,LM ,BLANK a c c b a b) 1)
+                     `((,LM ,BLANK c c c a b b a a c b a b b c a) 1))
+
+(check-equal? (sm-apply EQABC `(,LM ,BLANK a a b b a c c) 1) 'reject)
+(check-equal? (sm-apply EQABC `(,LM ,BLANK a a a) 1) 'reject)
+(check-equal? (sm-apply EQABC `(,LM ,BLANK c c a b b) 1) 'reject)
+(check-equal? (sm-apply EQABC `(,LM ,BLANK) 1) 'accept)
+(check-equal? (sm-apply EQABC `(,LM ,BLANK a c c b a b) 1) 'accept)
+(check-equal?
+ (sm-apply EQABC `(,LM ,BLANK c c c a b b a a c b a b b c a) 1)
+ 'accept)
+
+#|
 ;; TESTING MACHINES
 
+(define numb>numa
+  (make-cfg
+   '(S A)
+   '(a b)
+   `((S ,ARROW b) (S ,ARROW AbA) (A ,ARROW AaAbA) (A ,ARROW AbAaA) (A ,ARROW ,EMP) (A ,ARROW bA))
+   'S))
+
+
+;; symbol word --> natnum
+;; Purpose: Count the occurrences of the given symbol in the given word.
+(define (number-of a-symb a-word)
+  (length (filter (λ (s) (eq? a-symb s)) a-word)))
+
+(check-equal? (number-of 'a '(b b c b c)) 0)
+(check-equal? (number-of 'b '(b b a a c b c b)) 4)
+(check-equal? (number-of 'c '(c c b c a a)) 3)
+
+;; DESIGN IDEA
+;; Need 4 tapes: input, as, bs, cs
+;; Start with (LM BLANK w) and i = 1 on tape 0
+;; Copy as to tape 1, bs to tape 2, and cs to tape 3
+;; Match a, b, c on tapes 1-3 and move heads 1, 2, 3 left
+;;  if BLANK on tapes 1-3 halt and accept
+;;  if mismatch halt and reject
+
+;; State Documentation
+;; S: tape 0 = (LM BLANK w) AND t0h = 1
+;;    tape 1-3 = (BLANK) AND t1h = t2h = t3h = 0
+;;
+;; C: AND tape 0 = (LM BLANK w)
+;;        t0h = k >= 2
+;;
+;;        tape 1 = (BLANK a* BLANK)
+;;        tape 1 num a = if (eq? tape1[t1h] BLANK)
+;;                          num a in tape0[2..k-1]
+;;                          num a in tape0[2..k]
+;;        t1h = if (eq? tape1[t1h] BLANK)
+;;                 num a in tape1[2..k-1] + 1
+;;                 num a in tape1[2..k] + 1
+;;
+;;        tape 2 = (BLANK b* BLANK)
+;;        tape 2 num b = if (eq? tape2[t2h] BLANK)
+;;                          num b in tape0[2..k-1]
+;;                          num b in tape0[2..k]
+;;        t2h = if (eq? tape2[t2h] BLANK)
+;;                 num b in tape2[2..k-1] + 1
+;;                 num b in tape2[2..k] + 1
+;;
+;;        tape 3 = (BLANK c* BLANK)
+;;        tape 3 num c = if (eq? tape3[t3h] BLANK)
+;;                          num c in tape0[2..k-1]
+;;                          num c in tape0[2..k]
+;;        t3h = if (eq? tape3[t3h] BLANK)
+;;                 num c in tape3[2..k-1] + 1
+;;                 num c in tape3[2..k] + 1
+;;
+;; G: tape 0 = (LM BLANK w)
+;;    t1 = (BLANK a*)
+;;    t2 = (BLANK b*)
+;;    t3 = (BLANK c*)
+;;    num a in t0 = num a in t1
+;;    num b in t0 = num b in t2
+;;    num c in t0 = num c in t3
+;;    (= |as matched| |bs matched| |cs matched|)
+;;
+;; Y: num a in t0 = num a in t1
+;;    num b in t0 = num b in t2
+;;    num c in t0 = num c in t3
+;;    num a in t1 = num b in t2 = num c in t3
+
+
+
+;; A tape is a (listof symbol)
+;; A tape-config is a (list natnum tape)
+;;  interpretation: the natnum is the position of the head on the given tape
+
+;; L = {w | w has an equal number of a, b, and c}
+;; PRE: t0 = (LM BLANK w) AND i = 1
+(define EQABC (make-mttm '(S C G Y)
+                         '(a b c)
+                         'S
+                         '(Y)
+                         (list ;; read all blanks and move all R
+                          (list (list 'S (list BLANK BLANK BLANK BLANK))
+                                (list 'C (list RIGHT RIGHT RIGHT RIGHT)))
+                          ;; read a on t0, copy to t1 and then move R on t0 and t1
+                          (list (list 'C (list 'a BLANK BLANK BLANK))
+                                (list 'C (list 'a 'a BLANK BLANK)))
+                          (list (list 'C (list 'a 'a BLANK BLANK))
+                                (list 'C (list RIGHT RIGHT BLANK BLANK)))
+                          (list (list 'C (list 'b BLANK BLANK BLANK))
+                                (list 'C (list 'b BLANK 'b BLANK)))
+                          (list (list 'C (list 'b BLANK 'b BLANK))
+                                (list 'C (list RIGHT BLANK RIGHT BLANK)))
+                          (list (list 'C (list 'c BLANK BLANK BLANK))
+                                (list 'C (list 'c BLANK BLANK 'c)))
+                          (list (list 'C (list 'c BLANK BLANK 'c))
+                                (list 'C (list RIGHT BLANK BLANK RIGHT)))
+                          ;; read BLANK on t0, move L on t1, t2 and t3
+                          (list (list 'C (list BLANK BLANK BLANK BLANK))
+                                (list 'G (list BLANK LEFT LEFT LEFT)))
+                          ;; read BLANK on all tapes, move to Y
+                          (list (list 'G (list BLANK BLANK BLANK BLANK))
+                                (list 'Y (list BLANK BLANK BLANK BLANK)))
+                          ;; read a, b, c on t1, t2, and t3 them move L on t1, t2, t3
+                          (list (list 'G (list BLANK 'a 'b 'c))
+                                (list 'G (list BLANK LEFT LEFT LEFT))))
+                         4
+                         'Y))
+
+(check-equal? (sm-apply EQABC `(,LM ,BLANK a a b b a c c) 1) 'reject)
+(check-equal? (sm-apply EQABC `(,LM ,BLANK a a a) 1) 'reject)
+(check-equal? (sm-apply EQABC `(,LM ,BLANK c c a b b) 1) 'reject)
+(check-equal? (sm-apply EQABC `(,LM ,BLANK) 1) 'accept)
+(check-equal? (sm-apply EQABC `(,LM ,BLANK a b c) 1) 'accept)
+(check-equal? (sm-apply EQABC `(,LM ,BLANK a c c b a b) 1) 'accept)
+(check-equal?
+ (sm-apply EQABC `(,LM ,BLANK c c c a b b a a c b a b b c a) 1)
+ 'accept)
+
+;; (listof tape-config) --> Boolean
+;; Purpose: Determine if S's conditions are met
+(define (S-INV tape-configs)
+  (let* [(t0c (first tape-configs))
+         (t1c (second tape-configs))
+         (t2c (third tape-configs))
+         (t3c (fourth tape-configs))
+         (t0h (first t0c))
+         (t0 (second t0c))
+         (t1h (first t1c))
+         (t1 (second t1c))
+         (t2h (first t2c))
+         (t2 (second t2c))
+         (t3h (first t3c))
+         (t3 (second t3c))]
+    (and (= t0h 1)
+         (= t1h 0)
+         (= t2h 0)
+         (= t3h 0)
+         (eq? (list-ref t0 t0h) BLANK)
+         (equal? `(,BLANK) t1)
+         (equal? `(,BLANK) t2)
+         (equal? `(,BLANK) t3))))
+
+(check-inv-fails? S-INV
+                  (list (list 1 `(,LM ,BLANK a b c))
+                        (list 0 `(,BLANK a))
+                        (list 0 `(,BLANK b))
+                        (list 0 `(,BLANK))))
+(check-inv-holds? S-INV
+                  
+                  (list (list 1 `(,LM ,BLANK a b c))
+                        (list 0 `(,BLANK))
+                        (list 0 `(,BLANK))
+                        (list 0 `(,BLANK))))
+
+;; (listof tape-config) --> Boolean
+;; Purpose: Determine if C's conditions are met
+(define (C-INV tape-configs)
+  (let* [(t0c (first tape-configs))
+         (t1c (second tape-configs))
+         (t2c (third tape-configs))
+         (t3c (fourth tape-configs))
+         (t0h (first t0c))
+         (t0 (second t0c))
+         (t1h (first t1c))
+         (t1 (second t1c))
+         (t2h (first t2c))
+         (t2 (second t2c))
+         (t3h (first t3c))
+         (t3 (second t3c))
+         (readt0 (if (or (eq? (list-ref t0 t0h)
+                              (list-ref t1 t1h))
+                         (eq? (list-ref t0 t0h)
+                              (list-ref t2 t2h))
+                         (eq? (list-ref t0 t0h)
+                              (list-ref t3 t3h)))
+                     (take (rest (rest t0)) (- t0h 1))   ;; head over read element
+                     (take (rest (rest t0)) (- t0h 2)))) ;; head over unread element
+         (written-t1 (if (eq? (list-ref t1 t1h) BLANK)
+                         (rest (drop-right t1 1))
+                         (rest t1)))
+         (written-t2 (if (eq? (list-ref t2 t2h) BLANK)
+                         (rest (drop-right t2 1))
+                         (rest t2)))
+         (written-t3 (if (eq? (list-ref t3 t3h) BLANK)
+                         (rest (drop-right t3 1))
+                         (rest t3)))] 
+    (and (>= t0h 2)
+         (or (eq? (list-ref t1 t1h) BLANK)
+             (eq? (list-ref t1 t1h) (list-ref t0 t0h)))
+         (or (eq? (list-ref t2 t2h) BLANK)
+             (eq? (list-ref t2 t2h) (list-ref t0 t0h)))
+         (or (eq? (list-ref t3 t3h) BLANK)
+             (eq? (list-ref t3 t3h) (list-ref t0 t0h)))
+         (andmap (λ (s) (eq? s 'a)) written-t1)
+         (andmap (λ (s) (eq? s 'b)) written-t2)
+         (andmap (λ (s) (eq? s 'c)) written-t3)
+         (eq? (list-ref t1 0) BLANK)
+         (eq? (list-ref t2 0) BLANK)
+         (eq? (list-ref t3 0) BLANK)
+         (equal? (filter (λ (s) (eq? s 'a)) readt0)
+                 (filter (λ (s) (eq? s 'a)) t1))
+         (equal? (filter (λ (s) (eq? s 'b)) readt0)
+                 (filter (λ (s) (eq? s 'b)) t2))
+         (equal? (filter (λ (s) (eq? s 'c)) readt0)
+                 (filter (λ (s) (eq? s 'c)) t3)))))
+
+(check-inv-holds? C-INV
+                  (list (list 2 `(,LM ,BLANK b a c))
+                           (list 1 `(,BLANK ,BLANK))
+                           (list 1 `(,BLANK ,BLANK))
+                           (list 1 `(,BLANK ,BLANK)))
+                  (list (list 6 `(,LM ,BLANK b a b c a a b c))
+                           (list 2 `(,BLANK a ,BLANK))
+                           (list 3 `(,BLANK b b ,BLANK))
+                           (list 2 `(,BLANK c ,BLANK))))
+(check-inv-fails? C-INV
+                  (list (list 2 `(,LM ,BLANK b b b))
+                           (list 0 `(,BLANK a a))
+                           (list 0 `(,BLANK ,BLANK))
+                           (list 0 `(,BLANK ,BLANK))))
+
+;; (listof tape-config) --> Boolean
+;; Purpose: Determine if G's conditions are met
+(define (G-INV tape-configs)
+  (let* [(t0c (first tape-configs))
+         (t1c (second tape-configs))
+         (t2c (third tape-configs))
+         (t3c (fourth tape-configs))
+         (t0h (first t0c))
+         (t0 (second t0c))
+         (t1h (first t1c))
+         (t1 (second t1c))
+         (t2h (first t2c))
+         (t2 (second t2c))
+         (t3h (first t3c))
+         (t3 (second t3c))
+         (as-matched (if (= (length t1) 2)
+                         '()
+                         (drop-right (drop t1 (add1 t1h)) 1)))
+         (bs-matched (if (= (length t2) 2)
+                         '()
+                         (drop-right (drop t2 (add1 t2h)) 1)))
+         (cs-matched (if (= (length t3) 2)
+                         '()
+                         (drop-right (drop t3 (add1 t3h)) 1)))]
+    (and (>= t0h 2)
+         (< t1h (length t1))
+         (< t2h (length t2))
+         (< t3h (length t3))
+         (andmap (λ (s) (eq? s 'a)) (rest (drop-right t1 1)))
+         (andmap (λ (s) (eq? s 'b)) (rest (drop-right t2 1)))
+         (andmap (λ (s) (eq? s 'c)) (rest (drop-right t3 1)))
+         (equal? (filter (λ (s) (eq? s 'a)) t0)
+                 (filter (λ (s) (eq? s 'a)) t1))
+         (equal? (filter (λ (s) (eq? s 'b)) t0)
+                 (filter (λ (s) (eq? s 'b)) t2))
+         (equal? (filter (λ (s) (eq? s 'c)) t0)
+                 (filter (λ (s) (eq? s 'c)) t3))
+         (= (length as-matched) (length bs-matched) (length cs-matched)))))
+
+(check-inv-fails? G-INV
+                  (list (list 4 `(,LM ,BLANK b a a ,BLANK))
+                           (list 0 `(,BLANK a a ,BLANK))
+                           (list 0 `(,BLANK b ,BLANK))
+                           (list 0 `(,BLANK ,BLANK)))
+                  (list (list 2 `(,LM ,BLANK a c b))
+                           (list 1 `(,BLANK a ,BLANK))
+                           (list 0 `(,BLANK ,BLANK))
+                           (list 1 `(,BLANK c ,BLANK))))
+
+(check-inv-holds? G-INV
+                  (list (list 11 `(,LM ,BLANK a a a b b b c c c ,BLANK))
+                           (list 3 `(,BLANK a a a ,BLANK))
+                           (list 3 `(,BLANK b b b ,BLANK))
+                           (list 3 `(,BLANK c c c ,BLANK)))
+                  (list (list 5 `(,LM ,BLANK a c b ,BLANK))
+                           (list 0 `(,BLANK a ,BLANK))
+                           (list 0 `(,BLANK b ,BLANK))
+                           (list 0 `(,BLANK c ,BLANK)))
+                  (list (list 9 `(,LM ,BLANK c a b a b c a ,BLANK))
+                           (list 2 `(,BLANK a a a ,BLANK))
+                           (list 1 `(,BLANK b b ,BLANK))
+                           (list 1 `(,BLANK c c ,BLANK))))
+
+;; (listof tape-config) --> Boolean
+;; Purpose: Determine if Y's conditions are met
+(define (Y-INV tape-configs)
+  (let* [(t0c (first tape-configs))
+         (t1c (second tape-configs))
+         (t2c (third tape-configs))
+         (t3c (fourth tape-configs))
+         (t0h (first t0c))
+         (t0 (second t0c))
+         (t1h (first t1c))
+         (t1 (second t1c))
+         (t2h (first t2c))
+         (t2 (second t2c))
+         (t3h (first t3c))
+         (t3 (second t3c))
+         (t0as (filter (λ (s) (eq? s 'a)) t0))
+         (t0bs (filter (λ (s) (eq? s 'b)) t0))
+         (t0cs (filter (λ (s) (eq? s 'c)) t0))]
+    (= (length t0as) (length t0bs) (length t0cs))))
+
+(check-inv-holds? Y-INV
+                  (list (list 11 `(,LM ,BLANK a a a b b b c c c ,BLANK))
+                           (list 0 `(,BLANK a a a ,BLANK))
+                           (list 0 `(,BLANK b b b ,BLANK))
+                           (list 0 `(,BLANK c c c ,BLANK)))
+                  (list (list 5 `(,LM ,BLANK a c b ,BLANK))
+                           (list 0 `(,BLANK a ,BLANK))
+                           (list 0 `(,BLANK b ,BLANK))
+                           (list 0 `(,BLANK c ,BLANK)))
+                  (list (list 8 `(,LM ,BLANK c a b a b c ,BLANK))
+                           (list 0 `(,BLANK a a ,BLANK))
+                           (list 0 `(,BLANK b b ,BLANK))
+                           (list 0 `(,BLANK c c ,BLANK))))
+
+(check-inv-fails? Y-INV
+                  (list (list 2 `(,LM ,BLANK a a b))
+                           (list 0 `(,BLANK a a ,BLANK))
+                           (list 0 `(,BLANK ,BLANK))
+                           (list 0 `(,BLANK c ,BLANK)))
+                  (list (list 4 `(,LM ,BLANK b a a ,BLANK))
+                           (list 0 `(,BLANK a a ,BLANK))
+                           (list 0 `(,BLANK b ,BLANK))
+                           (list 0 `(,BLANK ,BLANK))))
+|#
+#|
+
+#;(define (A-INV w)
+  (let ([as (filter (lambda (symb) (eq? symb 'a)) w)] [bs (filter (lambda (symb) (eq? symb 'b)) w)])
+    (>= (length bs) (length as))))
+
+#;(define (S-INV w)
+  (let ([as (filter (lambda (symb) (eq? symb 'a)) w)]
+        [bs (filter (lambda (symb) (eq? symb 'b)) w)]
+        [As (filter (lambda (symb) (eq? symb 'A)) w)])
+    (> (length bs) (length as))
+    ))
+
+#;(check-not-in-lang? A-INV '(a a b) '(a) '(a a a))
+#;(check-not-in-lang? S-INV '(a b b) '(a b) '())
+
+#;(define (Y-INV w head-pos)
+  (and (list? w) (number? head-pos)))
+
+;(check-not-in-lang? Y-INV '((@ _ a a b) 1))
+
+;; L = a^n b^n c^n
+;; PRE: tape = `(,LM ,BLANK w) ∧ i = 1, where w∈{a b c}∗
+;; Σ = {a b c x}
+(define anbncn (make-tm '(S A B C D E F G H I J K L Y)
+                        '(a b c x)
+                        `(((S ,BLANK) (J ,RIGHT))
+                          ((J ,BLANK) (Y ,BLANK))
+                          ((J a) (A ,RIGHT))
+                          ((A a) (A ,RIGHT))
+                          ((A b) (B ,RIGHT))
+                          ((B b) (B ,RIGHT))
+                          ((B c) (C ,RIGHT))
+                          ((C c) (C ,RIGHT))
+                          ((C ,BLANK) (D ,LEFT))
+                          ((D a) (D ,LEFT))
+                          ((D b) (D ,LEFT))
+                          ((D c) (D ,LEFT))
+                          ((D x) (D ,LEFT))
+                          ((D ,BLANK) (E ,RIGHT))
+                          ((E x) (E ,RIGHT))
+                          ((E a) (F x))
+                          ((E a) (H x))
+                          ((F a) (F ,RIGHT))
+                          ((F b) (G x))
+                          ((F x) (F ,RIGHT))
+                          ((G b) (G ,RIGHT))
+                          ((G x) (G ,RIGHT))
+                          ((G c) (D x))
+                          ((H x) (H ,RIGHT))
+                          ((H b) (I x))
+                          ((I x) (I ,RIGHT))
+                          ((I c) (K x))            
+                          ((K x) (L ,RIGHT))  
+                          ((L ,BLANK) (Y ,BLANK)))     
+                        'S
+                        '(Y)
+                        'Y
+                        #:rejects `(((,LM ,BLANK a a) 1) ((,LM ,BLANK b b b) 1)
+                                    ((,LM ,BLANK c) 1) ((,LM ,BLANK b a b c) 1)
+                                    ((,LM ,BLANK a c b) 1) ((,LM ,BLANK a a b c) 1)
+                                    ((,LM ,BLANK a a b b b c c) 1)
+                                    ((,LM ,BLANK a a b b c c a b c) 1))
+                        #:accepts `(((,LM ,BLANK) 1) ((,LM ,BLANK a a b b c c) 1)
+                                    ((,LM ,BLANK a a a b b b c c c) 1))
+                        ))
+
+(check-reject? anbncn  `((,LM ,BLANK a a) 1) `((,LM ,BLANK b b b) 1)
+                       `((,LM ,BLANK c) 1) `((,LM ,BLANK b a b c) 1)
+                       `((,LM ,BLANK a c b) 1) `((,LM ,BLANK a a b c) 1)
+                       `((,LM ,BLANK a a b b b c c) 1)
+                       `((,LM ,BLANK a b c c) 1)
+                       `((,LM ,BLANK a a b b c c a b c) 1))
+                       
+(check-accept? anbncn `((,LM ,BLANK) 1)
+                      `((,LM ,BLANK a a b b c c) 1)
+                      `((,LM ,BLANK a b c) 1)
+                      `((,LM ,BLANK a a a b b b c c c) 1))
+
+;; word symbol --> word
+;; Purpose: Return the subword at the front of the given word that only contains the given symbol
+(define (front-symbs w s)
+  (takef w (λ (a) (eq? a s))))
+
+#;(check-equal? (front-symbs '(a a a c b) 'c) '())
+#;(check-equal? (front-symbs '(a a a c b) 'a) '(a a a))
+
+;; tape natnum --> Boolean
+;; Purpose: Determine head in position 1 and tape[i]=BLANK
+(define (S-INV t i)
+  (and (= i 1) (eq? (list-ref t i) BLANK)))
+
+(check-inv-fails? S-INV `((,LM ,BLANK  a b c) 0)
+                        `((,LM a b c c) 1))
+(check-inv-holds? S-INV `((,LM ,BLANK  a b c) 1)
+                        `((,LM ,BLANK  a a b b c) 1))
+
+;; tape natnum --> Boolean
+;; Purpose: Determine that head's position is 2 and tape[1] = BLANK
+(define (J-INV tape i)
+  (and (= i 2) (eq? (list-ref tape (sub1 i)) BLANK)))
+
+(check-inv-fails? J-INV `((,LM ,BLANK a b c) 1)
+                        `((,LM a a a) 1))
+(check-inv-holds? J-INV `((,LM ,BLANK a b c) 2)
+                        `((,LM ,BLANK b b b) 2))
+
+;; tape natnum --> Boolean
+;; Purpose: Determine head in position > 1 and tape[2..i-1]=a*
+(define (A-INV t i)
+  (and (> i 2)
+       (let* [(w (drop (take t i) 2))
+              (as (front-symbs w 'a))]
+         (equal? as w))))
+
+(check-inv-fails? A-INV `((,LM ,BLANK  a b c) 0)
+                        `((,LM ,BLANK ,BLANK ,BLANK) 2)
+                        `((,LM ,BLANK  a b a b c) 4))
+(check-inv-holds? A-INV `((,LM ,BLANK  a b c) 3)
+                        `((,LM ,BLANK  a a a b b c) 5))
+
+;; tape natnum --> Boolean
+;; Purpose: Determine head in position > 2 and tape[2..i-1]=a^+b^+
+(define (B-INV t i)
+  (and (> i 3)
+       (let* [(w (drop (take t i) 2))
+              (as (front-symbs w 'a))
+              (w-as (drop w (length as)))
+              (bs (front-symbs w-as 'b))]
+         (and (equal? w (append as bs))
+              (not (empty? as))
+              (not (empty? bs))))))
+
+(check-inv-fails? B-INV `((,LM ,BLANK  a b c) 0)
+                        `((,LM ,BLANK  a b b c c) 6))
+(check-inv-holds? B-INV `((,LM ,BLANK  a a b b c c) 6)
+                        `((,LM ,BLANK  a b b c) 5)
+                        `((,LM ,BLANK  a a b b b c c) 7))
+
+;; tape natnum --> Boolean
+;; Purpose: Determine head in position > 3 and tape[2..i-1]=a^+b^+c^+
+(define (C-INV t i)
+  (and (> i 4)
+       (let* [(w (drop (take t i) 2))
+              (as (front-symbs  w 'a))
+              (w-as (drop w (length as)))
+              (bs (front-symbs  w-as 'b))
+              (w-asbs (drop w-as (length bs)))
+              (cs (front-symbs w-asbs 'c))]
+         (and (equal? w (append as bs cs))
+              (not (empty? as))
+              (not (empty? bs))
+              (not (empty? cs))))))
+
+(check-inv-fails? C-INV `((,LM ,BLANK  a b b c c) 5)
+                        `((,LM ,BLANK  a b b) 4))
+(check-inv-holds? C-INV `((,LM ,BLANK  a b b c c) 6)
+                        `((,LM ,BLANK  a b c ,BLANK) 5))
+
+;; tape natnum --> Boolean
+;; Purpose: Determine that head position is >= 1 and that input word =x^na^+x^nb^+x^nc^+
+(define (D-INV t i)
+  (and (>= i 1)
+       (let* [(w (takef (drop t 2) (λ (s) (not (eq? s BLANK)))))
+              (xs1 (front-symbs w 'x))
+              (w-xs1 (drop w (length xs1)))
+              (as (front-symbs w-xs1 'a))
+              (w-xs1as (drop w-xs1 (length as)))
+              (xs2 (front-symbs w-xs1as 'x))
+              (w-xs1asxs2 (drop w-xs1as (length xs2)))
+              (bs (front-symbs w-xs1asxs2 'b))
+              (w-xs1asxs2bs (drop w-xs1asxs2 (length bs)))
+              (xs3 (front-symbs w-xs1asxs2bs 'x))
+              (w-xs1asbsxs3 (drop w-xs1asxs2bs (length xs3)))
+              (cs (front-symbs w-xs1asbsxs3 'c))]
+         (and (equal? w (append xs1 as xs2 bs xs3 cs))
+              (> (length as) 0)
+              (> (length bs) 0)
+              (> (length cs) 0)
+              (= (length xs1) (length xs2) (length xs3))))))
+
+(check-inv-fails? D-INV `((,LM ,BLANK b b b c c) 4)
+                        `((,LM ,BLANK a b b) 2))
+(check-inv-holds? D-INV `((,LM ,BLANK a b c) 1)
+                        `((,LM ,BLANK a a b b c c) 7))
+
+;; tape natnum --> Boolean
+;; Purpose: Determine head in position > 1 and tape=x^na^+x^nb^+x^nc^+
+(define (E-INV t i)
+  (and (> i 1)
+       (let* [(w (drop-right (drop t 2) 1))
+              (xs1 (front-symbs w 'x))
+              (w-xs1 (drop w (length xs1)))
+              (as (front-symbs w-xs1 'a))
+              (w-xs1as (drop w-xs1 (length as)))
+              (xs2 (front-symbs w-xs1as 'x))
+              (w-xs1asxs2 (drop w-xs1as (length xs2)))
+              (bs (front-symbs w-xs1asxs2 'b))
+              (w-xs1asxs2bs (drop w-xs1asxs2 (length bs)))
+              (xs3 (front-symbs w-xs1asxs2bs 'x))
+              (w-xs1asbsxs3 (drop w-xs1asxs2bs (length xs3)))
+              (cs (front-symbs w-xs1asbsxs3 'c))]
+         (and (equal? w (append xs1 as xs2 bs xs3 cs))
+              (> (length as) 0)
+              (> (length bs) 0)
+              (> (length cs) 0)
+              (= (length xs1) (length xs2) (length xs3))))))
+
+(check-inv-fails? E-INV `((,LM ,BLANK x a a x b b x c c ,BLANK) 1)
+                        `((,LM ,BLANK x a a x b c c ,BLANK) 2))
+(check-inv-holds? E-INV `((,LM ,BLANK x a a x b b x c c ,BLANK) 4)
+                        `((,LM ,BLANK a a b b c c ,BLANK) 3))
+
+;; tape natnum --> Boolean
+;; Purpose: Determine head in position > 1 and tape=x^n+1a^+x^nbb^+*x^ncc^+
+(define (F-INV t i)
+  (and (> i 1) ;; is 2 when first a is replaced
+       (let* [(w (drop-right (drop t 2) 1))
+              (xs1 (front-symbs w 'x))
+              (w-xs1 (drop w (length xs1)))
+              (as (front-symbs w-xs1 'a))
+              (w-xs1as (drop w-xs1 (length as)))
+              (xs2 (front-symbs w-xs1as 'x))
+              (w-xs1asxs2 (drop w-xs1as (length xs2)))
+              (bs (front-symbs w-xs1asxs2 'b))
+              (w-xs1asxs2bs (drop w-xs1asxs2 (length bs)))
+              (xs3 (front-symbs w-xs1asxs2bs 'x))
+              (w-xs1asbsxs3 (drop w-xs1asxs2bs (length xs3)))
+              (cs (front-symbs w-xs1asbsxs3 'c))]
+         (and (equal? w (append xs1 as xs2 bs xs3 cs))
+              (> (length as) 0)
+              (> (length bs) 1)
+              (> (length cs) 1)
+              (= (sub1 (length xs1)) (length xs2) (length xs3))))))
+
+(check-inv-fails? F-INV `((,LM ,BLANK x a a x b b c c c ,BLANK) 3)
+                    `((,LM ,BLANK x a b b c c ,BLANK) 1))
+(check-inv-holds? F-INV `((,LM ,BLANK x a a b b b c c c ,BLANK) 5)
+                        `((,LM ,BLANK x a b b c c ,BLANK) 3))
+
+;; tape natnum --> Boolean
+;; Purpose: Determine head in position > 3 and tape=x^n+1a^+x^n+1b^+x^ncc^+
+(define (G-INV t i)
+  (and (> i 3)
+       (let* [(w (drop-right (drop t 2) 1))
+              (xs1 (front-symbs w 'x))
+              (w-xs1 (drop w (length xs1)))
+              (as (front-symbs w-xs1 'a))
+              (w-xs1as (drop w-xs1 (length as)))
+              (xs2 (front-symbs w-xs1as 'x))
+              (w-xs1asxs2 (drop w-xs1as (length xs2)))
+              (bs (front-symbs w-xs1asxs2 'b))
+              (w-xs1asxs2bs (drop w-xs1asxs2 (length bs)))
+              (xs3 (front-symbs w-xs1asxs2bs 'x))
+              (w-xs1asbsxs3 (drop w-xs1asxs2bs (length xs3)))
+              (cs (front-symbs w-xs1asbsxs3 'c))]
+         (and (equal? w (append xs1 as xs2 bs xs3 cs))
+              (> (length as) 0)
+              (> (length bs) 0)
+              (> (length cs) 1)
+              (= (sub1 (length xs1)) (sub1 (length xs2)) (length xs3))))))
+
+(check-inv-fails? G-INV `((,LM ,BLANK x a a x x b c c c ,BLANK) 3)
+                        `((,LM ,BLANK x a a x b b x c c ,BLANK) 5))
+(check-inv-holds? G-INV `((,LM ,BLANK x a a x b b c c c ,BLANK) 5)
+                        `((,LM ,BLANK x x a x x b x c c ,BLANK) 8))
+
+;; tape natnum --> Boolean
+;; Purpose: Determine input word = x^+bx^+c and |xs|%3 = 1 and |x^+b| = 2*|x^+c|
+(define (H-INV t i)
+  (and (> i 1)
+       (let* [(w (drop-right (drop t 2) 1))
+              (xs1 (front-symbs w 'x))
+              (w-xs1 (drop w (length xs1)))
+              (b (front-symbs w-xs1 'b))
+              (w-xs1b (drop w-xs1 (length b)))
+              (xs2 (front-symbs w-xs1b 'x))
+              (w-xs1bxs2 (drop w-xs1b (length xs2)))
+              (c (front-symbs w-xs1bxs2 'c))]
+         (and (equal? w (append xs1 b xs2 c))
+              (= (add1 (length xs1)) (* 2 (add1 (length xs2))))
+              (= (length b) 1)
+              (= (length c) 1)
+              (= (remainder (length (append xs1 xs2)) 3) 1)))))
+
+(check-inv-fails? H-INV `((,LM ,BLANK a b c ,BLANK) 2)
+                        `((,LM ,BLANK x x c ,BLANK) 4))
+(check-inv-holds? H-INV `((,LM ,BLANK x b c ,BLANK) 2)
+                        `((,LM ,BLANK x x x b x c ,BLANK) 3))
+
+;; tape natnum --> Boolean
+;; Purpose: Determine input word = xx(xxx)*c and |xs|%3 = 2
+(define (I-INV t i)
+  (and (> i 2)
+       (let* [(w (drop-right (drop t 2) 1))
+              (xs1 (front-symbs w 'x))
+              (w-xs1 (drop w (length xs1)))
+              (c (front-symbs w-xs1 'c))]
+         (and (equal? w (append xs1 c))
+              (= (length c) 1)
+              (= (remainder (length xs1) 3) 2)))))
+
+(check-inv-fails? I-INV `((,LM ,BLANK a b c ,BLANK) 2)
+                        `((,LM ,BLANK x c ,BLANK) 3))
+(check-inv-holds? I-INV `((,LM ,BLANK x x c ,BLANK) 4)
+                        `((,LM ,BLANK x x x x x c ,BLANK) 7))
+
+
+;; tape natnum --> Boolean
+;; Purpose: w = xxxx* and |xs|%3 = 0 and tape[i] = x
+(define (K-INV t i)
+  (let [(w (drop-right (drop t 2) 1))]
+    (and (> i 3)
+         (eq? (list-ref t i) 'x)
+         (andmap (λ (s) (eq? s 'x)) w)
+         (>= (length w) 3)
+         (= (remainder (length w) 3) 0)
+         (= i (add1 (length w))))))
+
+(check-inv-fails? K-INV `((,LM ,BLANK a b c ,BLANK) 3)
+                        `((,LM ,BLANK x x c ,BLANK) 3))
+(check-inv-holds? K-INV `((,LM ,BLANK x x x ,BLANK) 4)
+                        `((,LM ,BLANK x x x x x x ,BLANK) 7))
+
+
+;; tape natnum --> Boolean
+;; Purpose: Determine that w = xxxx* and |xs|%3 = 0 and i = |w| + 2
+(define (L-INV t i)
+  (let [(w (drop-right (drop t 2) 1))]
+    (and (> i 4)
+         (andmap (λ (s) (eq? s 'x)) w)
+         (>= (length w) 3)
+         (= (remainder (length w) 3) 0)
+         (= i (+ (length w) 2)))))
+
+(check-inv-fails? L-INV `((,LM ,BLANK a ,BLANK) 3)
+                        `((,LM ,BLANK x x c ,BLANK) 5))
+(check-inv-holds? L-INV `((,LM ,BLANK x x x ,BLANK) 5)
+                        `((,LM ,BLANK x x x x x x ,BLANK) 8))
+
+
+
+;; tape natnum --> Boolean
+;; Purpose: Determine input word = x* and |xs|%3 = 0
+(define (Y-INV t i)
+  (let* [(w (drop-right (drop t 2) 1))]
+    (and (eq? (list-ref t i) BLANK) ;;;
+         (andmap (λ (s) (eq? s 'x)) w)
+         (= (remainder (length w) 3) 0))))
+
+(check-inv-fails? Y-INV `((,LM ,BLANK x x c ,BLANK) 3)
+                        `((,LM ,BLANK a b c ,BLANK) 3))
+(check-inv-holds? Y-INV `((,LM ,BLANK ,BLANK) 2)
+                        `((,LM ,BLANK x x x x x x ,BLANK) 8))
+|#
 #|
 #|
 2 Design and implement an ndfa for:
