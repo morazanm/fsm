@@ -485,7 +485,7 @@
 
 
 (define (clean-up-cfg cfg acc)
-  (let* ([nts (CFG-nts cfg)]
+  #;(let* ([nts (CFG-nts cfg)]
          [rules (CFG-rules cfg)]
          [all-nts (remove-duplicates (filter-not (λ (nt) (member? nt (cons EMP (CFG-sigma cfg))))
                                                  (append nts
@@ -510,7 +510,7 @@
     ;(filter-not (λ (nt) (member? nt all-nts)) nts)
     (values rules nt-hash needed-nts (length needed-nts) need-rules)
     #;(clean-up-cfg new-cfg (cons new-cfg acc)))
-  #;(if (and (>= (length acc) 2)
+  (if (and (>= (length acc) 2)
            (same-rules-and-nts? (first acc) (second acc)))
       (cfg->unchecked (first acc))
   (let* ([nts (CFG-nts cfg)]
@@ -540,9 +540,20 @@
     (clean-up-cfg new-cfg (cons new-cfg acc)))))
 
 
-(define (clean-up1 cfg)
-  (let ([sigma (cons EMP (CFG-sigma cfg))])
-    (clean-up2 (remove-useless-rules (CFG-start cfg) (CFG-nts cfg) (CFG-rules cfg) sigma) #;(CFG-rules cfg) sigma '())))
+(define (clean-up1 G)
+  (let* ([sigma (cons EMP (CFG-sigma G))]
+         [needed-nts (clean-up2 (remove-useless-rules (CFG-start G) (CFG-nts G) (CFG-rules G) sigma) sigma '())]
+         [rules-that-contain-needed-nts (filter (λ (rule)
+                                                  (member? (cfg-rule-lhs rule) needed-nts))
+                                                (CFG-rules G))]
+         )
+    (CFG needed-nts
+         (CFG-sigma G)
+         (filter (λ (rule)
+                   (andmap (λ (rhs) (or (member? rhs sigma)
+                                        (member? rhs needed-nts))) (cfg-rule-rhs rule)))
+                 rules-that-contain-needed-nts)
+         (CFG-start G))))
   
 
 
@@ -554,7 +565,7 @@
                                                                         (cfg-rule-rhs rule)))
                                                                rules))))])
         (if (empty? new-needed-nts)
-            needed #;seen #;(values needed seen)
+            #;needed seen #;(values needed seen)
             (clean-up2 rules (append needed new-needed-nts) (append seen new-needed-nts)))))
 
 (define (same-rules? rules1 rules2)
@@ -597,6 +608,211 @@
             (remove-only-self-loops (rest rules) (cons (first rules) new-rules))))))
 
 
+(struct rule-path (queue next-nts queued-nts seen) #:transparent)
+
+
+(define e-queue '())
+
+(define qfirst first)
+
+(define qempty? empty?)
+
+;;(queueof X) -> (queueof X)
+;;Purpose: Removes the first element from the queue
+(define (dequeue qox)
+  (rest qox))
+
+;;(queueof X) X -> (queueof X)
+;;Purpose: Adds the given X to the back of the queue
+(define (enqueue qox x)
+  (let ([x (if (list? x) x (list x))])
+    (append qox x)))
+
+
+(define (clean-up-rules cfg)
+  (let* ([rules-from-start (filter (λ (rule) (eq? (cfg-rule-lhs rule) (CFG-start cfg)))
+                                   (CFG-rules cfg))]
+         [starting-queue (map (λ (rule) (rule-path (list rule) (cfg-rule-rhs rule) '() (set rule))) rules-from-start)])
+    (clean-up-rules-bfs (enqueue e-queue starting-queue) '() (CFG-rules cfg) (list->set (cons EMP (CFG-sigma cfg))))))
+
+
+#;(define (clean-up-rules-bfs queue finished rules sigma)
+  (if (qempty? queue)
+      finished
+      (let* ([next-rule-path (qfirst queue)]
+             [next-nts-to-find (rule-path-next-nts next-rule-path)]
+             [applicable-rules-from-nts (filter-not empty?
+                                                    (map (λ (nt)
+                                                           (filter (λ (rule)
+                                                                     (eq? nt (cfg-rule-lhs rule)))
+                                                                   rules))
+                                                         next-nts-to-find))]
+             #;[next-rules (if (= (length next-nts-to-find) 1)
+                             applicable-rules-from-nts
+                             applicable-rules-from-nts)]
+             [next-paths-to-search (filter-not
+                                    (λ (next-path)
+                                      (set-member? (rule-path-seen next-rule-path) (qfirst (rule-path-queue next-path))))
+                                    (append-map (λ (rules)
+                                                  (map (λ (rule)
+                                                         (struct-copy rule-path
+                                                                      next-rule-path
+                                                                      [queue (cons rule (rule-path-queue next-rule-path))]
+                                                                      [next-nts (filter-not (λ (rhs) (set-member? sigma rhs))
+                                                                                            (cfg-rule-rhs rule))]
+                                                                      [seen (set-add (rule-path-seen next-rule-path)
+                                                                                     rule
+                                                                                     #;(qfirst (rule-path-queue next-rule-path)))]))
+                                                       rules))
+                                                applicable-rules-from-nts))])
+        ;;need cartensian product from rules frm nt
+        (if (empty? next-paths-to-search)
+            (clean-up-rules-bfs2 (dequeue queue) (cons next-rule-path finished) rules sigma)
+            (clean-up-rules-bfs2 (enqueue (dequeue queue) next-paths-to-search) finished rules sigma))
+            #;(values next-rule-path applicable-rules next-paths-to-search))))
+
+
+#;(define (clean-up-rules-bfs2 queue finished rules sigma)
+  (if (qempty? queue)
+      finished
+      (let* ([next-rule-path (qfirst queue)]
+             [next-nts-to-find (rule-path-next-nts next-rule-path)]
+             [applicable-rules-from-nts (filter-not empty?
+                                                    (map (λ (nt)
+                                      (filter (λ (rule)
+                                                (eq? nt (cfg-rule-lhs rule)))
+                                              rules))
+                                    next-nts-to-find))]
+             [next-rules (if (= (length next-nts-to-find) 1)
+                             applicable-rules-from-nts
+                               (if (= (length next-nts-to-find) 1)
+                                   '()
+                                   applicable-rules-from-nts))]
+             [next-paths-to-search (filter-not
+                                    (λ (next-path)
+                                      (set-member? (rule-path-seen next-rule-path) (qfirst (rule-path-queue next-path))))
+                                    (append-map (λ (rules)
+                                                  (map (λ (rule)
+                                                         (struct-copy rule-path
+                                                                      next-rule-path
+                                                                      [queue (cons rule (rule-path-queue next-rule-path))]
+                                                                      [next-nts (filter-not (λ (rhs) (set-member? sigma rhs))
+                                                                                            (cfg-rule-rhs rule))]
+                                                                      [seen (set-add (rule-path-seen next-rule-path)
+                                                                                     rule
+                                                                                     #;(qfirst (rule-path-queue next-rule-path)))]))
+                                                       rules))
+                                                applicable-rules-from-nts))])
+        ;;need cartensian product from rules frm nt
+        (if (empty? next-paths-to-search)
+            (clean-up-rules-bfs3 (dequeue queue) (cons next-rule-path finished) rules sigma)
+            (clean-up-rules-bfs3 (enqueue (dequeue queue) next-paths-to-search) finished rules sigma))
+            #;(values next-rule-path applicable-rules-from-nts next-paths-to-search))))
+
+(define (clean-up-rules-bfs queue finished rules sigma)
+  (if (qempty? queue)
+      finished
+      (let* ([next-rule-path (qfirst queue)]
+             [next-nts-to-find (flatten (rule-path-next-nts next-rule-path))]
+             [applicable-rules-from-nts (map (λ (nt)
+                                               (filter (λ (rule)
+                                                         (eq? nt (cfg-rule-lhs rule)))
+                                                       rules))
+                                             next-nts-to-find)
+                                        #;(filter-not empty?
+                                                    (map (λ (nt)
+                                                           (filter (λ (rule)
+                                                                     (eq? nt (cfg-rule-lhs rule)))
+                                                                   rules))
+                                                         next-nts-to-find))]
+             [next-rules (cond [(empty? applicable-rules-from-nts) applicable-rules-from-nts]
+                               [(= (length next-nts-to-find) 1) applicable-rules-from-nts]
+                               [(= (length next-nts-to-find) 2)
+                                (let* ([paired-rules (list (first applicable-rules-from-nts)
+                                                          (second applicable-rules-from-nts))]
+                                       [pair-contains-empty? (or (empty? (first paired-rules))
+                                                                 (empty? (second paired-rules)))])
+                                  (if pair-contains-empty?
+                                   '()
+                                   (cartesian-product (first paired-rules) (second paired-rules))))]
+                               [(= (length next-nts-to-find) 3)
+                                (let* ([is-first-nts-a-pair? (= (length (first (rule-path-next-nts next-rule-path))) 2)]
+                                       [paired-rules (if is-first-nts-a-pair?
+                                                         (list (first applicable-rules-from-nts)
+                                                               (second applicable-rules-from-nts))
+                                                         (list (second applicable-rules-from-nts)
+                                                               (third applicable-rules-from-nts)))]
+                                       [singleton-rule (if is-first-nts-a-pair?
+                                                           (third applicable-rules-from-nts)
+                                                           (first applicable-rules-from-nts))]
+                                       [pair-contains-empty? (or (empty? (first paired-rules))
+                                                                 (empty? (second paired-rules)))]
+                                       )
+                                  (if pair-contains-empty?
+                                   '()
+                                   (cartesian-product singleton-rule
+                                                      (cartesian-product (first paired-rules) (second paired-rules)))))]
+                               [else (let* ([paired-rules1 (list (first applicable-rules-from-nts)
+                                                                 (second applicable-rules-from-nts))]
+                                            [paired-rules2 (list (third applicable-rules-from-nts)
+                                                                 (fourth applicable-rules-from-nts))]
+                                            [pairs-contains-empty? (or (or (empty? (first paired-rules1))
+                                                                           (empty? (second paired-rules1)))
+                                                                       (or (empty? (first paired-rules2))
+                                                                           (empty? (second paired-rules2))))])
+                                       (if pairs-contains-empty?
+                                           '()
+                                           (cartesian-product (cartesian-product (first paired-rules1) (second paired-rules1))
+                                                              (cartesian-product (first paired-rules2) (second paired-rules2)))))])]
+             [next-paths-to-search (filter-not
+                                    (λ (next-path)
+                                      (set-member? (rule-path-seen next-rule-path) (qfirst (rule-path-queue next-path))))
+                                    (append-map (λ (rules)
+                                                  
+                                                  (map (λ (rule)
+                                                         (let ([future-nts (filter-not (λ (rhs) (set-member? sigma rhs))
+                                                                                       (if (= (length next-nts-to-find) 1)
+                                                                                           (cfg-rule-rhs rule)
+                                                                                           (append (cfg-rule-rhs (first rules))
+                                                                                                   (cfg-rule-rhs (second rules)))))])
+                                                           (struct-copy rule-path
+                                                                        next-rule-path
+                                                                        [queue (cons rule (rule-path-queue next-rule-path))]
+                                                                        [next-nts (cond [(and (<= (length future-nts) 2)
+                                                                                              (empty? (rule-path-queued-nts next-rule-path)))
+                                                                                         future-nts]
+                                                                                        [(empty? (rule-path-queued-nts next-rule-path)) (take future-nts 2)]
+                                                                                        [else (if (>= (length (rule-path-queued-nts next-rule-path)) 2)
+                                                                                                  (list (first (rule-path-queued-nts next-rule-path))
+                                                                                                        (second (rule-path-queued-nts next-rule-path)))
+                                                                                                  (list (first (rule-path-queued-nts next-rule-path))))])]
+                                                                        [queued-nts (cond [(and (<= (length future-nts) 2)
+                                                                                                (empty? (rule-path-queued-nts next-rule-path)))
+                                                                                           (rule-path-queued-nts next-rule-path)]
+                                                                                          [(empty? (rule-path-queued-nts next-rule-path))
+                                                                                           (drop future-nts 2)]
+                                                                                          [else (if (empty? future-nts)
+                                                                                                    (if (>= (length (rule-path-queued-nts next-rule-path)) 2)
+                                                                                                        (dequeue (dequeue (rule-path-queued-nts next-rule-path)))
+                                                                                                        (dequeue (rule-path-queued-nts next-rule-path)))
+                                                                                                    (enqueue (if (>= (length (rule-path-queued-nts next-rule-path)) 2)
+                                                                                                             (dequeue (dequeue (rule-path-queued-nts next-rule-path)))
+                                                                                                             (dequeue (rule-path-queued-nts next-rule-path)))
+                                                                                                         (drop future-nts 2)))])]
+                                                                        [seen (foldl (λ (rule st)
+                                                                                       (set-add st rule))
+                                                                                     (rule-path-seen next-rule-path)
+                                                                                     rules
+                                                                                     #;(qfirst (rule-path-queue next-rule-path)))])))
+                                                         rules))
+                                                  next-rules))])
+        ;;need cartensian product from rules frm nt
+        (if (empty? next-paths-to-search)
+            (clean-up-rules-bfs (dequeue queue) (cons next-rule-path finished) rules sigma)
+            (clean-up-rules-bfs (enqueue (dequeue queue) next-paths-to-search) finished rules sigma))
+            #;(values next-rule-path applicable-rules-from-nts next-rules next-paths-to-search))))
+
+    
 
             
 
@@ -1056,6 +1272,35 @@
 (define p-cfe (pda->cfe P))
 
 
-
+(cfg-derive (cfg (remove-duplicates (append-map (λ (rule) (cons (cfg-rule-lhs rule) (cfg-rule-rhs rule)))
+                                                (list (cfg-rule 'W '(X))
+                       (cfg-rule 'H '(ε))
+                       (cfg-rule 'T '(a H))
+                       (cfg-rule 'R-1 '(I-0 G))
+                       (cfg-rule 'A '(B))
+                       (cfg-rule 'Y-1 '(G O))
+                       (cfg-rule 'B '(E B))
+                       (cfg-rule 'B '(G W))
+                       (cfg-rule 'O '(b H))
+                       (cfg-rule 'Q-1 '(I-0 E))
+                       (cfg-rule 'G '(R-1 O))
+                       (cfg-rule 'I-0 '(T))
+                       (cfg-rule 'G '(Q-1 Y-1)))))
+                 '(a b)
+                 (list (cfg-rule 'W '(X))
+                       (cfg-rule 'H '(ε))
+                       (cfg-rule 'T '(a H))
+                       (cfg-rule 'R-1 '(I-0 G))
+                       (cfg-rule 'A '(B))
+                       (cfg-rule 'Y-1 '(G O))
+                       (cfg-rule 'B '(E B))
+                       (cfg-rule 'B '(G W))
+                       (cfg-rule 'O '(b H))
+                       (cfg-rule 'Q-1 '(I-0 E))
+                       (cfg-rule 'G '(R-1 O))
+                       (cfg-rule 'I-0 '(T))
+                       (cfg-rule 'G '(Q-1 Y-1)))
+                 'A)
+            '(a b))
 
     
