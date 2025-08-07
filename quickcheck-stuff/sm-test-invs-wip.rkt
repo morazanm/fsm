@@ -270,9 +270,12 @@
                                          accum))))
           ]
     (sm-test-invs-helper all-paths-new-machine
-                         (if ((second (assoc (sm-start a-machine) a-loi)) '())
+                         (let [(start-pair (assoc (sm-start a-machine) a-loi))]
+                         (if (or
+                              (not (pair? start-pair))
+                              ((second start-pair) '()))
                              '()
-                             (list (list '() (sm-start a-machine)))))))
+                             (list (list '() (sm-start a-machine))))))))
 
 
 

@@ -1,6 +1,6 @@
 #lang fsm
 
-(provide sm-all-possible-words sm-test-invs-pda)
+(provide sm-all-possible-words sm-test-invs-pda get-accepting-paths word-of-path)
 
 ;; USEFUL FUNCTIONS
 
@@ -149,15 +149,15 @@
                   [(< MAX-PATH-LENGTH (length (append (PATH-lor a-path) (list (first next-rules)))))
                    (new-paths-helper (rest next-rules) accum)]
                   [else (new-paths-helper (rest next-rules)
-                                  (cons (make-PATH (append (PATH-lor a-path) (list (first next-rules)))
-                                                   (append (if (eq? 'ε (get-push (first next-rules)))
-                                                               '()
-                                                               (get-push (first next-rules)))
-                                                           (drop (PATH-stack a-path)
-                                                                 (length (if (eq? 'ε (get-pop (first next-rules)))
-                                                                             '()
-                                                                             (get-pop (first next-rules)))))))
-                                        accum))]
+                                          (cons (make-PATH (append (PATH-lor a-path) (list (first next-rules)))
+                                                           (append (if (eq? 'ε (get-push (first next-rules)))
+                                                                       '()
+                                                                       (get-push (first next-rules)))
+                                                                   (drop (PATH-stack a-path)
+                                                                         (length (if (eq? 'ε (get-pop (first next-rules)))
+                                                                                     '()
+                                                                                     (get-pop (first next-rules)))))))
+                                                accum))]
                   ))]
     (new-paths-helper rules '())))
 
@@ -243,15 +243,15 @@
                     (define (get-sub-paths-helper length-cur-path accum)
                       (if (equal? (take (PATH-lor a-path) length-cur-path) (PATH-lor a-path))
                           (cons (make-PATH (take (PATH-lor a-path) length-cur-path)
-                                             (get-stack (take (PATH-lor a-path) length-cur-path)))
-                                  accum)
+                                           (get-stack (take (PATH-lor a-path) length-cur-path)))
+                                accum)
                           (get-sub-paths-helper  (+ 1 length-cur-path)
                                                  (cons (make-PATH (take (PATH-lor a-path) length-cur-path)
                                                                   (get-stack (take (PATH-lor a-path) length-cur-path)))
-                                                         accum))))]
+                                                       accum))))]
               (get-sub-paths-helper 1 '())))
           ]
-  (apply append (map get-sub-paths (filter leads-to-accepting? paths-that-end-in-finals)))))
+    (apply append (map get-sub-paths (filter leads-to-accepting? paths-that-end-in-finals)))))
 
 ;; have to have a max length of a path to be 50 right now
 
@@ -376,8 +376,11 @@
                                          accum))))
           ]
     (sm-test-invs-helper all-paths-new-machine
-                         (if ((second (assoc (sm-start a-machine) a-loi)) '() '())
-                             '()
-                             (list (list '() '() (sm-start a-machine)))))))
+                         (let [(start-pair (assoc (sm-start a-machine) a-loi))]
+                           (if (or (not (pair? start-pair))
+                                   ((second start-pair) '() '()))
+                               '()
+                               (list (list '() '() (sm-start a-machine))))))))
 
 
+  
