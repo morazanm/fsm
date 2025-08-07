@@ -21,65 +21,79 @@
 (define FONT-SIZE 12)
 (define HEXAGON-COLOR 'black)
 
+(struct rule-with-metrics (rule lhs-len num-change-nts num-change-len))
+(struct comp-step (word len num-nts))
+
 ;; csg word -> Derivation with rules
 ;; Creates a derivation with the rule applied besides each step
 (define (csg-derive-edited g w)
   (define generated-derivs (mutable-set))
-
+  (define nts-set (list->seteq (csg-getv g)))
+  (define rules-with-lengths
+    (map (lambda (rule) (rule-with-metrics rule
+                                           (length (csg-rule-lhs rule))
+                                           (- (count (lambda (symb) (set-member? nts-set symb))
+                                                     (csg-rule-rhs rule))
+                                              (count (lambda (symb) (set-member? nts-set symb))
+                                                     (csg-rule-lhs rule)))
+                                           (- (length (filter (lambda (x) (not (eq? EMP x))) (csg-rule-rhs rule)))
+                                              (length (csg-rule-lhs rule)))))
+         (csg-getrules g)))
+  
   ; (listof symbol) (listof csg-rule) --> (listof (listof symbol))
   (define (apply-one-step curr)
+    
     (define (use-csg-rule r)
-      (define lhs (csg-rule-lhs r))
-      (define rhs (csg-rule-rhs r))
-      (define lhs-len (length lhs))
-      (define str (first curr))
-      (define first-str-len (length str))
-      
-      
       (for/list
-          ([idx (in-range (add1 (- first-str-len lhs-len)))]
-           #:when (equal? lhs (sublist str idx lhs-len)))
-        (if (equal? rhs (list EMP))
-            (list (subst-in-list str idx lhs-len '()) lhs rhs idx)
-            (list (subst-in-list str idx lhs-len rhs) lhs rhs idx))))
-    (append-map (lambda (rule) (use-csg-rule rule)) (csg-getrules g)))
+          ([idx (in-range (add1 (- (comp-step-len curr) (rule-with-metrics-lhs-len r))))]
+           ;; need to iterate over word in for, there is an unneccessary length in sublist
+           ;; replace it with a take
+           #:when (equal? (csg-rule-lhs (rule-with-metrics-rule r)) (sublist (comp-step-word curr) idx (rule-with-metrics-lhs-len r))))
+        (list (comp-step (subst-in-list (comp-step-word curr)
+                                        idx
+                                        (rule-with-metrics-lhs-len r)
+                                        (if (equal? (csg-rule-rhs (rule-with-metrics-rule r)) (list EMP))
+                                            '()
+                                            (csg-rule-rhs (rule-with-metrics-rule r))))
+                         (+ (comp-step-len curr) (rule-with-metrics-num-change-len r))
+                         (+ (comp-step-num-nts curr) (rule-with-metrics-num-change-nts r)))
+              (csg-rule-lhs (rule-with-metrics-rule r))
+              (csg-rule-rhs (rule-with-metrics-rule r))
+              idx)))
+    (append-map (lambda (rule) (use-csg-rule rule)) rules-with-lengths))
 
   ; (listof symbol) (listof (listof (listof symbol))) -> (listof (listof symbol))
   (define (bfs-deriv tovisit)
     (if (heap-empty? tovisit)
         '()
-        (let* ([firstpath (find-min/max tovisit)]
-               [current-step (car firstpath)])
-          (if (equal? w (first current-step))
-              firstpath
-              (let* ([new-words (apply-one-step current-step)]
-                     
-                     [newstrings (filter (lambda (s) (not (set-member? generated-derivs (first s))))
-                                         new-words)]
-                     [new-queue-paths (map (lambda (s) (cons s firstpath)) newstrings)]
-                     [newpaths (foldr (lambda (val accum)
-                                        (heap-insert val accum))
-                                      (delete-min/max tovisit)
-                                      new-queue-paths)])
-                (for ([n (in-list (map first newstrings))])
-                  (set-add! generated-derivs n))
-                (bfs-deriv newpaths))))))
+        (let ([firstpath (find-min/max tovisit)])
+          (let* ([new-steps (for/list ([step (in-list (apply-one-step (caar firstpath)))]
+                                       #:when (not (set-member? generated-derivs (comp-step-word (car step)))))
+                              (set-add! generated-derivs (comp-step-word (car step)))
+                              (cons step firstpath))]
+                 [done-words (filter (lambda (x) (and (= 0 (comp-step-num-nts (caar x)))
+                                                      (equal? w (comp-step-word (caar x))))) new-steps)])
+            (if (not (null? done-words))
+                (first done-words)
+                (bfs-deriv (foldr (lambda (val accum)
+                                    (heap-insert val accum))
+                                  (delete-min/max tovisit)
+                                  new-steps)))))))
 
-  (let* ([result (reverse (bfs-deriv (heap (lambda (x y)
-                                            (< (length (caar x)) (length (caar y))))
-                                          (list (list (list (csg-getstart g)) '() '() '())))))]
-        )
+  (let ([result (reverse (bfs-deriv (heap (lambda (x y)
+                                            (< (comp-step-len (caar x)) (comp-step-len (caar y))))
+                                          (list (list (comp-step (list (csg-getstart g)) 1 1) '() '() '())))))])
     (if (null? result)
         (format "~s is not in L(G)." w)
         (append-map
          (lambda (l)
-           (if (equal? w (first l))
+           (if (equal? w (comp-step-word (first l)))
                (if (null? l)
                    (list (list EMP))
                    (list
-                    (list (los->symbol (first l)) (los->symbol (second l)) (los->symbol (third l)) (fourth l))))
+                    (list (los->symbol (comp-step-word (first l))) (los->symbol (second l)) (los->symbol (third l)) (fourth l))))
                (list
-                (list (los->symbol (first l)) (los->symbol (second l)) (los->symbol (third l)) (fourth l)))))
+                (list (los->symbol (comp-step-word (first l))) (los->symbol (second l)) (los->symbol (third l)) (fourth l)))))
          result))))
 
 ;; symbol -> symbol
