@@ -41,44 +41,48 @@
          (csg-getrules g)))
   
   ; (listof symbol) (listof csg-rule) --> (listof (listof symbol))
+
+  
   (define (apply-one-step curr)
-    
-    (define (use-csg-rule r)
-      (for/list
-          ([idx (in-range (add1 (- (comp-step-len curr) (rule-with-metrics-lhs-len r))))]
-           ;; need to iterate over word in for, there is an unneccessary length in sublist
-           ;; replace it with a take
-           #:when (equal? (csg-rule-lhs (rule-with-metrics-rule r)) (sublist (comp-step-word curr) idx (rule-with-metrics-lhs-len r))))
-        (list (comp-step (subst-in-list (comp-step-word curr)
-                                        idx
-                                        (rule-with-metrics-lhs-len r)
-                                        (if (equal? (csg-rule-rhs (rule-with-metrics-rule r)) (list EMP))
-                                            '()
-                                            (csg-rule-rhs (rule-with-metrics-rule r))))
-                         (+ (comp-step-len curr) (rule-with-metrics-num-change-len r))
-                         (+ (comp-step-num-nts curr) (rule-with-metrics-num-change-nts r)))
-              (csg-rule-lhs (rule-with-metrics-rule r))
-              (csg-rule-rhs (rule-with-metrics-rule r))
-              idx)))
-    (append-map (lambda (rule) (use-csg-rule rule)) rules-with-lengths))
+    (for/list
+        ([r (in-list rules-with-lengths)]
+         #:when #t
+         [idx (in-range (add1 (- (comp-step-len curr) (rule-with-metrics-lhs-len r))))]
+         ;; need to iterate over word in for, there is an unneccessary length in sublist
+         ;; replace it with a take
+         #:when (equal? (csg-rule-lhs (rule-with-metrics-rule r)) (sublist (comp-step-word curr) idx (rule-with-metrics-lhs-len r))))
+      (list (comp-step (subst-in-list (comp-step-word curr)
+                                      idx
+                                      (rule-with-metrics-lhs-len r)
+                                      (if (equal? (csg-rule-rhs (rule-with-metrics-rule r)) (list EMP))
+                                          '()
+                                          (csg-rule-rhs (rule-with-metrics-rule r))))
+                       (+ (comp-step-len curr) (rule-with-metrics-num-change-len r))
+                       (+ (comp-step-num-nts curr) (rule-with-metrics-num-change-nts r)))
+            (csg-rule-lhs (rule-with-metrics-rule r))
+            (csg-rule-rhs (rule-with-metrics-rule r))
+            idx)))
 
   ; (listof symbol) (listof (listof (listof symbol))) -> (listof (listof symbol))
   (define (bfs-deriv tovisit)
+    (define (find-deriving-word new-steps filtered-new-steps)
+      (if (null? new-steps)
+          (bfs-deriv (foldr (lambda (val accum)
+                              (heap-insert val accum))
+                            (delete-min/max tovisit)
+                            filtered-new-steps))
+          (if (= 0 (comp-step-num-nts (caaar new-steps)))
+              (if (equal? w (comp-step-word (caaar new-steps)))
+                  (car new-steps)
+                  (find-deriving-word (rest new-steps) filtered-new-steps))
+              (find-deriving-word (rest new-steps) (cons (first new-steps) filtered-new-steps)))))
     (if (heap-empty? tovisit)
         '()
         (let ([firstpath (find-min/max tovisit)])
-          (let* ([new-steps (for/list ([step (in-list (apply-one-step (caar firstpath)))]
+          (find-deriving-word (for/list ([step (in-list (apply-one-step (caar firstpath)))]
                                        #:when (not (set-member? generated-derivs (comp-step-word (car step)))))
                               (set-add! generated-derivs (comp-step-word (car step)))
-                              (cons step firstpath))]
-                 [done-words (filter (lambda (x) (and (= 0 (comp-step-num-nts (caar x)))
-                                                      (equal? w (comp-step-word (caar x))))) new-steps)])
-            (if (not (null? done-words))
-                (first done-words)
-                (bfs-deriv (foldr (lambda (val accum)
-                                    (heap-insert val accum))
-                                  (delete-min/max tovisit)
-                                  new-steps)))))))
+                              (cons step firstpath)) '()))))
 
   (let ([result (reverse (bfs-deriv (heap (lambda (x y)
                                             (< (comp-step-len (caar x)) (comp-step-len (caar y))))
@@ -362,8 +366,8 @@
                                                               'NO-INV
                                                               (first invariant)))) lod))
          (rank-node-lst (map (lambda (x y) (cons x (map list y)))
-                                   (second renamed)
-                                   (first renamed)))
+                             (second renamed)
+                             (first renamed)))
          (removed-dashes-rank-node-lst (map (lambda (x)
                                               (map (lambda (y)
                                                      (map (lambda (z) (los->symbol (remove '- (symbol->list z)))) y)) x))
@@ -389,19 +393,19 @@
 
 (define anbncn-csg
   (make-unchecked-csg '(S-1 A B C G H I) 
-            '(a b c) 
-            `((S-1 ,ARROW ABCS-1) 
-              (S-1 ,ARROW G)
-              (BA ,ARROW AB) 
-              (CA ,ARROW AC) 
-              (CB ,ARROW BC)
-              (CG ,ARROW Gc) 
-              (G  ,ARROW H) 
-              (BH ,ARROW Hb) 
-              (H ,ARROW I)
-              (AI ,ARROW Ia) 
-              (I ,ARROW ,EMP)) 
-            'S-1))
+                      '(a b c) 
+                      `((S-1 ,ARROW ABCS-1) 
+                        (S-1 ,ARROW G)
+                        (BA ,ARROW AB) 
+                        (CA ,ARROW AC) 
+                        (CB ,ARROW BC)
+                        (CG ,ARROW Gc) 
+                        (G  ,ARROW H) 
+                        (BH ,ARROW Hb) 
+                        (H ,ARROW I)
+                        (AI ,ARROW Ia) 
+                        (I ,ARROW ,EMP)) 
+                      'S-1))
 
 ;; generates word word-reversed word
 ;; S - Generates K, G, right hand marker R
