@@ -812,8 +812,63 @@
             (clean-up-rules-bfs (enqueue (dequeue queue) next-paths-to-search) finished rules sigma))
             #;(values next-rule-path applicable-rules-from-nts next-rules next-paths-to-search))))
 
+(struct nt-path (last-rule-used next-nts seen) #:transparent)
     
+(define (gather-nts cfg)
+  (let* ([rules-from-start (filter (λ (rule) (eq? (cfg-rule-lhs rule) (CFG-start cfg)))
+                                   (CFG-rules cfg))]
+         [starting-queue (map (λ (rule) (nt-path rule (cons (cfg-rule-lhs rule) (cfg-rule-rhs rule)) (set rule))) rules-from-start)])
+    (gather-nts-bfs (enqueue e-queue starting-queue) '() (CFG-rules cfg) (list->set (cons EMP (CFG-sigma cfg))))))
 
+
+(define (gather-nts-bfs queue finished rules sigma)
+  (if (qempty? queue)
+      finished
+      (let* ([next-rule-path (qfirst queue)]
+             [next-nts-to-find (nt-path-next-nts next-rule-path)]
+             [applicable-rules-from-nts (append-map (λ (nt)
+                                                      (map cfg-rule-rhs (filter (λ (rule)
+                                                                                    (eq? nt (cfg-rule-lhs rule)))
+                                                                                  rules)))
+                                                    next-nts-to-find)]
+             #;[next-rules (if (= (length next-nts-to-find) 1)
+                             applicable-rules-from-nts
+                             applicable-rules-from-nts)]
+             [next-paths-to-search (filter-not
+                                    (λ (next-path)
+                                      (set-member? (nt-path-seen next-rule-path) (nt-path-last-rule-used next-path)))
+                                    (map #;append-map (λ (rule)
+                                                  (struct-copy nt-path
+                                                               next-rule-path
+                                                               [last-rule-used rule]
+                                                               [next-nts (filter-not (λ (rhs) (set-member? sigma rhs))
+                                                                                     rule)]
+                                                               [seen (set-add (nt-path-seen next-rule-path)
+                                                                              rule)])
+                                                  #;(map (λ (rule)
+                                                         (displayln (filter-not (λ (rhs) (set-member? sigma rhs))
+                                                                                            (cfg-rule-rhs rule)))
+                                                         (struct-copy nt-path
+                                                                      next-rule-path
+                                                                      [last-rule-used rule]
+                                                                      [next-nts (filter-not (λ (rhs) (set-member? sigma rhs))
+                                                                                            (cfg-rule-rhs rule))]
+                                                                      [seen (set-add (nt-path-seen next-rule-path)
+                                                                                     rule)]))
+                                                       rules))
+                                                applicable-rules-from-nts))])
+        ;;need cartensian product from rules frm nt
+        ;#;
+        
+        (displayln applicable-rules-from-nts)
+        ;#;
+        (if (empty? next-paths-to-search)
+            (gather-nts-bfs (dequeue queue) (cons next-rule-path finished) rules sigma)
+            (gather-nts-bfs (enqueue (dequeue queue) next-paths-to-search) finished rules sigma))
+           #;
+        (values next-rule-path applicable-rules-from-nts next-paths-to-search))))
+  
+  
             
 
 ;; pda -> cfe
@@ -1272,35 +1327,6 @@
 (define p-cfe (pda->cfe P))
 
 
-(cfg-derive (cfg (remove-duplicates (append-map (λ (rule) (cons (cfg-rule-lhs rule) (cfg-rule-rhs rule)))
-                                                (list (cfg-rule 'W '(X))
-                       (cfg-rule 'H '(ε))
-                       (cfg-rule 'T '(a H))
-                       (cfg-rule 'R-1 '(I-0 G))
-                       (cfg-rule 'A '(B))
-                       (cfg-rule 'Y-1 '(G O))
-                       (cfg-rule 'B '(E B))
-                       (cfg-rule 'B '(G W))
-                       (cfg-rule 'O '(b H))
-                       (cfg-rule 'Q-1 '(I-0 E))
-                       (cfg-rule 'G '(R-1 O))
-                       (cfg-rule 'I-0 '(T))
-                       (cfg-rule 'G '(Q-1 Y-1)))))
-                 '(a b)
-                 (list (cfg-rule 'W '(X))
-                       (cfg-rule 'H '(ε))
-                       (cfg-rule 'T '(a H))
-                       (cfg-rule 'R-1 '(I-0 G))
-                       (cfg-rule 'A '(B))
-                       (cfg-rule 'Y-1 '(G O))
-                       (cfg-rule 'B '(E B))
-                       (cfg-rule 'B '(G W))
-                       (cfg-rule 'O '(b H))
-                       (cfg-rule 'Q-1 '(I-0 E))
-                       (cfg-rule 'G '(R-1 O))
-                       (cfg-rule 'I-0 '(T))
-                       (cfg-rule 'G '(Q-1 Y-1)))
-                 'A)
-            '(a b))
+
 
     
