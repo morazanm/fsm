@@ -1,6 +1,10 @@
-#lang fsm
+#lang racket/base
 
 (provide sm-all-possible-words sm-test-invs-pda get-accepting-paths word-of-path)
+(require racket/list
+         rackunit
+         ;;"../fsm-core/interface.rkt"
+         )
 
 ;; USEFUL FUNCTIONS
 
@@ -91,27 +95,27 @@
 ;; AUXILARY FUNCTIONS FOR PDA RULES
 ;;     pda rule: ((Source read pop) (Destination push))
 
-;; rule -> state
+;; pda-rule -> state
 ;; Purpose: To get the source state of a pda rule
 (define (get-source-state rule)
   (first (first rule)))
 
-;; rule -> symbol
+;; pda-rule -> symbol
 ;; Purpose: To get the element read of a pda rule
 (define (get-elem-read rule)
   (second (first rule)))
 
-;; rule -> (listof symbol) or EMP
+;; pda-rule -> (listof symbol) or EMP
 ;; Purpose: To get the elements to pop from the top of the stack
 (define (get-pop rule)
   (third (first rule)))
 
-;; rule -> state
+;; pda-rule -> state
 ;; Purpose: To get the destination state of the pda rule
 (define (get-destination-state rule)
   (first (second rule)))
 
-;; rule -> (listof symbol) or EMP
+;; pda-rule -> (listof symbol) or EMP
 ;; Purpose: To get the elements to push to the stack
 (define (get-push rule)
   (second (second rule)))
@@ -121,7 +125,7 @@
 
 
 
-;; (listof (list state (word -> boolean))) (listof symbol) -> Boolean
+;; (listof (list state (word -> boolean))) (listof symbol) (listof symbol) -> Boolean
 ;; Purpose: Determine if the given invariant holds 
 (define (invariant-holds? a-loi a-word a-stack)
   (or (empty? a-loi)   
@@ -141,68 +145,71 @@
 ;; PATH (listof pda-rule) -> (listof PATH)
 ;; Purpose: To return a list of paths that comes from the given path and rules
 (define (new-paths a-path rules)
-  (local [;; (listof rule) (listof (listof rule)) -> (listof (listofrule))
-          ;; Purpose: To return a list of paths that come from the given paths and rules
-          ;; Accumulator invariant: accum = list of paths
-          (define (new-paths-helper next-rules accum)
-            (cond [(empty? next-rules) accum]
-                  [(< MAX-PATH-LENGTH (length (append (PATH-lor a-path) (list (first next-rules)))))
-                   (new-paths-helper (rest next-rules) accum)]
-                  [else (new-paths-helper (rest next-rules)
-                                          (cons (make-PATH (append (PATH-lor a-path) (list (first next-rules)))
-                                                           (append (if (eq? 'ε (get-push (first next-rules)))
-                                                                       '()
-                                                                       (get-push (first next-rules)))
-                                                                   (drop (PATH-stack a-path)
-                                                                         (length (if (eq? 'ε (get-pop (first next-rules)))
-                                                                                     '()
-                                                                                     (get-pop (first next-rules)))))))
-                                                accum))]
-                  ))]
-    (new-paths-helper rules '())))
+  ;; (listof pda-rule) (listof PATH) -> (listof PATH)
+  ;; Purpose: To return a list of paths that come from the given paths and rules
+  ;; Accumulator invariant: accum = list of paths
+  (define (new-paths-helper next-rules accum)
+    (cond [(empty? next-rules) accum]
+          [(< MAX-PATH-LENGTH (length (append (PATH-lor a-path) (list (first next-rules)))))
+           (new-paths-helper (rest next-rules) accum)]
+          [else (new-paths-helper (rest next-rules)
+                                  (cons (make-PATH (append (PATH-lor a-path) (list (first next-rules)))
+                                                   (append (if (eq? 'ε (get-push (first next-rules)))
+                                                               '()
+                                                               (get-push (first next-rules)))
+                                                           (drop (PATH-stack a-path)
+                                                                 (length (if (eq? 'ε (get-pop (first next-rules)))
+                                                                             '()
+                                                                             (get-pop (first next-rules)))))))
+                                        accum))]
+          ))
+  (new-paths-helper rules '()))
 
 
 
+;; CONSTANT FOR MAX NUMBER OF REPETITIONS OF A RULE IN A PATH
+(define MAX-NUM-REPETITIONS 3)
 
-;; machine -> (listof rules)
-;; Purpose: To return all the paths in the given machine 
+
+
+;; pda -> (listof PATH)
+;; Purpose: To return all the paths in the given pda 
 (define (find-paths a-machine)
-  (local[(define rules (sm-rules a-machine))
-         ;; (queueof (listof rule)) (listof (listof rule)) -> (listof (listof rule))
-         ;; Purpose: To return all the paths of the given machine
-         ;; Accumulator invarient: paths = list of current paths
-         ;;                              ;; a path is a struct of a (listof rule) & current-stack
-         (define (find-paths-helper a-qop paths)
-           (if (qempty? a-qop) paths
-               (local [(define next-rules-first-path (get-next-rules (last (PATH-lor (qfirst a-qop)))
-                                                                     (filter
-                                                                      (λ (rule)
-                                                                        (and (or (equal? (get-pop rule) 'ε)
-                                                                                 (and (<= (length (get-pop rule)) (length (PATH-stack (qfirst a-qop))))
-                                                                                      (equal? (take (PATH-stack (qfirst a-qop))
-                                                                                                    (length (get-pop rule)))
-                                                                                              (get-pop rule))))
-                                                                             (< (count (λ (rl) (equal? rule rl))
-                                                                                       (PATH-lor (qfirst a-qop)))
-                                                                                2)))
-                                                                      rules)))
-                       (define paths-with-qfirst (cons (qfirst a-qop) paths))]
-                 (if (empty? next-rules-first-path)
-                     (find-paths-helper (dequeue a-qop)
-                                        paths-with-qfirst)
-                     (find-paths-helper (enqueue (new-paths (qfirst a-qop) next-rules-first-path)
-                                                 (dequeue a-qop)) 
-                                        paths-with-qfirst))
-                 )))]
-    (find-paths-helper (enqueue (map (λ (y) (make-PATH y (if (eq? 'ε (get-push (first y)))
-                                                             '()
-                                                             (list (get-push (first y))))))
-                                     (map (λ (x) (list x))
-                                          (filter
-                                           (λ (rule) (eq? (get-source-state rule) (sm-start a-machine)))
-                                           rules)))
-                                '())
-                       '())))
+  (define rules (sm-rules a-machine))
+  ;; (queueof (listof PATH)) (listof PATH) -> (listof PATH)
+  ;; Purpose: To return all the paths of the given machine
+  ;; Accumulator invarient: paths = list of current paths
+  (define (find-paths-helper a-qop paths)
+    (if (qempty? a-qop) paths
+        (local [(define next-rules-first-path (get-next-rules (last (PATH-lor (qfirst a-qop)))
+                                                              (filter
+                                                               (λ (rule)
+                                                                 (and (or (equal? (get-pop rule) 'ε)
+                                                                          (and (<= (length (get-pop rule)) (length (PATH-stack (qfirst a-qop))))
+                                                                               (equal? (take (PATH-stack (qfirst a-qop))
+                                                                                             (length (get-pop rule)))
+                                                                                       (get-pop rule))))
+                                                                      (< (count (λ (rl) (equal? rule rl))
+                                                                                (PATH-lor (qfirst a-qop)))
+                                                                         MAX-NUM-REPETITIONS)))
+                                                               rules)))
+                (define paths-with-qfirst (cons (qfirst a-qop) paths))]
+          (if (empty? next-rules-first-path)
+              (find-paths-helper (dequeue a-qop)
+                                 paths-with-qfirst)
+              (find-paths-helper (enqueue (new-paths (qfirst a-qop) next-rules-first-path)
+                                          (dequeue a-qop)) 
+                                 paths-with-qfirst))
+          )))
+  (find-paths-helper (enqueue (map (λ (y) (make-PATH y (if (eq? 'ε (get-push (first y)))
+                                                           '()
+                                                           (list (get-push (first y))))))
+                                   (map (λ (x) (list x))
+                                        (filter
+                                         (λ (rule) (eq? (get-source-state rule) (sm-start a-machine)))
+                                         rules)))
+                              '())
+                     '()))
 
 
 ;; pda -> (listof PATH)
@@ -237,7 +244,7 @@
                                                                                 (get-pop (first rules-left)))))))))]
                         (get-stack-helper path-lor '())))
                     
-                    ;; PATH (listof PATH) -> (listof PATH)
+                    ;; number (listof PATH) -> (listof PATH)
                     ;; Purpose: To return all the sub paths of the given
                     ;;          path, including the given path
                     (define (get-sub-paths-helper length-cur-path accum)
@@ -253,9 +260,6 @@
           ]
     (apply append (map get-sub-paths (filter leads-to-accepting? paths-that-end-in-finals)))))
 
-;; have to have a max length of a path to be 50 right now
-
-
 
 
 
@@ -269,13 +273,13 @@
     (make-ndpda new-states (sm-sigma a-pda) (sm-gamma a-pda) (sm-start a-pda) (sm-finals a-pda) new-rules)))
 
 
-;; (listof rules) -> word
+;; (listof pda-rule) -> word
 ;; Purpose: To return a word that is made from the given path
 (define (word-of-path a-path)
   (filter (λ (x) (not (eq? 'ε x))) (append-map (λ (x) (list (get-elem-read x))) (PATH-lor a-path))))
 
 
-;; (listof (listof symbol)) (listof (list state (word -> boolean))) -> Boolean
+;; PATH (listof (list state (word -> boolean))) -> Boolean
 ;; Purpose: To determine if a the invariant for a given path holds
 (define (path-inv-not-hold? a-path a-loi)
   (not (invariant-holds? a-loi
@@ -347,7 +351,7 @@
     (sort-words (sm-all-possible-words-helper all-paths-new-machine
                                               (list (list '() (sm-start a-machine)))))))
 
-;; machine (listof (list state (word -> boolean))) -> (listof (listof symbol))
+;; pda (listof (list state (word -> boolean))) -> (listof (word stack state))
 ;; Purpose: To return a list of the invarients that don't hold and the words that cause it not to hold
 (define (sm-test-invs-pda a-machine . a-loi)
   (local [;; the given machine without the states and rules of states that cannot reach a final state
@@ -357,9 +361,9 @@
           ;; all accepting paths of new-machine
           (define all-paths-new-machine (get-accepting-paths new-machine))
 
-          ;; (listof (listof rule)) (listof (listof symbol)) -> (listof (listof symbol))
-          ;; Purpose: To return a list of the invarients and the word that causes them not to hold
-          ;; Accumulator Invarient: accum = list of lists of words that cause the invarient not to hold
+          ;; (listof PATH) (listof (word stack state)) -> (listof (word stack state))
+          ;; Purpose: To return a list of the invariants and the word that causes them not to hold
+          ;; Accumulator Invariant: accum = list of lists of words and stacks that cause the invarient not to hold
           ;;                                & the state that it doesn't hold for
           (define (sm-test-invs-helper all-paths accum)
             (if (empty? all-paths)
@@ -383,4 +387,3 @@
                                (list (list '() '() (sm-start a-machine))))))))
 
 
-  
