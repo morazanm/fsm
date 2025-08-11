@@ -476,7 +476,7 @@
 ;; Purpose: Determine that only aabab is detected
 (define E2-INV contains-aabab?)
 
-(define RES (sm-test-invs CONTAINS-aabab
+#;(define RES (sm-test-invs CONTAINS-aabab
                           (list 'S S2-INV)
                           (list 'A A2-INV)
                           (list 'B B2-INV)
@@ -484,7 +484,7 @@
                           (list 'D D2-INV)
                           (list 'E E2-INV)))
 
-(define RES-WORDS (sm-all-possible-words CONTAINS-aabab
+#;(define RES-WORDS (sm-all-possible-words CONTAINS-aabab
                                          (list (list 'S S2-INV)
                                                (list 'A A2-INV)
                                                (list 'B B2-INV)
@@ -492,7 +492,7 @@
                                                (list 'D D2-INV)
                                                (list 'E E2-INV))))
 
-(define TOTAL-WORDS (foldl (λ (pair acc) (+ (length (second pair)) acc))
+#;(define TOTAL-WORDS (foldl (λ (pair acc) (+ (length (second pair)) acc))
                            0
                            RES-WORDS))
 
@@ -1314,7 +1314,7 @@
                      (list 'E E3-INV)
                      (list 'F F3-INV)))
 
-(define RES2 (sm-test-invs M3
+#;(define RES2 (sm-test-invs M3
                            (list 'S S3-INV)
                            (list 'A A3-INV)
                            (list 'B B3-INV)
@@ -1323,7 +1323,7 @@
                            (list 'E E3-INV)
                            (list 'F F3-INV)))
 
-(define RES2-WORDS (sm-all-possible-words M3
+#;(define RES2-WORDS (sm-all-possible-words M3
                                           (list (list 'S S3-INV)
                                                 (list 'A A3-INV)
                                                 (list 'B B3-INV)
@@ -1332,7 +1332,7 @@
                                                 (list 'E E3-INV)
                                                 (list 'F F3-INV))))
 
-(define TOTAL-WORDS2 (foldl (λ (pair acc) (+ (length (second pair)) acc))
+#;(define TOTAL-WORDS2 (foldl (λ (pair acc) (+ (length (second pair)) acc))
                             0
                             RES2-WORDS))
 

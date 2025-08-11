@@ -3,8 +3,7 @@
 (provide sm-all-possible-words sm-test-invs-pda get-accepting-paths word-of-path)
 (require racket/list
          rackunit
-         ;;"../fsm-core/interface.rkt"
-         )
+         "../fsm-core/private/sm-getters.rkt")
 
 ;; USEFUL FUNCTIONS
 
