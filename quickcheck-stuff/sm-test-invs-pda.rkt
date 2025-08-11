@@ -3,7 +3,8 @@
 (provide sm-all-possible-words sm-test-invs-pda get-accepting-paths word-of-path)
 (require racket/list
          rackunit
-         "../fsm-core/private/sm-getters.rkt")
+         "../fsm-core/private/sm-getters.rkt"
+         "../fsm-core/interface.rkt")
 
 ;; USEFUL FUNCTIONS
 
@@ -180,19 +181,19 @@
   ;; Accumulator invarient: paths = list of current paths
   (define (find-paths-helper a-qop paths)
     (if (qempty? a-qop) paths
-        (local [(define next-rules-first-path (get-next-rules (last (PATH-lor (qfirst a-qop)))
-                                                              (filter
-                                                               (λ (rule)
-                                                                 (and (or (equal? (get-pop rule) 'ε)
-                                                                          (and (<= (length (get-pop rule)) (length (PATH-stack (qfirst a-qop))))
-                                                                               (equal? (take (PATH-stack (qfirst a-qop))
-                                                                                             (length (get-pop rule)))
-                                                                                       (get-pop rule))))
-                                                                      (< (count (λ (rl) (equal? rule rl))
-                                                                                (PATH-lor (qfirst a-qop)))
-                                                                         MAX-NUM-REPETITIONS)))
-                                                               rules)))
-                (define paths-with-qfirst (cons (qfirst a-qop) paths))]
+        (let [(next-rules-first-path (get-next-rules (last (PATH-lor (qfirst a-qop)))
+                                                     (filter
+                                                      (λ (rule)
+                                                        (and (or (equal? (get-pop rule) 'ε)
+                                                                 (and (<= (length (get-pop rule)) (length (PATH-stack (qfirst a-qop))))
+                                                                      (equal? (take (PATH-stack (qfirst a-qop))
+                                                                                    (length (get-pop rule)))
+                                                                              (get-pop rule))))
+                                                             (< (count (λ (rl) (equal? rule rl))
+                                                                       (PATH-lor (qfirst a-qop)))
+                                                                MAX-NUM-REPETITIONS)))
+                                                      rules)))
+              (paths-with-qfirst (cons (qfirst a-qop) paths))]
           (if (empty? next-rules-first-path)
               (find-paths-helper (dequeue a-qop)
                                  paths-with-qfirst)
@@ -214,50 +215,50 @@
 ;; pda -> (listof PATH)
 ;; Purpose: Returns all the paths that lead to an accepting word of the given machine
 (define (get-accepting-paths a-pda)
-  (local [(define paths-that-end-in-finals (filter (λ (x) (member? (get-destination-state (last (PATH-lor x))) (sm-finals a-pda)))
-                                                   (find-paths a-pda)))
-          ;; PATH -> Boolean
-          ;; Purpose: To determine if the given path leads to an accept 
-          (define (leads-to-accepting? a-path)
-            (empty? (PATH-stack a-path)))
+  (define paths-that-end-in-finals (filter (λ (x) (member? (get-destination-state (last (PATH-lor x))) (sm-finals a-pda)))
+                                           (find-paths a-pda)))
+  ;; PATH -> Boolean
+  ;; Purpose: To determine if the given path leads to an accept 
+  (define (leads-to-accepting? a-path)
+    (empty? (PATH-stack a-path)))
 
-          ;; PATH -> (listof PATH)
-          ;; Purpose: To return all the sub paths of the given
-          ;;          path, including the given path
-          (define (get-sub-paths a-path)
-            (local [;; (listof pda-rules) -> (listof symbol)
-                    ;; Purpose: To get the stack of the given path
-                    (define (get-stack path-lor)
-                      (local [;; (listof pda-rules) (listof symbol) -> (listof symbol)
-                              ;; Purpose: To get the stack of the given path
-                              (define (get-stack-helper rules-left cur-stack)
-                                (if (empty? rules-left)
-                                    cur-stack
-                                    (get-stack-helper (rest rules-left)
-                                                      (append (if (eq? 'ε (get-push (first rules-left)))
-                                                                  '()
-                                                                  (get-push (first rules-left)))
-                                                              (drop cur-stack
-                                                                    (length (if (eq? 'ε (get-pop (first rules-left)))
-                                                                                '()
-                                                                                (get-pop (first rules-left)))))))))]
-                        (get-stack-helper path-lor '())))
+  ;; PATH -> (listof PATH)
+  ;; Purpose: To return all the sub paths of the given
+  ;;          path, including the given path
+  (define (get-sub-paths a-path)
+    ;; (listof pda-rules) -> (listof symbol)
+    ;; Purpose: To get the stack of the given path
+    (define (get-stack path-lor)
+      ;; (listof pda-rules) (listof symbol) -> (listof symbol)
+      ;; Purpose: To get the stack of the given path
+      (define (get-stack-helper rules-left cur-stack)
+        (if (empty? rules-left)
+            cur-stack
+            (get-stack-helper (rest rules-left)
+                              (append (if (eq? 'ε (get-push (first rules-left)))
+                                          '()
+                                          (get-push (first rules-left)))
+                                      (drop cur-stack
+                                            (length (if (eq? 'ε (get-pop (first rules-left)))
+                                                        '()
+                                                        (get-pop (first rules-left)))))))))
+      (get-stack-helper path-lor '()))
                     
-                    ;; number (listof PATH) -> (listof PATH)
-                    ;; Purpose: To return all the sub paths of the given
-                    ;;          path, including the given path
-                    (define (get-sub-paths-helper length-cur-path accum)
-                      (if (equal? (take (PATH-lor a-path) length-cur-path) (PATH-lor a-path))
-                          (cons (make-PATH (take (PATH-lor a-path) length-cur-path)
-                                           (get-stack (take (PATH-lor a-path) length-cur-path)))
-                                accum)
-                          (get-sub-paths-helper  (+ 1 length-cur-path)
-                                                 (cons (make-PATH (take (PATH-lor a-path) length-cur-path)
-                                                                  (get-stack (take (PATH-lor a-path) length-cur-path)))
-                                                       accum))))]
-              (get-sub-paths-helper 1 '())))
-          ]
-    (apply append (map get-sub-paths (filter leads-to-accepting? paths-that-end-in-finals)))))
+    ;; number (listof PATH) -> (listof PATH)
+    ;; Purpose: To return all the sub paths of the given
+    ;;          path, including the given path
+    (define (get-sub-paths-helper length-cur-path accum)
+      (if (equal? (take (PATH-lor a-path) length-cur-path) (PATH-lor a-path))
+          (cons (make-PATH (take (PATH-lor a-path) length-cur-path)
+                           (get-stack (take (PATH-lor a-path) length-cur-path)))
+                accum)
+          (get-sub-paths-helper  (+ 1 length-cur-path)
+                                 (cons (make-PATH (take (PATH-lor a-path) length-cur-path)
+                                                  (get-stack (take (PATH-lor a-path) length-cur-path)))
+                                       accum))))
+    (get-sub-paths-helper 1 '()))
+          
+  (apply append (map get-sub-paths (filter leads-to-accepting? paths-that-end-in-finals))))
 
 
 
@@ -265,11 +266,11 @@
 ;; pda -> pda
 ;; Purpose: Takes in pda and remove states and rules that can't reach a final state
 (define (remove-states-that-cannot-reach-finals a-pda)
-  (local [(define paths-that-end-in-finals (filter (λ (x) (member? (get-destination-state (last (PATH-lor x))) (sm-finals a-pda)))
-                                                   (find-paths a-pda)))
-          (define new-rules (remove-duplicates (apply append (map (λ (x) (PATH-lor x)) paths-that-end-in-finals))))
-          (define new-states (remove-duplicates (append-map (λ (x) (list (get-source-state x) (get-destination-state x))) new-rules)))]
-    (make-ndpda new-states (sm-sigma a-pda) (sm-gamma a-pda) (sm-start a-pda) (sm-finals a-pda) new-rules)))
+  (define paths-that-end-in-finals (filter (λ (x) (member? (get-destination-state (last (PATH-lor x))) (sm-finals a-pda)))
+                                           (find-paths a-pda)))
+  (define new-rules (remove-duplicates (apply append (map (λ (x) (PATH-lor x)) paths-that-end-in-finals))))
+  (define new-states (remove-duplicates (append-map (λ (x) (list (get-source-state x) (get-destination-state x))) new-rules)))
+  (make-ndpda new-states (sm-sigma a-pda) (sm-gamma a-pda) (sm-start a-pda) (sm-finals a-pda) new-rules))
 
 
 ;; (listof pda-rule) -> word
@@ -290,99 +291,99 @@
 ;; machine (listof (list state (word -> boolean))) -> (listof (listof state (listof word)))
 ;; Purpose: To return a list of all posible words that can be at each state in a machine 
 (define (sm-all-possible-words a-machine a-loi)
-  (local [;; the given machine without the states and rules of states that cannot reach a final state
-          (define new-machine (if (eq? (sm-type a-machine) 'dfa)
-                                  a-machine
-                                  (remove-states-that-cannot-reach-finals a-machine)))
-          ;; list of invariants that are reachable from the starting configuration
-          (define reachable-inv (filter (λ (x) (member? (first x) (sm-states new-machine))) a-loi))
-          ;; all paths of new-machine
-          (define all-paths-new-machine (find-paths new-machine))
+  ;; the given machine without the states and rules of states that cannot reach a final state
+  (define new-machine (if (eq? (sm-type a-machine) 'dfa)
+                          a-machine
+                          (remove-states-that-cannot-reach-finals a-machine)))
+  ;; list of invariants that are reachable from the starting configuration
+  (define reachable-inv (filter (λ (x) (member? (first x) (sm-states new-machine))) a-loi))
+  ;; all paths of new-machine
+  (define all-paths-new-machine (find-paths new-machine))
 
-          ;; (listof (listof rule)) (listof (listof symbol)) -> (listof (listof symbol))
-          ;; Purpose:  To return a list of all posible words that can be at each state in a machine 
-          ;; Accumulator Invarient: accum = list of lists of words with the states that the can possibly be at
-          (define (sm-all-possible-words-helper all-paths accum)
-            (if (empty? all-paths)
-                accum
-                (sm-all-possible-words-helper (rest all-paths)
-                                              (cons (list (word-of-path (first all-paths))
-                                                          (third (last (first all-paths)))) accum))))
+  ;; (listof (listof rule)) (listof (listof symbol)) -> (listof (listof symbol))
+  ;; Purpose:  To return a list of all posible words that can be at each state in a machine 
+  ;; Accumulator Invarient: accum = list of lists of words with the states that the can possibly be at
+  (define (sm-all-possible-words-helper all-paths accum)
+    (if (empty? all-paths)
+        accum
+        (sm-all-possible-words-helper (rest all-paths)
+                                      (cons (list (word-of-path (first all-paths))
+                                                  (third (last (first all-paths)))) accum))))
 
-          ;; (listof symbol) -> (listof (symbol (listof word)))
-          ;; Purpose: To generate a list of lists of a state and an empty list for each given states
-          (define (build-list-of-states-&-empty-low states)
-            (local [;; (listof symbol) (listof word)-> (listof (symbol '()))
-                    ;; Purpose: To generate a list of lists of a state and an empty list for each given states
-                    ;; Accumulator Invariant: accum = list containing a list with the state and an empty list of words
-                    (define (build-list-of-states-&-empty-low-helper states accum)
-                      (if (empty? states) accum
-                          (build-list-of-states-&-empty-low-helper (rest states) (cons (list (first states) '()) accum))))]
-              (build-list-of-states-&-empty-low-helper states '())))
+  ;; (listof symbol) -> (listof (symbol (listof word)))
+  ;; Purpose: To generate a list of lists of a state and an empty list for each given states
+  (define (build-list-of-states-&-empty-low states)
+    ;; (listof symbol) (listof word)-> (listof (symbol '()))
+    ;; Purpose: To generate a list of lists of a state and an empty list for each given states
+    ;; Accumulator Invariant: accum = list containing a list with the state and an empty list of words
+    (define (build-list-of-states-&-empty-low-helper states accum)
+      (if (empty? states) accum
+          (build-list-of-states-&-empty-low-helper (rest states) (cons (list (first states) '()) accum))))
+    (build-list-of-states-&-empty-low-helper states '()))
           
-          (define states-&-empty-low (build-list-of-states-&-empty-low (sm-states new-machine)))
+  (define states-&-empty-low (build-list-of-states-&-empty-low (sm-states new-machine)))
 
-          ;; (listof (listof word state)) -> (listof (listof state (listof word)))
-          ;; Purpose: To sort the words to be a list of the state and the words that can possibly reach that state
-          (define (sort-words listof-all-words-&-states)
-            (local [;; (listof (word state)) -> (listof word)
-                    ;; Purpose: To make the given (listof (word state)) into a list of words
-                    (define (make-low list-of-words-&-states)
-                      (local [;; (listof (word state)) -> (listof word)
-                              ;; Purpose: To make the given (listof (word state)) into a list of words
-                              ;; Accumulator Invariant: accum = current list of words for the state
-                              (define (make-low-helper list-of-words-&-states accum)
-                                (if (empty? list-of-words-&-states) accum
-                                    (make-low-helper (rest list-of-words-&-states) (cons (first (first list-of-words-&-states)) accum))))]
-                        (make-low-helper list-of-words-&-states '())))
-                    ;; (listof (listof word state)) -> (listof (listof state (listof word)))
-                    ;; Purpose: To sort the words to be a list of the state and the words that can possibly reach that state
-                    ;; Accumulator Invairant: accum = list of states with all the possible words in them 
-                    (define (sort-words-helper states-&-empty-low accum)
-                      (if (empty? states-&-empty-low) accum
-                          (sort-words-helper (rest states-&-empty-low)
-                                             (cons (list (first (first states-&-empty-low))
-                                                         (make-low (filter (λ (x) (eq? (first (first states-&-empty-low)) (second x)))
-                                                                           listof-all-words-&-states))) accum))
-                          ))
-                    ]
-              (sort-words-helper states-&-empty-low '())))]
-    (sort-words (sm-all-possible-words-helper all-paths-new-machine
-                                              (list (list '() (sm-start a-machine)))))))
+  ;; (listof (listof word state)) -> (listof (listof state (listof word)))
+  ;; Purpose: To sort the words to be a list of the state and the words that can possibly reach that state
+  (define (sort-words listof-all-words-&-states)
+    ;; (listof (word state)) -> (listof word)
+    ;; Purpose: To make the given (listof (word state)) into a list of words
+    (define (make-low list-of-words-&-states)
+      ;; (listof (word state)) -> (listof word)
+      ;; Purpose: To make the given (listof (word state)) into a list of words
+      ;; Accumulator Invariant: accum = current list of words for the state
+      (define (make-low-helper list-of-words-&-states accum)
+        (if (empty? list-of-words-&-states) accum
+            (make-low-helper (rest list-of-words-&-states) (cons (first (first list-of-words-&-states)) accum))))
+      (make-low-helper list-of-words-&-states '()))
+    ;; (listof (listof word state)) -> (listof (listof state (listof word)))
+    ;; Purpose: To sort the words to be a list of the state and the words that can possibly reach that state
+    ;; Accumulator Invairant: accum = list of states with all the possible words in them 
+    (define (sort-words-helper states-&-empty-low accum)
+      (if (empty? states-&-empty-low) accum
+          (sort-words-helper (rest states-&-empty-low)
+                             (cons (list (first (first states-&-empty-low))
+                                         (make-low (filter (λ (x) (eq? (first (first states-&-empty-low)) (second x)))
+                                                           listof-all-words-&-states))) accum))
+          ))
+            
+    (sort-words-helper states-&-empty-low '()))
+  (sort-words (sm-all-possible-words-helper all-paths-new-machine
+                                            (list (list '() (sm-start a-machine))))))
 
 ;; pda (listof (list state (word -> boolean))) -> (listof (word stack state))
 ;; Purpose: To return a list of the invarients that don't hold and the words that cause it not to hold
 (define (sm-test-invs-pda a-machine . a-loi)
-  (local [;; the given machine without the states and rules of states that cannot reach a final state
-          (define new-machine (remove-states-that-cannot-reach-finals a-machine))
-          ;; list of invariants that are reachable from the starting configuration
-          (define reachable-inv (filter (λ (x) (member? (first x) (sm-states new-machine))) a-loi))
-          ;; all accepting paths of new-machine
-          (define all-paths-new-machine (get-accepting-paths new-machine))
+  ;; the given machine without the states and rules of states that cannot reach a final state
+  (define new-machine (remove-states-that-cannot-reach-finals a-machine))
+  ;; list of invariants that are reachable from the starting configuration
+  (define reachable-inv (filter (λ (x) (member? (first x) (sm-states new-machine))) a-loi))
+  ;; all accepting paths of new-machine
+  (define all-paths-new-machine (get-accepting-paths new-machine))
 
-          ;; (listof PATH) (listof (word stack state)) -> (listof (word stack state))
-          ;; Purpose: To return a list of the invariants and the word that causes them not to hold
-          ;; Accumulator Invariant: accum = list of lists of words and stacks that cause the invarient not to hold
-          ;;                                & the state that it doesn't hold for
-          (define (sm-test-invs-helper all-paths accum)
-            (if (empty? all-paths)
-                accum
-                (sm-test-invs-helper (rest all-paths)
-                                     (if (path-inv-not-hold? (first all-paths)
-                                                             (filter
-                                                              (λ (x) (eq? (get-destination-state (last (PATH-lor (first all-paths))))
-                                                                          (first x)))
-                                                              reachable-inv))
-                                         (cons (list (word-of-path (first all-paths))
-                                                     (PATH-stack (first all-paths))
-                                                     (get-destination-state (last (PATH-lor (first all-paths))))) accum)
-                                         accum))))
-          ]
-    (sm-test-invs-helper all-paths-new-machine
-                         (let [(start-pair (assoc (sm-start a-machine) a-loi))]
-                           (if (or (not (pair? start-pair))
-                                   ((second start-pair) '() '()))
-                               '()
-                               (list (list '() '() (sm-start a-machine))))))))
+  ;; (listof PATH) (listof (word stack state)) -> (listof (word stack state))
+  ;; Purpose: To return a list of the invariants and the word that causes them not to hold
+  ;; Accumulator Invariant: accum = list of lists of words and stacks that cause the invarient not to hold
+  ;;                                & the state that it doesn't hold for
+  (define (sm-test-invs-helper all-paths accum)
+    (if (empty? all-paths)
+        accum
+        (sm-test-invs-helper (rest all-paths)
+                             (if (path-inv-not-hold? (first all-paths)
+                                                     (filter
+                                                      (λ (x) (eq? (get-destination-state (last (PATH-lor (first all-paths))))
+                                                                  (first x)))
+                                                      reachable-inv))
+                                 (cons (list (word-of-path (first all-paths))
+                                             (PATH-stack (first all-paths))
+                                             (get-destination-state (last (PATH-lor (first all-paths))))) accum)
+                                 accum))))
+          
+  (sm-test-invs-helper all-paths-new-machine
+                       (let [(start-pair (assoc (sm-start a-machine) a-loi))]
+                         (if (or (not (pair? start-pair))
+                                 ((second start-pair) '() '()))
+                             '()
+                             (list (list '() '() (sm-start a-machine)))))))
 
 
