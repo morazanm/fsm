@@ -924,7 +924,8 @@ ismg "finished machine"
                                                                        (first loRM) (if found-merged-state? (first merged-state) merged-state)))])
             (make-phase-5-helper (rest loRM) (if found-merged-state? (remove (first merged-state) loMS) loMS) (cons new-phase acc)))))
     (make-phase-5-helper loRM loMS '()))
-  (let* ([unchecked-M M]
+  (let* ([M (ndfa->dfa M)]
+         [unchecked-M M]
          [results-from-minimization (minimize-dfa unchecked-M)]
          [no-unreachables-M (minimization-results-unreachables-removed-M results-from-minimization)]
          [all-loSP (reverse (minimization-results-loSP results-from-minimization))]
@@ -948,7 +949,11 @@ ismg "finished machine"
          [phase-2 (list (phase 2 no-unreachables-M no-unreachables-M-state-pairing-table (phase-2-attributes)))]
          [phase3+new-table (make-phase 3 phase-3-attributes no-unreachables-M no-unreachables-M-state-pairing-table
                                        final-non-final-pairings state-table-mappings '())]
-         [phase-3 (list (last (phase-results-loPhase phase3+new-table)))]
+         [phase-3-lo-phase (phase-results-loPhase phase3+new-table)]
+         
+         [phase-3 (if (empty? phase-3-lo-phase)
+                      phase-3-lo-phase
+                      (list (last phase-3-lo-phase)))]
          [table-with-initial-markings (phase-results-new-table phase3+new-table)]
          [phase4+new-table (make-phase 4
                                        phase-4-attributes
@@ -966,11 +971,13 @@ ismg "finished machine"
          [phase-6 (list (phase 6 (last rebuilding-machines) filled-table (phase-6-attributes can-be-minimized?)))]
          [all-phases (append phase-0 phase-1 phase-2 phase-3 phase-4 phase-5 phase-6)]
          [graphs (make-main-graphic all-phases state-table-mappings)])
-    
+    ;unchecked-M
+    ;(minimization-results-new-machine results-from-minimization)
+    ;phase3+new-table
     ;phase-5
     ;all-phases
-    
-    ;#;
+    (void)
+    #;
     (run-viz (map first graphs)
              (list->vector (map (λ (x table)
                                   (λ (graph)
