@@ -819,8 +819,22 @@
                                    (CFG-rules cfg))]
          [starting-queue (map (λ (rule)
                                 (nt-path rule (cfg-rule-rhs rule) (list->set (cons (cfg-rule-lhs rule) (cfg-rule-rhs rule)))))
-                                rules-from-start)])
-    (gather-nts-bfs (enqueue e-queue starting-queue) '() (CFG-rules cfg) (list->set (cons EMP (CFG-sigma cfg))))))
+                                rules-from-start)]
+         [sigma (list->set (cons EMP (CFG-sigma cfg)))]
+         [needed-nts (nt-path-seen (gather-nts-bfs (enqueue e-queue starting-queue)
+                                                   '()
+                                                   (CFG-rules cfg)
+                                                   sigma))]
+         [rules (filter (λ (rule)
+                          (and (set-member? needed-nts (cfg-rule-lhs rule))
+                               (andmap (λ (rhs)
+                                         (or (set-member? sigma rhs)
+                                             (set-member? needed-nts rhs)))
+                                          (cfg-rule-rhs rule))))
+                        (CFG-rules cfg))]
+         )
+    #;(gather-nts-bfs (enqueue e-queue starting-queue) '() (CFG-rules cfg) (list->set (cons EMP (CFG-sigma cfg))))
+    (values needed-nts rules)))
 
 
 (define (gather-nts-bfs queue finished rules sigma)
@@ -876,7 +890,7 @@
         ;(displayln applicable-rules-from-nts)
         
         (if (empty? next-nts-to-search #;next-paths-to-search)
-            (gather-nts-bfs (dequeue queue) (cons next-path #;next-rule-path finished) rules sigma)
+            (gather-nts-bfs (dequeue queue) next-path rules sigma)
             (gather-nts-bfs (enqueue (dequeue queue) next-path #;next-paths-to-search) finished rules sigma))
            #;
         (values next-rule-path applicable-rules-from-nts next-nts-to-search next-path #;next-paths-to-search))))
@@ -1340,6 +1354,73 @@
 (define p-cfe (pda->cfe P))
 
 
+(cfg-derive (cfg (list 'B 'A  'W 'G 'T 'I-0 'H 'X 'R-1 'O)
+                 '(a b)
+                 (list
+                  (cfg-rule 'A '(B))
+                  (cfg-rule 'X '(ε))
+                  (cfg-rule 'H '(ε))
+                  (cfg-rule 'G '(H))
+                  (cfg-rule 'O '(b H))
+                  (cfg-rule 'T '(a H))
+                  (cfg-rule 'W '(X))
+                  (cfg-rule 'I-0 '(T))
+                  (cfg-rule 'B '(G W))
+                  (cfg-rule 'G '(R-1 O))
+                  (cfg-rule 'R-1 '(I-0 G)))
+                 'A)
+            '(a a b b))
 
 
+(cfg-derive (cfg
+             '(T O H X G I-0 W R-1 B A)
+             '(a b)
+             (list
+              (cfg-rule 'A '(B))
+              (cfg-rule 'X '(ε))
+              (cfg-rule 'H '(ε))
+              (cfg-rule 'G '(H))
+              (cfg-rule 'O '(b H))
+              (cfg-rule 'T '(a H))
+              (cfg-rule 'W '(X))
+              (cfg-rule 'I-0 '(T))
+              (cfg-rule 'B '(G W))
+              (cfg-rule 'G '(R-1 O))
+              (cfg-rule 'R-1 '(I-0 G)))
+             'A)
+            '(a a b b))
+
+
+(gen-cfexp-word (cfg->cfe (cfg (list 'B 'A 'W 'G 'T 'I-0 'H 'X 'R-1 'O)
+                 '(a b)
+                 (list
+                  (cfg-rule 'A '(B))
+                  (cfg-rule 'X '(ε))
+                  (cfg-rule 'H '(ε))
+                  (cfg-rule 'G '(H))
+                  (cfg-rule 'O '(b H))
+                  (cfg-rule 'T '(a H))
+                  (cfg-rule 'W '(X))
+                  (cfg-rule 'I-0 '(T))
+                  (cfg-rule 'B '(G W))
+                  (cfg-rule 'G '(R-1 O))
+                  (cfg-rule 'R-1 '(I-0 G)))
+                 'A)))
+
+(gen-cfexp-word (cfg->cfe (cfg
+             '(T O H X G I-0 W R-1 B A)
+             '(a b)
+             (list
+              (cfg-rule 'A '(B))
+              (cfg-rule 'X '(ε))
+              (cfg-rule 'H '(ε))
+              (cfg-rule 'G '(H))
+              (cfg-rule 'O '(b H))
+              (cfg-rule 'T '(a H))
+              (cfg-rule 'W '(X))
+              (cfg-rule 'I-0 '(T))
+              (cfg-rule 'B '(G W))
+              (cfg-rule 'G '(R-1 O))
+              (cfg-rule 'R-1 '(I-0 G)))
+             'A)))
     
