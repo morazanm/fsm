@@ -817,7 +817,9 @@
 (define (gather-nts cfg)
   (let* ([rules-from-start (filter (λ (rule) (eq? (cfg-rule-lhs rule) (CFG-start cfg)))
                                    (CFG-rules cfg))]
-         [starting-queue (map (λ (rule) (nt-path rule (cons (cfg-rule-lhs rule) (cfg-rule-rhs rule)) (set rule))) rules-from-start)])
+         [starting-queue (map (λ (rule)
+                                (nt-path rule (cfg-rule-rhs rule) (list->set (cons (cfg-rule-lhs rule) (cfg-rule-rhs rule)))))
+                                rules-from-start)])
     (gather-nts-bfs (enqueue e-queue starting-queue) '() (CFG-rules cfg) (list->set (cons EMP (CFG-sigma cfg))))))
 
 
@@ -827,14 +829,25 @@
       (let* ([next-rule-path (qfirst queue)]
              [next-nts-to-find (nt-path-next-nts next-rule-path)]
              [applicable-rules-from-nts (append-map (λ (nt)
-                                                      (map cfg-rule-rhs (filter (λ (rule)
+                                                      (append-map cfg-rule-rhs (filter (λ (rule)
                                                                                     (eq? nt (cfg-rule-lhs rule)))
                                                                                   rules)))
                                                     next-nts-to-find)]
              #;[next-rules (if (= (length next-nts-to-find) 1)
                              applicable-rules-from-nts
                              applicable-rules-from-nts)]
-             [next-paths-to-search (filter-not
+             [next-nts-to-search (filter-not
+                                   (λ (nt)
+                                    (set-member? (nt-path-seen next-rule-path) nt))
+                                   (filter-not (λ (nt) (set-member? sigma nt)) applicable-rules-from-nts))]
+             [next-path (struct-copy nt-path
+                                     next-rule-path
+                                     [next-nts next-nts-to-search]
+                                     [seen (foldl (λ (nt st)
+                                                    (set-add st nt))
+                                                    (nt-path-seen next-rule-path)
+                                                    next-nts-to-search)])]
+             #;[next-paths-to-search (filter-not
                                     (λ (next-path)
                                       (set-member? (nt-path-seen next-rule-path) (nt-path-last-rule-used next-path)))
                                     (map #;append-map (λ (rule)
@@ -860,13 +873,13 @@
         ;;need cartensian product from rules frm nt
         ;#;
         
-        (displayln applicable-rules-from-nts)
-        ;#;
-        (if (empty? next-paths-to-search)
-            (gather-nts-bfs (dequeue queue) (cons next-rule-path finished) rules sigma)
-            (gather-nts-bfs (enqueue (dequeue queue) next-paths-to-search) finished rules sigma))
+        ;(displayln applicable-rules-from-nts)
+        
+        (if (empty? next-nts-to-search #;next-paths-to-search)
+            (gather-nts-bfs (dequeue queue) (cons next-path #;next-rule-path finished) rules sigma)
+            (gather-nts-bfs (enqueue (dequeue queue) next-path #;next-paths-to-search) finished rules sigma))
            #;
-        (values next-rule-path applicable-rules-from-nts next-paths-to-search))))
+        (values next-rule-path applicable-rules-from-nts next-nts-to-search next-path #;next-paths-to-search))))
   
   
             
