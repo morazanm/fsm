@@ -389,11 +389,11 @@
                                (A a ,DEAD) (A b F)
                                (F a ,DEAD) (F b F))
                      'no-dead))
-#|
+
 (define listofmachines
   (list EX1 EX2-trans EX3-vid EX4-vid EX5 EX5-vid EX6-vid M L aa*Uab* AT-LEAST-ONE-MISSING p2-ndfa AB*B*UAB* AB*B*UAB*2 aa-ab ends-with-two-bs
       nd n nk ab*-U-ab*b*-ndfa PROP-BI DNA-SEQUENCE ND ND2 ND3 ND4 ND5 ENDS-WITH-TWO-Bs nd-a* missing-exactly-one EVEN-NUM-Bs M2))
-
+#|
 (struct status (M result) #:transparent)
 
 "minimize 5 - myhill-nerode"
@@ -411,11 +411,12 @@
 (- (length listofmachines) (length (filter (λ (s) (status-result s)) minimize5-test)))
 "success rate"
 (* 100 (/ (length (filter (λ (s) (status-result s)) minimize5-test)) (length listofmachines)))
-
-(map (λ (M)
+|#
+#;(map (λ (M)
          (time (minimization-viz M)))
        listofmachines)
-|#
 
 
-(time (minimization-viz EX3-vid))
+(minimization-viz AB*B*UAB*2)
+
+ ;(time (minimization-viz EX3-vid))

@@ -69,7 +69,7 @@
 ;;unreachables-removed-M | the machine with unreachable states removed | fsa
 ;;loSP | all of the state-pairings that was created and used for the minimization algorithm |(listof state-pairings)
 ;;merged-states | all of merged-state created from the minimization algorithm | (listof merged-state)
-(struct minimization-results (new-machine unreachables-removed-M loSP merged-states) #:transparent)
+(struct minimization-results (original-M new-machine unreachables-removed-M loSP merged-states) #:transparent)
 
 ;;states | the states of the dfa | (listof state)
 ;;alphabet | the alphabet that the dfa reads | (list of symbol)
@@ -77,7 +77,7 @@
 ;;finals | the final states of the dfa| (listof finals)
 ;;rules | the rules that the dfa must follow | (listof rule)
 ;;no-dead | the symbol of the dead state | symbol
-(struct dfa (states alphabet start finals rules no-dead) #:transparent)
+(struct dfa (states alphabet start finals rules deterministic? no-dead) #:transparent)
 
 ;;number | the number denoting the phase | natnum
 ;;M | the dfa associated with the given phase and step | dfa
@@ -114,6 +114,9 @@ viz phases
 0 -> only show input machine
 imsg "Original machine"
 
+.5 -> coonvert to dfa
+ismg Converting Machine into a dfa
+
 1 -> if applicable, remove unreachable states
 imsg "States ... are unreachable and have been removed"
 
@@ -143,7 +146,9 @@ ismg "finished machine"
        (fsa-getstart M)
        (fsa-getfinals M)
        (fsa-getrules M)
+       (M null 'is-deterministic?)
        'no-dead))
+
 
 ;;(queueof X) (queue X) -> (queueof X)
 ;;Purpose: Adds the X to the back of the given (queueof X) 
@@ -389,7 +394,7 @@ ismg "finished machine"
          [states-table (map (λ (sp) (mark-states-table sp finals)) init-states-table)]
          [filled-table (make-matches (list (state-pairings states-table)) transition-table (fsa-getalphabet dfa))]
          [new-M (table->dfa (state-pairings-all-pairs (first filled-table)) dfa transition-table)])
-    (minimization-results (first new-M) dfa filled-table (second new-M))))
+    (minimization-results M (first new-M) dfa filled-table (second new-M))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;VIZ-SCENE-STUFF;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -676,7 +681,9 @@ ismg "finished machine"
 ;;Purpose: Draws the informative messages using the given imsg-state
 (define (draw-imsg imsg-state)
 
-  (define PHASE0-IMSG (text "Input Machine" FONT-SIZE BLACK))
+  (define PHASE--1-IMSG (text "Input Machine" FONT-SIZE BLACK))
+
+  (define PHASE0-IMSG (text "Converting Input Machine to DFA" FONT-SIZE BLACK))
 
   ;;(listof state) -> string
   ;;Purpose: Converts the given (listof state) into a string
@@ -756,7 +763,8 @@ ismg "finished machine"
               "This machine cannot be minimized")
           FONT-SIZE BLACK))
   (let ([current-phase (zipper-current (imsg-state-phase imsg-state))])
-    (cond [(= (phase-number current-phase) 0) PHASE0-IMSG]
+    (cond [(= (phase-number current-phase) -1) PHASE--1-IMSG]
+          [(= (phase-number current-phase) 0) PHASE0-IMSG]
           [(= (phase-number current-phase) 1) (make-phase1-imsg (phase-attributes current-phase))]
           [(= (phase-number current-phase) 2) PHASE2-IMSG]
           [(= (phase-number current-phase) 3) (make-phase3-imsg (phase-attributes current-phase))]
@@ -901,6 +909,7 @@ ismg "finished machine"
                            start
                            (if (member start (dfa-finals minimized-M)) (list start) '())
                            looping-rules
+                           #t
                            'no-dead)])
       (machine-rebuilder states-connected-to-start rebuild-M (list rebuild-M))))
 
@@ -970,9 +979,9 @@ ismg "finished machine"
                                                                         (first loRM) (if found-merged-state? (first merged-state) merged-state)))])
             (make-phase-5-helper (rest loRM) (if found-merged-state? (remove (first merged-state) loMS) loMS) (cons new-phase acc)))))
     (make-phase-5-helper loRM loMS '()))
-  (let* ([M (ndfa->dfa M)]
-         [unchecked-M M]
+  (let* ([unchecked-M M]
          [results-from-minimization (minimize-dfa unchecked-M)]
+         [original-M (unchecked->dfa (minimization-results-original-M results-from-minimization))]
          [no-unreachables-M (minimization-results-unreachables-removed-M results-from-minimization)]
          [all-loSP (reverse (minimization-results-loSP results-from-minimization))]
          [final-non-final-pairings (filter state-pair-marked? (state-pairings-all-pairs (first all-loSP)))]
@@ -981,14 +990,17 @@ ismg "finished machine"
          [minimized-M (minimization-results-new-machine results-from-minimization)]
          [has-unreachables? (machine-changed? unchecked-M no-unreachables-M)]
          [can-be-minimized? (machine-changed? unchecked-M minimized-M)]
-         [M (unchecked->dfa M)]
+         [M (unchecked->dfa (ndfa->dfa M))]
          [no-unreachables-M (unchecked->dfa no-unreachables-M)]
          [state-table-mappings (for/hash ([state (dfa-states no-unreachables-M)]
                                           [num (in-naturals)])
                                  (values state (add1 num)))]
          [no-unreachables-M-state-pairing-table (make-table no-unreachables-M)]
          [minimized-M (unchecked->dfa minimized-M)]
-         [phase-0 (list (phase 0 M  no-unreachables-M-state-pairing-table (phase-0-attributes)))]
+         [phase--1 (list (phase -1 original-M no-unreachables-M-state-pairing-table (phase-0-attributes)))]
+         [phase-0 (if (not (dfa-deterministic? original-M))
+                       (list (phase 0 M  no-unreachables-M-state-pairing-table (phase-0-attributes)))
+                       '())]
          [phase-1 (if has-unreachables?
                       (list (phase 1 no-unreachables-M no-unreachables-M-state-pairing-table (phase-1-attributes unreachable-states)))
                       '())]
@@ -1015,10 +1027,11 @@ ismg "finished machine"
          [rebuilding-machines (reconstruct-machine minimized-M merged-states)]
          [phase-5 (make-phase-5 no-unreachables-M rebuilding-machines merged-states filled-table)]
          [phase-6 (list (phase 6 (last rebuilding-machines) filled-table (phase-6-attributes can-be-minimized?)))]
-         [all-phases (append phase-0 phase-1 phase-2 phase-3 phase-4 phase-5 phase-6)]
+         [all-phases (append phase--1 phase-0 phase-1 phase-2 phase-3 phase-4 phase-5 phase-6)]
          [graphs (make-main-graphic all-phases state-table-mappings)])
-    (void)
-    #;
+    ;(void)
+    
+    ;#;
     (run-viz (map first graphs)
              (list->vector (map (λ (x table)
                                   (if (list? (first x))
