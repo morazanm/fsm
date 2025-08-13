@@ -114,13 +114,29 @@
 
 ;;TESTING
 
-(check-pred (λ (low) (andmap valid-wwr-word low)) (gen-cfe-words WWR #;10 100000))
+(check-pred (λ (low) (andmap valid-wwr-word low)) (gen-cfe-words WWR
+                                                                 ; #;
+                                                                 10
+                                                                 #;
+                                                                 100000))
 
-(check-pred (λ (low) (andmap valid-anbn-word low)) (gen-cfe-words ANBN #;10 100000))
+(check-pred (λ (low) (andmap valid-anbn-word low)) (gen-cfe-words ANBN
+                                                                  ;#;
+                                                                  10
+                                                                  #;
+                                                                  100000))
 
-(check-pred (λ (low) (andmap valid-a2ibi-word low)) (gen-cfe-words A2iBi #;10 100000))
+(check-pred (λ (low) (andmap valid-a2ibi-word low)) (gen-cfe-words A2iBi
+                                                                   ;#;
+                                                                   10
+                                                                   #;
+                                                                   100000))
 
-(check-pred (λ (low) (andmap valid-aibj-word low)) (gen-cfe-words AiBj #;10 100000))
+(check-pred (λ (low) (andmap valid-aibj-word low)) (gen-cfe-words AiBj
+                                                                  ;#;
+                                                                  10
+                                                                  #;
+                                                                  100000))
 
 
 (define test (union-cfexp S1 S2))
@@ -212,9 +228,17 @@
 
 ;;TESTING
 
-(check-equal? (grammar-checker thesis-cfg1 thesis-cfg-converted 10 #;100000) #t)
+(check-equal? (grammar-checker thesis-cfg1 thesis-cfg-converted
+                               10
+                               #;
+                               100000)
+              #t)
 
-(check-equal? (grammar-checker thesis-cfe-converted thesis-cfe 10 #;100000) #t)
+(check-equal? (grammar-checker thesis-cfe-converted thesis-cfe
+                               10
+                               #;
+                               100000)
+              #t)
 
 
 ;;PDA->CFE
@@ -231,4 +255,8 @@
 (define p-cfe (pda->cfe P))
 
 
-(check-pred (λ (low) (andmap valid-anbn-word low)) (gen-cfe-words (pda->cfe (cfe->pda S1)) #;10 100000))
+(check-pred (λ (low) (andmap valid-anbn-word low)) (gen-cfe-words (pda->cfe (cfe->pda S1))
+                                                                  ;#;
+                                                                  10
+                                                                  #;
+                                                                  100000))
