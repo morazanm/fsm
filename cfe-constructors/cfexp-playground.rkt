@@ -16,13 +16,6 @@
 
 (define C (singleton-cfexp 'c))
 
-(define P (var-cfexp 'P))
-
-;(update-binding! P 'P C)
-
-;P
-
-
 ;; w = ww^r
 (define WWR
   (let* [(WWR (var-cfexp 'S))
@@ -121,13 +114,13 @@
 
 ;;TESTING
 
-(check-pred (λ (low) (andmap valid-wwr-word low)) (gen-cfe-words WWR 10 #;100000))
+(check-pred (λ (low) (andmap valid-wwr-word low)) (gen-cfe-words WWR #;10 100000))
 
-(check-pred (λ (low) (andmap valid-anbn-word low)) (gen-cfe-words ANBN 10 #;100000))
+(check-pred (λ (low) (andmap valid-anbn-word low)) (gen-cfe-words ANBN #;10 100000))
 
-(check-pred (λ (low) (andmap valid-a2ibi-word low)) (gen-cfe-words A2iBi 10 #;100000))
+(check-pred (λ (low) (andmap valid-a2ibi-word low)) (gen-cfe-words A2iBi #;10 100000))
 
-(check-pred (λ (low) (andmap valid-aibj-word low)) (gen-cfe-words AiBj 10 #;100000))
+(check-pred (λ (low) (andmap valid-aibj-word low)) (gen-cfe-words AiBj #;10 100000))
 
 
 (define test (union-cfexp S1 S2))
@@ -219,12 +212,23 @@
 
 ;;TESTING
 
-;(check-equal? (grammar-checker thesis-cfg1 thesis-cfg-converted 10 #;100000) #t)
+(check-equal? (grammar-checker thesis-cfg1 thesis-cfg-converted 10 #;100000) #t)
 
-;(check-equal? (grammar-checker thesis-cfe-converted thesis-cfe 10 #;100000) #t)
+(check-equal? (grammar-checker thesis-cfe-converted thesis-cfe 10 #;100000) #t)
 
-;(define GSI (pda->cfe (cfe->pda S1)))
 
-;(define G (cfg-rename-nts (cfg-get-v GSI) GSI))
+;;PDA->CFE
 
-;(gen-cfexp-word (pda->cfe (cfe->pda S1)))
+
+
+(define P (make-unchecked-ndpda '(S)
+                                '(a b)
+                                '(a)
+                                'S
+                                '(S)
+                                `(((S a ,EMP) (S ,EMP)))))
+
+(define p-cfe (pda->cfe P))
+
+
+(check-pred (λ (low) (andmap valid-anbn-word low)) (gen-cfe-words (pda->cfe (cfe->pda S1)) #;10 100000))
