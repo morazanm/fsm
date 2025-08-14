@@ -390,6 +390,23 @@
                                (F a ,DEAD) (F b F))
                      'no-dead))
 
+
+(define for-david (make-unchecked-ndfa
+                   '(S A B C D E F G H I J K L M N O P Q R S-0 T U V W X Y Z A-0 B-0 C-0 D-0 E-0 F-0 G-0 H-0 I-0 J-0)
+                   '(a b c d e f g h i h k l m n o p q r s t u v w x y z 0 1 2 3 4 5 6 7 8 9)
+                   'S
+                   '(J-0)
+                   '((S a A) (A b B) (B c C) (C d D) (D e E)
+                             (E f F) (F g G) (G h H) (H i I)
+                             (I j J) (J k K) (K l L) (L m M)
+                             (M n N) (N o O) (O p P) (P q Q)
+                             (Q r R) (R s S-0) (S-0 t T) (T u U)
+                             (U v V) (V w W) (W x X) (X y Y)
+                             (Y z Z) (Z 0 A-0) (A-0 1 B-0)
+                             (B-0 2 C-0) (C-0 3 D-0) (D-0 4 E-0)
+                             (E-0 5 F-0) (F-0 6 G-0) (G-0 7 H-0)
+                             (H-0 8 I-0) (I-0 9 J-0))))
+
 (define listofmachines
   (list EX1 EX2-trans EX3-vid EX4-vid EX5 EX5-vid EX6-vid M L aa*Uab* AT-LEAST-ONE-MISSING p2-ndfa AB*B*UAB* AB*B*UAB*2 aa-ab ends-with-two-bs
       nd n nk ab*-U-ab*b*-ndfa PROP-BI DNA-SEQUENCE ND ND2 ND3 ND4 ND5 ENDS-WITH-TWO-Bs nd-a* missing-exactly-one EVEN-NUM-Bs M2))
@@ -418,5 +435,6 @@
 
 
 (minimization-viz AB*B*UAB*2)
+(minimization-viz AT-LEAST-ONE-MISSING)
 
  ;(time (minimization-viz EX3-vid))

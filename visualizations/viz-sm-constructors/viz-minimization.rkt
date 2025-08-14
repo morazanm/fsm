@@ -13,7 +13,7 @@
          "../viz-lib/bounding-limits.rkt"
          "../viz-lib/zipper.rkt")
 
-(provide minimization-viz)
+(provide minimization-viz test-colors)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;CONSTANTS;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -199,7 +199,7 @@ ismg "finished machine"
       (make-unchecked-dfa reachable-states
                           (fsa-getalphabet M)
                           (fsa-getstart M)
-                          (filter (λ (f) (member f reachable-states)) (fsa-getfinals M))
+                          (filter (λ (final) (member final reachable-states)) (fsa-getfinals M))
                           usable-rules
                           'no-dead)))
   ;;dfa -> (hash state rules)
@@ -369,7 +369,7 @@ ismg "finished machine"
                                                       (set) merged-unmarked-pairs))]
            [remaining-states (filter (λ (s) (not (member s states-that-were-merged))) states)]
            [new-finals (filter (λ (s) (member s finals)) remaining-states)]
-           [table->rules (append-map identity
+           [table->rules (apply append
                                      (hash-map transition-table
                                                (λ (key val)
                                                  (if (list? (member key remaining-states))
@@ -683,7 +683,7 @@ ismg "finished machine"
 
   (define PHASE--1-IMSG (text "Input Machine" FONT-SIZE BLACK))
 
-  (define PHASE0-IMSG (text "Converting Input Machine to DFA" FONT-SIZE BLACK))
+  (define PHASE0-IMSG (text "Converted Input Machine to DFA" FONT-SIZE BLACK))
 
   ;;(listof state) -> string
   ;;Purpose: Converts the given (listof state) into a string
@@ -713,7 +713,7 @@ ismg "finished machine"
   ;;state-pair -> string
   ;;Purpose: Makes the state pair readable
   (define (pretty-print-destination-state-pair state-pair)
-    (text (string-append "(" (symbol->string (state-pair-s1 state-pair)) "," (symbol->string (state-pair-s2 state-pair)) ")")
+    (text (string-append "(" (symbol->string (state-pair-s1 state-pair)) "," (symbol->string (state-pair-s2 state-pair)) ") ")
           FONT-SIZE
           (hash-ref X11-AS-RACKET-HASH (hash-ref sigma-color-pairings (state-pair-destination-pairs state-pair)))))
 
@@ -733,7 +733,7 @@ ismg "finished machine"
                  
                  (beside (text (format (if (state-pair-marked? phase-4-state-pair)
                                        "State pair ~a is marked because one of it's destination state pairing:"
-                                       "State pair ~a remains unmarked because both of it's destination state pairing:")
+                                       "State pair ~a remains unmarked because both of it's destination state pairings:")
                                    (pretty-print-state-pair phase-4-state-pair))
                            FONT-SIZE BLACK)
                      (apply beside (map pretty-print-destination-state-pair (state-pair-destination-pairs phase-4-state-pair)))
@@ -759,7 +759,7 @@ ismg "finished machine"
   ;;Purpose: Makes the imsg for phase 6
   (define (make-phase6-imsg phase-attribute)
     (text (if (phase-6-attributes-minimized? phase-attribute)
-              "Minimized Machine"
+              "Minimized machine"
               "This machine cannot be minimized")
           FONT-SIZE BLACK))
   (let ([current-phase (zipper-current (imsg-state-phase imsg-state))])
@@ -827,6 +827,47 @@ ismg "finished machine"
                        merge-states
                        (merged-state-old-symbols merge-states))))
 
+
+(define (test-colors M)
+
+  (define (make-node-graph graph los start finals)
+    (foldl (λ (state result)
+             (let ([member-of-finals? (member state finals)])
+               (add-node result
+                         state
+                         #:atb (hash 'color (if (eq? state start) 'darkgreen BLACK)
+                                     'shape (if member-of-finals? 'doublecircle 'circle)
+                                     'style (if member-of-finals? 'filled 'solid)
+                                     'fillcolor 'orange
+                                     'label state
+                                     'fontcolor BLACK
+                                     'font "Sans"))))
+           graph
+           los))
+
+  ;; graph dfa (listof state-pair) -> graph
+  ;; Purpose: To make an edge graph
+  (define (make-edge-graph graph rules)
+    (foldl (λ (rule result)
+             (let* ([source-state (first rule)])
+               (add-edge result
+                         (second rule)
+                         (first rule)
+                         (third rule)
+                         #:atb (hash 'fontsize FONT-SIZE
+                                     'style 'solid
+                                     'color (hash-ref sigma-color-pairings (second rule))))))
+           graph
+           rules))
+  
+  (let ([M (unchecked->dfa M)])
+    (graph->bitmap (make-edge-graph (make-node-graph (create-graph 'dgraph
+                                                                   #:atb (hash 'rankdir "LR" 'font "Sans"))
+                                                     (dfa-states M)
+                                                     (dfa-start M)
+                                                     (dfa-finals M))
+                                    (dfa-rules M)))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;VIZ-PRIMITIVE;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; 
 
 
@@ -888,7 +929,8 @@ ismg "finished machine"
                                              [rules (append connecting-state-rules (dfa-rules rebuild-M))]
                                              [finals (if (or (member next-state-to-add (dfa-finals minimized-M))
                                                              (ormap (λ (ms)
-                                                                      (set-member? (merged-state-old-symbols ms) next-state-to-add)) merged-states))
+                                                                      (set-member? (merged-state-old-symbols ms) next-state-to-add))
+                                                                    merged-states))
                                                          (cons next-state-to-add (dfa-finals rebuild-M))
                                                          (dfa-finals rebuild-M))])])
             (machine-rebuilder (remove-duplicates (enqueue (dequeue qoS) reachables-from-state))
@@ -987,10 +1029,11 @@ ismg "finished machine"
          [final-non-final-pairings (filter state-pair-marked? (state-pairings-all-pairs (first all-loSP)))]
          [rest-loSP (append-map state-pairings-all-pairs (rest all-loSP))]
          [unreachable-states (filter (λ (s) (not (member s (fsa-getstates no-unreachables-M)))) (fsa-getstates unchecked-M))]
+         [M (ndfa->dfa M)]
          [minimized-M (minimization-results-new-machine results-from-minimization)]
-         [has-unreachables? (machine-changed? unchecked-M no-unreachables-M)]
-         [can-be-minimized? (machine-changed? unchecked-M minimized-M)]
-         [M (unchecked->dfa (ndfa->dfa M))]
+         [has-unreachables? (machine-changed? M no-unreachables-M)]
+         [can-be-minimized? (machine-changed? M minimized-M)]
+         [M (unchecked->dfa M)]
          [no-unreachables-M (unchecked->dfa no-unreachables-M)]
          [state-table-mappings (for/hash ([state (dfa-states no-unreachables-M)]
                                           [num (in-naturals)])
