@@ -5,9 +5,7 @@
          "../fsm-core/private/pda.rkt"
          "../fsm-core/private/misc.rkt"
          "cfexp-contracts.rkt"
-         "cfexp-structs.rkt"
-         racket/treelist
-         ;racket/hash
+         "cfexp-structs.rkt"         
          )
 
 (provide null-cfexp
@@ -23,7 +21,7 @@
          cfe->cfg
          pda->cfe
          cfe->pda
-         printable-cfexp ;;temp
+         printable-cfexp
          )
 
 (define MAX-KLEENESTAR-LIMIT 50)
@@ -245,26 +243,39 @@
                                                                 (values key (hash-ref variables key)))))])
      (hash-ref updated-bindings start)))
       
-;;cfe -> string
+;;cfexp [(setof cfe)] -> string
 ;;Purpose: Converts the given cfe into a string to make it readable
-(define (printable-cfexp cfe)
-  ;;(listof cfe) string -> string
+(define (printable-cfexp cfe #:seen[seen (set)])
+  ;;(listof cfe) string (setof cfe) -> string
   ;;Purpose: Converts and appends all of the cfes in the given (listof cfe) 
-  (define (printable-helper locfe connector)
-    (if (= (length locfe) 1)
-        (printable-cfexp (first locfe))
-        (string-append (printable-cfexp (first locfe))
-                       connector
-                       (printable-helper (rest locfe) connector))))
+  (define (printable-helper locfe connector seen)
+    (cond [(= (length locfe) 1) (printable-cfexp (first locfe) #:seen seen)]
+          [else (let ([new-seen (set-add seen (first locfe))])
+                  (string-append (printable-cfexp (first locfe) #:seen new-seen)
+                               connector
+                               (printable-helper (rest locfe) connector new-seen)))]))
+
+  ;;var-cfexp (setof cfe) -> string
+  ;;Purpose: Prints the variable 
+  (define (printable-var var-cfe seen)
+    (if (set-member? seen var-cfe)
+        (symbol->string (mk-var-cfexp-cfe cfe))
+        (string-append ;(symbol->string (mk-var-cfexp-cfe cfe))
+                       ;" -> "
+                       (printable-helper (vector->list (first (hash-values (mk-var-cfexp-env cfe))))
+                                         "|"
+                                         (set cfe)))))
   (define NULL-REGEXP-STRING "∅")
   (define EMPTY-REGEXP-STRING (symbol->string EMP))
   (cond [(mk-null-cfexp? cfe) NULL-REGEXP-STRING]
         [(mk-empty-cfexp? cfe) EMPTY-REGEXP-STRING]
         [(mk-singleton-cfexp? cfe) (symbol->string (mk-singleton-cfexp-char cfe))]
-        [(mk-var-cfexp? cfe) (symbol->string (mk-var-cfexp-cfe cfe))]
-        [(mk-concat-cfexp? cfe) (string-append "(" (printable-helper (mk-concat-cfexp-locfe cfe) "") ")")]
-        [(mk-union-cfexp? cfe) (string-append "(" (printable-helper (mk-union-cfexp-locfe cfe) " ∪ ") ")")]
-        [else (gen-cfe-kleene-word cfe gen-cfexp-word)]))
+        [(mk-var-cfexp? cfe) (printable-var cfe (if (set-empty? seen)
+                                                    (set)
+                                                    seen))]
+        [(mk-concat-cfexp? cfe) (string-append "(" (printable-helper (vector->list (mk-concat-cfexp-locfe cfe)) "" seen) ")")]
+        [(mk-union-cfexp? cfe) (string-append "(" (printable-helper (vector->list (mk-union-cfexp-locfe cfe)) " ∪ " seen) ")")]
+        [else (string-append (printable-cfexp (mk-kleene-cfexp cfe)) "*")]))
   
 
 ;;cfe -> cfg
@@ -450,15 +461,18 @@
       (ormap (λ (y) (eq? X y)) lst))
   
     ;;CFG -> cfg
-    ;;Purpose: Minimizes the given CFG by repeatedly removing rules that can't be used the grammar until the same grammar is returned twice
+    ;;Purpose: Minimizes the given CFG by repeatedly removing rules that can't
+    ;;         be used the grammar until the same grammar is created twice
     (define (clean-up-cfg cfg acc)
 
       ;;CFG -> CFG
-      ;;Purpose: Cleans up the given CFG's rules and nts by removing rules that cannot be generated or contain nts that produce nothing
+      ;;Purpose: Cleans up the given CFG's rules and nts by removing rules that cannot be generated
+      ;;         or contain nts that produce nothing
       (define (clean-up-cfg-rules-and-nts G)
 
         ;;symbol (listof nt) (listof cfg-rule) (listof symbol) -> (listof cfg-rule)
-        ;;Purpose: Remvoes rules that dont have produce an nt that has no production rule (e.i a rule that produces a nt on the RHS but doesnt have a LHS substitution)
+        ;;Purpose: Remvoes rules that dont have produce an nt that has no production rule
+        ;;         (e.i a rule that produces a nt on the RHS but doesnt have a LHS substitution)
         (define (remove-useless-rules start nts rules sigma)
 
           ;;(listof nt) (listof cfg-rule) (listof symbol) (listof cfg-rule) -> (listof cfg-rule)
