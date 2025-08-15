@@ -703,7 +703,7 @@ ismg "finished machine"
                   (convert-to-string (phase-1-attributes-unreachable-state phase-attribute)))
           FONT-SIZE BLACK))
   
-  (define PHASE2-IMSG (text "Creating state pairing table" FONT-SIZE BLACK))
+  (define PHASE2-IMSG (text "State Pairing Table" FONT-SIZE BLACK))
 
   ;;state-pair -> string
   ;;Purpose: Makes the state pair readable
@@ -731,15 +731,16 @@ ismg "finished machine"
                  (text "Completed this pass of unmarked state pairings, moving to the next."
                            FONT-SIZE BLACK)
                  
-                 (beside (text (format (if (state-pair-marked? phase-4-state-pair)
-                                       "State pair ~a is marked because one of it's destination state pairing:"
-                                       "State pair ~a remains unmarked because both of it's destination state pairings:")
-                                   (pretty-print-state-pair phase-4-state-pair))
+                 (beside (text "State pair " FONT-SIZE BLACK)
+                         (text (pretty-print-state-pair phase-4-state-pair) FONT-SIZE 'red)
+                         (text (if (state-pair-marked? phase-4-state-pair)
+                                   " is marked because one of it's destination state pairing:"
+                                   " remains unmarked because both of it's destination state pairings:")
                            FONT-SIZE BLACK)
                      (apply beside (map pretty-print-destination-state-pair (state-pair-destination-pairs phase-4-state-pair)))
                      (text (if (state-pair-marked? phase-4-state-pair)
-                               ", is also marked"
-                               ", are also unmarked")
+                               " is marked"
+                               " are unmarked")
                            FONT-SIZE BLACK))))))
 
   ;;phase-attributes -> image
