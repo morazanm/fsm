@@ -35,10 +35,10 @@
 
 (define sigma-list (append '(a b c d e f g h i j k l m n o p q r s t u v w x y z) (range 10)))
 
-(define base-color-list (list 'moccasin 'olive 'aqua 'midnightblue 'lime 'palegreen1 'peru 'pink 'red2 'rosybrown1 'royalblue
+(define base-color-list (list 'darkslategray 'olive 'aqua 'midnightblue 'lime 'palegreen1 'peru 'darkorchid4 'red2 'rosybrown1 'royalblue
                               'salmon 'seagreen1 'steelblue2 'rebeccapurple 'crimson 'deeppink 'fuchsia 'deepskyblue3 'cornflowerblue
-                              'indigo 'hotpink 'lavender 'mistyrose 'chocolate 'firebrick2 'lightslateblue 'sienna1 'slategray1 'springgreen
-                              'teal 'thistle 'tomato 'violet 'orchid 'lightcoral))
+                              'indigo 'hotpink 'blueviolet 'darkslateblue 'chocolate 'firebrick2 'lightslateblue 'sienna1 'dodgerblue3 'springgreen
+                              'teal 'darksalmon 'tomato 'darkviolet 'orchid 'lightcoral))
 
 (define sigma-color-pairings (foldl (λ (sig color ht)
                                       (hash-set ht sig color))
