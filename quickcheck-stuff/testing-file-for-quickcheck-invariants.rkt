@@ -1,6 +1,11 @@
-#lang fsm
-(require "quickcheck-invariants.rkt" "reg-exp-function.rkt")
-(provide (all-defined-out))
+#lang racket
+(require "quickcheck-invariants.rkt"
+         "reg-exp-function.rkt"
+         "../fsm-core/private/fsa.rkt"
+         "../fsm-core/private/sm-apply.rkt"
+         "../fsm-core/private/constants.rkt"
+         racket/list
+         rackunit)
  
 ;; USEFUL FUNCTIONS
 
@@ -50,7 +55,7 @@
 ;; R: aa has been detected
 
 (define NO-AA
-  (make-dfa
+  (make-unchecked-dfa
    '(S A B R)
    '(a b)
    'S
@@ -154,7 +159,7 @@
 ;; making a dfa with unreachable states
 ;; C & D are unreachable from the starting config
 
-(define NO-AA-WITH-UNREACHABLE-STATES (make-dfa
+(define NO-AA-WITH-UNREACHABLE-STATES (make-unchecked-dfa
                                        '(S A B R C D)
                                        '(a b)
                                        'S
@@ -169,14 +174,14 @@
 
 
 
-(define DNA-SEQUENCE (make-dfa '(K H F M I D B S R)
-                               '(a t c g)
-                               'K
-                               '(K F I B R)
-                               `((K a H) (H t F) (F a H) (F t M) (F c D) (F g S)  
-                                         (K t M) (M a I) (I a H) (I t M) (I c D) (I g S)
-                                         (K c D) (D g B) (B a H) (B t M) (B c D) (B g S)
-                                         (K g S) (S c R) (R a H) (R t M) (R c D) (R g S))))
+(define DNA-SEQUENCE (make-unchecked-dfa '(K H F M I D B S R)
+                                         '(a t c g)
+                                         'K
+                                         '(K F I B R)
+                                         `((K a H) (H t F) (F a H) (F t M) (F c D) (F g S)  
+                                                   (K t M) (M a I) (I a H) (I t M) (I c D) (I g S)
+                                                   (K c D) (D g B) (B a H) (B t M) (B c D) (B g S)
+                                                   (K g S) (S c R) (R a H) (R t M) (R c D) (R g S))))
 
 ;;word -> boolean
 ;;Purpose: Determines if the given word is empty
@@ -255,13 +260,13 @@
 ;; F: odd number of bs
 
 (define EVEN-NUM-Bs
-  (make-dfa '(S F)
-            '(a b)
-            'S
-            '(S)
-            `((S a S) (S b F)
-                      (F a F) (F b S))
-            'no-dead))
+  (make-unchecked-dfa '(S F)
+                      '(a b)
+                      'S
+                      '(S)
+                      `((S a S) (S b F)
+                                (F a F) (F b S))
+                      'no-dead))
 
 
 
@@ -295,7 +300,7 @@
 ;; D: last of ci is aaba and no aabab is detected
 ;; E: aabab has been detected, final state
 
-(define CONTAINS-aabab (make-dfa '(S A B C D E)
+(define CONTAINS-aabab (make-unchecked-dfa '(S A B C D E)
                                  '(a b)
                                  'S
                                  '(E)
@@ -416,17 +421,21 @@
 ;;marco's version of Contains-aabab
 
 (define CONTAINS-aabab 
-  (make-dfa '(S A B C D E)
-            '(a b)
-            'S
-            '(E)
-            '((S a A) (S b S) (A a B) (A b S)
-                      (B a B) (B b C) (C a D) (C b S)
-                      (D a B) (D b E) (E a E) (E b E))
-            'no-dead))
+  (make-unchecked-dfa '(S A B C D E)
+                      '(a b)
+                      'S
+                      '(E)
+                      '((S a A) (S b S) (A a B) (A b S)
+                                (B a B) (B b C) (C a D) (C b S)
+                                (D a B) (D b E) (E a E) (E b E))
+                      'no-dead))
 
-(check-accept? CONTAINS-aabab  '(a a b a b) '(b b a a a b a b b))
-(check-reject? CONTAINS-aabab  '() '(b b a a a b a) '(a a b a a))
+(check-equal? (sm-apply CONTAINS-aabab  '(a a b a b)) 'accept)
+(check-equal? (sm-apply CONTAINS-aabab  '(b b a a a b a b b)) 'accept)
+(check-equal? (sm-apply CONTAINS-aabab  '()) 'reject)
+(check-equal? (sm-apply CONTAINS-aabab  '(b b a a a b a)) 'reject)
+(check-equal? (sm-apply CONTAINS-aabab  '(a a b a a)) 'reject)
+       
 
 ;; word --> Boolean
 ;; Purpose: Determine of word contains aabab
@@ -495,22 +504,19 @@
 ;; N: even number of a and odd number of b, final state
 ;; P: odd number of a and even number of b
 
-(define EVEN-A-ODD-B (make-dfa '(S M N P)
-                               '(a b)
-                               'S
-                               '(N)
-                               '((S a P)
-                                 (S b N)
-                                 (M a N)
-                                 (M b P)
-                                 (N a M)
-                                 (N b S)
-                                 (P a S)
-                                 (P b M))
-                               'no-dead
-                               #:accepts '((b) (a a b) (a a a b a b b))
-                               #:rejects '(() (a b b a) (b a b b a a)
-                                           (a b) (a b b b b) (b a b b a a b))))
+(define EVEN-A-ODD-B (make-unchecked-dfa '(S M N P)
+                                         '(a b)
+                                         'S
+                                         '(N)
+                                         '((S a P)
+                                           (S b N)
+                                           (M a N)
+                                           (M b P)
+                                           (N a M)
+                                           (N b S)
+                                           (P a S)
+                                           (P b M))
+                                         'no-dead))
 
 ;; Tests for EVEN-A-ODD-B
 (check-equal? (sm-apply EVEN-A-ODD-B '()) 'reject)
@@ -594,8 +600,8 @@
 (check-equal? (sm-apply EVEN-A-ODD-B '(a b b b b)) 
               'reject)
 (check-equal? 
-  (sm-apply EVEN-A-ODD-B '(b a b b a a b)) 
-  'reject)
+ (sm-apply EVEN-A-ODD-B '(b a b b a a b)) 
+ 'reject)
 
 
 
@@ -608,11 +614,20 @@
 (check-equal? (sm-apply EVEN-A-ODD-B '(a a b)) 
               'accept)
 (check-equal? 
-  (sm-apply EVEN-A-ODD-B '(a a a b a b b)) 
-  'accept)
+ (sm-apply EVEN-A-ODD-B '(a a a b a b b)) 
+ 'accept)
 
-(check-accept? EVEN-A-ODD-B '(b) '(b b b) '(a b b a b) '(a a b) '(a a a b a b b))
-(check-reject? EVEN-A-ODD-B '() '(a b b a) '(b a b b a a) '(a b) '(a b b b b) '(b a b b a a b))
+(check-equal? (sm-apply EVEN-A-ODD-B '(b)) 'accept)
+(check-equal? (sm-apply EVEN-A-ODD-B '(b b b)) 'accept)
+(check-equal? (sm-apply EVEN-A-ODD-B'(a b b a b)) 'accept)
+(check-equal? (sm-apply EVEN-A-ODD-B'(a a b)) 'accept)
+(check-equal? (sm-apply EVEN-A-ODD-B'(a a a b a b b)) 'accept)
+(check-equal? (sm-apply EVEN-A-ODD-B '()) 'reject)
+(check-equal? (sm-apply EVEN-A-ODD-B '(a b b a)) 'reject)
+(check-equal? (sm-apply EVEN-A-ODD-B '(b a b b a a)) 'reject)
+(check-equal? (sm-apply EVEN-A-ODD-B '(a b)) 'reject)
+(check-equal? (sm-apply EVEN-A-ODD-B '(a b b b b)) 'reject)
+(check-equal? (sm-apply EVEN-A-ODD-B '(b a b b a a b)) 'reject)
 
 (define LOI-EVEN-A-ODD-B (list (list 'S S-INV-EVEN-A-ODD-B)
                                (list 'M M-INV-EVEN-A-ODD-B)
@@ -657,23 +672,24 @@
 ;; F: c* has been consumed
 
 
-(define ONE-LETTER-MISSING (make-ndfa '(S A B C D E F)
-                                      '(a b c)
-                                      'S
-                                      '(B C E)
-                                      `((S a A) (S b D) (S c F)
-                                                (A a A) (A b B) (A c C)
-                                                (B a B) (B b B)
-                                                (C a C) (C c C)
-                                                (D b D) (D c E) (D a B)
-                                                (E b E) (E c E)
-                                                (F c F) (F b E) (F a C))
-                                      #:accepts (list '(a c) '(b a) '(c a)
-                                                      '(a b) '(a b b) '(a b a a)
-                                                      '(b a b b) '(c a c a))
-                                      #:rejects (list '(a) '(b) '(c)
-                                                      '(a b c) '(a a b b c c)
-                                                      '(a b c a b c) '(b a c a) '())))
+(define ONE-LETTER-MISSING (make-unchecked-ndfa '(S A B C D E F)
+                                                '(a b c)
+                                                'S
+                                                '(B C E)
+                                                `((S a A) (S b D) (S c F)
+                                                          (A a A) (A b B) (A c C)
+                                                          (B a B) (B b B)
+                                                          (C a C) (C c C)
+                                                          (D b D) (D c E) (D a B)
+                                                          (E b E) (E c E)
+                                                          (F c F) (F b E) (F a C))))
+
+#|
+#:accepts (list '(a c) '(b a) '(c a) '(a b) '(a b b) '(a b a a)
+                '(b a b b) '(c a c a))
+ #:rejects (list '(a) '(b) '(c) '(a b c) '(a a b b c c)
+                 '(a b c a b c) '(b a c a) '())
+|#
 
 ;; word -> Boolean
 ;; Purpose: To determine if ci should be in S
@@ -808,17 +824,19 @@
 ;; D: (ab)*a has been detected, final state
 ;; E: b* has been detected, final state 
 
-(define ab*b*Uab* (make-ndfa '(S A B C D E)
-                             '(a b)
-                             'S
-                             '(S B C E)
-                             `((S ,EMP A) (S ,EMP C) (A a B) (B b B)
-                                          (C a D) (C b E) (D b C) (E b E))
-                             #:accepts (list '(a b a b a b) '(a) '(a b) '(b) '(a b a b b b) '(a b b b b)
-                                             )
-                             #:rejects (list '(a a) '(a b a) '(a b a a)
-                                             )))
+(define ab*b*Uab* (make-unchecked-ndfa '(S A B C D E)
+                                       '(a b)
+                                       'S
+                                       '(S B C E)
+                                       `((S ,EMP A) (S ,EMP C) (A a B) (B b B)
+                                                    (C a D) (C b E) (D b C) (E b E))))
 
+#|
+
+#:accepts (list '(a b a b a b) '(a) '(a b) '(b) '(a b a b b b) '(a b b b b))
+#:rejects (list '(a a) '(a b a) '(a b a a))
+
+|#
 
 ;; word -> Boolean
 ;; Purpose: Determine if ci should be in S
@@ -932,13 +950,13 @@
 
 
 ;;L = aa* U ab*
-(define aa*Uab* (make-ndfa '(K B D)
-                           '(a b)
-                           'K
-                           '(B D)
-                           `((K a D) (K a B)
-                                     (B a B)
-                                     (D b D))))
+(define aa*Uab* (make-unchecked-ndfa '(K B D)
+                                     '(a b)
+                                     'K
+                                     '(B D)
+                                     `((K a D) (K a B)
+                                               (B a B)
+                                               (D b D))))
 
 
 ;; word -> Boolean
@@ -965,15 +983,15 @@
 
 
 
-(define rnd-ndfa (make-ndfa '(S A B C D E F G H I)
-                            '(a b)
-                            'S
-                            '(A C)
-                            `((S ,EMP A) (S ,EMP B)
-                                         (A ,EMP E) (A a D) (A ,EMP H) (A ,EMP G)
-                                         (B a C)
-                                         (D b A) (D a F)
-                                         (H a I))))
+(define rnd-ndfa (make-unchecked-ndfa '(S A B C D E F G H I)
+                                      '(a b)
+                                      'S
+                                      '(A C)
+                                      `((S ,EMP A) (S ,EMP B)
+                                                   (A ,EMP E) (A a D) (A ,EMP H) (A ,EMP G)
+                                                   (B a C)
+                                                   (D b A) (D a F)
+                                                   (H a I))))
 
 
 ;; L = (a*Ub*)c*
@@ -984,13 +1002,13 @@
 ;; B: b* has been detected
 ;; C: (a*Ub*)c has been detected, final state
 
-(define EX-NDFA (make-ndfa '(S A B C)
-                           '(a b c)
-                           'S
-                           '(C)
-                           `((S ,EMP A) (S ,EMP B)
-                                        (A a A) (A c C)
-                                        (B b B) (B c C))))
+(define EX-NDFA (make-unchecked-ndfa '(S A B C)
+                                     '(a b c)
+                                     'S
+                                     '(C)
+                                     `((S ,EMP A) (S ,EMP B)
+                                                  (A a A) (A c C)
+                                                  (B b B) (B c C))))
 
 ;; word -> Boolean
 ;; Purpose: Determine if ci should be in S
@@ -1072,7 +1090,7 @@
 ;; E: odd amount of bs or a*, and remainder of amount of cs divided by 3 is 2
 ;; F: odd amount of bs or a*, and remainder of amount of cs divided by 3 is 0, final state
 
-(define EVEN-B-OR-A*-THEN-MULTIPLE-OF-3-C (make-ndfa '(S A B C D E F)
+(define EVEN-B-OR-A*-THEN-MULTIPLE-OF-3-C (make-unchecked-ndfa '(S A B C D E F)
                                                      '(a b c)
                                                      'S
                                                      '(F)
@@ -1190,13 +1208,13 @@
 
 
 (define M3
-  (make-ndfa '(S A B C D E F)
-             '(a b c)
-             'S
-             '(F)
-             `((S ,EMP B) (S ,EMP A) (A a A) (A c D)
-                          (B b C) (C b B) (C c D) (D c E)
-                          (E c F) (F c D))))
+  (make-unchecked-ndfa '(S A B C D E F)
+                       '(a b c)
+                       'S
+                       '(F)
+                       `((S ,EMP B) (S ,EMP A) (A a A) (A c D)
+                                    (B b C) (C b B) (C c D) (D c E)
+                                    (E c F) (F c D))))
 
 (define S3-INV empty?)
 
@@ -1251,27 +1269,27 @@
 ;;  E: ci = b*c* or a*c*
 ;;  F: ci = a*d* or b*d*
 ;;  G: ci = c*a* or d*a*
-(define lots-of-kleenes (make-ndfa '(S A B C D E F G)
-                                   '(a b c d)
-                                   'S
-                                   '(S E F G)
-                                   `((S ,EMP A)
-                                     (S ,EMP B)
-                                     (S ,EMP C)
-                                     (S ,EMP D)
-                                     (A c A)
-                                     (A ,EMP G)
-                                     (B d B)
-                                     (B ,EMP G)
-                                     (C a C)
-                                     (C ,EMP E)
-                                     (C ,EMP F)
-                                     (D b D)
-                                     (D ,EMP E)
-                                     (D ,EMP F)
-                                     (E c E)
-                                     (F d F)
-                                     (G a G))))
+(define lots-of-kleenes (make-unchecked-ndfa '(S A B C D E F G)
+                                             '(a b c d)
+                                             'S
+                                             '(S E F G)
+                                             `((S ,EMP A)
+                                               (S ,EMP B)
+                                               (S ,EMP C)
+                                               (S ,EMP D)
+                                               (A c A)
+                                               (A ,EMP G)
+                                               (B d B)
+                                               (B ,EMP G)
+                                               (C a C)
+                                               (C ,EMP E)
+                                               (C ,EMP F)
+                                               (D b D)
+                                               (D ,EMP E)
+                                               (D ,EMP F)
+                                               (E c E)
+                                               (F d F)
+                                               (G a G))))
 
 ;; (a*Ub*)(c*Ud*)U(c*Ud*)a*
 ;; tests for lots-of-kleenes

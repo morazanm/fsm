@@ -1,9 +1,10 @@
 #lang racket/base
-(provide get-all-regexp remove-states-that-cannot-reach-finals)
-(require rackunit)
-(require racket/list)
-(require "../fsm-core/interface.rkt"
-         "testing-file-for-sm-test-invs.rkt")
+(provide get-all-regexp)
+(require rackunit
+         racket/list
+         "../fsm-core/private/regexp.rkt"
+         "../fsm-core/private/fsa.rkt"
+         "../fsm-core/private/sm-getters.rkt")
 
 ;; X loX -> Boolean
 ;; Purpose: To determine if the given item is a member of the given list
@@ -125,7 +126,7 @@
   (define new-finals (filter (λ (final-state) (member? final-state new-states)) (sm-finals a-ndfa)))
 
   (if (member? (sm-start a-ndfa) new-states)
-      (make-ndfa new-states (sm-sigma a-ndfa) (sm-start a-ndfa) new-finals new-rules)
+      (make-unchecked-ndfa new-states (sm-sigma a-ndfa) (sm-start a-ndfa) new-finals new-rules)
       (null-regexp)))
 
 
@@ -161,7 +162,7 @@
                         
                ;; updated machine with new rules and new states                                          
                (machine-only-paths-to-first-los
-                (make-ndfa states-to-first-los
+                (make-unchecked-ndfa states-to-first-los
                            (sm-sigma machine-with-states-that-reach-finals)
                            (sm-start machine-with-states-that-reach-finals)
                            (list (car los))

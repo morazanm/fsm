@@ -1,8 +1,8 @@
 #lang racket/base
 
-(provide sm-all-possible-words sm-test-invs find-paths)
+(provide sm-all-possible-words sm-test-invs)
 (require "../fsm-core/private/sm-getters.rkt"
-         "../fsm-core/interface.rkt"
+         "../fsm-core/private/fsa.rkt"
          racket/list)
 
 ;; USEFUL FUNCTIONS
@@ -140,7 +140,7 @@
                                            (find-paths a-ndfa)))
   (define new-rules (remove-duplicates (apply append paths-that-end-in-finals)))
   (define new-states (remove-duplicates (append-map (λ (x) (list (car x) (third x))) new-rules)))
-  (make-ndfa new-states (sm-sigma a-ndfa) (sm-start a-ndfa) (sm-finals a-ndfa) new-rules))
+  (make-unchecked-ndfa new-states (sm-sigma a-ndfa) (sm-start a-ndfa) (sm-finals a-ndfa) new-rules))
 
 
 ;; (listof rules) -> word

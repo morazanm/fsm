@@ -1,10 +1,14 @@
 #lang racket/base
 
-(provide sm-all-possible-words sm-test-invs-pda get-accepting-paths word-of-path)
+;(provide sm-all-possible-words sm-test-invs-pda)
+(provide (all-defined-out))
 (require racket/list
          rackunit
+         racket/set
          "../fsm-core/private/sm-getters.rkt"
-         "../fsm-core/interface.rkt")
+         "../fsm-core/interface.rkt"
+         ;"pda.rkt"
+         )
 
 ;; USEFUL FUNCTIONS
 
@@ -90,7 +94,7 @@
 ;                                                                                                     
 
 ;; a PATH is a structure: (make-PATH (listof rule) (listof symbol)
-(define-struct PATH (lor stack))
+(define-struct PATH (lor stack) #:transparent)
 
 ;; AUXILARY FUNCTIONS FOR PDA RULES
 ;;     pda rule: ((Source read pop) (Destination push))
@@ -139,31 +143,58 @@
 
 
 ;; CONSTANT FOR LIMIT ON LENGTH OF A PATH
-(define MAX-PATH-LENGTH 50)
+(define MAX-PATH-LENGTH 10)
 
 
-;; PATH (listof pda-rule) -> (listof PATH)
+;; PATH (listof pda-rule) -> (listof (listof PATH) (listof (listof state word stack)))
 ;; Purpose: To return a list of paths that comes from the given path and rules
-(define (new-paths a-path rules)
-  ;; (listof pda-rule) (listof PATH) -> (listof PATH)
+(define (new-paths&visited a-path rules visited)
+  ;; (listof pda-rule) (listof PATH) -> (listof (listof PATH) (listof (listof state word stack)))
   ;; Purpose: To return a list of paths that come from the given paths and rules
   ;; Accumulator invariant: accum = list of paths
-  (define (new-paths-helper next-rules accum)
-    (cond [(empty? next-rules) accum]
-          [(< MAX-PATH-LENGTH (length (append (PATH-lor a-path) (list (first next-rules)))))
-           (new-paths-helper (rest next-rules) accum)]
-          [else (new-paths-helper (rest next-rules)
-                                  (cons (make-PATH (append (PATH-lor a-path) (list (first next-rules)))
-                                                   (append (if (eq? 'ε (get-push (first next-rules)))
-                                                               '()
-                                                               (get-push (first next-rules)))
-                                                           (drop (PATH-stack a-path)
-                                                                 (length (if (eq? 'ε (get-pop (first next-rules)))
-                                                                             '()
-                                                                             (get-pop (first next-rules)))))))
-                                        accum))]
+  (define (new-paths-helper next-rules accum new-visited)
+    (cond [(empty? next-rules) (list accum new-visited)]
+          [(or (member? (list (get-destination-state (first next-rules))
+                              (word-of-path (make-PATH (append (PATH-lor a-path) (list (first next-rules)))
+                                                       '())) ;; doesn't matter what the stack is for this
+                              (append (if (eq? 'ε (get-push (first next-rules)))
+                                          '()
+                                          (get-push (first next-rules)))
+                                      (drop (PATH-stack a-path)
+                                            (length (if (eq? 'ε (get-pop (first next-rules)))
+                                                        '()
+                                                        (get-pop (first next-rules)))))))
+                              
+                        new-visited)
+               (< MAX-PATH-LENGTH
+                  (length (append (PATH-lor a-path) (list (first next-rules))))))
+           (new-paths-helper (rest next-rules) accum new-visited)]
+          [else (let* [(new-path-rules (append (PATH-lor a-path)
+                                               (list (first next-rules))))
+                       (new-path-stack (append (if (eq? 'ε (get-push (first next-rules)))
+                                                   '()
+                                                   (get-push (first next-rules)))
+                                               (drop (PATH-stack a-path)
+                                                     (length (if (eq? 'ε (get-pop (first next-rules)))
+                                                                 '()
+                                                                 (get-pop (first next-rules)))))))
+                       (new-path (make-PATH new-path-rules
+                                            new-path-stack))
+                       (destination-state-last-rule (get-destination-state (last new-path-rules)))
+                       (word-of-new-path (word-of-path new-path))
+                       (stack-of-new-path (PATH-stack new-path))]
+                  (new-paths-helper (rest next-rules)
+                                    (cons new-path
+                                          accum)
+                                    (cons (list destination-state-last-rule
+                                                word-of-new-path
+                                                stack-of-new-path)
+                                          new-visited)))]
           ))
-  (new-paths-helper rules '()))
+  (new-paths-helper rules '() visited))
+
+
+;; see if making visited a set to see if it runs faster
 
 
 
@@ -179,7 +210,9 @@
   ;; (queueof (listof PATH)) (listof PATH) -> (listof PATH)
   ;; Purpose: To return all the paths of the given machine
   ;; Accumulator invarient: paths = list of current paths
-  (define (find-paths-helper a-qop paths)
+  ;;                        visited = list of a state, word, and stack that has
+  ;;                                  been visited
+  (define (find-paths-helper a-qop paths visited)
     (if (qempty? a-qop) paths
         (let [(next-rules-first-path (get-next-rules (last (PATH-lor (qfirst a-qop)))
                                                      (filter
@@ -189,17 +222,19 @@
                                                                       (equal? (take (PATH-stack (qfirst a-qop))
                                                                                     (length (get-pop rule)))
                                                                               (get-pop rule))))
-                                                             (< (count (λ (rl) (equal? rule rl))
+                                                             #;(< (count (λ (rl) (equal? rule rl))
                                                                        (PATH-lor (qfirst a-qop)))
                                                                 MAX-NUM-REPETITIONS)))
                                                       rules)))
               (paths-with-qfirst (cons (qfirst a-qop) paths))]
           (if (empty? next-rules-first-path)
               (find-paths-helper (dequeue a-qop)
-                                 paths-with-qfirst)
-              (find-paths-helper (enqueue (new-paths (qfirst a-qop) next-rules-first-path)
+                                 paths-with-qfirst
+                                 visited)
+              (find-paths-helper (enqueue (first (new-paths&visited (qfirst a-qop) next-rules-first-path visited))
                                           (dequeue a-qop)) 
-                                 paths-with-qfirst))
+                                 paths-with-qfirst
+                                 (second (new-paths&visited (qfirst a-qop) next-rules-first-path visited))))
           )))
   (find-paths-helper (enqueue (map (λ (y) (make-PATH y (if (eq? 'ε (get-push (first y)))
                                                            '()
@@ -209,7 +244,35 @@
                                          (λ (rule) (eq? (get-source-state rule) (sm-start a-machine)))
                                          rules)))
                               '())
-                     '()))
+                     '()
+                     (set)))
+
+
+
+
+;; idea is that if there is a path that reaches a state with the same word and path as
+;;   another path that reached that same state, then nip that path since already
+;;   going to be doing the same thing with both paths
+
+;; have to have an accumulator of state, word, and stack as a pair and use them as
+;;   as visited paths
+
+;; design idea, for the helper function, add on a visted parameter
+;;    with each recursive call, add the state, word, and stack of the current rule
+;;    if the path not a member of the visited paths, add it to the queue
+;;       otherwise, don't add it and go to the next
+
+
+;; add visited to be an argument to new-paths
+;; use visited and see if the state, word, and stack of that path has been
+;; already reached
+
+;; where would i add the configs what were visited?
+;; adding it to the new-paths function would be probably easiest
+;; do i make the output of new-paths a list?
+;; then rename new-paths&visited-paths
+
+
 
 
 ;; pda -> (listof PATH)
@@ -244,22 +307,23 @@
                                                         (get-pop (first rules-left)))))))))
       (get-stack-helper path-lor '()))
                     
-    ;; number (listof PATH) -> (listof PATH)
+    ;; number (listof PATH) -> (setof PATH)
     ;; Purpose: To return all the sub paths of the given
     ;;          path, including the given path
-    (define (get-sub-paths-helper length-cur-path accum)
+    (define (get-sub-paths-helper length-cur-path cur-set)
       (if (equal? (take (PATH-lor a-path) length-cur-path) (PATH-lor a-path))
-          (cons (make-PATH (take (PATH-lor a-path) length-cur-path)
-                           (get-stack (take (PATH-lor a-path) length-cur-path)))
-                accum)
+          (set-add cur-set (make-PATH (take (PATH-lor a-path) length-cur-path)
+                                      (get-stack (take (PATH-lor a-path) length-cur-path))))
           (get-sub-paths-helper  (+ 1 length-cur-path)
-                                 (cons (make-PATH (take (PATH-lor a-path) length-cur-path)
-                                                  (get-stack (take (PATH-lor a-path) length-cur-path)))
-                                       accum))))
-    (get-sub-paths-helper 1 '()))
-          
-  (apply append (map get-sub-paths (filter leads-to-accepting? paths-that-end-in-finals))))
+                                 (set-add cur-set (make-PATH (take (PATH-lor a-path) length-cur-path)
+                                                             (get-stack (take (PATH-lor a-path) length-cur-path)))))))
+    (get-sub-paths-helper 1 (set)))
+  
+  (set->list (apply set-union (map get-sub-paths
+                                   (filter leads-to-accepting? paths-that-end-in-finals)))))
 
+
+;; DONT FORGET TO FIX THE DOCUMENTATION
 
 
 
@@ -276,7 +340,8 @@
 ;; (listof pda-rule) -> word
 ;; Purpose: To return a word that is made from the given path
 (define (word-of-path a-path)
-  (filter (λ (x) (not (eq? 'ε x))) (append-map (λ (x) (list (get-elem-read x))) (PATH-lor a-path))))
+  (filter (λ (x) (not (eq? 'ε x)))
+          (append-map (λ (x) (list (get-elem-read x))) (PATH-lor a-path))))
 
 
 ;; PATH (listof (list state (word -> boolean))) -> Boolean
