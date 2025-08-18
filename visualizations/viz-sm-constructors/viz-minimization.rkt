@@ -99,7 +99,7 @@
 (struct phase-4-attributes (unmarked-pair) #:transparent)
 
 ;;merged-stated | all of the states that got merged into another state | (listof merged-state)
-(struct phase-5-attributes (rebuild-M merged-states) #:transparent)
+(struct phase-5-attributes (rebuild-M merged-states remaining-states) #:transparent)
 
 ;;minimized? | determines if the machine has been minimized | boolean
 (struct phase-6-attributes (minimized?) #:transparent)
@@ -754,7 +754,11 @@ ismg "finished machine"
                                (convert-to-string (set->list (merged-state-old-symbols merged-state)))
                                (merged-state-new-symbol merged-state))
                        FONT-SIZE
-                       BLACK)))))
+                       BLACK))
+             (if (< (set-count (merged-state-old-symbols merged-state)) 2)
+                 (text "yler" FONT-SIZE 'white)
+                 (text "These pairs are unmarked and share states" FONT-SIZE BLACK))
+             (text (format "States remaining to be used for building: ~s" (convert-to-string (phase-5-attributes-remaining-states phase-attribute))) FONT-SIZE BLACK))))
 
   ;;phase-attributes -> image
   ;;Purpose: Makes the imsg for phase 6
@@ -1006,10 +1010,10 @@ ismg "finished machine"
 
   ;; (listof dfa) (listof merged-state) (vectorof (vectorof marking)) -> (listof phase)
   ;; Purpose: Pairs a merged-state with a rebuild dfa that contains either the new merged state symbol or one of the states that got merged
-  (define (make-phase-5 unminimized-M loRM loMS state-pairing-table)
+  (define (make-phase-5 unminimized-M loRM loMS state-pairing-table states)
     ;;(listof dfa) (listof merged-state) (listof phase)
     ;;Purpose: Associates the given rebuilt dfa with a merged-state if any of the components a merged-state has been found
-    (define (make-phase-5-helper loRM loMS acc)
+    (define (make-phase-5-helper loRM loMS states acc)
       (if (empty? loRM)
           (reverse acc)
           (let* ([rebuild-M (first loRM)]
@@ -1018,10 +1022,17 @@ ismg "finished machine"
                                              (ormap (λ (state) (set-member? (merged-state-old-symbols ms) state)) (dfa-states rebuild-M))))
                                        loMS)]
                  [found-merged-state? (not (empty? merged-state))]
+                 [remaining-states (if found-merged-state?
+                                       (filter-not (λ (state)
+                                                 (set-member? (merged-state-old-symbols (first merged-state)) state))
+                                                 states)
+                                       states)]
                  [new-phase (phase 5 unminimized-M state-pairing-table (phase-5-attributes
-                                                                        (first loRM) (if found-merged-state? (first merged-state) merged-state)))])
-            (make-phase-5-helper (rest loRM) (if found-merged-state? (remove (first merged-state) loMS) loMS) (cons new-phase acc)))))
-    (make-phase-5-helper loRM loMS '()))
+                                                                        (first loRM)
+                                                                        (if found-merged-state? (first merged-state) merged-state)
+                                                                        remaining-states))])
+            (make-phase-5-helper (rest loRM) (if found-merged-state? (remove (first merged-state) loMS) loMS) remaining-states (cons new-phase acc)))))
+    (make-phase-5-helper loRM loMS states '()))
   (let* ([unchecked-M M]
          [results-from-minimization (minimize-dfa unchecked-M)]
          [original-M (unchecked->dfa (minimization-results-original-M results-from-minimization))]
@@ -1069,13 +1080,15 @@ ismg "finished machine"
          [filled-table (phase-results-new-table phase4+new-table)]
          [merged-states (minimization-results-merged-states results-from-minimization)]
          [rebuilding-machines (reconstruct-machine minimized-M merged-states)]
-         [phase-5 (make-phase-5 no-unreachables-M rebuilding-machines merged-states filled-table)]
+         [phase-5 (if can-be-minimized?
+                      (make-phase-5 no-unreachables-M rebuilding-machines merged-states filled-table (dfa-states M))
+                      '())]
          [phase-6 (list (phase 6 (last rebuilding-machines) filled-table (phase-6-attributes can-be-minimized?)))]
          [all-phases (append phase--1 phase-0 phase-1 phase-2 phase-3 phase-4 phase-5 phase-6)]
          [graphs (make-main-graphic all-phases state-table-mappings)])
     ;(void)
-    
-    ;#;
+    phase-5
+    #;
     (run-viz (map first graphs)
              (list->vector (map (λ (x table)
                                   (if (list? (first x))
