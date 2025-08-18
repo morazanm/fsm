@@ -433,8 +433,8 @@
          (time (minimization-viz M)))
        listofmachines)
 
-
-(minimization-viz AB*B*UAB*2)
-(minimization-viz AT-LEAST-ONE-MISSING)
+(minimization-viz EX3-vid)
+;(minimization-viz AB*B*UAB*2)
+;(minimization-viz AT-LEAST-ONE-MISSING)
 
  ;(time (minimization-viz EX3-vid))

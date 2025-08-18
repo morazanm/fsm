@@ -63,7 +63,7 @@
 
 ;;new-symbol | the new state symbol that represents all of the states that got merged | symbol
 ;;old-symbols | all of the symbols that merged into one state | (listof state)
-(struct merged-state (new-symbol old-symbols) #:transparent)
+(struct merged-state (new-symbol old-symbols state-pairs) #:transparent)
 
 ;;new-machine | the *possibly* minimized machine that resulted from the minimize-dfa |fsa
 ;;unreachables-removed-M | the machine with unreachable states removed | fsa
@@ -323,18 +323,23 @@ ismg "finished machine"
                  [finals (fsa-getfinals old-dfa)]
                  [ump-s1 (state-pair-s1 unmarked-pair)]
                  [ump-s2 (state-pair-s2 unmarked-pair)]
-                 [new-old-symbols-set (set-add (set-add (merged-state-old-symbols overlapped-pair) ump-s1) ump-s2)])
+                 [new-old-symbols-set (set-add (set-add (merged-state-old-symbols overlapped-pair) ump-s1) ump-s2)]
+                 [updated-state-pairs (cons unmarked-pair (merged-state-state-pairs overlapped-pair))])
             (cond [(and (or (eq? ump-s1 start) (eq? ump-s2 start))
                         (not (eq? (merged-state-new-symbol overlapped-pair) start)))
                    (struct-copy merged-state overlapped-pair
                                 [new-symbol start]
-                                [old-symbols new-old-symbols-set])]
+                                [old-symbols new-old-symbols-set]
+                                [state-pairs updated-state-pairs])]
                   [(and (or (member ump-s1 finals) (member ump-s2 finals))
                         (not (member (merged-state-new-symbol overlapped-pair) finals)))
                    (struct-copy merged-state overlapped-pair
                                 [new-symbol (if (member ump-s1 finals) ump-s1 ump-s2)]
-                                [old-symbols new-old-symbols-set])]
-                  [else (struct-copy merged-state overlapped-pair [old-symbols new-old-symbols-set])])))
+                                [old-symbols new-old-symbols-set]
+                                [state-pairs updated-state-pairs])]
+                  [else (struct-copy merged-state overlapped-pair
+                                     [old-symbols new-old-symbols-set]
+                                     [state-pairs updated-state-pairs])])))
         (let* ([overlapped-pair (first (filter (λ (sp) (at-least-one-state-matches? sp unmarked-pair)) loSP))]
                [new-merged-state (update-merged-state unmarked-pair overlapped-pair)])
           (map (λ (sp) (if (equal? overlapped-pair sp) new-merged-state sp)) loSP)))
@@ -347,14 +352,17 @@ ismg "finished machine"
               [ump-s2 (state-pair-s2 unmarked-pair)])
           (cond [(or (eq? ump-s1 start)
                      (eq? ump-s2 start))
-                 (merged-state start (set ump-s1 ump-s2))]
+                 (merged-state start (set ump-s1 ump-s2) (list unmarked-pair))]
                 [(or (member ump-s1 finals)
                      (member ump-s2 finals))
                  (merged-state (if (member ump-s1 finals)
                                    ump-s1
                                    ump-s2)
-                               (set ump-s1 ump-s2))]
-                [else (merged-state ump-s1 (set (state-pair-s1 unmarked-pair) ump-s2))])))
+                               (set ump-s1 ump-s2)
+                               (list unmarked-pair))]
+                [else (merged-state ump-s1
+                                    (set (state-pair-s1 unmarked-pair) ump-s2)
+                                    (list unmarked-pair))])))
       (cond [(empty? unmarked-pairs) acc]
             [(overlap? (first unmarked-pairs) acc)
              (accumulate-unmarked-pairs (rest unmarked-pairs) (merge-pairs (first unmarked-pairs) acc))]
@@ -633,9 +641,14 @@ ismg "finished machine"
               (let* ([base-square-img (overlay (square 40 'solid 'white) (square 45 'solid 'gray))]
                      [select-square-img (overlay (square 40 'solid 'white) (square 45 'solid 'red))]
                      [final-state-square-img (overlay (square 40 'solid 'orange) (square 45 'solid 'gray))]
-                     [current-pair? (and (not (list? state-pair))
-                                         (= (hash-ref state-table-mappings (state-pair-s1 state-pair)) row-idx)
-                                         (= (hash-ref state-table-mappings (state-pair-s2 state-pair)) column-idx))])
+                     [current-pair? (or (and (not (list? state-pair))
+                                             (= (hash-ref state-table-mappings (state-pair-s1 state-pair)) row-idx)
+                                             (= (hash-ref state-table-mappings (state-pair-s2 state-pair)) column-idx))
+                                        (and (list? state-pair)
+                                             (ormap (λ (sp)
+                                                 (and (= (hash-ref state-table-mappings (state-pair-s1 sp)) row-idx)
+                                                      (= (hash-ref state-table-mappings (state-pair-s2 sp)) column-idx)))
+                                               state-pair)))])
                 (cond [(eq? sym BLANK-SPACE) (if current-pair? select-square-img base-square-img)]
                       [(eq? sym BLACK) (overlay (square 40 'solid BLACK) (square 45 'solid 'gray))]
                       [(eq? sym MARK) (overlay (text "X" 38 BLACK) base-square-img)]
@@ -662,7 +675,10 @@ ismg "finished machine"
         (if (= (phase-number phase) 5)
             (list (list (create-graph-struct (phase-M phase) #:merge-state merge-state)
                         (create-graph-struct (phase-5-attributes-rebuild-M (phase-attributes phase)) #:merge-state merge-state))
-                  (draw-table (phase-state-pairing-table phase) (dfa-finals (phase-M phase)) state-pair))
+                  (draw-table (phase-state-pairing-table phase) (dfa-finals (phase-M phase))
+                              (if (empty? merge-state)
+                                  merge-state
+                                  (merged-state-state-pairs merge-state))))
             (list (create-graph-struct (phase-M phase)
                                        #:state-pair (if (and (= (phase-number phase) 4)
                                                              (not (symbol? state-pair)))
@@ -746,19 +762,27 @@ ismg "finished machine"
   ;;phase-attributes -> image
   ;;Purpose: Makes the imsg for phase 5
   (define (make-phase5-imsg phase-attribute)
-    (let ([merged-state (phase-5-attributes-merged-states phase-attribute)])
+    (let ([merged-state (phase-5-attributes-merged-states phase-attribute)]
+          [remaining-states (phase-5-attributes-remaining-states phase-attribute)])
       (above (text "Rebuilding the machine" FONT-SIZE BLACK)
-             (if (empty? merged-state)
-                 (text "yler" FONT-SIZE 'white)
-                 (text (format "States ~a have been merged to create state ~s"
-                               (convert-to-string (set->list (merged-state-old-symbols merged-state)))
-                               (merged-state-new-symbol merged-state))
-                       FONT-SIZE
-                       BLACK))
-             (if (< (set-count (merged-state-old-symbols merged-state)) 2)
-                 (text "yler" FONT-SIZE 'white)
-                 (text "These pairs are unmarked and share states" FONT-SIZE BLACK))
-             (text (format "States remaining to be used for building: ~s" (convert-to-string (phase-5-attributes-remaining-states phase-attribute))) FONT-SIZE BLACK))))
+             (if (or (empty? merged-state)
+                        (< (set-count (merged-state-old-symbols merged-state)) 2))
+                    (text (format "States remaining to be used for building: ~a"
+                                  (if (or (empty? merged-state) (empty? remaining-states))
+                                      "none"
+                                      (convert-to-string remaining-states)))
+                          FONT-SIZE BLACK)
+                    (above (text (format "States ~a have been merged to create state ~s"
+                                         (convert-to-string (set->list (merged-state-old-symbols merged-state)))
+                                         (merged-state-new-symbol merged-state))
+                                 FONT-SIZE
+                                 BLACK)
+                           (text "These pairs are unmarked and share states" FONT-SIZE BLACK)
+                           (text (format "States remaining to be used for building: ~a"
+                           (if (or (empty? merged-state) (empty? remaining-states))
+                               "none"
+                               (convert-to-string remaining-states)))
+                           FONT-SIZE BLACK))))))
 
   ;;phase-attributes -> image
   ;;Purpose: Makes the imsg for phase 6
@@ -1087,8 +1111,8 @@ ismg "finished machine"
          [all-phases (append phase--1 phase-0 phase-1 phase-2 phase-3 phase-4 phase-5 phase-6)]
          [graphs (make-main-graphic all-phases state-table-mappings)])
     ;(void)
-    phase-5
-    #;
+    ;phase-5
+    ;#;
     (run-viz (map first graphs)
              (list->vector (map (λ (x table)
                                   (if (list? (first x))
