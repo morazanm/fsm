@@ -110,7 +110,7 @@
 (define (is-a-list/c message)
     (make-flat-contract
      #:name 'is-a-list/c
-     #:first-order (lambda (val) (list? val) #;(or (list? val) (listof list?)))
+     #:first-order (lambda (val) (list? val))
      #:projection (lambda (blame)
                     (lambda (val)
                       (current-blame-format format-error)
@@ -284,13 +284,9 @@
   (->* ((is-cfexp/c "gen-cfexp-word expects a cfe as input, given"))
        #:rest (and/c (is-a-list/c "gen-cfexp-word expects a natural number as an optional input, given")
                      (listof nat-num/c))
-       any/c
-       #;(or/c symbol?
-             (treelist/c symbol?)
-             (treelist/c nat-num/c)
+       (or/c symbol?
              (listof symbol?)
-             (listof nat-num/c)
-             string?)))
+             (listof nat-num/c))))
 
 (define cfe->cfg/c
   (-> (is-cfexp/c "cfe->cfg expects a cfe as input, given")
