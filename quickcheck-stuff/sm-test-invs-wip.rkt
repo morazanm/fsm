@@ -217,7 +217,7 @@
   (sort-words (sm-all-possible-words-helper all-paths-new-machine
                                             (list (list '() (sm-start a-machine))))))
 
-;; machine (listof (list state (word -> boolean))) -> (listof (listof symbol))
+;; machine . (list state (word -> boolean)) -> (listof (listof symbol))
 ;; Purpose: To return a list of the invarients that don't hold and the words that cause it not to hold
 (define (sm-test-invs a-machine . a-loi)
   ;; the given machine without the states and rules of states that cannot reach a final state
