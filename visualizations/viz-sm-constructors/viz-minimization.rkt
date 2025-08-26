@@ -703,11 +703,11 @@ ismg "finished machine"
 
   ;;(listof state) -> string
   ;;Purpose: Converts the given (listof state) into a string
-  (define (convert-to-string los)
+  (define (convert-to-string f los)
     (if (= (length los) 1)
-        (symbol->string (first los))
-        (string-append (symbol->string (first los)) ", "
-                       (convert-to-string (rest los)))))
+        (f (first los))
+        (string-append (f (first los)) ", "
+                       (convert-to-string f (rest los)))))
 
   ;;phase-attributes -> image
   ;;Purpose: Makes the imsg for phase 1
@@ -716,7 +716,7 @@ ismg "finished machine"
                   (if (= (length (phase-1-attributes-unreachable-state phase-attribute)) 1)
                       "Removed the unreachable state:"
                       "Removed unreachable states:")
-                  (convert-to-string (phase-1-attributes-unreachable-state phase-attribute)))
+                  (convert-to-string symbol->string (phase-1-attributes-unreachable-state phase-attribute)))
           FONT-SIZE BLACK))
   
   (define PHASE2-IMSG (text "State Pairing Table" FONT-SIZE BLACK))
@@ -724,7 +724,7 @@ ismg "finished machine"
   ;;state-pair -> string
   ;;Purpose: Makes the state pair readable
   (define (pretty-print-state-pair state-pair)
-    (string-append "(" (symbol->string (state-pair-s1 state-pair)) "," (symbol->string (state-pair-s2 state-pair)) ")"))
+    (string-append "(" (symbol->string (state-pair-s1 state-pair)) ", " (symbol->string (state-pair-s2 state-pair)) ")"))
 
   ;;state-pair -> string
   ;;Purpose: Makes the state pair readable
@@ -764,24 +764,37 @@ ismg "finished machine"
   (define (make-phase5-imsg phase-attribute)
     (let ([merged-state (phase-5-attributes-merged-states phase-attribute)]
           [remaining-states (phase-5-attributes-remaining-states phase-attribute)])
+      ;(displayln merged-state)
       (above (text "Rebuilding the machine" FONT-SIZE BLACK)
              (if (or (empty? merged-state)
                         (< (set-count (merged-state-old-symbols merged-state)) 2))
-                    (text (format "States remaining to be used for building: ~a"
+                    (text (format "States remaining to be used for building the minimized machine: ~a"
                                   (if (or (empty? merged-state) (empty? remaining-states))
                                       "none"
-                                      (convert-to-string remaining-states)))
+                                      (convert-to-string symbol->string remaining-states)))
                           FONT-SIZE BLACK)
                     (above (text (format "States ~a have been merged to create state ~s"
-                                         (convert-to-string (set->list (merged-state-old-symbols merged-state)))
+                                         (convert-to-string symbol->string (set->list (merged-state-old-symbols merged-state)))
                                          (merged-state-new-symbol merged-state))
                                  FONT-SIZE
                                  BLACK)
-                           (text "These pairs are unmarked and share states" FONT-SIZE BLACK)
-                           (text (format "States remaining to be used for building: ~a"
+                           (let ([multiple-state-pairs (> (length (merged-state-state-pairs merged-state)) 1)])
+                             (text (format "~a: ~a ~a unmarked ~a"
+                                           (if multiple-state-pairs
+                                               "These pairs"
+                                               "This pair")
+                                           (convert-to-string pretty-print-state-pair (merged-state-state-pairs merged-state))
+                                           (if multiple-state-pairs
+                                               "are"
+                                               "is")
+                                           (if multiple-state-pairs
+                                               "and share states"
+                                               ""))
+                                   FONT-SIZE BLACK))
+                           (text (format "States remaining to be used for building the minimized machine: ~a"
                            (if (or (empty? merged-state) (empty? remaining-states))
                                "none"
-                               (convert-to-string remaining-states)))
+                               (convert-to-string symbol->string remaining-states)))
                            FONT-SIZE BLACK))))))
 
   ;;phase-attributes -> image
