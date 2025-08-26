@@ -131,17 +131,39 @@
                               '())
                      '()))
 
-
-
 ;; ndfa -> ndfa
 ;; Purpose: Takes in ndfa and remove states and rules that can't reach a final state
 (define (remove-states-that-cannot-reach-finals a-ndfa)
+  ;; machine -> (listof rules)
+  ;; Purpose: To return all the paths in the given machine 
+  (define (explore-all-paths a-machine)
+    (define rules (sm-rules a-machine)) 
+    ;; (queueof (listof rule)) (listof (listof rule)) -> (listof (listof rule))
+    ;; Purpose: To return all the paths of the given machine
+    ;; Accumulator invariant: paths = list of current paths
+    (define (explore-all-paths-helper a-qop paths)
+      (if (qempty? a-qop)
+          paths
+          (let* [(firstofq (qfirst a-qop))
+                 (next-rules-first-path (filter-not (λ (rule) (member? rule firstofq))
+                                                    (get-next-rules (last firstofq) rules)))
+                 (paths-with-qfirst (cons firstofq paths))]
+            (if (null? next-rules-first-path)
+                (explore-all-paths-helper (dequeue a-qop) paths-with-qfirst)
+                (explore-all-paths-helper (enqueue (new-paths firstofq next-rules-first-path)
+                                                   (dequeue a-qop))
+                                   paths-with-qfirst)))))
+    (explore-all-paths-helper (enqueue (map (λ (x) (list x))
+                                     (filter
+                                      (λ (rule) (eq? (car rule) (sm-start a-machine)))
+                                      rules))
+                                '())
+                       '()))
   (define paths-that-end-in-finals (filter (λ (x) (member? (third (last x)) (sm-finals a-ndfa)))
-                                           (find-paths a-ndfa)))
+                                           (explore-all-paths a-ndfa)))
   (define new-rules (remove-duplicates (apply append paths-that-end-in-finals)))
   (define new-states (remove-duplicates (append-map (λ (x) (list (car x) (third x))) new-rules)))
   (make-unchecked-ndfa new-states (sm-sigma a-ndfa) (sm-start a-ndfa) (sm-finals a-ndfa) new-rules))
-
 
 ;; (listof rules) -> word
 ;; Purpose: To return a word that is made from the given list of rules
