@@ -1,6 +1,6 @@
 #lang racket/base
 
-(provide sm-all-possible-words sm-test-invs)
+(provide sm-all-possible-words remove-states-that-cannot-reach-finals sm-test-invs)
 (require "../fsm-core/private/sm-getters.rkt"
          "../fsm-core/private/fsa.rkt"
          racket/list)
@@ -112,7 +112,7 @@
                                                       (λ (rule)
                                                         (< (count (λ (rl) (equal? rule rl))
                                                                   (qfirst a-qop))
-                                                           3)
+                                                           2)
                                                         #;(not (member? x (qfirst a-qop)))
                                                         )
                                                       rules)))
@@ -130,6 +130,8 @@
                                     (sm-rules a-machine)))
                               '())
                      '()))
+
+(struct ndfa (st sig s f r) #:transparent)
 
 ;; ndfa -> ndfa
 ;; Purpose: Takes in ndfa and remove states and rules that can't reach a final state
@@ -161,9 +163,20 @@
                        '()))
   (define paths-that-end-in-finals (filter (λ (x) (member? (third (last x)) (sm-finals a-ndfa)))
                                            (explore-all-paths a-ndfa)))
-  (define new-rules (remove-duplicates (apply append paths-that-end-in-finals)))
-  (define new-states (remove-duplicates (append-map (λ (x) (list (car x) (third x))) new-rules)))
-  (make-unchecked-ndfa new-states (sm-sigma a-ndfa) (sm-start a-ndfa) (sm-finals a-ndfa) new-rules))
+  
+  (define new-states (remove-duplicates (append-map (λ (x) (list (car x) (third x)))
+                                                    (remove-duplicates (apply append paths-that-end-in-finals)))))
+  (define new-rules (filter (λ (rule) (and (member? (first rule) new-states)
+                                           (member? (third rule) new-states)))
+                            (sm-rules a-ndfa)))
+  (make-unchecked-ndfa new-states (sm-sigma a-ndfa) (sm-start a-ndfa) (sm-finals a-ndfa) new-rules)
+  #;(values
+   ;(length paths-that-end-in-finals)
+   ;(length paths-that-end-in-finals2)
+   (ndfa #;make-unchecked-ndfa new-states (sm-sigma a-ndfa) (sm-start a-ndfa) (sm-finals a-ndfa) new-rules)
+   (ndfa #;make-unchecked-ndfa new-states2 (sm-sigma a-ndfa) (sm-start a-ndfa) (sm-finals a-ndfa) new-rules2)
+   (test-equiv-fsa (make-unchecked-ndfa new-states (sm-sigma a-ndfa) (sm-start a-ndfa) (sm-finals a-ndfa) new-rules)
+                   (make-unchecked-ndfa new-states2 (sm-sigma a-ndfa) (sm-start a-ndfa) (sm-finals a-ndfa) new-rules2))))
 
 ;; (listof rules) -> word
 ;; Purpose: To return a word that is made from the given list of rules

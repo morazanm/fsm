@@ -1636,7 +1636,7 @@
 (check-equal? (C-INV-AT-LEAST-ONE-MISSING '(c c b a b)) #f)
 (check-equal? (C-INV-AT-LEAST-ONE-MISSING '(b)) #t)
 (check-equal? (C-INV-AT-LEAST-ONE-MISSING '(b b a a b a a a)) #t)
-(check-equal? (C-INV-AT-LEAST-ONE-MISSING '()) #t                                                                               )
+(check-equal? (C-INV-AT-LEAST-ONE-MISSING '()) #t)
 
 
 (define LOI-AT-LEAST-ONE-MISSING (list (list 'S S-INV-AT-LEAST-ONE-MISSING)
@@ -1645,4 +1645,6 @@
                                        (list 'C C-INV-AT-LEAST-ONE-MISSING)))
                                        
 
+(define loM (list CONTAINS-aabab no-contain-bababa M3 lots-of-kleenes ONE-LETTER-MISSING ab*b*Uab* a+b+c+a+b+))
 
+  
