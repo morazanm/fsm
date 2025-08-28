@@ -5,6 +5,10 @@
          "../fsm-core/private/fsa.rkt"
          racket/list)
 
+
+(define REPETITION-LIMIT 2)
+
+
 ;; USEFUL FUNCTIONS
 
 ;; X loX -> Boolean
@@ -112,7 +116,7 @@
                                                       (λ (rule)
                                                         (< (count (λ (rl) (equal? rule rl))
                                                                   (qfirst a-qop))
-                                                           2)
+                                                           REPETITION-LIMIT)
                                                         #;(not (member? x (qfirst a-qop)))
                                                         )
                                                       rules)))

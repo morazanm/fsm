@@ -777,11 +777,11 @@
 
 
 (define LOI-contains-a+b+c+a+b+ (list (list 'S INVS=T)
-                             (list 'A INVS=T)
-                             (list 'B INVS=T)
-                             (list 'C INVS=T)
-                             (list 'D INVS=T)
-                             (list 'E INVS=T)))
+                                      (list 'A INVS=T)
+                                      (list 'B INVS=T)
+                                      (list 'C INVS=T)
+                                      (list 'D INVS=T)
+                                      (list 'E INVS=T)))
                                       
 
 ;                                               
@@ -1222,6 +1222,12 @@
 (check-equal? (C-INV-EX-NDFA '(a c a b c)) #f)
 (check-equal? (C-INV-EX-NDFA '(c c)) #f)
 (check-equal? (C-INV-EX-NDFA '(a c c b)) #f)
+
+
+(define EX-NDFA-LOI (list (list 'S S-INV-EX-NDFA)
+                          (list 'A A-INV-EX-NDFA)
+                          (list 'B B-INV-EX-NDFA)
+                          (list 'C C-INV-EX-NDFA)))
 
 #| Sophia's version of EVEN-B-OR-A*-THEN-MULTIPLE-OF-3-C
 
