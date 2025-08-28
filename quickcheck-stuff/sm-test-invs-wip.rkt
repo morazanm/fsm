@@ -256,7 +256,9 @@
 ;; Purpose: To return a list of the invarients that don't hold and the words that cause it not to hold
 (define (sm-test-invs a-machine . a-loi)
   ;; the given machine without the states and rules of states that cannot reach a final state
-  (define new-machine (remove-states-that-cannot-reach-finals a-machine))
+  (define new-machine (if (eq? (sm-type a-machine) 'dfa)
+                          a-machine
+                          (remove-states-that-cannot-reach-finals a-machine)))
   ;; list of invariants that are reachable from the starting configuration
   (define reachable-inv (filter (λ (x) (member? (car x) (sm-states new-machine))) a-loi))
   ;; all paths of new-machine
