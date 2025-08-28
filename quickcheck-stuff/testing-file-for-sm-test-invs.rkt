@@ -183,6 +183,8 @@
                                                    (K c D) (D g B) (B a H) (B t M) (B c D) (B g S)
                                                    (K g S) (S c R) (R a H) (R t M) (R c D) (R g S))))
 
+(define EVIL-dna-sequence (complement-fsa DNA-SEQUENCE))
+
 ;;word -> boolean
 ;;Purpose: Determines if the given word is empty
 (define (DNA-K-INV a-word)
@@ -1650,7 +1652,7 @@
                                        (list 'B B-INV-AT-LEAST-ONE-MISSING)
                                        (list 'C C-INV-AT-LEAST-ONE-MISSING)))
                                        
-
+#|
 (define loM (list CONTAINS-aabab no-contain-bababa M3 lots-of-kleenes ONE-LETTER-MISSING ab*b*Uab* a+b+c+a+b+))
 
 "DNA-SEQUENCE"
@@ -1743,10 +1745,10 @@
  (time (sm-test-invs CONTAINS-aabab (list 'S S2-INV) (list 'A A2-INV)
                               (list 'B B2-INV) (list 'C C2-INV)
                               (list 'D D2-INV) (list 'E E2-INV))))
-
+"a+b+c+a+b+(ndfa)"
 (for ([x (in-naturals)]
       #:break (= x 51))
- "a+b+c+a+b+(ndfa)"
+ 
  (time (sm-test-invs (make-unchecked-ndfa '(S A B C D E)
                              '(a b c)
                              'S
@@ -1797,4 +1799,4 @@
                           (list 'B B-INV-EX-NDFA)
                           (list 'C C-INV-EX-NDFA))))
 
-  
+|#  
