@@ -133,10 +133,10 @@
                (make-unchecked-ndfa states-to-first-los
                                     (sm-sigma machine-with-states-that-reach-finals)
                                     (sm-start machine-with-states-that-reach-finals)
-                                    (list (car los))
+                                    (list symb)
                                     rules-for-first-los))
              
-             (hash-set! state&its-machine (car los) (simplify-regexp (fsa->regexp machine-only-paths-to-first-los))))
+             (hash-set! state&its-machine symb (simplify-regexp (fsa->regexp machine-only-paths-to-first-los))))
            state&its-machine)
          (define states-no-start-state (filter (λ (state) (not (eq? state (sm-start machine-with-states-that-reach-finals)))) states))
          (define paths-to-start-state (filter (λ (path) (eq? (third (last path)) (sm-start machine-with-states-that-reach-finals))) all-paths))
