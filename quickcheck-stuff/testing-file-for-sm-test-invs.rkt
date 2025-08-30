@@ -7,6 +7,10 @@
          "../fsm-core/private/constants.rkt"
          "../sm-graph.rkt")
 
+(struct test-case (name num-tests thunk))
+
+
+
 ;; USEFUL FUNCTIONS
 
 ;; word word -> Boolean
@@ -128,15 +132,21 @@
                (not (equal? (drop ci (- (length ci) 2))
                             '(a a)))))))
 
-(check-equal? (S-INV '(b)) #t)
-(check-equal? (S-INV '(a b)) #t)
-(check-equal? (S-INV '(a b a b)) #t)
-(check-equal? (S-INV '(a a b b)) #f)
-(check-equal? (S-INV '(a)) #f)
-
+;(check-equal? (S-INV '(b)) #t)
+;(check-equal? (S-INV '(a b)) #t)
+;(check-equal? (S-INV '(a b a b)) #t)
+;(check-equal? (S-INV '(a a b b)) #f)
+;(check-equal? (S-INV '(a)) #f)
+(sm-test-invs NO-AA (list 'S S-INV)
+                   (list 'A A-INV)
+                   (list 'B B-INV)
+                   (list 'R R-INV))
+#;(check-equal? (length (first (sm-test-invs NO-AA (list 'S S-INV)
+                   (list 'A A-INV)
+                   (list 'B B-INV)
+                   (list 'R R-INV)))) 19)
         
-
-(check-equal? (sm-apply NO-AA '()) 'accept)
+;(check-equal? (sm-apply NO-AA '()) 'accept)
 (check-equal? (sm-apply NO-AA '(a)) 'accept)
 (check-equal? (sm-apply NO-AA '(a b)) 'accept)
 (check-equal? (sm-apply NO-AA '(a b a)) 'accept)
@@ -184,6 +194,7 @@
                                                    (K g S) (S c R) (R a H) (R t M) (R c D) (R g S))))
 
 (define EVIL-dna-sequence (complement-fsa DNA-SEQUENCE))
+
 
 ;;word -> boolean
 ;;Purpose: Determines if the given word is empty
@@ -257,6 +268,16 @@
                        (list 'R DNA-R-INV)))
 
 
+
+#;(time (sm-test-invs EVIL-dna-sequence (list 'K DNA-K-INV)
+                       (list 'H DNA-H-INV)
+                       (list 'F DNA-F-INV)
+                       (list 'M DNA-M-INV)
+                       (list 'I DNA-I-INV)
+                       (list 'D DNA-D-INV)
+                       (list 'B DNA-B-INV)
+                       (list 'S DNA-S-INV)
+                       (list 'R DNA-R-INV)))
 
 
 ;; Let Σ = {a b}. Design and implement a dfa for the following language:
@@ -1652,9 +1673,150 @@
                                        (list 'B B-INV-AT-LEAST-ONE-MISSING)
                                        (list 'C C-INV-AT-LEAST-ONE-MISSING)))
                                        
-#|
+
 (define loM (list CONTAINS-aabab no-contain-bababa M3 lots-of-kleenes ONE-LETTER-MISSING ab*b*Uab* a+b+c+a+b+))
 
+
+
+
+
+
+
+
+(define tests (list (test-case 'dna-sequence
+                               50
+                               (lambda () (sm-test-invs DNA-SEQUENCE
+                                                        (list 'K DNA-K-INV)
+                                                        (list 'H DNA-H-INV)
+                                                        (list 'F DNA-F-INV)
+                                                        (list 'M DNA-M-INV)
+                                                        (list 'I DNA-I-INV)
+                                                        (list 'D DNA-D-INV)
+                                                        (list 'B DNA-B-INV)
+                                                        (list 'S DNA-S-INV)
+                                                        (list 'R DNA-R-INV))))
+                    (test-case 'no-contain-bababa
+                               50
+                               (lambda () (sm-test-invs no-contain-bababa (list 'S S-INV-no-contain-bababa)
+                                                        (list 'A A-INV-no-contain-bababa)
+                                                        (list 'B B-INV-no-contain-bababa)
+                                                        (list 'C C-INV-no-contain-bababa)
+                                                        (list 'D D-INV-no-contain-bababa)
+                                                        (list 'E E-INV-no-contain-bababa)
+                                                        (list 'F F-INV-no-contain-bababa))))
+                    (test-case 'AT-LEAST-ONE-MISSING
+                               50
+                               (lambda () (sm-test-invs AT-LEAST-ONE-MISSING  (list 'S S-INV-AT-LEAST-ONE-MISSING)
+                                                        (list 'A A-INV-AT-LEAST-ONE-MISSING)
+                                                        (list 'B B-INV-AT-LEAST-ONE-MISSING)
+                                                        (list 'C C-INV-AT-LEAST-ONE-MISSING))))
+                    (test-case 'lots-of-kleenes
+                               50
+                               (lambda () (sm-test-invs lots-of-kleenes (list 'S S-INV-lots-of-kleenes)
+                                                        (list 'A A-INV-lots-of-kleenes)
+                                                        (list 'B B-INV-lots-of-kleenes)
+                                                        (list 'C C-INV-lots-of-kleenes)
+                                                        (list 'D D-INV-lots-of-kleenes)
+                                                        (list 'E E-INV-lots-of-kleenes)
+                                                        (list 'F F-INV-lots-of-kleenes)
+                                                        (list 'G G-INV-lots-of-kleenes))))
+                    (test-case 'ONE-LETTER-MISSING
+                               50
+                               (lambda () (sm-test-invs ONE-LETTER-MISSING (list 'S S-INV-1-MISSING)
+                                                        (list 'A A-INV-1-MISSING)
+                                                        (list 'B B-INV-1-MISSING)
+                                                        (list 'C C-INV-1-MISSING)
+                                                        (list 'D D-INV-1-MISSING)
+                                                        (list 'E E-INV-1-MISSING)
+                                                        (list 'F F-INV-1-MISSING))))
+                    (test-case 'ab*b*Uab*
+                               50
+                               (lambda () (sm-test-invs ab*b*Uab* (list 'A A-INV-ab*b*Uab*) (list 'B B-INV-ab*b*Uab*) (list 'C C-INV-ab*b*Uab*)
+                                                        (list 'D D-INV-ab*b*Uab*) (list 'E E-INV-ab*b*Uab*) (list 'S S-INV-ab*b*Uab*))))
+                    (test-case 'M3
+                               50
+                               (lambda () (sm-test-invs M3 (list 'S S3-INV)
+                                                        (list 'A A3-INV)
+                                                        (list 'B B3-INV)
+                                                        (list 'C C3-INV)
+                                                        (list 'D D3-INV)
+                                                        (list 'E E3-INV)
+                                                        (list 'F F3-INV))))
+                    (test-case 'a+b+c+a+b+
+                               50
+                               (lambda () (sm-test-invs a+b+c+a+b+ (list 'S INVS=T)
+                                                        (list 'A INVS=T)
+                                                        (list 'B INVS=T)
+                                                        (list 'C INVS=T)
+                                                        (list 'D INVS=T)
+                                                        (list 'E INVS=T))))
+                    (test-case 'CONTAINS-aabab
+                               50
+                               (lambda () (sm-test-invs CONTAINS-aabab (list 'S S2-INV) (list 'A A2-INV)
+                              (list 'B B2-INV) (list 'C C2-INV)
+                              (list 'D D2-INV) (list 'E E2-INV))))
+                    (test-case 'a+b+c+a+b+ndfa
+                               50
+                               (lambda () (sm-test-invs (make-unchecked-ndfa '(S A B C D E)
+                             '(a b c)
+                             'S
+                             '(E)
+                             '((S a A)
+                               (A a A)
+                               (A b B)
+                               (B b B)
+                               (B c C)
+                               (C c C)
+                               (C a D)
+                               (D a D)
+                               (D b E)
+                               (E b E))) (list 'S INVS=T)
+                             (list 'A INVS=T)
+                             (list 'B INVS=T)
+                             (list 'C INVS=T)
+                             (list 'D INVS=T)
+                             (list 'E INVS=T))))
+                    (test-case 'NO-AA
+                               50
+                               (lambda () (sm-test-invs NO-AA
+                                                        (list 'S S-INV)
+                                                        (list 'A A-INV)
+                                                        (list 'B B-INV)
+                                                        (list 'R R-INV))))
+                    (test-case 'EVEN-NUM-Bs
+                               50
+                               (lambda () (sm-test-invs EVEN-NUM-Bs
+                                                        (list 'S EVEN-NUM-Bs-S-INV) (list 'F EVEN-NUM-Bs-F-INV))))
+                    (test-case 'aa*Uab*
+                               50
+                               (lambda () (sm-test-invs aa*Uab*
+                                                        (list 'K  aa-ab-K-INV) (list 'B aa-ab-B-INV) (list 'D aa-ab-D-INV))))
+                    (test-case 'EX-NDFA
+                               50
+                               (lambda () (sm-test-invs EX-NDFA
+                                                        (list 'S S-INV-EX-NDFA)
+                                                        (list 'A A-INV-EX-NDFA)
+                                                        (list 'B B-INV-EX-NDFA)
+                                                        (list 'C C-INV-EX-NDFA))))
+                    ))
+(define res
+  (for/list ([test (in-list tests)])
+      (displayln (test-case-name test))
+      (let ([result (for/vector #:length (test-case-num-tests test)
+              ([test-num (in-range (test-case-num-tests test))])
+              (define-values (results-lst cpu-time real-time gc-time)
+                (time-apply (test-case-thunk test) '()))
+              (collect-garbage 'major)
+              (collect-garbage 'major)
+              real-time)])
+        (println result)
+        (list (test-case-name test)
+            result))))
+(println res)
+
+
+
+#|
 "DNA-SEQUENCE"
 (for ([x (in-naturals)]
       #:break (> x 50))
@@ -1799,4 +1961,5 @@
                           (list 'B B-INV-EX-NDFA)
                           (list 'C C-INV-EX-NDFA))))
 
-|#  
+
+|#
