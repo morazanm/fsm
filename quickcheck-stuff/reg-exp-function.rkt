@@ -101,6 +101,7 @@
                                 (sm-start a-machine)
                                 (filter (λ (final-state) (set-member? new-states final-state)) (sm-finals a-machine))
                                 new-rules))
+         
          (define state&its-machine (make-hash))
          (define all-paths (find-paths machine-with-states-that-reach-finals))
          (define states (sm-states machine-with-states-that-reach-finals))
@@ -110,9 +111,9 @@
          ;;          can be made from the given machine
          (define (get-all-regexp-helper los)
            (for ([symb (in-list los)])
-          
+             
              (define paths-to-first-los (filter (λ (path) (eq? (third (last path)) symb)) all-paths))
-
+              
              (define (make-rules-states rules states paths)
                (define (make-rules-states-helper rules states path)
                  (if (empty? path)
@@ -128,7 +129,7 @@
                                      (lambda (rules states) (make-rules-states rules states (rest paths))))))
         
              (define-values (rules-for-first-los states-to-first-los) (make-rules-states '() '() paths-to-first-los))
-
+             
              (define machine-only-paths-to-first-los
                (make-unchecked-ndfa states-to-first-los
                                     (sm-sigma machine-with-states-that-reach-finals)

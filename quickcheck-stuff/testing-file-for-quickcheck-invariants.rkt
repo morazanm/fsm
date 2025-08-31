@@ -636,6 +636,280 @@
 
 
 
+
+
+
+
+
+
+
+;; L = {w | w does not contain bababa}
+;; States
+;; S: a*, baa is detected, or babaa is detected , start and final state
+;; A: last of ci is b and no bababa is detected, final state
+;; B: last of ci is ba and no bababa is detected, final state
+;; C: last of ci is bab and no bababa is detected, final state
+;; D: last of ci is baba and no bababa is detected, final state
+;; E: last of ci is babab and no bababa is detected, final state
+;; F: bababa has been detected, final state
+(define no-contain-bababa (make-unchecked-dfa '(S A B C D E F)
+                                              '(a b)
+                                              'S
+                                              '(S A B C D E)
+                                              '((S a S) (S b A)
+                                                        (A a B) (A b A)
+                                                        (B a S) (B b C)
+                                                        (C a D) (C b A)
+                                                        (D a S) (D b E)
+                                                        (E a F) (E b A)
+                                                        (F a F) (F b F))
+                                              'no-dead
+                                              ))
+
+;;tests for no-contain-bababa
+(check-equal? (sm-apply no-contain-bababa '()) 'accept)
+(check-equal? (sm-apply no-contain-bababa '(a)) 'accept)
+(check-equal? (sm-apply no-contain-bababa '(b)) 'accept)
+(check-equal? (sm-apply no-contain-bababa '(a a a)) 'accept)
+(check-equal? (sm-apply no-contain-bababa '(a b b)) 'accept)
+(check-equal? (sm-apply no-contain-bababa '(a b b a b a b)) 'accept)
+(check-equal? (sm-apply no-contain-bababa '(b a b a b a)) 'reject)
+(check-equal? (sm-apply no-contain-bababa '(a b a b a b a b b a)) 'reject)
+(check-equal? (sm-apply no-contain-bababa '(b b a b a b a a a b a b a b a)) 'reject)
+(check-equal? (sm-apply no-contain-bababa '(a b a b a b a b a b a a b b a)) 'reject)
+
+;; invariants for no-contains-bababa
+
+;; note: using auxilaries that were made for CONTAINS-aabab
+
+;; word -> Boolean
+;; Purpose: Determine if ci should be in S
+(define (S-INV-no-contain-bababa ci)
+  (and (not (contains? ci '(b a b a b a)))
+       (not (end-with? '(b) ci))
+       (not (end-with? '(b a) ci))
+       (not (end-with? '(b a b) ci))
+       (not (end-with? '(b a b a) ci))
+       (not (end-with? '(b a b a b) ci))))
+
+;; tests for S-INV-no-contain-bababa
+(check-equal? (S-INV-no-contain-bababa '()) #t)
+(check-equal? (S-INV-no-contain-bababa '(a)) #t)
+(check-equal? (S-INV-no-contain-bababa '(a a)) #t)
+(check-equal? (S-INV-no-contain-bababa '(b a a)) #t)
+(check-equal? (S-INV-no-contain-bababa '(b a b a a)) #t)
+(check-equal? (S-INV-no-contain-bababa '(b b a a b a a a a)) #t)
+(check-equal? (S-INV-no-contain-bababa '(b)) #f)
+(check-equal? (S-INV-no-contain-bababa '(b a b a a b a b)) #f)
+(check-equal? (S-INV-no-contain-bababa '(b a b a b a a a)) #f)
+(check-equal? (S-INV-no-contain-bababa '(b b a b a b a b b b a a b)) #f)
+(check-equal? (S-INV-no-contain-bababa '(a b a b a b a b a b)) #f)
+
+
+;; word -> Boolean
+;; Purpose: Determine if ci should be in A
+(define (A-INV-no-contain-bababa ci)
+  (and (not (contains? ci '(b a b a b a)))
+       (end-with? '(b) ci)
+       (not (end-with? '(b a) ci))
+       (not (end-with? '(b a b) ci))
+       (not (end-with? '(b a b a) ci))
+       (not (end-with? '(b a b a b) ci))))
+
+;; tests for A-INV-no-contains-bababa
+(check-equal? (A-INV-no-contain-bababa '(b)) #t)
+(check-equal? (A-INV-no-contain-bababa '(a a b a a b)) #t)
+(check-equal? (A-INV-no-contain-bababa '(b a a b)) #t)
+(check-equal? (A-INV-no-contain-bababa '(b b b b b b)) #t)
+(check-equal? (A-INV-no-contain-bababa '()) #f)
+(check-equal? (A-INV-no-contain-bababa '(a)) #f)
+(check-equal? (A-INV-no-contain-bababa '(b a)) #f)
+(check-equal? (A-INV-no-contain-bababa '(b a b)) #f)
+(check-equal? (A-INV-no-contain-bababa '(b a b a)) #f)
+(check-equal? (A-INV-no-contain-bababa '(b a b a b)) #f)
+(check-equal? (A-INV-no-contain-bababa '(b a b a b a)) #f)
+
+;; word -> Boolean
+;; Purpose: Determine if ci should be in B
+(define (B-INV-no-contain-bababa ci)
+  (and (not (contains? ci '(b a b a b a)))
+       (end-with? '(b a) ci)
+       (not (end-with? '(b a b) ci))
+       (not (end-with? '(b a b a) ci))
+       (not (end-with? '(b a b a b) ci))))
+
+;; tests for B-INV-no-contains-bababa
+(check-equal? (B-INV-no-contain-bababa '(b a)) #t)
+(check-equal? (B-INV-no-contain-bababa '(a a b a a b a)) #t)
+(check-equal? (B-INV-no-contain-bababa '(a a b a)) #t)
+(check-equal? (B-INV-no-contain-bababa '(b b b b b a)) #t)
+(check-equal? (B-INV-no-contain-bababa '(a b a b a a b a)) #t)
+(check-equal? (B-INV-no-contain-bababa '(a)) #f)
+(check-equal? (B-INV-no-contain-bababa '(b)) #f)
+(check-equal? (B-INV-no-contain-bababa '(b a b)) #f)
+(check-equal? (B-INV-no-contain-bababa '(b a b a)) #f)
+(check-equal? (B-INV-no-contain-bababa '(b a b a b)) #f)
+(check-equal? (B-INV-no-contain-bababa '(b a b a b a)) #f)
+
+
+;; word -> Boolean
+;; Purpose: Determine if ci should be in C
+(define (C-INV-no-contain-bababa ci)
+  (and (not (contains? ci '(b a b a b a)))
+       (end-with? '(b a b) ci)
+       (not (end-with? '(b a b a) ci))
+       (not (end-with? '(b a b a b) ci))))
+
+;; tests for C-INV-no-contains-bababa
+(check-equal? (C-INV-no-contain-bababa '(b a b)) #t)
+(check-equal? (C-INV-no-contain-bababa '(a a b a a b a b)) #t)
+(check-equal? (C-INV-no-contain-bababa '(a a b a b)) #t)
+(check-equal? (C-INV-no-contain-bababa '(b b b b b a b)) #t)
+(check-equal? (C-INV-no-contain-bababa '(a b a b a a b a b)) #t)
+(check-equal? (C-INV-no-contain-bababa '(a)) #f)
+(check-equal? (C-INV-no-contain-bababa '(b)) #f)
+(check-equal? (C-INV-no-contain-bababa '(b a)) #f)
+(check-equal? (C-INV-no-contain-bababa '(b a b a)) #f)
+(check-equal? (C-INV-no-contain-bababa '(b a b a b)) #f)
+(check-equal? (C-INV-no-contain-bababa '(b a b a b a)) #f)
+
+
+;; word -> Boolean
+;; Purpose: Determine if ci should be in D
+(define (D-INV-no-contain-bababa ci)
+  (and (not (contains? ci '(b a b a b a)))
+       (end-with? '(b a b a) ci)
+       (not (end-with? '(b a b a b) ci))))
+
+;; tests for D-INV-no-contains-bababa
+(check-equal? (D-INV-no-contain-bababa '(b a b a)) #t)
+(check-equal? (D-INV-no-contain-bababa '(a a b a a b a b a)) #t)
+(check-equal? (D-INV-no-contain-bababa '(a a b a b a)) #t)
+(check-equal? (D-INV-no-contain-bababa '(b b b b b a b a)) #t)
+(check-equal? (D-INV-no-contain-bababa '(a b a b a a b a b a)) #t)
+(check-equal? (D-INV-no-contain-bababa '(a)) #f)
+(check-equal? (D-INV-no-contain-bababa '(b)) #f)
+(check-equal? (D-INV-no-contain-bababa '(b a)) #f)
+(check-equal? (D-INV-no-contain-bababa '(b a b)) #f)
+(check-equal? (D-INV-no-contain-bababa '(b a b a b)) #f)
+(check-equal? (D-INV-no-contain-bababa '(b a b a b a)) #f)
+
+
+;; word -> Boolean
+;; Purpose: Determine if ci should be in E
+(define (E-INV-no-contain-bababa ci)
+  (and (not (contains? ci '(b a b a b a)))
+       (end-with? '(b a b a b) ci)))
+
+;; tests for E-INV-no-contains-bababa
+(check-equal? (E-INV-no-contain-bababa '(b a b a b)) #t)
+(check-equal? (E-INV-no-contain-bababa '(a a b a a b a b a b)) #t)
+(check-equal? (E-INV-no-contain-bababa '(a a b a b a b)) #t)
+(check-equal? (E-INV-no-contain-bababa '(b b b b b a b a b)) #t)
+(check-equal? (E-INV-no-contain-bababa '(a b a b a a b a b a b)) #t)
+(check-equal? (E-INV-no-contain-bababa '(a)) #f)
+(check-equal? (E-INV-no-contain-bababa '(b)) #f)
+(check-equal? (E-INV-no-contain-bababa '(b a)) #f)
+(check-equal? (E-INV-no-contain-bababa '(b a b)) #f)
+(check-equal? (E-INV-no-contain-bababa '(b a b a)) #f)
+(check-equal? (E-INV-no-contain-bababa '(b a b a b a)) #f)
+
+
+;; word -> Boolean
+;; Purpose: Determine if ci should be in F
+(define (F-INV-no-contain-bababa ci)
+  (contains? ci '(b a b a b a)))
+
+;; tests for F-INV-no-contains-bababa
+(check-equal? (F-INV-no-contain-bababa '(b a b a b a)) #t)
+(check-equal? (F-INV-no-contain-bababa '(a a b a a b a b a b a)) #t)
+(check-equal? (F-INV-no-contain-bababa '(a a b a b a b a)) #t)
+(check-equal? (F-INV-no-contain-bababa '(b b b b b a b a b a)) #t)
+(check-equal? (F-INV-no-contain-bababa '(a b a b a a b a b a b a)) #t)
+(check-equal? (F-INV-no-contain-bababa '(a)) #f)
+(check-equal? (F-INV-no-contain-bababa '(b)) #f)
+(check-equal? (F-INV-no-contain-bababa '(b a)) #f)
+(check-equal? (F-INV-no-contain-bababa '(b a b)) #f)
+(check-equal? (F-INV-no-contain-bababa '(b a b a)) #f)
+(check-equal? (F-INV-no-contain-bababa '(b a b a b)) #f)
+
+
+(define LOI-no-bababa (list (list 'S S-INV-no-contain-bababa)
+                            (list 'A A-INV-no-contain-bababa)
+                            (list 'B B-INV-no-contain-bababa)
+                            (list 'C C-INV-no-contain-bababa)
+                            (list 'D D-INV-no-contain-bababa)
+                            (list 'E E-INV-no-contain-bababa)
+                            (list 'F F-INV-no-contain-bababa)))
+
+
+
+
+
+
+; L = a+b+c+a+b+c+
+
+(define a+b+c+a+b+ (make-unchecked-dfa '(S A B C D E)
+                             '(a b c)
+                             'S
+                             '(E)
+                             '((S a A)
+                               (A a A)
+                               (A b B)
+                               (B b B)
+                               (B c C)
+                               (C c C)
+                               (C a D)
+                               (D a D)
+                               (D b E)
+                               (E b E))))
+
+(define (INVS=T ci)
+  #true)
+
+(define LOI-a+b+c+a+b+ (list (list 'S INVS=T)
+                             (list 'A INVS=T)
+                             (list 'B INVS=T)
+                             (list 'C INVS=T)
+                             (list 'D INVS=T)
+                             (list 'E INVS=T)))
+
+
+
+; L = contains a+b+c+a+
+
+(define contains-abca (make-unchecked-dfa '(S A B C D)
+                                      '(a b c)
+                                      'S
+                                      '(D)
+                                      '((S a A)
+                                        (S b S)
+                                        (S c S)
+                                        (A a A)
+                                        (A b B)
+                                        (A c S)
+                                        (B b S)
+                                        (B a A)
+                                        (B c C)
+                                        (C a D)
+                                        (C b S)
+                                        (C c S)
+                                        (D a D)
+                                        (D b D)
+                                        (D c D))
+                                      'no-dead))
+
+
+(define LOI-contains-a+b+c+a+b+ (list (list 'S INVS=T)
+                                      (list 'A INVS=T)
+                                      (list 'B INVS=T)
+                                      (list 'C INVS=T)
+                                      (list 'D INVS=T)
+                                      (list 'E INVS=T)))
+                                      
+
+
+
 ;                                               
 ;                                               
 ;                                               
@@ -1309,6 +1583,322 @@
 (check-equal? (sm-apply lots-of-kleenes '(a a a a b b b)) 'reject)
 (check-equal? (sm-apply lots-of-kleenes '(b b b a a a)) 'reject)
 (check-equal? (sm-apply lots-of-kleenes '(d d d d d d c c)) 'reject)
+
+
+
+;; word -. Boolean
+;; Purpose: To determine if the given ci belongs in S
+(define (S-INV-lots-of-kleenes ci)
+  (empty? ci))
+
+;; tests for S-INV-lots-of-kleenes
+(check-equal? (S-INV-lots-of-kleenes '()) #t)
+(check-equal? (S-INV-lots-of-kleenes '(a)) #f)
+(check-equal? (S-INV-lots-of-kleenes '(b)) #f)
+(check-equal? (S-INV-lots-of-kleenes '(c)) #f)
+(check-equal? (S-INV-lots-of-kleenes '(a a)) #f)
+
+
+;; word -> boolean
+;; Purpose: To determine if the given word belong in A
+(define (A-INV-lots-of-kleenes ci)
+  (andmap (λ (x) (eq? 'c x)) ci))
+
+;; tests for A-INV-lots-of-kleenes
+(check-equal? (A-INV-lots-of-kleenes '()) #t)
+(check-equal? (A-INV-lots-of-kleenes '(c)) #t)
+(check-equal? (A-INV-lots-of-kleenes '(c c c c)) #t)
+(check-equal? (A-INV-lots-of-kleenes '(a)) #f)
+(check-equal? (A-INV-lots-of-kleenes '(b)) #f)
+(check-equal? (A-INV-lots-of-kleenes '(d)) #f)
+(check-equal? (A-INV-lots-of-kleenes '(a b)) #f)
+
+
+;; word -> Boolean
+;; Purpose: Determine if the give word belongs in B
+(define (B-INV-lots-of-kleenes ci)
+  (andmap (λ (x) (eq? 'd x)) ci))
+
+;; tests B-INV-lots-of-kleenes
+(check-equal? (B-INV-lots-of-kleenes '()) #t)
+(check-equal? (B-INV-lots-of-kleenes '(d)) #t)
+(check-equal? (B-INV-lots-of-kleenes '(d d)) #t)
+(check-equal? (B-INV-lots-of-kleenes '(d d d)) #t)
+(check-equal? (B-INV-lots-of-kleenes '(a)) #f)
+(check-equal? (B-INV-lots-of-kleenes '(b)) #f)
+(check-equal? (B-INV-lots-of-kleenes '(c)) #f)
+
+
+;; word -> Boolean
+;; Purpose: Determine if the given word belongs in C
+(define (C-INV-lots-of-kleenes ci)
+  (andmap (λ (x) (eq? 'a x)) ci))
+
+;; tests for C-INV-lots-of-kleenes
+(check-equal? (C-INV-lots-of-kleenes '()) #t)
+(check-equal? (C-INV-lots-of-kleenes '(a)) #t)
+(check-equal? (C-INV-lots-of-kleenes '(a a a a)) #t)
+(check-equal? (C-INV-lots-of-kleenes '(a a)) #t)
+(check-equal? (C-INV-lots-of-kleenes '(b)) #f)
+(check-equal? (C-INV-lots-of-kleenes '(c)) #f)
+(check-equal? (C-INV-lots-of-kleenes '(d)) #f)
+
+
+;; word -> Boolean
+;; Purpose: Determine if the give word belongs in D
+(define (D-INV-lots-of-kleenes ci)
+  (andmap (λ (x) (eq? 'b x)) ci))
+
+;; tests for D-INV-lots-of-kleenes
+(check-equal? (D-INV-lots-of-kleenes '()) #t)
+(check-equal? (D-INV-lots-of-kleenes '(b)) #t)
+(check-equal? (D-INV-lots-of-kleenes '(b b b b)) #t)
+(check-equal? (D-INV-lots-of-kleenes '(a)) #f)
+(check-equal? (D-INV-lots-of-kleenes '(c)) #f)
+(check-equal? (D-INV-lots-of-kleenes '(d)) #f)
+
+
+;; word -> Boolean
+;; Purpose: Determine if the given word belongs in E
+(define (E-INV-lots-of-kleenes ci)
+  (let [(Bs (takef ci (λ (x) (eq? 'b x))))
+        (As (takef ci (λ (x) (eq? 'a x))))]
+  (or (andmap (λ (x) (eq? 'a x)) ci))))
+
+
+(define (F-INV-lots-of-kleenes ci)
+  (let [(Bs (takef ci (λ (x) (eq? 'b x))))
+        (As (takef  ci(λ (x) (eq? 'a x))))]
+  (or (andmap (λ (x) (eq? 'a x)) ci))))
+
+
+(define (G-INV-lots-of-kleenes ci)
+  (let [(Bs (takef ci (λ (x) (eq? 'b x))))
+        (As (takef ci (λ (x) (eq? 'a x))))]
+  (or (andmap (λ (x) (eq? 'a x)) ci))))
+
+
+
+
+
+
+
+
+(define AT-LEAST-ONE-MISSING (make-unchecked-ndfa '(S A B C)
+                                        '(a b c)
+                                        'S
+                                        '(A B C)
+                                        `((S ,EMP A)
+                                          (S ,EMP B)
+                                          (S ,EMP C)
+                                          (A b A)
+                                          (A c A)
+                                          (B a B)
+                                          (B c B)
+                                          (C a C)
+                                          (C b C))))
+
+
+;; word → Boolean
+;; Purpose: Determine if the given word is empty
+(define (S-INV-AT-LEAST-ONE-MISSING ci) (empty? ci))
+
+;; Test for S-INV-AT-LEAST-ONE-MISSING
+(check-equal? (S-INV-AT-LEAST-ONE-MISSING '()) #t)
+(check-equal? (S-INV-AT-LEAST-ONE-MISSING '(a b)) #f)
+
+
+;; word → Boolean
+;; Purpose: Determine if the given word does not contain a
+(define (A-INV-AT-LEAST-ONE-MISSING ci) (empty? (filter (λ (a) (eq? a 'a)) ci)))
+
+;; Test for A-INV-AT-LEAST-ONE-MISSING
+(check-equal? (A-INV-AT-LEAST-ONE-MISSING '(a)) #f)
+(check-equal? (A-INV-AT-LEAST-ONE-MISSING '(a c b)) #f)
+(check-equal? (A-INV-AT-LEAST-ONE-MISSING '(c c b a b)) #f)
+(check-equal? (A-INV-AT-LEAST-ONE-MISSING '(b)) #t)
+(check-equal? (A-INV-AT-LEAST-ONE-MISSING '(c c b c b)) #t)
+(check-equal? (A-INV-AT-LEAST-ONE-MISSING '()) #t)
+
+
+;; word → Boolean
+;; Purpose: Determine if the given word does not contain b
+(define (B-INV-AT-LEAST-ONE-MISSING ci) (empty? (filter (λ (a) (eq? a 'b)) ci)))
+;; Test for B-INV-AT-LEAST-ONE-MISSING
+(check-equal? (B-INV-AT-LEAST-ONE-MISSING '(b)) #f)
+(check-equal? (B-INV-AT-LEAST-ONE-MISSING '(a c b)) #f)
+(check-equal? (B-INV-AT-LEAST-ONE-MISSING '(a a b a b)) #f)
+(check-equal? (B-INV-AT-LEAST-ONE-MISSING '(c)) #t)
+(check-equal? (B-INV-AT-LEAST-ONE-MISSING '(c c a c c a a a)) #t)
+(check-equal? (B-INV-AT-LEAST-ONE-MISSING '()) #t)
+
+
+;; word → Boolean
+;; Purpose: Determine if the given word does not contain c
+(define (C-INV-AT-LEAST-ONE-MISSING ci) (empty? (filter (λ (a) (eq? a 'c)) ci)))
+
+;; Test for C-INV-AT-LEAST-ONE-MISSING
+(check-equal? (C-INV-AT-LEAST-ONE-MISSING '(c)) #f)
+(check-equal? (C-INV-AT-LEAST-ONE-MISSING '(a b c b)) #f)
+(check-equal? (C-INV-AT-LEAST-ONE-MISSING '(c c b a b)) #f)
+(check-equal? (C-INV-AT-LEAST-ONE-MISSING '(b)) #t)
+(check-equal? (C-INV-AT-LEAST-ONE-MISSING '(b b a a b a a a)) #t)
+(check-equal? (C-INV-AT-LEAST-ONE-MISSING '()) #t)
+
+
+(define LOI-AT-LEAST-ONE-MISSING (list (list 'S S-INV-AT-LEAST-ONE-MISSING)
+                                       (list 'A A-INV-AT-LEAST-ONE-MISSING)
+                                       (list 'B B-INV-AT-LEAST-ONE-MISSING)
+                                       (list 'C C-INV-AT-LEAST-ONE-MISSING)))
+
+
+
+
+(define loM (list CONTAINS-aabab no-contain-bababa M3 lots-of-kleenes ONE-LETTER-MISSING ab*b*Uab* a+b+c+a+b+))
+
+"DNA-SEQUENCE"
+(for ([x (in-naturals)]
+      #:break (> x 50))
+ 
+ (time (quickcheck-invs DNA-SEQUENCE
+                     (list (list 'K DNA-K-INV)
+                       (list 'H DNA-H-INV)
+                       (list 'F DNA-F-INV)
+                       (list 'M DNA-M-INV)
+                       (list 'I DNA-I-INV)
+                       (list 'D DNA-D-INV)
+                       (list 'B DNA-B-INV)
+                       (list 'S DNA-S-INV)
+                       (list 'R DNA-R-INV)))))
+"no-contain-bababa"
+(for ([x (in-naturals)]
+      #:break (= x 51))
+ 
+ (time (quickcheck-invs no-contain-bababa (list (list 'S S-INV-no-contain-bababa)
+                            (list 'A A-INV-no-contain-bababa)
+                            (list 'B B-INV-no-contain-bababa)
+                            (list 'C C-INV-no-contain-bababa)
+                            (list 'D D-INV-no-contain-bababa)
+                            (list 'E E-INV-no-contain-bababa)
+                            (list 'F F-INV-no-contain-bababa)))))
+"AT-LEAST-ONE-MISSING"
+(for ([x (in-naturals)]
+      #:break (= x 51))
+ 
+ (time (quickcheck-invs AT-LEAST-ONE-MISSING  (list (list 'S S-INV-AT-LEAST-ONE-MISSING)
+                                       (list 'A A-INV-AT-LEAST-ONE-MISSING)
+                                       (list 'B B-INV-AT-LEAST-ONE-MISSING)
+                                       (list 'C C-INV-AT-LEAST-ONE-MISSING)))))
+"lots-of-kleenes"
+(for ([x (in-naturals)]
+      #:break (= x 51))
+ 
+ (time (quickcheck-invs lots-of-kleenes (list (list 'S S-INV-lots-of-kleenes)
+                             (list 'A A-INV-lots-of-kleenes)
+                             (list 'B B-INV-lots-of-kleenes)
+                             (list 'C C-INV-lots-of-kleenes)
+                             (list 'D D-INV-lots-of-kleenes)
+                             (list 'E E-INV-lots-of-kleenes)
+                             (list 'F F-INV-lots-of-kleenes)
+                             (list 'G G-INV-lots-of-kleenes)))))
+"ONE-LETTER-MISSING"
+(for ([x (in-naturals)]
+      #:break (= x 51))
+ 
+ (time (quickcheck-invs ONE-LETTER-MISSING (list (list 'S S-INV-1-MISSING)
+                              (list 'A A-INV-1-MISSING)
+                              (list 'B B-INV-1-MISSING)
+                              (list 'C C-INV-1-MISSING)
+                              (list 'D D-INV-1-MISSING)
+                              (list 'E E-INV-1-MISSING)
+                              (list 'F F-INV-1-MISSING)))))
+"ab*b*Uab*"
+(for ([x (in-naturals)]
+      #:break (= x 51))
+ 
+ (time (quickcheck-invs ab*b*Uab* (list (list 'A A-INV-ab*b*Uab*) (list 'B B-INV-ab*b*Uab*) (list 'C C-INV-ab*b*Uab*)
+                            (list 'D D-INV-ab*b*Uab*) (list 'E E-INV-ab*b*Uab*) (list 'S S-INV-ab*b*Uab*)))))
+"M3"
+(for ([x (in-naturals)]
+      #:break (= x 51))
+ 
+ (time (quickcheck-invs M3 (list (list 'S S3-INV)
+                     (list 'A A3-INV)
+                     (list 'B B3-INV)
+                     (list 'C C3-INV)
+                     (list 'D D3-INV)
+                     (list 'E E3-INV)
+                     (list 'F F3-INV)))))
+"a+b+c+a+b+(dfa)"
+(for ([x (in-naturals)]
+      #:break (= x 51))
+ 
+ (time (quickcheck-invs a+b+c+a+b+ (list (list 'S INVS=T)
+                             (list 'A INVS=T)
+                             (list 'B INVS=T)
+                             (list 'C INVS=T)
+                             (list 'D INVS=T)
+                             (list 'E INVS=T)))))
+"CONTAINS-aabab"
+(for ([x (in-naturals)]
+      #:break (= x 51))
+ 
+ (time (quickcheck-invs CONTAINS-aabab (list (list 'S S2-INV) (list 'A A2-INV)
+                              (list 'B B2-INV) (list 'C C2-INV)
+                              (list 'D D2-INV) (list 'E E2-INV)))))
+"a+b+c+a+b+(ndfa)"
+(for ([x (in-naturals)]
+      #:break (= x 51))
+ 
+ (time (quickcheck-invs (make-unchecked-ndfa '(S A B C D E)
+                             '(a b c)
+                             'S
+                             '(E)
+                             '((S a A)
+                               (A a A)
+                               (A b B)
+                               (B b B)
+                               (B c C)
+                               (C c C)
+                               (C a D)
+                               (D a D)
+                               (D b E)
+                               (E b E))) (list (list 'S INVS=T)
+                             (list 'A INVS=T)
+                             (list 'B INVS=T)
+                             (list 'C INVS=T)
+                             (list 'D INVS=T)
+                             (list 'E INVS=T)))))
+"NO-AA"
+(for ([x (in-naturals)]
+      #:break (> x 50))
+
+ (time (quickcheck-invs NO-AA
+                     (list (list 'S S-INV)
+                   (list 'A A-INV)
+                   (list 'B B-INV)
+                   (list 'R R-INV)))))
+"EVEN-NUM-Bs"
+(for ([x (in-naturals)]
+      #:break (> x 50))
+ 
+ (time (quickcheck-invs EVEN-NUM-Bs
+                     (list (list 'S EVEN-NUM-Bs-S-INV) (list 'F EVEN-NUM-Bs-F-INV)))))
+"aa*Uab*"
+(for ([x (in-naturals)]
+      #:break (> x 50))
+ 
+ (time (quickcheck-invs aa*Uab*
+                     (list 'K  aa-ab-K-INV) (list 'B aa-ab-B-INV) (list 'D aa-ab-D-INV))))
+"EX-NDFA"
+(for ([x (in-naturals)]
+      #:break (> x 50))
+ 
+ (time (quickcheck-invs EX-NDFA
+                     (list (list 'S S-INV-EX-NDFA)
+                          (list 'A A-INV-EX-NDFA)
+                          (list 'B B-INV-EX-NDFA)
+                          (list 'C C-INV-EX-NDFA)))))
 
 
 
