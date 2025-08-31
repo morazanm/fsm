@@ -69,6 +69,8 @@
 ;                                                                                                     
 ;                                                                                                     
 
+(struct path-with-hash (path hash) #:transparent)
+
 ;; machine -> (listof rules)
 ;; Purpose: To return all the paths in the given machine 
 (define (find-paths a-machine)
@@ -83,16 +85,22 @@
         '()
         (let [(qfirst (dequeue queue))]
           (for ([rule (in-list rules)]
-                #:when (and (eq? (third (first qfirst)) (car rule))
-                            (< (count (λ (rl) (equal? rule rl))
-                                      qfirst)
-                               REPETITION-LIMIT)))
-            (enqueue! queue (cons rule qfirst)))
+                #:when (and (eq? (third (first (path-with-hash-path qfirst))) (car rule))
+                            (< (hash-ref (path-with-hash-hash qfirst)
+                                                    rule
+                                                    0)
+                                          1)))
+            (enqueue! queue (path-with-hash (cons rule (path-with-hash-path qfirst))
+                                            (hash-set (path-with-hash-hash qfirst)
+                                                      rule
+                                                      (add1 (hash-ref (path-with-hash-hash qfirst)
+                                                                      rule
+                                                                      0))))))
           (cons qfirst (find-paths-helper)))))
   (for ([rule (in-list (sm-rules a-machine))]
         #:when (eq? (car rule) (sm-start a-machine)))
-    (enqueue! queue (list rule)))
-  (map (lambda (x) (reverse x)) (find-paths-helper)))
+    (enqueue! queue (path-with-hash (list rule) (hash rule 1))))
+  (map (lambda (x) (reverse (path-with-hash-path x))) (find-paths-helper)))
 
 ;(struct ndfa (st sig s f r) #:transparent)
 
@@ -122,13 +130,11 @@
       (enqueue! queue (list rule)))
     (explore-all-paths-helper))
   
-  (define paths-that-end-in-finals
-    (for/list ([path (in-list (explore-all-paths a-ndfa))]
-               #:when (member? (third (first path)) (sm-finals a-ndfa)))
-      (reverse path)))
   (define new-states-set (mutable-seteq))
   (define new-rules-set (mutable-set))
-  (for* ([path (in-list paths-that-end-in-finals)]
+  (for* ([path (in-list (for/list ([path (in-list (explore-all-paths a-ndfa))]
+                                   #:when (member? (third (first path)) (sm-finals a-ndfa)))
+                          (reverse path)))]
          [rule (in-list path)])
     (set-add! new-states-set (first rule))
     (set-add! new-states-set (third rule))
@@ -223,6 +229,13 @@
     (define (invariant-holds? a-loi a-config)
       (or (null? a-loi)
           ((cadr (car a-loi)) (car a-config))))
+    #;(for/list ([path (in-list all-paths)]
+               #:when (and (eq? (third (last (car all-paths)))
+                                (car x))
+                           (set-member? new-machine-states-set (car x))))
+      (void)
+      )
+      
     (if (null? all-paths)
         '()
         (if (invariant-holds? (filter
@@ -245,6 +258,3 @@
                ((second start-pair) '()))
               '()
               (list (list '() (sm-start a-machine)))))))
-
-
-

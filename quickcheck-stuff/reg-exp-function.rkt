@@ -89,9 +89,9 @@
     (remove-duplicates (for*/list ([path (in-list (find-paths a-machine))]
                                    #:when (set-member? finals-set (third (last path)))
                                    [rule (in-list path)])
-      (set-add! new-states (first rule))
-      (set-add! new-states (third rule))
-      rule)))
+                         (set-add! new-states (first rule))
+                         (set-add! new-states (third rule))
+                         rule)))
   (cond [(not (set-member? new-states (sm-start a-machine)))
          (null-regexp)]
         [else 
