@@ -94,7 +94,7 @@
                                          ARROW)))
                              (reverse fderiv))
                  (make-deriv visited (dequeue! derivs) g chomsky))
-             (let* ([rls (hash-ref fnt nt-to-rules-ht) #;(get-rules fnt g)]
+             (let* ([rls (hash-ref nt-to-rules-ht fnt)]
                     [rights (map cfg-rule-rhs rls)]
                     [new-states
                      (filter (lambda (st)
