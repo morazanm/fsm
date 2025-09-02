@@ -9,7 +9,7 @@
          data/queue)
 
 
-(define REPETITION-LIMIT 2)
+(define REPETITION-LIMIT 1)
 
 
 ;; USEFUL FUNCTIONS
@@ -90,7 +90,7 @@
                             (< (hash-ref (path-with-hash-hash qfirst)
                                                     rule
                                                     0)
-                                          1)))
+                                          REPETITION-LIMIT)))
             (enqueue! queue (path-with-hash (cons rule (path-with-hash-path qfirst))
                                             (hash-set (path-with-hash-hash qfirst)
                                                       rule
@@ -245,7 +245,7 @@
   ;; the given machine without the states and rules of states that cannot reach a final state
   (define new-machine (if (eq? (sm-type a-machine) 'dfa)
                           a-machine
-                          (remove-states-that-cannot-reach-finals a-machine)))
+                          (remove-states-that-cannot-reach-finals2 a-machine)))
   ;; list of invariants that are reachable from the starting configuration
   #;(define reachable-inv (filter (λ (x) (member? (car x) (sm-states new-machine))) a-loi))
   ;; all paths of new-machine
@@ -308,9 +308,7 @@
   (define new-machine (remove-states-that-cannot-reach-finals2 a-machine))
   (define new-machine-states-set (list->seteq (sm-states new-machine)))
   ;; list of invariants that are reachable from the starting configuration
-  (define M (begin
-              (displayln (sm-graph new-machine))
-              0))
+  
   ;; all paths of new-machine
   (define all-paths-new-machine (find-paths new-machine))
 

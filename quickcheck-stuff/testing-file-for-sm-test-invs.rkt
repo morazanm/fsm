@@ -458,6 +458,16 @@
                                 (D a B) (D b E) (E a E) (E b E))
                       'no-dead))
 
+(define BUGGY-CONTAINS-aabab 
+  (make-unchecked-dfa '(S A B C D E)
+                      '(a b)
+                      'S
+                      '(E)
+                      '((S a A) (S b S) (A a B) (A b S)
+                                (B a B) (B b C) (C a D) (C b S)
+                                (D a A) #;(D a B) (D b E) (E a E) (E b E))
+                      'no-dead))
+
 (check-equal? (sm-apply CONTAINS-aabab  '(a a b a b)) 'accept)
 (check-equal? (sm-apply CONTAINS-aabab  '(b b a a a b a b b)) 'accept)
 (check-equal? (sm-apply CONTAINS-aabab  '()) 'reject)
