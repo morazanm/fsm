@@ -6,9 +6,7 @@
          rackunit
          racket/set
          "../fsm-core/private/sm-getters.rkt"
-         "../fsm-core/interface.rkt"
-         ;"pda.rkt"
-         )
+         "../fsm-core/private/pda.rkt")
 
 ;; USEFUL FUNCTIONS
 
@@ -143,7 +141,7 @@
 
 
 ;; CONSTANT FOR LIMIT ON LENGTH OF A PATH
-(define MAX-PATH-LENGTH 10)
+(define MAX-PATH-LENGTH 12)
 
 
 ;; PATH (listof pda-rule) -> (listof (listof PATH) (listof (listof state word stack)))
@@ -154,18 +152,17 @@
   ;; Accumulator invariant: accum = list of paths
   (define (new-paths-helper next-rules accum new-visited)
     (cond [(empty? next-rules) (list accum new-visited)]
-          [(or (member? (list (get-destination-state (first next-rules))
-                              (word-of-path (make-PATH (append (PATH-lor a-path) (list (first next-rules)))
-                                                       '())) ;; doesn't matter what the stack is for this
-                              (append (if (eq? 'ε (get-push (first next-rules)))
-                                          '()
-                                          (get-push (first next-rules)))
-                                      (drop (PATH-stack a-path)
-                                            (length (if (eq? 'ε (get-pop (first next-rules)))
-                                                        '()
-                                                        (get-pop (first next-rules)))))))
-                              
-                        new-visited)
+          [(or (set-member? new-visited
+                            (list (get-destination-state (first next-rules))
+                                  (word-of-path (make-PATH (append (PATH-lor a-path) (list (first next-rules)))
+                                                           '())) ;; doesn't matter what the stack is for this
+                                  (append (if (eq? 'ε (get-push (first next-rules)))
+                                              '()
+                                              (get-push (first next-rules)))
+                                          (drop (PATH-stack a-path)
+                                                (length (if (eq? 'ε (get-pop (first next-rules)))
+                                                            '()
+                                                            (get-pop (first next-rules))))))))
                (< MAX-PATH-LENGTH
                   (length (append (PATH-lor a-path) (list (first next-rules))))))
            (new-paths-helper (rest next-rules) accum new-visited)]
@@ -186,15 +183,13 @@
                   (new-paths-helper (rest next-rules)
                                     (cons new-path
                                           accum)
-                                    (cons (list destination-state-last-rule
-                                                word-of-new-path
-                                                stack-of-new-path)
-                                          new-visited)))]
+                                    (set-add new-visited
+                                             (list destination-state-last-rule
+                                                   word-of-new-path
+                                                   stack-of-new-path))))]
           ))
   (new-paths-helper rules '() visited))
 
-
-;; see if making visited a set to see if it runs faster
 
 
 
@@ -209,8 +204,8 @@
   (define rules (sm-rules a-machine))
   ;; (queueof (listof PATH)) (listof PATH) -> (listof PATH)
   ;; Purpose: To return all the paths of the given machine
-  ;; Accumulator invarient: paths = list of current paths
-  ;;                        visited = list of a state, word, and stack that has
+  ;; Accumulator invariant: paths = list of current paths
+  ;;                        visited = set of a state, word, and stack that has
   ;;                                  been visited
   (define (find-paths-helper a-qop paths visited)
     (if (qempty? a-qop) paths
@@ -223,8 +218,8 @@
                                                                                     (length (get-pop rule)))
                                                                               (get-pop rule))))
                                                              #;(< (count (λ (rl) (equal? rule rl))
-                                                                       (PATH-lor (qfirst a-qop)))
-                                                                MAX-NUM-REPETITIONS)))
+                                                                         (PATH-lor (qfirst a-qop)))
+                                                                  MAX-NUM-REPETITIONS)))
                                                       rules)))
               (paths-with-qfirst (cons (qfirst a-qop) paths))]
           (if (empty? next-rules-first-path)
@@ -246,31 +241,6 @@
                               '())
                      '()
                      (set)))
-
-
-
-
-;; idea is that if there is a path that reaches a state with the same word and path as
-;;   another path that reached that same state, then nip that path since already
-;;   going to be doing the same thing with both paths
-
-;; have to have an accumulator of state, word, and stack as a pair and use them as
-;;   as visited paths
-
-;; design idea, for the helper function, add on a visted parameter
-;;    with each recursive call, add the state, word, and stack of the current rule
-;;    if the path not a member of the visited paths, add it to the queue
-;;       otherwise, don't add it and go to the next
-
-
-;; add visited to be an argument to new-paths
-;; use visited and see if the state, word, and stack of that path has been
-;; already reached
-
-;; where would i add the configs what were visited?
-;; adding it to the new-paths function would be probably easiest
-;; do i make the output of new-paths a list?
-;; then rename new-paths&visited-paths
 
 
 
@@ -334,7 +304,7 @@
                                            (find-paths a-pda)))
   (define new-rules (remove-duplicates (apply append (map (λ (x) (PATH-lor x)) paths-that-end-in-finals))))
   (define new-states (remove-duplicates (append-map (λ (x) (list (get-source-state x) (get-destination-state x))) new-rules)))
-  (make-ndpda new-states (sm-sigma a-pda) (sm-gamma a-pda) (sm-start a-pda) (sm-finals a-pda) new-rules))
+  (make-unchecked-ndpda new-states (sm-sigma a-pda) (sm-gamma a-pda) (sm-start a-pda) (sm-finals a-pda) new-rules))
 
 
 ;; (listof pda-rule) -> word

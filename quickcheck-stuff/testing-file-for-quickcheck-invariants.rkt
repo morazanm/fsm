@@ -4,6 +4,7 @@
          "../fsm-core/private/fsa.rkt"
          "../fsm-core/private/sm-apply.rkt"
          "../fsm-core/private/constants.rkt"
+         "../fsm-core/private/sm-getters.rkt"
          racket/list
          rackunit)
 

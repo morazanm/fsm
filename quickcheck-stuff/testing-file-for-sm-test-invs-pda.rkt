@@ -1,5 +1,11 @@
-#lang fsm
-(require "sm-test-invs-pda.rkt")
+#lang racket
+(require racket/list
+         rackunit
+         "sm-test-invs-pda.rkt"
+         "../fsm-core/private/pda.rkt"
+         "../fsm-core/private/sm-apply.rkt"
+         "../fsm-core/private/constants.rkt"
+         )
 
 
 ;                                      
@@ -31,7 +37,7 @@
 ;; F ci = (append (listof a) (listof b)) and all as and bs matched,
 ;; final state
 ;; The stack is a (listof a)
-(define aˆnbˆn (make-ndpda '(S M F)
+(define aˆnbˆn (make-unchecked-ndpda '(S M F)
                            '(a b)
                            '(a)
                            'S
@@ -108,7 +114,12 @@
 (check-equal? (F-INV-aˆnbˆn '(a a b b) '()) #t)
 
 
+(define LOI-aˆnbˆn (list (list 'S S-INV-aˆnbˆn) (list 'M M-INV-aˆnbˆn)
+                         (list 'F F-INV-aˆnbˆn)))
 
+
+
+                                           
 ;; L = wcwˆR | w in (a b)*
 ;; States
 ;; S ci is empty and stack is empty
@@ -116,7 +127,7 @@
 ;; Q ci = (append w (list c) v) AND
 ;; w = stackˆR vˆR
 ;; F stack = () AND ci = (append w (list c) wˆR)
-(define wcwˆr (make-ndpda '(S P Q F)
+(define wcwˆr (make-unchecked-ndpda '(S P Q F)
                           '(a b c)
                           '(a b)
                           'S
@@ -202,6 +213,12 @@
 
 
 
+(define LOI-wcwˆr (list (list 'S S-INV-wcwˆr) (list 'P P-INV-wcwˆr)
+                        (list 'Q Q-INV-wcwˆr) (list 'F F-INV-wcwˆr)))
+
+  
+
+
 ;; Let Σ = {a b}. Design and implement a pda for L = {w | w has an
 ;; equal number of as and bs}. Follow all the steps of the design recipe.
 
@@ -212,7 +229,7 @@
 ;; The stack is a (listof (a*b*))
 
 
-(define equal-as-bs (make-ndpda '(S)
+(define equal-as-bs (make-unchecked-ndpda '(S)
                                 '(a b)
                                 '(a b)
                                 'S
@@ -235,7 +252,7 @@
 ;;   A: ci = the stack reversed (w^R
 ;;   B: ci = (append w m v) AND w = stack^R m v^R
 ;;   C: stack = empty AND ci is a palindrome (append w w^R), final state 
-(define palindrome-pda (make-ndpda '(S A B C)
+(define palindrome-pda (make-unchecked-ndpda '(S A B C)
                                    '(a b)
                                    '(a b)
                                    'S
@@ -343,6 +360,11 @@
 (check-equal? (C-INV-PALINDROME-PDA '(a a a b) '(a a b)) #f)
 
 
+(define LOI-palindrome-pda (list (list 'S S-INV-PALINDROME-PDA)
+                                 (list 'A A-INV-PALINDROME-PDA)
+                                 (list 'B B-INV-PALINDROME-PDA)
+                                 (list 'C C-INV-PALINDROME-PDA)))
+
 ;; PROOF for palindrome-pda
 
 ;; The state invariants hold when M accepts w
@@ -417,7 +439,7 @@ C-INV holds after the transition rule.
 ;;   B: ci = a^ib^j AND stack = a^k AND i <= j+k <= 2i
 ;;   C: ci = a^ib^j where i≤j≤2i AND stack = empty, final state
 
-(define AiBj (make-ndpda '(S A B C)
+(define AiBj (make-unchecked-ndpda '(S A B C)
                          '(a b)
                          '(a)
                          'S
@@ -524,6 +546,10 @@ C-INV holds after the transition rule.
 (check-equal? (C-INV-AiBj '(a b b) '(a a)) #f)
 
 
+(define LOI-AiBj (list (list 'S S-INV-AiBj) (list 'A A-INV-AiBj)
+                       (list 'B B-INV-AiBj) (list 'C C-INV-AiBj)))
+
+
 ;; PROOF
 
 ;; The state invariants hold when M accepts w
@@ -618,7 +644,7 @@ this means that w ≠ aibj, where i <= j <= 2i. Thus, w∈/L.
 ;;   S: ci = a* = a^n AND stack = a^n, start state
 ;;   A: ci = a^nb* = a^nb^m AND stack = a^n
 ;;   B: ci = a^nb^ma^k AND stack = a^n-k, final state
-(define A^nB^mA^n (make-ndpda '(S A B)
+(define A^nB^mA^n (make-unchecked-ndpda '(S A B)
                               '(a b)
                               '(a)
                               'S
@@ -723,6 +749,10 @@ this means that w ≠ aibj, where i <= j <= 2i. Thus, w∈/L.
 (check-equal? (B-INV-A^nB^mA^n '(b a b a) '()) #f)
 
 
+(define LOI-A^nB^mA^n (list (list 'S S-INV-A^nB^mA^n) (list 'A A-INV-A^nB^mA^n)
+                            (list 'B B-INV-A^nB^mA^n)))
+
+
 ;; PROOF FOR A^nB^mA^n
 
 
@@ -801,64 +831,6 @@ this means that w ≠ a^nb^ma^n, where n,m => 0. nThus, w∈/L.
 
 
 
-;; Let Σ = {a b}. Design and implement a pda for L = {}.
-;; States:
-;;   S: (a*b*)*, start state
-(define accept-nothing (make-ndpda '(S)
-                                   '(a b)
-                                   '()
-                                   'S
-                                   '()
-                                   `(((S a ,EMP) (S ,EMP))
-                                     ((S b ,EMP) (S ,EMP)))))
-
-;; tests for accept-nothing
-(check-equal? (sm-apply accept-nothing '()) 'reject)
-(check-equal? (sm-apply accept-nothing '(a)) 'reject)
-(check-equal? (sm-apply accept-nothing '(b)) 'reject)
-(check-equal? (sm-apply accept-nothing '(a b a)) 'reject)
-(check-equal? (sm-apply accept-nothing '(b b b)) 'reject)
-(check-equal? (sm-apply accept-nothing '(a a a)) 'reject)
-(check-equal? (sm-apply accept-nothing '(a b a b a b a b a b)) 'reject)
-(check-equal? (sm-apply accept-nothing '(a a b b a a b b)) 'reject)
-(check-equal? (sm-apply accept-nothing '(a a b a a b)) 'reject)
-(check-equal? (sm-apply accept-nothing '(a b a b b b a a a b)) 'reject)
-(check-equal? (sm-apply accept-nothing '(a b a b b b b b a a a a b)) 'reject)
-
-;; invariants for accept-nothing
-
-;; word stack -> Boolean
-;; Purpose: Determines if the given word and stack belongs in S
-(define (S-INV-accept-nothing ci stack)
-  #t)
-
-;; tests for S-INV-accept-nothing
-(check-equal? (S-INV-accept-nothing '() '()) #t)
-(check-equal? (S-INV-accept-nothing '(a) '()) #t)
-(check-equal? (S-INV-accept-nothing '(b) '()) #t)
-(check-equal? (S-INV-accept-nothing '(a a) '()) #t)
-(check-equal? (S-INV-accept-nothing '(b b) '()) #t)
-(check-equal? (S-INV-accept-nothing '(a b) '()) #t)
-(check-equal? (S-INV-accept-nothing '(b a) '()) #t)
-(check-equal? (S-INV-accept-nothing '(a a a b b b) '()) #t)
-(check-equal? (S-INV-accept-nothing '(a b a b a b a) '()) #t)
-(check-equal? (S-INV-accept-nothing '(a a b b a a b b) '()) #t)
-(check-equal? (S-INV-accept-nothing '(a a b b b b b a a a) '()) #t)
-
-
-;; Proof for accept-nothing
-
-#|
-;; the state invariants hold when M accepts w
-
-IT DOESN'T ACCEPT ANYTHING THO??????????????
-
-
-
-|#
-
-
-
 ;; Let Σ = {a b c d}. Design and implement a pda for
 ;;   L={a^mb^nc^pd^q:m,n,p,q≥0 ∧ m+n=p+q}. Follow all the steps of
 ;;   the design recipe
@@ -867,7 +839,7 @@ IT DOESN'T ACCEPT ANYTHING THO??????????????
 ;;  A: ci = a^mb* = a^mb^n AND stack = a^m+n
 ;;  B: ci = a^mb^nc* = a^mb^nc^p AND stack = a^m+n-p
 ;;  C: ci = a^mb^nc^pd* = a^mb^nc^pd^q AND stack = a^m+n-p-q, final state
-(define a^mb^nc^pd^q (make-ndpda '(S A B C)
+(define a^mb^nc^pd^q (make-unchecked-ndpda '(S A B C)
                                  '(a b c d)
                                  '(a)
                                  'S
@@ -1000,6 +972,12 @@ IT DOESN'T ACCEPT ANYTHING THO??????????????
 (check-equal? (C-INV-a^mb^nc^pd^q '(a a a a d) '(a)) #f)
 (check-equal? (C-INV-a^mb^nc^pd^q '(d c b a) '()) #f)
 
+
+(define LOI-a^mb^nc^pd^q (list (list 'S S-INV-a^mb^nc^pd^q)
+                               (list 'A A-INV-a^mb^nc^pd^q)
+                               (list 'B B-INV-a^mb^nc^pd^q)
+                               (list 'C C-INV-a^mb^nc^pd^q)))
+
 ;; proof for a^mb^nc^pd^q
 
 ;; PROOF
@@ -1076,53 +1054,6 @@ can can conclude w∈L.
 
 
 
-;; Let Σ = {a b}. Design and implement a pda for L = {w | w has 3
-;;   times as many as than b}. Follow all the steps of the design recipe
-
-;; States:
-;;   S: ci = amount of as read divided by 3 is 0
-;;   A: amount of as read divided by 3 is 1
-;;   B: read a b and as read, when divided by 3, is 0
-;;   C: amount of as read divided by 3 is 2
-(define 3xa-b (make-ndpda '(S A B C)
-                          '(a b)
-                          '(a b)
-                          'S
-                          '(S)
-                          `(((S a ,EMP) (A ,EMP))
-                            ((S a (a)) (A ,EMP))
-                            ((S b (b)) (S ,EMP))
-                            ((S b ,EMP) (B (a a a)))
-                            ((A b (b)) (A ,EMP))
-                            ((A b ,EMP) (A (a a a)))
-                            ((A a (a)) (C ,EMP))
-                            ((A a ,EMP) (C ,EMP))
-                            ((B b (b)) (B ,EMP))
-                            ((B b ,EMP) (B (a a a)))
-                            ((B a (a)) (A ,EMP))
-                            ((C b (b)) (C ,EMP))
-                            ((C b ,EMP) (C (a a a)))
-                            ((C a ,EMP) (S (b)))
-                            ((C a (a)) (S ,EMP)))))
-#|
-
-;; tests for 3xa-b
-(check-equal? (sm-apply 3xa-b '() '()) 'accept)
-(check-equal? (sm-apply 3xa-b '(b a a a) '()) 'accept)
-(check-equal? (sm-apply 3xa-b '(a a a b) '()) 'accept)
-(check-equal? (sm-apply 3xa-b '(b a a b a a a a) '()) 'accept)
-(check-equal? (sm-apply 3xa-b '(a b a a) '()) 'accept)
-(check-equal? (sm-apply 3xa-b '(a a b b a a b a a a a a) '()) 'accept)
-(check-equal? (sm-apply 3xa-b '(a) '()) 'reject)
-(check-equal? (sm-apply 3xa-b '(b) '()) 'reject)
-
-
-HAVE TO COME BACK TO THIS!!!!!!
-
-
-|#
-
-
 
 ;; Let Σ={abc}. Design and implement a pda for
 ;; L = {a^mb^nc^p : m,n,p≥0 ∧ (m = n ∨ n = p)}
@@ -1136,7 +1067,7 @@ HAVE TO COME BACK TO THIS!!!!!!
 ;;  D: ci = a^m AND stack = '()
 ;;  E: ci = a^mb^n AND stack = a^n
 ;;  F: ci = a^mb^nc^p AND stack = a^n-p, final state
-(define a^mb^nc^p (make-ndpda '(S A B C D E F)
+(define a^mb^nc^p (make-unchecked-ndpda '(S A B C D E F)
                               '(a b c)
                               '(a)
                               'S
@@ -1325,6 +1256,16 @@ HAVE TO COME BACK TO THIS!!!!!!
 (check-equal? (F-INV-a^mb^nc^p '(a a a b c) '(a)) #f)
 (check-equal? (F-INV-a^mb^nc^p '(b b b b b c) '(a a a a a a a a)) #f)
 (check-equal? (F-INV-a^mb^nc^p '(a b b b b) '()) #f)
+
+
+(define LOI-a^mb^nc^p (list (list 'S S-INV-a^mb^nc^p)
+                            (list 'A A-INV-a^mb^nc^p)
+                            (list 'B B-INV-a^mb^nc^p)
+                            (list 'C C-INV-a^mb^nc^p)
+                            (list 'D D-INV-a^mb^nc^p)
+                            (list 'E E-INV-a^mb^nc^p)
+                            (list 'F F-INV-a^mb^nc^p)))
+                            
 
 
 ;; PROOF
