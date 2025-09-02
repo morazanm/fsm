@@ -5,7 +5,8 @@
          "../fsm-core/private/fsa.rkt"
          "../fsm-core/private/sm-apply.rkt"
          "../fsm-core/private/constants.rkt"
-         "../sm-graph.rkt")
+         "../sm-graph.rkt"
+         "../fsm-core/private/sm-getters.rkt")
 
 (struct test-case (name num-tests thunk))
 
@@ -1973,3 +1974,112 @@
 
 
 |#
+
+
+
+
+
+
+;; contains-kaboom-kaching-kalabunga
+
+(define monster-machine (make-unchecked-ndfa '(S A B C D E F G H I J K L M N O P Q R)
+                                             '(k a l b u g c h o i n m)
+                                             'S
+                                             '(I M R)
+                                             `((S a S) (S l S) (S b S) (S u S) (S g S)
+                                                       (S c S) (S h S) (S o S) (S i S)
+                                                       (S n S) (S m S) (S k A)
+                                                                        
+                                                       (A a B) (A k S) (A l S) (A b S) (A u S)
+                                                       (A g S) (A c S) (A h S) (A o S)
+                                                       (A w S) (A i S) (A n S) (A m S)
+                                                                        
+                                                       (B l C) (B b J) (B c N) (B k S) (B a S)
+                                                       (B u S) (B g S) (B h S) (B o S)
+                                                       (B i S) (B n S) (B m S)
+
+                                                       (C k S) (C l S) (C b S) (C u S) (C g S)
+                                                       (C c S) (C h S) (C o S) (C i S)
+                                                       (C n S) (C m S) (C a D)
+
+                                                       (D b E) (D k S) (D a S) (D l S) (D u S)
+                                                       (D g S) (D c S) (D h S) (D o S)
+                                                       (D i S) (D n S) (D m S)
+
+                                                       (E u F) (E k S) (E a S) (E l S) (E b S)
+                                                       (E g S) (E c S) (E h S) (E o S)
+                                                       (E i S) (E n S) (E m S)
+
+                                                       (F n G) (F k S) (F a S) (F l S) (F b S)
+                                                       (F u S) (F g S) (F c S) (F h S) (F o S)
+                                                       (F i S) (F m S)
+
+                                                       (G g H) (G k S) (G a S) (G l S) (G b S)
+                                                       (G u S) (G c S) (G h S) (G o S)
+                                                       (G i S) (G m S) (G n S)
+
+                                                       (H a I) (H k S) (H l S) (H b S) (H u S)
+                                                       (H g S) (H c S) (H h S) (H o S)
+                                                       (H i S) (H n S) (H m S)
+
+                                                       (I k I) (I a I) (I l I) (I b I) (I u I)
+                                                       (I g I) (I c I) (I h I) (I o I)
+                                                       (I i I) (I n I) (I m I)
+
+                                                       (J k S) (J a S) (J l S) (J u S) (J g S)
+                                                       (J c S) (J h S) (J b S) (J i S)
+                                                       (J n S) (J m S) (J o K)
+
+                                                       (K o L) (K k S) (K a S) (K l S) (K b S)
+                                                       (K u S) (K g S) (K c S) (K h S)
+                                                       (K i S) (K n S) (K m S)
+
+                                                       (L m M) (L k S) (L a S) (L l S) (L b S)
+                                                       (L u S) (L g S) (L c S) (L h S) (L o S)
+                                                       (L i S) (L n S)
+
+                                                       (M k M) (M a M) (M l M) (M b M) (M u M)
+                                                       (M g M) (M c M) (M h M) (M o M)
+                                                       (M i M) (M n M) (M m M)
+
+                                                       (N h O) (N k S) (N a S) (N l S) (N b S)
+                                                       (N u S) (N g S) (N c S) (N o S)
+                                                       (N i S) (N n S) (N m S)
+
+                                                       (O i P) (O k S) (O a S) (O l S) (O b S)
+                                                       (O u S) (O g S) (O c S) (O h S) (O o S)
+                                                       (O n S) (O m S)
+
+                                                       (P n Q) (P k S) (P a S) (P l S) (P b S)
+                                                       (P u S) (P g S) (P c S) (P h S) (P o S)
+                                                       (P i S) (P m S)
+
+                                                       (Q g R) (Q k S) (Q a S) (Q l S) (Q b S)
+                                                       (Q u S) (Q c S) (Q h S) (Q o S)
+                                                       (Q i S) (Q n S) (Q m S)
+
+                                                       (R k R) (R a R) (R l R) (R b R) (R u R)
+                                                       (R g R) (R c R) (R h R) (R o R)
+                                                       (R i R) (R n R) (R m R))))
+
+
+
+(define LOI-monster-machine (list (list 'S INVS=T)
+                                  (list 'A INVS=T)
+                                  (list 'B INVS=T)
+                                  (list 'C INVS=T)
+                                  (list 'D INVS=T)
+                                  (list 'E INVS=T)
+                                  (list 'F INVS=T)
+                                  (list 'G INVS=T)
+                                  (list 'H INVS=T)
+                                  (list 'I INVS=T)
+                                  (list 'J INVS=T)
+                                  (list 'K INVS=T)
+                                  (list 'L INVS=T)
+                                  (list 'M INVS=T)
+                                  (list 'N INVS=T)
+                                  (list 'O INVS=T)
+                                  (list 'P INVS=T)
+                                  (list 'Q INVS=T)
+                                  (list 'R INVS=T)))
