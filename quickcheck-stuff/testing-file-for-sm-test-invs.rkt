@@ -137,7 +137,7 @@
 ;(check-equal? (S-INV '(a b a b)) #t)
 ;(check-equal? (S-INV '(a a b b)) #f)
 ;(check-equal? (S-INV '(a)) #f)
-(sm-test-invs NO-AA (list 'S S-INV)
+#;(sm-test-invs NO-AA (list 'S S-INV)
                    (list 'A A-INV)
                    (list 'B B-INV)
                    (list 'R R-INV))
@@ -1799,7 +1799,7 @@
                                                         (list 'B B-INV-EX-NDFA)
                                                         (list 'C C-INV-EX-NDFA))))
                     ))
-(define res
+#;(define res
   (for/list ([test (in-list tests)])
       (displayln (test-case-name test))
       (let ([result (for/vector #:length (test-case-num-tests test)
@@ -1812,7 +1812,7 @@
         (println result)
         (list (test-case-name test)
             result))))
-(println res)
+#;(println res)
 
 
 

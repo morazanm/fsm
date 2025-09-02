@@ -1,8 +1,9 @@
 #lang racket/base
 
-(provide sm-all-possible-words remove-states-that-cannot-reach-finals sm-test-invs)
+(provide sm-all-possible-words remove-states-that-cannot-reach-finals remove-states-that-cannot-reach-finals2 sm-test-invs)
 (require "../fsm-core/private/sm-getters.rkt"
          "../fsm-core/private/fsa.rkt"
+         "../sm-graph.rkt"
          racket/list
          racket/set
          data/queue)
@@ -102,7 +103,7 @@
     (enqueue! queue (path-with-hash (list rule) (hash rule 1))))
   (map (lambda (x) (reverse (path-with-hash-path x))) (find-paths-helper)))
 
-;(struct ndfa (st sig s f r) #:transparent)
+(struct ndfa (st sig s f r) #:transparent)
 
 ;; ndfa -> ndfa
 ;; Purpose: Takes in ndfa and remove states and rules that can't reach a final state
@@ -139,8 +140,99 @@
     (set-add! new-states-set (first rule))
     (set-add! new-states-set (third rule))
     (set-add! new-rules-set rule))
+  (make-unchecked-ndfa (set->list new-states-set) (sm-sigma a-ndfa) (sm-start a-ndfa) (sm-finals a-ndfa) (set->list new-rules-set))
+  #;(values new-rules-set
+          (sm-graph (make-unchecked-ndfa (set->list new-states-set) (sm-sigma a-ndfa) (sm-start a-ndfa) (sm-finals a-ndfa) (set->list new-rules-set)))
+   (ndfa #;make-unchecked-ndfa (set->list new-states-set) (sm-sigma a-ndfa) (sm-start a-ndfa) (sm-finals a-ndfa) (set->list new-rules-set))))
+
+
+;; Purpose: Takes in ndfa and remove states and rules that can't reach a final state
+(define (remove-states-that-cannot-reach-finals2 a-ndfa)
+  (define E-QUEUE '())
+
+  (define qempty? null?)
+
+
+
+  ;; (listof X) (qof X) --> (qof X)
+  ;; Purpose: Add the given list of X to the given queue of X
+  (define (enqueue a-lox a-qox) (append a-qox a-lox))
+
+  ;; (qof X) --> X throws error
+  ;; Purpose: Return first X of the given queue
+  (define (qfirst a-qox)
+    (if (qempty? a-qox)
+        (error "qfirst applied to an empty queue")
+        (car a-qox)))
+
+  ;; (qof X) --> (qof X) throws error
+  ;; Purpose: Return the rest of the given queue
+  (define (dequeue a-qox)
+    (if (qempty? a-qox)
+        (error "dequeue applied to an empty queue")
+        (cdr a-qox)))
+
+  ;; rule (listof rule) -> (listof rule)
+;; Purpose: To return the next rules that can be used from the given rule
+(define (get-next-rules a-rule rules)
+  (filter (λ (rule) (eq? (third a-rule) (car rule))) rules))
+
+
+  ;; (listof rule) (listof rule) -> (listof (listof rule))
+;; Purpose: To return a list of paths that comes from the given path and rules
+(define (new-paths a-path rules)
+  ;; (listof rule) (listof (listof rule)) -> (listof (listofrule))
+  ;; Purpose: To return a list of paths that come from the given paths and rules
+  ;; Accumulator invariant: accum = list of paths
+  (define (new-paths-helper next-rules accum)
+    (if (null? next-rules) accum
+        (new-paths-helper (cdr next-rules)
+                          (append (list (append a-path (list (car next-rules)))) accum))))
   
-  (make-unchecked-ndfa (set->list new-states-set) (sm-sigma a-ndfa) (sm-start a-ndfa) (sm-finals a-ndfa) (set->list new-rules-set)))
+  (new-paths-helper rules '()))
+  
+  ;; machine -> (listof rules)
+  ;; Purpose: To return all the paths in the given machine 
+  (define (explore-all-paths a-machine)
+    (define rules (sm-rules a-machine)) 
+    ;; (queueof (listof rule)) (listof (listof rule)) -> (listof (listof rule))
+    ;; Purpose: To return all the paths of the given machine
+    ;; Accumulator invariant: paths = list of current paths
+    (define (explore-all-paths-helper a-qop paths)
+      (if (qempty? a-qop)
+          paths
+          (let* [(firstofq (qfirst a-qop))
+                 (next-rules-first-path (filter-not (λ (rule) (member? rule firstofq))
+                                                    (get-next-rules (last firstofq) rules)))
+                 (paths-with-qfirst (cons firstofq paths))]
+            (if (null? next-rules-first-path)
+                (explore-all-paths-helper (dequeue a-qop) paths-with-qfirst)
+                (explore-all-paths-helper (enqueue (new-paths firstofq next-rules-first-path)
+                                                   (dequeue a-qop))
+                                          paths-with-qfirst)))))
+    (explore-all-paths-helper (enqueue (map (λ (x) (list x))
+                                            (filter
+                                             (λ (rule) (eq? (car rule) (sm-start a-machine)))
+                                             rules))
+                                       '())
+                              '()))
+  (define paths-that-end-in-finals (filter (λ (x) (member? (third (last x)) (sm-finals a-ndfa)))
+                                           (explore-all-paths a-ndfa)))
+  
+  (define new-states (remove-duplicates (append-map (λ (x) (list (car x) (third x)))
+                                                    (remove-duplicates (apply append paths-that-end-in-finals)))))
+  (define new-rules (filter (λ (rule) (and (member? (first rule) new-states)
+                                           (member? (third rule) new-states)))
+                            (sm-rules a-ndfa)))
+  (make-unchecked-ndfa new-states (sm-sigma a-ndfa) (sm-start a-ndfa) (sm-finals a-ndfa) new-rules)
+  #;(values
+   ;(length paths-that-end-in-finals)
+   ;(length paths-that-end-in-finals2)
+   new-rules
+   (sm-graph (make-unchecked-ndfa new-states (sm-sigma a-ndfa) (sm-start a-ndfa) (sm-finals a-ndfa) new-rules))
+   (ndfa #;make-unchecked-ndfa new-states (sm-sigma a-ndfa) (sm-start a-ndfa) (sm-finals a-ndfa) new-rules)
+   
+   ))
 
 ;; (listof rules) -> word
 ;; Purpose: To return a word that is made from the given list of rules
@@ -213,10 +305,12 @@
 ;; Purpose: To return a list of the invarients that don't hold and the words that cause it not to hold
 (define (sm-test-invs a-machine . a-loi)
   ;; the given machine without the states and rules of states that cannot reach a final state
-  (define new-machine (remove-states-that-cannot-reach-finals a-machine))
+  (define new-machine (remove-states-that-cannot-reach-finals2 a-machine))
   (define new-machine-states-set (list->seteq (sm-states new-machine)))
   ;; list of invariants that are reachable from the starting configuration
-  
+  (define M (begin
+              (displayln (sm-graph new-machine))
+              0))
   ;; all paths of new-machine
   (define all-paths-new-machine (find-paths new-machine))
 
