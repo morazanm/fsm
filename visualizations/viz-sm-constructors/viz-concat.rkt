@@ -375,6 +375,7 @@
              (lambda ()
                (apply above (map graph->bitmap (graph-struct-grph (make-init-grph-struct M N)))))
              MIDDLE-E-SCENE
+             E-SCENE-WIDTH E-SCENE-HEIGHT PERCENT-BORDER-GAP
              DEFAULT-ZOOM
              DEFAULT-ZOOM-CAP
              DEFAULT-ZOOM-FLOOR

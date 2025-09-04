@@ -925,6 +925,7 @@
     (run-viz graphs
              (lambda () (graph->bitmap (first graphs)))
              (posn (/ E-SCENE-WIDTH 2) (/ TM-E-SCENE-HEIGHT 2))
+             E-SCENE-WIDTH TM-E-SCENE-HEIGHT PERCENT-BORDER-GAP
              DEFAULT-ZOOM
              DEFAULT-ZOOM-CAP
              DEFAULT-ZOOM-FLOOR

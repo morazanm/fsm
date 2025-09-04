@@ -52,7 +52,7 @@
    grammar-union grammar-concat grammar-kleenestar
    
    ; grammar observers
-   grammar-derive grammar-type
+   grammar-derive grammar-derive? grammar-type
    grammar-nts grammar-sigma grammar-rules grammar-start 
 
    ; grammar testers
@@ -97,6 +97,7 @@
    check-derive? check-not-derive?
    ;check-gen? check-not-gen?
    check-accept? check-reject?
+   check-inv-holds? check-inv-fails?
    ;check-in-lang? check-not-in-lang?
 
    ; some helpful functions

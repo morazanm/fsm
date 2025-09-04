@@ -17,7 +17,6 @@
          "../../fsm-core/private/misc.rkt"
          "default-informative-messages.rkt"
          "testing-parameter.rkt"
-         ;profile-flame-graph
          (except-in "../viz-lib/viz-constants.rkt"
                     INS-TOOLS-BUFFER)
          "david-imsg-state.rkt"
@@ -1050,6 +1049,7 @@ farthest-consumed-input | is the portion the ci that the machine consumed the mo
     (run-viz graphs
              (lambda () (graph->bitmap (first graphs)))
              (posn (/ E-SCENE-WIDTH 2) (/ PDA-E-SCENE-HEIGHT 2))
+             E-SCENE-WIDTH PDA-E-SCENE-HEIGHT PERCENT-BORDER-GAP
              DEFAULT-ZOOM
              DEFAULT-ZOOM-CAP
              DEFAULT-ZOOM-FLOOR

@@ -1,24 +1,28 @@
 #lang racket/base
-(require "../../fsm-core/private/cfg.rkt"
+
+(require "../../fsm-core/private/cfg-struct.rkt"
          "../../fsm-core/private/constants.rkt"
          "../../fsm-core/private/misc.rkt"
+         "../../fsm-core/private/cyk.rkt"
+         "../../fsm-core/private/chomsky.rkt"
          "circular-queue-treelist.rkt"
-         racket/list)
-(provide cfg-derive-leftmost)
+         racket/list
+         racket/set)
 
+(provide cfg-derive-leftmost)
 (define (cfg-derive-leftmost g w)
+  (define alphabet-set (list->set (cfg-get-alphabet g)))
+  (define nt-set (list->set (cfg-get-v g)))
+  (define nt-to-rules-ht
+    (for/hasheq ([nt (in-list (cfg-get-v g))])
+      (values nt (filter (lambda (r) (eq? nt (cfg-rule-lhs r))) (cfg-get-the-rules g)))))
   ;; (listof symbol) -> Symbol
   ;; Purpose: Returns leftmost nonterminal
   (define (get-first-nt st)
     (cond
       [(empty? st) #f]
-      [(not (member (car st) (cfg-get-alphabet g))) (car st)]
+      [(set-member? nt-set (car st)) (car st)]
       [else (get-first-nt (cdr st))]))
-
-  ;; (listof symbol) -> symbol
-  ;; Purpose: Returns rightmost nonterminal
-  (define (get-last-nt st)
-    (get-first-nt (reverse st)))
 
   ;; symbol CFG -> (Listof CFG-rule)
   ; A CFG-rule is a structure, (CFG-rule L R), where L is a symbol (non-terminal) and R
@@ -90,7 +94,7 @@
                                          ARROW)))
                              (reverse fderiv))
                  (make-deriv visited (dequeue! derivs) g chomsky))
-             (let* ([rls (get-rules fnt g)]
+             (let* ([rls (hash-ref nt-to-rules-ht fnt)]
                     [rights (map cfg-rule-rhs rls)]
                     [new-states
                      (filter (lambda (st)
@@ -107,18 +111,43 @@
                                     (map (lambda (st) (cons st fderiv)) new-states)))
                            g
                            chomsky))))]))
-  (if (< (length w) 2)
-      (format "The word ~s is too short to test." w)
-      (let* (;; derive using g ONLY IF derivation found with g in CNF
-             #;(ng (convert-to-cnf g))
-             #;(ng-derivation (make-deriv (list (list (list (cfg-get-start ng)) '()))
-                                          (list (list (list (list (cfg-get-start ng)) '())))
-                                          ng
-                                          true)))
+  (if (empty? w)
+      (let ([deriv-queue (make-queue)])
+          (make-deriv (make-hash)
+                      (enqueue! deriv-queue (list (list (list (cfg-get-start g)) '())))
+                      g
+                      #f))
+      (if (cyk (chomsky g) w)
         ;(if (string? ng-derivation)
         ;ng-derivation
         (let ([deriv-queue (make-queue)])
           (make-deriv (make-hash)
                       (enqueue! deriv-queue (list (list (list (cfg-get-start g)) '())))
                       g
-                      #f)))))
+                      #f))
+        (format "~s is not in L(G)." w))))
+
+(define even-bs-odd-as
+  (make-unchecked-cfg '(S A B C)
+                      '(a b)
+                      `((S ,ARROW aA) (S ,ARROW bB)
+                                      (S ,ARROW a)
+                                      (A ,ARROW aS)
+                                      (A ,ARROW bC)
+                                      (B ,ARROW aC)
+                                      (B ,ARROW bS)
+                                      (C ,ARROW aB)
+                                      (C ,ARROW bA)
+                                      (C ,ARROW b))
+                      'S))
+
+(define cfg-moreAs-than-Bs (make-cfg '(S T)
+                                       '(a b)
+                                       `((S -> TaT)
+                                         (T -> aTb)
+                                         (T -> bTa)
+                                         (T -> TT)
+                                         (T -> a)
+                                         (T -> ,EMP))
+                                       'S))
+;(last (cfg-derive-leftmost cfg-moreAs-than-Bs '(a b b a a)))

@@ -5,9 +5,11 @@
 #lang racket/base
 
 (require
+  "private/cyk.rkt"
   "private/fsa.rkt"
   "private/cfg.rkt"
-  "private/pda.rkt" 
+  "private/cfg-struct.rkt"
+  "private/pda.rkt"
   "private/regular-grammar.rkt"
   "private/csg.rkt"
   "private/tm.rkt" 
@@ -36,9 +38,10 @@
   "../visualizations/viz-grammar-constructors/rg-viz.rkt"
   "../visualizations/viz-grammar-constructors/cfg-viz.rkt"
   "../visualizations/viz-grammar-constructors/csg-viz.rkt"
-  "private/Chomsky-Greibach-CFG-Transformations/chomsky.rkt"
+  "private/chomsky.rkt"
+  ;"private/Chomsky-Greibach-CFG-Transformations/chomsky.rkt"
   "private/Chomsky-Greibach-CFG-Transformations/greibach.rkt"
-  "private/fsmunit/check-accept-reject-macro.rkt"
+  "private/fsmunit/interface.rkt"
   racket/list
   racket/bool
   racket/contract)
@@ -77,7 +80,7 @@
  grammar-union grammar-concat grammar-kleenestar
    
  ; grammar observers
- grammar-derive grammar-type
+ grammar-derive grammar-derive? grammar-type
  grammar-nts grammar-sigma grammar-rules grammar-start 
 
  ; grammar testers
@@ -125,6 +128,7 @@
  check-derive? check-not-derive?
  ;check-gen? check-not-gen?
  check-accept? check-reject?
+ check-inv-holds? check-inv-fails?
  ;check-in-lang? check-not-in-lang?
  
  ;; Grammar visualizations
@@ -406,6 +410,15 @@
         [(cfg? g) (cfg-derive g w)]
         [(csg? g) (csg-derive g w)]
         [else (error (format "Unknown grammar type"))]))
+
+(define (grammar-derive? g w)
+  (cond [(rg? g) (list? (rg-derive g w))]
+        [(cfg? g) (if (empty? w)
+                      (list? (cfg-derive g w))
+                      (cyk (chomsky g) w))]
+        [(csg? g) (list? (csg-derive g w))]
+        [else (error (format "Error in grammar-derive: unknown grammar type"))]))
+                  
   
 ; grammar grammar word --> boolean
 (define (grammar-both-derive g1 g2 w)

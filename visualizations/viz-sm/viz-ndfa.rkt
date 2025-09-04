@@ -821,6 +821,7 @@ type -> the type of the ndfa (ndfa/dfa) | symbol
     (run-viz graphs
              (lambda () (graph->bitmap (first graphs)))
              (posn (/ E-SCENE-WIDTH 2) (/ NDFA-E-SCENE-HEIGHT 2))
+             E-SCENE-WIDTH NDFA-E-SCENE-HEIGHT PERCENT-BORDER-GAP
              DEFAULT-ZOOM
              DEFAULT-ZOOM-CAP
              DEFAULT-ZOOM-FLOOR

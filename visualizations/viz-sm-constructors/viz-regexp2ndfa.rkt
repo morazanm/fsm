@@ -427,6 +427,7 @@
     (run-viz (cons (create-init-graph (list 'S regexp 'F)) graphs)
              (lambda () (graph->bitmap (create-init-graph (list 'S regexp 'F))))
              MIDDLE-E-SCENE
+             E-SCENE-WIDTH E-SCENE-HEIGHT PERCENT-BORDER-GAP
              DEFAULT-ZOOM
              DEFAULT-ZOOM-CAP
              DEFAULT-ZOOM-FLOOR

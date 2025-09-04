@@ -389,6 +389,7 @@
   (run-viz (list (create-init-graph-struct M) (create-graph-struct M))
            (lambda () (graph->bitmap (make-init-grph-structure M)))
            MIDDLE-E-SCENE
+           E-SCENE-WIDTH E-SCENE-HEIGHT PERCENT-BORDER-GAP
            DEFAULT-ZOOM
            DEFAULT-ZOOM-CAP
            DEFAULT-ZOOM-FLOOR
