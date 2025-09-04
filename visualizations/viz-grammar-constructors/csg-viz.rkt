@@ -6,8 +6,10 @@
          "../../fsm-core/private/misc.rkt"
          "../viz-lib/skew-binomial-heap.rkt"
          "grammar-viz.rkt"
+         racket/treelist
          racket/list
-         racket/set)
+         racket/set
+         profile-flame-graph)
 
 (provide csg-viz)
 
@@ -22,71 +24,268 @@
 (define HEXAGON-COLOR 'black)
 
 (struct rule-with-metrics (rule lhs-len num-change-nts num-change-len))
-(struct comp-step (word len num-nts))
+(struct comp-step (word len num-nts lhs-applied rhs-applied idx seq-num))
 
 ;; csg word -> Derivation with rules
 ;; Creates a derivation with the rule applied besides each step
 (define (csg-derive-edited g w)
   (define generated-derivs (mutable-set))
   (define nts-set (list->seteq (csg-getv g)))
+  (define word-len (length w))
   (define rules-with-lengths
-    (map (lambda (rule) (rule-with-metrics rule
-                                           (length (csg-rule-lhs rule))
-                                           (- (count (lambda (symb) (set-member? nts-set symb))
-                                                     (csg-rule-rhs rule))
-                                              (count (lambda (symb) (set-member? nts-set symb))
-                                                     (csg-rule-lhs rule)))
-                                           (- (length (filter (lambda (x) (not (eq? EMP x))) (csg-rule-rhs rule)))
-                                              (length (csg-rule-lhs rule)))))
+    (map (lambda (rule)
+           (rule-with-metrics rule
+                              (length (csg-rule-lhs rule))
+                              (- (count (lambda (symb) (set-member? nts-set symb))
+                                        (csg-rule-rhs rule))
+                                 (count (lambda (symb) (set-member? nts-set symb))
+                                        (csg-rule-lhs rule)))
+                              (- (length (filter (lambda (x) (not (eq? EMP x))) (csg-rule-rhs rule)))
+                                 (length (csg-rule-lhs rule)))))
+         (csg-getrules g)))
+
+  ;; word natnum natnum word -> word
+  (define (subst-in-list word start-idx tosub-len tosub)
+    (define end-idx (+ start-idx tosub-len))
+    (define (end-word idx word)
+      (if (= idx end-idx)
+          (append tosub word)
+          (end-word (add1 idx) (cdr word))))
+    (define (begin-word idx word)
+      (if (= idx start-idx)
+          (end-word idx word)
+          (cons (car word) (begin-word (add1 idx) (cdr word)))))
+    (begin-word 0 word))
+
+  ;; comp-step -> (Listof comp-step)
+  ;; Applies all possible rules to inputted yield, returns list of new yields to process
+  (define (apply-one-step curr num-steps)
+    (define yield-len (comp-step-len curr))
+    (define (apply-one-rule rules-left word idx stop-idx seq-num)
+      (if (null? rules-left)
+          '()
+          (if (= idx stop-idx)
+              (if (null? (cdr rules-left))
+                  '()
+                  (apply-one-rule (cdr rules-left)
+                                  (comp-step-word curr)
+                                  0
+                                  (min yield-len
+                                       (add1 (- (comp-step-len curr) (rule-with-metrics-lhs-len (cadr rules-left)))))
+                                  seq-num))
+              (if (> (rule-with-metrics-lhs-len (car rules-left))
+                     (length word))
+                  (apply-one-rule (cdr rules-left)
+                                  (comp-step-word curr)
+                                  0
+                                  (min yield-len
+                                       (add1 (- (comp-step-len curr) (rule-with-metrics-lhs-len (cadr rules-left)))))
+                                  seq-num)
+                  (if (equal? (csg-rule-lhs (rule-with-metrics-rule (car rules-left)))
+                              (take word (rule-with-metrics-lhs-len (car rules-left))))
+                      (cons (comp-step (subst-in-list (comp-step-word curr)
+                                                      idx
+                                                      (rule-with-metrics-lhs-len (car rules-left))
+                                                      (if (equal?
+                                                           (csg-rule-rhs (rule-with-metrics-rule (car rules-left)))
+                                                           (list EMP))
+                                                          '()
+                                                          (csg-rule-rhs (rule-with-metrics-rule (car rules-left)))))
+                                       (+ (comp-step-len curr)
+                                          (rule-with-metrics-num-change-len (car rules-left)))
+                                       (+ (comp-step-num-nts curr)
+                                          (rule-with-metrics-num-change-nts (car rules-left)))
+                                       (csg-rule-lhs (rule-with-metrics-rule (car rules-left)))
+                                       (csg-rule-rhs (rule-with-metrics-rule (car rules-left)))
+                                       idx
+                                       (add1 seq-num))
+                            (apply-one-rule rules-left
+                                            (cdr word)
+                                            (add1 idx)
+                                            stop-idx
+                                            (add1 seq-num)))
+                      (apply-one-rule rules-left (cdr word) (add1 idx) stop-idx seq-num))
+                  )
+                  )))
+    (apply-one-rule rules-with-lengths
+                    (comp-step-word curr)
+                    0
+                    (min yield-len
+                         (add1 (- (comp-step-len curr)
+                             (rule-with-metrics-lhs-len (car rules-with-lengths)))))
+                    num-steps))
+  
+  ;; (Listof comp-step) (Listof comp-step) -> Boolean
+  ;; Sorts the list
+  (define (comparator x y)
+    (if (= (comp-step-len (car x)) (comp-step-len (car y)))
+        (< (comp-step-seq-num (car x)) (comp-step-seq-num (car y)))
+        (< (comp-step-len (car x)) (comp-step-len (car y)))))
+  
+  ;; (Listof comp-step) -> Derivation
+  (define (bfs-deriv tovisit num-steps)
+    (define (find-deriving-word new-steps filtered-new-steps)
+      (if (null? new-steps)
+          (bfs-deriv (foldr (lambda (val accum)
+                              (heap-insert val accum comparator))
+                            (delete-min/max tovisit comparator)
+                            filtered-new-steps)
+                     (add1 num-steps))
+          (if (= 0 (comp-step-num-nts (caar new-steps)))
+              (if (and (= (comp-step-len (caar new-steps)) word-len)
+                       (equal? w (comp-step-word (caar new-steps))))
+                  (begin (displayln (format "num steps: ~a" (add1 num-steps)))
+                         (car new-steps))
+                  (find-deriving-word (rest new-steps) filtered-new-steps))
+              (find-deriving-word (rest new-steps) (cons (first new-steps) filtered-new-steps)))))
+    (if (root-empty? tovisit)
+        '()
+        (let ([firstpath (find-min/max tovisit)])
+          (find-deriving-word (for/list ([step (in-list (apply-one-step (car firstpath) num-steps))]
+                                         #:when (not (set-member? generated-derivs (comp-step-word step))))
+                                (set-add! generated-derivs (comp-step-word step))
+                                (cons step firstpath)) '()))))
+
+  (let ([result (reverse (bfs-deriv (heap comparator
+                                          (list (comp-step (list (csg-getstart g)) 1 1 '() '() '() 0))) 0))])
+    (if (null? result)
+        (format "~s is not in L(G)." w)
+        (append-map
+         (lambda (l)
+           (if (equal? w (comp-step-word l))
+               (if (null? l)
+                   (list (list EMP))
+                   (list
+                    (list (los->symbol (comp-step-word l))
+                          (los->symbol (comp-step-lhs-applied l))
+                          (los->symbol (comp-step-rhs-applied l))
+                          (comp-step-idx l))))
+               (list
+                (list (los->symbol (comp-step-word l))
+                      (los->symbol (comp-step-lhs-applied l))
+                      (los->symbol (comp-step-rhs-applied l))
+                      (comp-step-idx l)))))
+         result))))
+
+
+(define (map-reverse f as)
+  (for/fold ([rbs '()]) ([a (in-list as)]) (cons (f a) rbs)))
+
+(define (treelist-foldr proc init as . bss)
+  (define m (add1 (length bss)))
+  #;(check-procedure-arity-includes 'treelist-foldr proc (add1 m))
+  #;(check-treelist 'treelist-foldr as)
+  (define n (treelist-length as))
+  #;(for ([bs (in-list bss)])
+      (check-treelist 'treelist-foldr bs))
+  (for/foldr ([acc init])
+    ([a (in-treelist as)] [i (in-naturals)])
+    (apply proc a
+           (reverse (cons acc (map-reverse (λ (bs) (treelist-ref bs i)) bss))))))
+
+#;(define (test-csg-derive-edited g w)
+  (define generated-derivs (mutable-set))
+  (define nts-set (list->seteq (csg-getv g)))
+  (define rules-with-lengths
+    (map (lambda (rule)
+           (rule-with-metrics rule
+                              (length (csg-rule-lhs rule))
+                              (- (count (lambda (symb) (set-member? nts-set symb))
+                                        (csg-rule-rhs rule))
+                                 (count (lambda (symb) (set-member? nts-set symb))
+                                        (csg-rule-lhs rule)))
+                              (- (length (filter (lambda (x) (not (eq? EMP x))) (csg-rule-rhs rule)))
+                                 (length (csg-rule-lhs rule)))))
          (csg-getrules g)))
   
   ; (listof symbol) (listof csg-rule) --> (listof (listof symbol))
 
+  (define (subst-in-list word start-idx tosub-len tosub)
+    (define end-idx (+ start-idx tosub-len))
+    (define (end-word idx word)
+      (if (= idx end-idx)
+          (append tosub word)
+          (end-word (add1 idx) (cdr word))))
+    (define (begin-word idx word)
+      (if (= idx start-idx)
+          (end-word idx word)
+          (cons (car word) (begin-word (add1 idx) (cdr word)))))
+    (begin-word 0 word))
   
   (define (apply-one-step curr)
-    (for/list
-        ([r (in-list rules-with-lengths)]
-         #:when #t
-         [idx (in-range (add1 (- (comp-step-len curr) (rule-with-metrics-lhs-len r))))]
-         ;; need to iterate over word in for, there is an unneccessary length in sublist
-         ;; replace it with a take
-         #:when (equal? (csg-rule-lhs (rule-with-metrics-rule r)) (sublist (comp-step-word curr) idx (rule-with-metrics-lhs-len r))))
-      (list (comp-step (subst-in-list (comp-step-word curr)
-                                      idx
-                                      (rule-with-metrics-lhs-len r)
-                                      (if (equal? (csg-rule-rhs (rule-with-metrics-rule r)) (list EMP))
-                                          '()
-                                          (csg-rule-rhs (rule-with-metrics-rule r))))
-                       (+ (comp-step-len curr) (rule-with-metrics-num-change-len r))
-                       (+ (comp-step-num-nts curr) (rule-with-metrics-num-change-nts r)))
-            (csg-rule-lhs (rule-with-metrics-rule r))
-            (csg-rule-rhs (rule-with-metrics-rule r))
-            idx)))
+    (define yield-len (comp-step-len curr))
+    (define (apply-one-rule rules-left word idx stop-idx)
+      (if (null? rules-left)
+          '()
+          (if (= idx stop-idx)
+              (apply-one-rule (cdr rules-left)
+                              (comp-step-word curr)
+                              0
+                              (if (null? (cdr rules-left))
+                                  0
+                                  (add1 (- (comp-step-len curr) (rule-with-metrics-lhs-len (cadr rules-left))))))
+              (if (> (rule-with-metrics-lhs-len (car rules-left))
+                           (length word))
+                  (apply-one-rule (cdr rules-left)
+                                  (comp-step-word curr)
+                                  0
+                                  (min yield-len (add1 (- (comp-step-len curr) (rule-with-metrics-lhs-len (cadr rules-left))))))
+              (if (equal? (csg-rule-lhs (rule-with-metrics-rule (car rules-left)))
+                          (take word (rule-with-metrics-lhs-len (car rules-left))))
+                  (cons (list (comp-step (subst-in-list (comp-step-word curr)
+                                                        idx
+                                                        (rule-with-metrics-lhs-len (car rules-left))
+                                                        (if (equal?
+                                                             (csg-rule-rhs (rule-with-metrics-rule (car rules-left)))
+                                                             (list EMP))
+                                                            '()
+                                                            (csg-rule-rhs (rule-with-metrics-rule (car rules-left)))))
+                                         (+ (comp-step-len curr)
+                                            (rule-with-metrics-num-change-len (car rules-left)))
+                                         (+ (comp-step-num-nts curr)
+                                            (rule-with-metrics-num-change-nts (car rules-left))))
+                              (csg-rule-lhs (rule-with-metrics-rule (car rules-left)))
+                              (csg-rule-rhs (rule-with-metrics-rule (car rules-left)))
+                              idx)
+                        (apply-one-rule rules-left
+                                        (cdr word)
+                                        (add1 idx)
+                                        stop-idx))
+                  (apply-one-rule rules-left (cdr word) (add1 idx) stop-idx))))))
+    (apply-one-rule rules-with-lengths
+                    (comp-step-word curr)
+                    0
+                    (add1 (- (comp-step-len curr)
+                             (rule-with-metrics-lhs-len (car rules-with-lengths))))))
 
   ; (listof symbol) (listof (listof (listof symbol))) -> (listof (listof symbol))
-  (define (bfs-deriv tovisit)
+  (define (bfs-deriv tovisit num-steps)
     (define (find-deriving-word new-steps filtered-new-steps)
       (if (null? new-steps)
-          (bfs-deriv (foldr (lambda (val accum)
-                              (heap-insert val accum))
-                            (delete-min/max tovisit)
-                            filtered-new-steps))
+          (bfs-deriv (treelist-foldr (lambda (val accum)
+                                       (treelist-cons accum val ))
+                                     (treelist-rest tovisit)
+                                     filtered-new-steps)
+                     (add1 num-steps))
           (if (= 0 (comp-step-num-nts (caaar new-steps)))
               (if (equal? w (comp-step-word (caaar new-steps)))
-                  (car new-steps)
+                  (begin (displayln (format "num steps: ~a" (add1 num-steps)))
+                         (car new-steps))
                   (find-deriving-word (rest new-steps) filtered-new-steps))
-              (find-deriving-word (rest new-steps) (cons (first new-steps) filtered-new-steps)))))
-    (if (heap-empty? tovisit)
-        '()
-        (let ([firstpath (find-min/max tovisit)])
+              (find-deriving-word (rest new-steps) (treelist-cons filtered-new-steps (first new-steps))))))
+    (if (treelist-empty? tovisit)
+        (treelist)
+        (let ([firstpath (treelist-first tovisit)])
           (find-deriving-word (for/list ([step (in-list (apply-one-step (caar firstpath)))]
-                                       #:when (not (set-member? generated-derivs (comp-step-word (car step)))))
-                              (set-add! generated-derivs (comp-step-word (car step)))
-                              (cons step firstpath)) '()))))
+                                         #:when (not (set-member? generated-derivs (comp-step-word (car step)))))
+                                (set-add! generated-derivs (comp-step-word (car step)))
+                                (cons step firstpath))
+                              (treelist)))))
 
-  (let ([result (reverse (bfs-deriv (heap (lambda (x y)
-                                            (< (comp-step-len (caar x)) (comp-step-len (caar y))))
-                                          (list (list (comp-step (list (csg-getstart g)) 1 1) '() '() '())))))])
+  (let ([result (reverse (bfs-deriv
+                          (treelist (list (list (comp-step (list (csg-getstart g)) 1 1) '() '() '())))
+                          #;(heap comparator
+                                  (list (list (comp-step (list (csg-getstart g)) 1 1) '() '() '()))) 0))])
     (if (null? result)
         (format "~s is not in L(G)." w)
         (append-map
@@ -341,7 +540,7 @@
    (create-line-of-edges (dgrph-yield-nodes a-dgrph))))
 
 (define (csg-viz g w #:cpu-cores [cpu-cores #f] . invariant)
-  (let* [(derv (csg-derive-edited g w))
+  (let* [(derv (csg-derive g w))
          (w-derv (map (lambda (x) (symbol->fsmlos (first x))) derv))
          (moved-stuff (move-rule-applications-in-list derv))
          (moved-rules
@@ -487,3 +686,31 @@
      (I ,ARROW ,EMP)
      )
    'S))
+
+#;(define ADD-CSG2 (make-unchecked-csg '(S A E I)
+                                       '(b i)
+                                       `((S ,ARROW AbAbE)
+                                         (A ,ARROW ,EMP)
+                                         (A ,ARROW iIA)
+                                         (Ii ,ARROW iI)
+                                         (Ib ,ARROW bI)
+                                         (IE ,ARROW Ei)
+                                         (E ,ARROW ,EMP))
+                                       'S))
+(define anbn1
+  (make-unchecked-csg '(S A B)
+                      '(a b)
+                      `((S ,ARROW AAaAAB)
+                        (AAaAAA ,ARROW aSb)
+                        (AAaAAA ,ARROW ,EMP)
+                        (B ,ARROW A))
+                      'S))
+
+#;(for ([word (in-list '(#;(a a b b c c)
+                       #;(a a a b b b c c c)
+                       #;(a a a a b b b b c c c c)
+                       (a a a a a b b b b b c c c c c)
+                       #;(a a a a a a b b b b b b)
+                       #;(i i b i b i i i)
+                       ))])
+  (time (test-csg-derive-edited anbncn word)))
