@@ -122,7 +122,7 @@
                                   '(E)
                                   `((S a A) (S b S) (A a B) (A b S)
                                     (B a B) (B b C) (C a D) (C b S)
-                                    (D a A) (D b E) (E a E) (E b E))
+                                    (D a B) (D b E) (E a E) (E b E))
                                   'no-dead))
 
 (check-accept? CONTAINS-aabab '(a a b a b) '(b b a a a b a b b))
@@ -130,14 +130,14 @@
 
 ;; invariants for CONTAINS-aabab
 
-;; word -> Boolean
-;; Purpose: Determine if ci should be in S
-(define (S-INV-CONTAINS-aabab ci)
-  (and (not (contains? ci '(a a b a b)))
-       (or (empty? ci)
-           (eq? (last ci) 'b)
-           (and (or (and (<= 2 (length ci)) (equal? (drop ci (- (length ci) 2)) '(a b)))
-                    (and (<= 4 (length ci)) (equal? (drop ci (- (length ci) 4)) '(a a b b))))))))
+;; word → Boolean
+;; Purpose: Determine that none of aabab is detected
+ (define (S-INV-CONTAINS-aabab ci)
+ (and (not (end-with? '(a) ci))
+ (not (end-with? '(a a) ci))
+ (not (end-with? '(a a b) ci))
+ (not (end-with? '(a a b a) ci))
+ (not (contains-aabab? ci))))
 
 ;; tests for S-INV-CONTAINS-aabab
 (check-equal? (S-INV-CONTAINS-aabab '()) #t)
@@ -174,9 +174,8 @@
 ;; word -> Boolean
 ;; Purpose: Determine if ci should be in B
 (define (B-INV-CONTAINS-aabab ci)
-  (and (<= 2 (length ci))
-       (equal? (drop ci (- (length ci) 2)) '(a a))
-       (not (contains? ci '(a a b a b)))))
+ (and (end-with? '(a a) ci)
+ (not (contains-aabab? ci))))
 
 ;; tests for B-INV-CONTAINS-aabab
 (check-equal? (B-INV-CONTAINS-aabab '(a a)) #t)
@@ -189,10 +188,8 @@
 ;; word -> Boolean
 ;; Purpose: Determine if ci should be in C
 (define (C-INV-CONTAINS-aabab ci)
-  (and (<= 3 (length ci))
-       (equal? (drop ci (- (length ci) 3)) '(a a b))
-       (not (contains? ci '(a a b a b)))))
-
+ (and (end-with? '(a a b) ci)
+ (not (contains-aabab? ci))))
 ;; tests for C-INV-CONTAINS-aabab
 (check-equal? (C-INV-CONTAINS-aabab '(a a b)) #t)
 (check-equal? (C-INV-CONTAINS-aabab '(a b b b a a b)) #t)
@@ -205,11 +202,10 @@
 
 ;; word -> Boolean
 ;; Purpose: Determine if ci should be in D
-(define (D-INV-CONTAINS-aabab ci)
-  (and (<= 4 (length ci))
-       (equal? (drop ci (- (length ci) 4)) '(a a b a))
-       (not (contains? ci '(a a b a b)))))
-
+ (define (D-INV-CONTAINS-aabab ci)
+ (and (end-with? '(a a b a) ci)
+ (not (contains-aabab? ci))))
+    
 ;; tests for D-INV-CONTAINS-aabab
 (check-equal? (D-INV-CONTAINS-aabab '(a a b a)) #t)
 (check-equal? (D-INV-CONTAINS-aabab '(a b b b a a b a)) #t)
@@ -220,9 +216,8 @@
 
 ;; word -> Boolean
 ;; Purpose: Determine if ci should be in E
-(define (E-INV-CONTAINS-aabab ci)
-  (and (<= 5 (length ci))
-       (contains? ci '(a a b a b))))
+ (define E-INV-CONTAINS-aabab contains-aabab?)
+
 
 ;; tests for E-INV-CONTAINS-aabab
 (check-equal? (E-INV-CONTAINS-aabab '(a a b a b)) #t)
