@@ -139,13 +139,13 @@
 ;(check-equal? (S-INV '(a a b b)) #f)
 ;(check-equal? (S-INV '(a)) #f)
 #;(sm-test-invs NO-AA (list 'S S-INV)
-                   (list 'A A-INV)
-                   (list 'B B-INV)
-                   (list 'R R-INV))
+                (list 'A A-INV)
+                (list 'B B-INV)
+                (list 'R R-INV))
 #;(check-equal? (length (first (sm-test-invs NO-AA (list 'S S-INV)
-                   (list 'A A-INV)
-                   (list 'B B-INV)
-                   (list 'R R-INV)))) 19)
+                                             (list 'A A-INV)
+                                             (list 'B B-INV)
+                                             (list 'R R-INV)))) 19)
         
 ;(check-equal? (sm-apply NO-AA '()) 'accept)
 (check-equal? (sm-apply NO-AA '(a)) 'accept)
@@ -271,14 +271,14 @@
 
 
 #;(time (sm-test-invs EVIL-dna-sequence (list 'K DNA-K-INV)
-                       (list 'H DNA-H-INV)
-                       (list 'F DNA-F-INV)
-                       (list 'M DNA-M-INV)
-                       (list 'I DNA-I-INV)
-                       (list 'D DNA-D-INV)
-                       (list 'B DNA-B-INV)
-                       (list 'S DNA-S-INV)
-                       (list 'R DNA-R-INV)))
+                      (list 'H DNA-H-INV)
+                      (list 'F DNA-F-INV)
+                      (list 'M DNA-M-INV)
+                      (list 'I DNA-I-INV)
+                      (list 'D DNA-D-INV)
+                      (list 'B DNA-B-INV)
+                      (list 'S DNA-S-INV)
+                      (list 'R DNA-R-INV)))
 
 
 ;; Let Σ = {a b}. Design and implement a dfa for the following language:
@@ -760,19 +760,19 @@
 ; L = a+b+c+a+b+c+
 
 (define a+b+c+a+b+ (make-unchecked-dfa '(S A B C D E)
-                             '(a b c)
-                             'S
-                             '(E)
-                             '((S a A)
-                               (A a A)
-                               (A b B)
-                               (B b B)
-                               (B c C)
-                               (C c C)
-                               (C a D)
-                               (D a D)
-                               (D b E)
-                               (E b E))))
+                                       '(a b c)
+                                       'S
+                                       '(E)
+                                       '((S a A)
+                                         (A a A)
+                                         (A b B)
+                                         (B b B)
+                                         (B c C)
+                                         (C c C)
+                                         (C a D)
+                                         (D a D)
+                                         (D b E)
+                                         (E b E))))
 
 (define (INVS=T ci)
   #true)
@@ -789,25 +789,25 @@
 ; L = contains a+b+c+a+
 
 (define contains-abca (make-unchecked-dfa '(S A B C D)
-                                      '(a b c)
-                                      'S
-                                      '(D)
-                                      '((S a A)
-                                        (S b S)
-                                        (S c S)
-                                        (A a A)
-                                        (A b B)
-                                        (A c S)
-                                        (B b S)
-                                        (B a A)
-                                        (B c C)
-                                        (C a D)
-                                        (C b S)
-                                        (C c S)
-                                        (D a D)
-                                        (D b D)
-                                        (D c D))
-                                      'no-dead))
+                                          '(a b c)
+                                          'S
+                                          '(D)
+                                          '((S a A)
+                                            (S b S)
+                                            (S c S)
+                                            (A a A)
+                                            (A b B)
+                                            (A c S)
+                                            (B b S)
+                                            (B a A)
+                                            (B c C)
+                                            (C a D)
+                                            (C b S)
+                                            (C c S)
+                                            (D a D)
+                                            (D b D)
+                                            (D c D))
+                                          'no-dead))
 
 
 (define LOI-contains-a+b+c+a+b+ (list (list 'S INVS=T)
@@ -1166,7 +1166,9 @@
        (andmap (λ (el) (eq? el 'b)) ci)))
 
 
-(define LOI-aa*-ab* (list (list 'K  aa-ab-K-INV) (list 'B aa-ab-B-INV) (list 'D aa-ab-D-INV)))
+(define LOI-aa*-ab* (list (list 'K aa-ab-K-INV)
+                          (list 'B aa-ab-B-INV)
+                          (list 'D aa-ab-D-INV)))
 
 
 
@@ -1600,36 +1602,44 @@
 (define (E-INV-lots-of-kleenes ci)
   (let [(Bs (takef ci (λ (x) (eq? 'b x))))
         (As (takef ci (λ (x) (eq? 'a x))))]
-  (or (andmap (λ (x) (eq? 'a x)) ci))))
+    (or (andmap (λ (x) (eq? 'a x)) ci))))
 
 
 (define (F-INV-lots-of-kleenes ci)
   (let [(Bs (takef ci (λ (x) (eq? 'b x))))
         (As (takef  ci(λ (x) (eq? 'a x))))]
-  (or (andmap (λ (x) (eq? 'a x)) ci))))
+    (or (andmap (λ (x) (eq? 'a x)) ci))))
 
 
 (define (G-INV-lots-of-kleenes ci)
   (let [(Bs (takef ci (λ (x) (eq? 'b x))))
         (As (takef ci (λ (x) (eq? 'a x))))]
-  (or (andmap (λ (x) (eq? 'a x)) ci))))
+    (or (andmap (λ (x) (eq? 'a x)) ci))))
 
+(define LOI-lots-of-kleenes (list (list 'S S-INV-lots-of-kleenes)
+                                  (list 'A A-INV-lots-of-kleenes)
+                                  (list 'B B-INV-lots-of-kleenes)
+                                  (list 'C C-INV-lots-of-kleenes)
+                                  (list 'D D-INV-lots-of-kleenes)
+                                  (list 'E E-INV-lots-of-kleenes)
+                                  (list 'F F-INV-lots-of-kleenes)
+                                  (list 'G G-INV-lots-of-kleenes)))
 
 ;  (a*Ub*)(c*Ud*)U(c*Ud*)a*
 
 (define AT-LEAST-ONE-MISSING (make-unchecked-ndfa '(S A B C)
-                                        '(a b c)
-                                        'S
-                                        '(A B C)
-                                        `((S ,EMP A)
-                                          (S ,EMP B)
-                                          (S ,EMP C)
-                                          (A b A)
-                                          (A c A)
-                                          (B a B)
-                                          (B c B)
-                                          (C a C)
-                                          (C b C))))
+                                                  '(a b c)
+                                                  'S
+                                                  '(A B C)
+                                                  `((S ,EMP A)
+                                                    (S ,EMP B)
+                                                    (S ,EMP C)
+                                                    (A b A)
+                                                    (A c A)
+                                                    (B a B)
+                                                    (B c B)
+                                                    (C a C)
+                                                    (C b C))))
 
 
 ;; word → Boolean
@@ -1683,18 +1693,156 @@
                                        (list 'A A-INV-AT-LEAST-ONE-MISSING)
                                        (list 'B B-INV-AT-LEAST-ONE-MISSING)
                                        (list 'C C-INV-AT-LEAST-ONE-MISSING)))
-                                       
-
-(define loM (list CONTAINS-aabab no-contain-bababa M3 lots-of-kleenes ONE-LETTER-MISSING ab*b*Uab* a+b+c+a+b+))
 
 
 
 
+(define big-container (make-unchecked-ndfa '(S A B C D E F H I)
+                                           '(u n e a r
+                                               ;c l d i g o
+                                               )
+                                           'S
+                                           '(C F I)
+                                           '((S u A) (A n B) (S e H) (H r I) (D e E) (E a F)    
+                                                     (C u C) (C n C) (C e C) (C a C) (C r C)
+                                                     (D u D)
+                                                     (D n D) (D e D) (D a D) (D r D)
+                                                     (F u F) (F n F)
+                                                     (F e F) (F a F) (F r F)
+                                                     (S u D) (S n D)
+                                                     (S a D) (S r D)
+                                                     (B u C) (B n C) (B e C) (B a C)
+                                                     (B r C)
+                                                     (S e E) (B e H) (B e E) (F e H) (C e H))))
+
+(define LOI-big-container (list (list 'S INVS=T)
+                                (list 'A INVS=T)
+                                (list 'B INVS=T)
+                                (list 'C INVS=T)
+                                (list 'D INVS=T)
+                                (list 'E INVS=T)
+                                (list 'F INVS=T)
+                                (list 'G INVS=T)
+                                (list 'H INVS=T)
+                                (list 'I INVS=T))) 
 
 
 
 
-(define tests (list (test-case 'dna-sequence
+
+
+
+(define mini-monster-kaboom (make-unchecked-ndfa '(S A B J K L M)
+                                                 '(k a
+                                                     ;l
+                                                     b
+                                                     ;u g c h
+                                                     o
+                                                     ;i n
+                                                     m)
+                                                 'S
+                                                 '(M)
+                                                 `((S a S) (S b S)
+                                                           (S o S)
+                                                           (S m S) (S k A)
+                                                                        
+                                                           (A a B) (A k S) (A b S)
+                                                           (A o S)
+                                                           (A w S) (A m S)
+                                                                        
+                                                           (B b J) (B k S) (B a S)
+                                                           (B o S)
+                                                           (B m S)
+
+
+                                                           (J k S) (J a S)
+                                                           (J b S)
+                                                           (J m S) (J o K)
+
+                                                           (K k S) (K a S) (K b S)
+                                                          
+                                                           (K m S) (K o L)
+
+                                                           (L m M) (L k S) (L a S) (L b S)
+                                                           (L o S)
+                                                          
+
+                                                           (M k M) (M a M) (M b M)
+                                                           (M o M)
+                                                           (M m M)
+
+                                                           )))
+
+'(S A B J K L M)
+
+(define LOI-mini-monster-kaboom (list (list 'S INVS=T)
+                                      (list 'A INVS=T)
+                                      (list 'B INVS=T)
+                                      (list 'J INVS=T)
+                                      (list 'K INVS=T)
+                                      (list 'L INVS=T)
+                                      (list 'M INVS=T)
+                                      ))
+
+
+
+(define loM (list big-container
+                  DNA-SEQUENCE
+                  EVIL-dna-sequence
+                  CONTAINS-aabab
+                  no-contain-bababa
+                  M3
+                  lots-of-kleenes
+                  ONE-LETTER-MISSING
+                  ab*b*Uab*
+                  a+b+c+a+b+))
+
+
+
+
+
+
+
+
+(define tests (list (test-case 'big-container
+                                 50
+                                 (lambda () (sm-test-invs big-container
+                                                          (list 'S INVS=T)
+                                                          (list 'A INVS=T)
+                                                          (list 'B INVS=T)
+                                                          (list 'C INVS=T)
+                                                          (list 'D INVS=T)
+                                                          (list 'E INVS=T)
+                                                          (list 'F INVS=T)
+                                                          (list 'G INVS=T)
+                                                          (list 'H INVS=T)
+                                                          (list 'I INVS=T))))
+                    #;(test-case 'mini-monster-kaboom
+                               50
+                               (lambda () (sm-test-invs mini-monster-kaboom
+                                                        (list 'S INVS=T)
+                                                        (list 'A INVS=T)
+                                                        (list 'B INVS=T)
+                                                        (list 'J INVS=T)
+                                                        (list 'K INVS=T)
+                                                        (list 'L INVS=T)
+                                                        (list 'M INVS=T))))
+
+                    (test-case 'evil-dna-sequence
+                               50
+                               (lambda () (sm-test-invs EVIL-dna-sequence
+                                                        (list 'K DNA-K-INV)
+                                                        (list 'H DNA-H-INV)
+                                                        (list 'F DNA-F-INV)
+                                                        (list 'M DNA-M-INV)
+                                                        (list 'I DNA-I-INV)
+                                                        (list 'D DNA-D-INV)
+                                                        (list 'B DNA-B-INV)
+                                                        (list 'S DNA-S-INV)
+                                                        (list 'R DNA-R-INV))))
+
+
+                    (test-case 'dna-sequence
                                50
                                (lambda () (sm-test-invs DNA-SEQUENCE
                                                         (list 'K DNA-K-INV)
@@ -1764,29 +1912,29 @@
                     (test-case 'CONTAINS-aabab
                                50
                                (lambda () (sm-test-invs CONTAINS-aabab (list 'S S2-INV) (list 'A A2-INV)
-                              (list 'B B2-INV) (list 'C C2-INV)
-                              (list 'D D2-INV) (list 'E E2-INV))))
+                                                        (list 'B B2-INV) (list 'C C2-INV)
+                                                        (list 'D D2-INV) (list 'E E2-INV))))
                     (test-case 'a+b+c+a+b+ndfa
                                50
                                (lambda () (sm-test-invs (make-unchecked-ndfa '(S A B C D E)
-                             '(a b c)
-                             'S
-                             '(E)
-                             '((S a A)
-                               (A a A)
-                               (A b B)
-                               (B b B)
-                               (B c C)
-                               (C c C)
-                               (C a D)
-                               (D a D)
-                               (D b E)
-                               (E b E))) (list 'S INVS=T)
-                             (list 'A INVS=T)
-                             (list 'B INVS=T)
-                             (list 'C INVS=T)
-                             (list 'D INVS=T)
-                             (list 'E INVS=T))))
+                                                                             '(a b c)
+                                                                             'S
+                                                                             '(E)
+                                                                             '((S a A)
+                                                                               (A a A)
+                                                                               (A b B)
+                                                                               (B b B)
+                                                                               (B c C)
+                                                                               (C c C)
+                                                                               (C a D)
+                                                                               (D a D)
+                                                                               (D b E)
+                                                                               (E b E))) (list 'S INVS=T)
+                                                                                         (list 'A INVS=T)
+                                                                                         (list 'B INVS=T)
+                                                                                         (list 'C INVS=T)
+                                                                                         (list 'D INVS=T)
+                                                                                         (list 'E INVS=T))))
                     (test-case 'NO-AA
                                50
                                (lambda () (sm-test-invs NO-AA
@@ -1801,7 +1949,9 @@
                     (test-case 'aa*Uab*
                                50
                                (lambda () (sm-test-invs aa*Uab*
-                                                        (list 'K  aa-ab-K-INV) (list 'B aa-ab-B-INV) (list 'D aa-ab-D-INV))))
+                                                        (list 'K  aa-ab-K-INV)
+                                                        (list 'B aa-ab-B-INV)
+                                                        (list 'D aa-ab-D-INV))))
                     (test-case 'EX-NDFA
                                50
                                (lambda () (sm-test-invs EX-NDFA
@@ -1810,18 +1960,18 @@
                                                         (list 'B B-INV-EX-NDFA)
                                                         (list 'C C-INV-EX-NDFA))))
                     ))
-#;(define res
+(define res
   (for/list ([test (in-list tests)])
-      (displayln (test-case-name test))
-      (let ([result (for/vector #:length (test-case-num-tests test)
-              ([test-num (in-range (test-case-num-tests test))])
-              (define-values (results-lst cpu-time real-time gc-time)
-                (time-apply (test-case-thunk test) '()))
-              (collect-garbage 'major)
-              (collect-garbage 'major)
-              real-time)])
-        (println result)
-        (list (test-case-name test)
+    (displayln (test-case-name test))
+    (let ([result (for/vector #:length (test-case-num-tests test)
+                    ([test-num (in-range (test-case-num-tests test))])
+                    (define-values (results-lst cpu-time real-time gc-time)
+                      (time-apply (test-case-thunk test) '()))
+                    (collect-garbage 'major)
+                    (collect-garbage 'major)
+                    real-time)])
+      (println result)
+      (list (test-case-name test)
             result))))
 #;(println res)
 
@@ -1912,6 +2062,7 @@
                              (list 'D INVS=T)
                              (list 'E INVS=T))))
 "CONTAINS-aabab"
+
 (for ([x (in-naturals)]
       #:break (= x 51))
  
@@ -2083,3 +2234,5 @@
                                   (list 'P INVS=T)
                                   (list 'Q INVS=T)
                                   (list 'R INVS=T)))
+
+
