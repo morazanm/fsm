@@ -115,9 +115,9 @@
   (define (word-of-path-helper accum a-lor)
     (if (null? a-lor)
         accum
-        (if (eq? 'ε (car a-lor))
+        (if (eq? 'ε (cadr (car a-lor)))
             (word-of-path-helper accum (cdr a-lor))
-            (word-of-path-helper (cons (car a-lor) accum) (cdr a-lor)))))
+            (word-of-path-helper (cons (cadr (car a-lor)) accum) (cdr a-lor)))))
   (word-of-path-helper '() a-lor))
 
 ;; machine (listof (list state (word -> boolean))) -> (listof (listof state (listof word)))
@@ -204,19 +204,25 @@
     always-true)
   
   (define (sm-test-invs-helper all-paths)
+    #;(map displayln (filter (lambda (x) (eq? 'S (third (car x)))) all-paths))
     ;(filter (λ (x) (not (eq? 'ε x))) (append-map (λ (x) (list (cadr x))) a-lor))
     (for/list ([path (in-list all-paths)]
-               #:do [(define cache (caddr (first path)))
+               #:do [(define cache (caddr (car path)))
                      (define a-config (list (word-of-path path) cache))]
-               #:when (not ((hash-ref a-loi-hash cache always-true-thunk) a-config)))
+               #:when (begin
+                        (when (eq? 'S (caddr (car path)))
+                          (displayln (word-of-path path))
+                          (displayln ((hash-ref a-loi-hash cache always-true-thunk) (car a-config))))
+                        (not ((hash-ref a-loi-hash cache always-true-thunk) (car a-config)))))
       a-config))
   
   (if (null? a-loi)
       '()
-      (cons (sm-test-invs-helper all-paths-new-machine)
-            (let [(start-pair (hash-ref a-loi-hash (sm-start a-machine) #f))]
+      (cons (let [(start-pair (hash-ref a-loi-hash (sm-start a-machine) #f))]
               (if (or
                    (not (pair? start-pair))
                    ((cadr start-pair) '()))
                   '()
-                  (list (list '() (sm-start a-machine))))))))
+                  (list (list '() (sm-start a-machine)))))
+            (sm-test-invs-helper all-paths-new-machine)
+            )))
