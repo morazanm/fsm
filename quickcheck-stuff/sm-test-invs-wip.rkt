@@ -204,25 +204,18 @@
     always-true)
   
   (define (sm-test-invs-helper all-paths)
-    #;(map displayln (filter (lambda (x) (eq? 'S (third (car x)))) all-paths))
-    ;(filter (λ (x) (not (eq? 'ε x))) (append-map (λ (x) (list (cadr x))) a-lor))
     (for/list ([path (in-list all-paths)]
                #:do [(define cache (caddr (car path)))
                      (define a-config (list (word-of-path path) cache))]
-               #:when (begin
-                        (when (eq? 'S (caddr (car path)))
-                          (displayln (word-of-path path))
-                          (displayln ((hash-ref a-loi-hash cache always-true-thunk) (car a-config))))
-                        (not ((hash-ref a-loi-hash cache always-true-thunk) (car a-config)))))
+               #:when (not ((hash-ref a-loi-hash cache always-true-thunk) (car a-config))))
       a-config))
   
   (if (null? a-loi)
       '()
-      (cons (let [(start-pair (hash-ref a-loi-hash (sm-start a-machine) #f))]
+      (let [(start-pair (hash-ref a-loi-hash (sm-start a-machine) #f))]
               (if (or
                    (not (pair? start-pair))
                    ((cadr start-pair) '()))
-                  '()
-                  (list (list '() (sm-start a-machine)))))
-            (sm-test-invs-helper all-paths-new-machine)
-            )))
+                  (sm-test-invs-helper all-paths-new-machine)
+                  (cons (list (list '() (sm-start a-machine)))
+                        (sm-test-invs-helper all-paths-new-machine))))))
