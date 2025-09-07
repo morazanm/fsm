@@ -8,7 +8,7 @@
          racket/set
          data/queue)
 
-(define REPETITION-LIMIT 1)
+(define REPETITION-LIMIT 2)
 
 ;                                                                                                     
 ;                                                                                                     
@@ -68,7 +68,7 @@
 
 ;; ndfa -> ndfa
 ;; Purpose: Takes in ndfa and remove states and rules that can't reach a final state
-#;(define (remove-states-that-cannot-reach-finals a-ndfa)
+(define (remove-states-that-cannot-reach-finals a-ndfa)
   (define queue (make-queue))
   (define rules (sm-rules a-ndfa))
   

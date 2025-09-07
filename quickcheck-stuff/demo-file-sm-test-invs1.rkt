@@ -122,7 +122,7 @@
                                   '(E)
                                   `((S a A) (S b S) (A a B) (A b S)
                                     (B a B) (B b C) (C a D) (C b S)
-                                    (D a B) (D b E) (E a E) (E b E))
+                                    (D a A) (D b E) (E a E) (E b E))
                                   'no-dead))
 
 (check-accept? CONTAINS-aabab '(a a b a b) '(b b a a a b a b b))

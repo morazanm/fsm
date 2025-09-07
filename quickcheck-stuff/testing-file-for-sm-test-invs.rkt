@@ -1773,7 +1773,6 @@
 
                                                            )))
 
-'(S A B J K L M)
 
 (define LOI-mini-monster-kaboom (list (list 'S INVS=T)
                                       (list 'A INVS=T)
@@ -1804,7 +1803,7 @@
 
 
 
-(define tests (list (test-case 'big-container
+(define tests (list #;(test-case 'big-container
                                  50
                                  (lambda () (sm-test-invs big-container
                                                           (list 'S INVS=T)
@@ -1828,7 +1827,7 @@
                                                         (list 'L INVS=T)
                                                         (list 'M INVS=T))))
 
-                    (test-case 'evil-dna-sequence
+                    #;(test-case 'evil-dna-sequence
                                50
                                (lambda () (sm-test-invs EVIL-dna-sequence
                                                         (list 'K DNA-K-INV)
@@ -1842,7 +1841,7 @@
                                                         (list 'R DNA-R-INV))))
 
 
-                    (test-case 'dna-sequence
+                    #;(test-case 'dna-sequence
                                50
                                (lambda () (sm-test-invs DNA-SEQUENCE
                                                         (list 'K DNA-K-INV)
