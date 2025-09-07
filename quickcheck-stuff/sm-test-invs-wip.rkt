@@ -8,7 +8,7 @@
          racket/set
          data/queue)
 
-(define REPETITION-LIMIT 2)
+(define REPETITION-LIMIT 1)
 
 ;                                                                                                     
 ;                                                                                                     
@@ -35,7 +35,7 @@
 
 ;; machine -> (listof rules)
 ;; Purpose: To return all the paths in the given machine 
-(define (find-paths a-machine)
+(define (find-paths a-machine rep-limit)
   (define queue (make-queue))
   (define rules (sm-rules a-machine))
   
@@ -51,7 +51,7 @@
                             (< (hash-ref (path-with-hash-hash qfirst)
                                          rule
                                          0)
-                               REPETITION-LIMIT)))
+                               rep-limit)))
             (enqueue! queue (path-with-hash (cons rule (path-with-hash-path qfirst))
                                             (hash-set (path-with-hash-hash qfirst)
                                                       rule
@@ -184,14 +184,16 @@
 
 ;; machine . (list state (word -> boolean)) -> (listof (listof symbol))
 ;; Purpose: To return a list of the invarients that don't hold and the words that cause it not to hold
-(define (sm-test-invs a-machine . a-loi)
+(define (sm-test-invs a-machine #:ds-remove ds-remove #:rep-limit rep-limit . a-loi)
   (define a-loi-hash (for/hash ([inv (in-list a-loi)])
                        (values (car inv) (cadr inv))))
   ;; the given machine without the states and rules of states that cannot reach a final state
-  (define new-machine a-machine #;(remove-states-that-cannot-reach-finals a-machine))
+  (define new-machine (if ds-remove
+                          (remove-states-that-cannot-reach-finals a-machine)
+                          a-machine))
   
   ;; all paths of new-machine
-  (define all-paths-new-machine (find-paths new-machine))
+  (define all-paths-new-machine (find-paths new-machine rep-limit))
 
   ;; (listof (listof rule)) (listof (listof symbol)) -> (listof (listof symbol))
   ;; Purpose: To return a list of the invarients and the word that causes them not to hold
