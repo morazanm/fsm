@@ -122,7 +122,7 @@
 
 ;; machine (listof (list state (word -> boolean))) -> (listof (listof state (listof word)))
 ;; Purpose: To return a list of all posible words that can be at each state in a machine 
-(define (sm-all-possible-words a-machine a-loi)
+(define (sm-all-possible-words a-machine)
   ;; the given machine without the states and rules of states that cannot reach a final state
   (define new-machine (remove-states-that-cannot-reach-finals a-machine)
     #;(if (eq? (sm-type a-machine) 'dfa)
@@ -139,19 +139,9 @@
   (define (sm-all-possible-words-helper all-paths accum)
     (if (null? all-paths)
         accum
-        (begin
-          #|
-          (displayln (car all-paths))
-          (displayln (word-of-path (car all-paths)))
-          (displayln (car all-paths))
-          (displayln (last (car all-paths)))
-          (displayln (list (word-of-path (car all-paths))
-                                                  (caddr (car (car all-paths)))))
-          (displayln "")
-        |#
         (sm-all-possible-words-helper (cdr all-paths)
                                       (cons (list (word-of-path (car all-paths))
-                                                  (caddr (car (car all-paths)))) accum)))))
+                                                  (caddr (car (car all-paths)))) accum))))
 
   ;; (listof symbol) -> (listof (symbol (listof word)))
   ;; Purpose: To generate a list of lists of a state and an empty list for each given states
@@ -191,10 +181,6 @@
                                                            listof-all-words-&-states)))) accum))))
             
     (sort-words-helper states-&-empty-low '()))
-  #;(values (sm-graph a-machine)
-          all-paths-new-machine
-          (sm-all-possible-words-helper all-paths-new-machine
-                                            (list (list '() (sm-start a-machine)))))
   (sort-words (sm-all-possible-words-helper all-paths-new-machine
                                             (list (list '() (sm-start a-machine))))))
 
