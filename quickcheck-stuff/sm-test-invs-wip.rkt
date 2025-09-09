@@ -1,6 +1,6 @@
 #lang racket/base
 
-(provide sm-all-possible-words sm-test-invs)
+(provide #;sm-all-possible-words sm-test-invs)
 (require "../fsm-core/private/sm-getters.rkt"
          "../fsm-core/private/fsa.rkt"
          "../sm-graph.rkt"
@@ -122,16 +122,15 @@
 
 ;; machine (listof (list state (word -> boolean))) -> (listof (listof state (listof word)))
 ;; Purpose: To return a list of all posible words that can be at each state in a machine 
-(define (sm-all-possible-words a-machine)
+#;(define (sm-all-possible-words a-machine a-loi)
   ;; the given machine without the states and rules of states that cannot reach a final state
-  (define new-machine (remove-states-that-cannot-reach-finals a-machine)
-    #;(if (eq? (sm-type a-machine) 'dfa)
+  (define new-machine (if (eq? (sm-type a-machine) 'dfa)
                           a-machine
                           (remove-states-that-cannot-reach-finals a-machine)))
   ;; list of invariants that are reachable from the starting configuration
   #;(define reachable-inv (filter (λ (x) (member? (car x) (sm-states new-machine))) a-loi))
   ;; all paths of new-machine
-  (define all-paths-new-machine (find-paths new-machine REPETITION-LIMIT))
+  (define all-paths-new-machine (find-paths new-machine))
 
   ;; (listof (listof rule)) (listof (listof symbol)) -> (listof (listof symbol))
   ;; Purpose:  To return a list of all posible words that can be at each state in a machine 
@@ -141,7 +140,7 @@
         accum
         (sm-all-possible-words-helper (cdr all-paths)
                                       (cons (list (word-of-path (car all-paths))
-                                                  (caddr (car (car all-paths)))) accum))))
+                                                  (caddr (last (car all-paths)))) accum))))
 
   ;; (listof symbol) -> (listof (symbol (listof word)))
   ;; Purpose: To generate a list of lists of a state and an empty list for each given states
@@ -176,9 +175,8 @@
       (if (null? states-&-empty-low) accum
           (sort-words-helper (cdr states-&-empty-low)
                              (cons (list (car (car states-&-empty-low))
-                                         (make-low (remove-duplicates
-                                                    (filter (λ (x) (eq? (car (car states-&-empty-low)) (cadr x)))
-                                                           listof-all-words-&-states)))) accum))))
+                                         (make-low (filter (λ (x) (eq? (car (car states-&-empty-low)) (cadr x)))
+                                                           listof-all-words-&-states))) accum))))
             
     (sort-words-helper states-&-empty-low '()))
   (sort-words (sm-all-possible-words-helper all-paths-new-machine
