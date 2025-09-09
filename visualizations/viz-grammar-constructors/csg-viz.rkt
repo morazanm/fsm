@@ -8,8 +8,7 @@
          "grammar-viz.rkt"
          racket/treelist
          racket/list
-         racket/set
-         profile-flame-graph)
+         racket/set)
 
 (provide csg-viz)
 
