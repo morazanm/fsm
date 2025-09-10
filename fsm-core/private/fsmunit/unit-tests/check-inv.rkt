@@ -21,7 +21,8 @@
                                 warn:fsm:app:inv:invalid-words
                                 inv)
                 (if accept?
-                    (property-check (if (list? (car (val-stx-pair-val (car words))))
+                    (property-check (if (and (not (null? (val-stx-pair-val (car words))))
+                                             (list? (car (val-stx-pair-val (car words)))))
                                         (if (list? (cadr (car (val-stx-pair-val (car words)))))
                                             (val-stx-pair-val inv)
                                             (map (lambda (word-pair)
@@ -32,7 +33,8 @@
                                     warn:fsm:app:inv:accept
                                     inv)
                     (property-check (let ([not-inv-func (compose1 not (val-stx-pair-val inv))])
-                                      (if (list? (car (val-stx-pair-val (car words))))
+                                      (if (and (not (null? (val-stx-pair-val (car words))))
+                                             (list? (car (val-stx-pair-val (car words)))))
                                           (if (list? (cadr (car (val-stx-pair-val (car words)))))
                                               not-inv-func
                                               (map (lambda (word-pair)
