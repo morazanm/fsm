@@ -171,10 +171,6 @@
          (equal? (filter (λ (s) (eq? s 'c)) readt0)
                  (filter (λ (s) (eq? s 'c)) t3)))))
 
-
-
-
-
 (check-inv-fails? C-INV (list (list 2 `(,LM ,BLANK b b b))
                            (list 0 `(,BLANK a a))
                            (list 0 `(,BLANK ,BLANK))
