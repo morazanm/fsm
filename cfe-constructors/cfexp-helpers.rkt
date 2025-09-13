@@ -1,6 +1,6 @@
 #lang racket
 
-(require "../fsm-core/private/cfg.rkt"
+(require "../fsm-core/private/cfg-struct.rkt"
          "../fsm-core/private/pda.rkt" ;(except-in "../fsm-core/private/pda.rkt" pda->spda)
          "../fsm-core/private/misc.rkt"
          "../fsm-core/private/constants.rkt")
