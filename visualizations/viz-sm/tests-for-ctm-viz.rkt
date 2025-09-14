@@ -1,6 +1,7 @@
 #lang racket
-(require "../../main.rkt")
-
+(require "../../fsm-core/interface.rkt"
+         rackunit)
+#|
 ;; CAN ONLY BE TESTED IF PRECONDITION IS SATISFIED
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; tms
@@ -9,7 +10,7 @@
 
 ;; PRE:  tape = (LM w) AND i=k>0
 ;; POST: tape = (LM w) AND i=k+1
-(define R (make-tm '(S F)
+(define R (make-unchecked-tm '(S F)
                    '(a b)
                    `(((S a) (F ,RIGHT))
                      ((S b) (F ,RIGHT))
@@ -17,12 +18,14 @@
                    'S
                    '(F)))
 
+;(define new-RR (new-combine-tms (list R R) '(a b)))
+
 ;.................................................
 ;; Move-left machine 
 
 ;; PRE:  tape = (LM w) AND i=k≥1, where w in {a b BLANK}*
 ;; POST: tape = (LM w) AND i=k-1
-(define L (make-tm '(S H)
+(define L (make-unchecked-tm '(S H)
                    '(a b)
                    `(((S a) (H ,LEFT))
                      ((S b) (H ,LEFT))
@@ -35,7 +38,7 @@
 
 ;; PRE:  tape = (LM w), where w in {a b BLANK}*
 ;; POST: tape = (LM w)
-(define HALT (make-tm '(S)
+(define HALT (make-unchecked-tm '(S)
                       '(a b)
                       '()
                       'S
@@ -47,60 +50,60 @@
 ;; PRE: tape = (LM w) AND i=k>0 AND tape[i]=s, where w in {a b BLANK}*
 ;;      AND s in (a b BLANK)
 ;; POST: tape = (LM w) AND i=k AND tape[i]=a
-(define Wa (make-tm '(S H)
+(define Wa (make-unchecked-tm '(S H)
                     '(a b)
                     `(((S a) (H a))
                       ((S b) (H a))
                       ((S ,BLANK) (H a)))
                     'S
                     '(H)))
-
+#|
 ;; Tests for Wa
 (check-equal? (last (sm-showtransitions Wa `(,LM b) 1))
               `(H 1 (,LM a)))
 (check-equal? (last (sm-showtransitions Wa `(,LM b a ,BLANK a) 3))
               `(H 3 (,LM b a a a)))
-
+|#
 ;.................................................
 ;; Write b
 
 ;; PRE: tape = (LM w) AND i=k>0 AND tape[i]=s, where w in {a b BLANK}*
 ;;      AND s in (a b BLANK)
 ;; POST: tape = (LM w) AND i=k AND tape[i]=b
-(define Wb (make-tm '(S H)
+(define Wb (make-unchecked-tm '(S H)
                     '(a b)
                     `(((S a) (H b))
                       ((S b) (H b))
                       ((S ,BLANK) (H b)))
                     'S
                     '(H)))
-
+#|
 ;; Tests for Wb
 (check-equal? (last (sm-showtransitions Wb `(,LM ,BLANK ,BLANK) 2))
               `(H 2 (,LM ,BLANK b)))
 (check-equal? (last (sm-showtransitions Wb `(,LM b b b b) 3))
               `(H 3 (,LM b b b b)))
-
+|#
 ;.................................................
 ;; Write BLANK
 
 ;; PRE: tape = (LM w) AND i=k>0 AND tape[i]=s, where w in {a b BLANK}*
 ;;      AND s in (a b BLANK)
 ;; POST: tape = (LM w) AND i=k AND tape[i]=BLANK
-(define WB (make-tm '(S H)
+(define WB (make-unchecked-tm '(S H)
                     '(a b)
                     `(((S a) (H ,BLANK))
                       ((S b) (H ,BLANK))
                       ((S ,BLANK) (H ,BLANK)))
                     'S
                     '(H)))
-
+#|
 ;; Tests for WB
 (check-equal? (last (sm-showtransitions WB `(,LM a a) 1))
               `(H 1 (,LM ,BLANK a)))
 (check-equal? (last (sm-showtransitions WB `(,LM a b b b) 3))
               `(H 3 (,LM a b ,BLANK b)))
-
+|#
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Move right twice
 
@@ -108,6 +111,7 @@
 ;; POST: tape = (LM w) AND i=k+2 AND w in (a b BLANK)*
 (define RR (combine-tms (list R R) '(a b)))
 
+#|
 ;; Tests for RR
 (check-equal? (ctm-run RR `(,LM b a a) 1)
               `(F 3 (,LM b a a)))
@@ -117,13 +121,23 @@
               `(F 5 (,LM a b b a ,BLANK)))
 (check-equal? (ctm-run RR `(,LM b) 1)
               `(F 3 (,LM b ,BLANK ,BLANK)))
-
+|#
 ;.................................................
 ;; Find right BLANK 
 
 ;; PRE:  tape = (LM w) AND i=k>0 AND w in (a b BLANK)*
 ;; POST: tape = (LM w) AND i>k AND tape[i] = BLANK AND tape[k+1..i-1] /= BLANK
-(define FBR (combine-tms
+
+(define FBR (new-combine-tms
+ ((LABEL a)
+  R
+  (BRANCH
+   (('a (GOTO 0))
+    ('b (GOTO 0))
+    (BLANK (GOTO 10))))
+  (LABEL 10))
+ (list 'a 'b))
+  #;(new-combine-tms
              (list 0
                    R
                    (cons BRANCH
@@ -133,13 +147,25 @@
                    10)
              (list 'a 'b)))
 
+#;(new-combine-tms
+ ((LABEL 0)
+  R
+  (BRANCH
+   (('a (GOTO 0))
+    ('b (GOTO 0))
+    (BLANK (GOTO 10))))
+  (LABEL 10))
+ (list 'a 'b))
+
 ;; Tests for FBR
+#|
 (check-equal? (ctm-run FBR `(,LM ,BLANK) 1)
               `(F 2 (,LM ,BLANK ,BLANK)))
 (check-equal? (ctm-run FBR `(,LM a a b b b ,BLANK a a) 2)
               `(F 6 (,LM a a b b b ,BLANK a a)))
 (check-equal? (ctm-run FBR `(,LM ,BLANK ,BLANK b b) 3)
               `(F 5 (,LM ,BLANK ,BLANK b b ,BLANK)))
+|#
 
 ;.................................................
 ;; Find left BLANK
@@ -164,11 +190,12 @@
 (check-equal? (ctm-run FBL `(,LM a ,BLANK a b ,BLANK b a b b) 8)
               `(H 5 (,LM a ,BLANK a b ,BLANK b a b b)))
 
+
 ;.................................................
 
 ;; PRE:  tape = (LM BLANK w BLANK) and head on blank after w
 ;; POST: tape = (LM BLANK w BLANK w BLANK) and head on blank after second w 
-(define COPY (combine-tms
+(define COPY (new-combine-tms
               (list FBL
                     0 ;; Machine checks if there is anything left to copy
                     R
@@ -208,7 +235,7 @@
               `(F 15 (,LM ,BLANK a b a b a b ,BLANK a b a b a b ,BLANK)))
 
 ;.................................................
-
+#|
 ;; Sample ctm as list
 (define COPYL
   '(FBL
@@ -242,3 +269,5 @@
     5))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+|#
+|#

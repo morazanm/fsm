@@ -311,6 +311,7 @@
        (list->vector (map (lambda (x) (lambda (y) y)) graphs))
        #;(lambda () (graph->bitmap (graph-struct-grph (make-init-grph-structure M))))
        MIDDLE-E-SCENE
+       E-SCENE-WIDTH E-SCENE-HEIGHT PERCENT-BORDER-GAP
        DEFAULT-ZOOM
        DEFAULT-ZOOM-CAP
        DEFAULT-ZOOM-FLOOR
