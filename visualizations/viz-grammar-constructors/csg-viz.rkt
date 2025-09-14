@@ -134,8 +134,7 @@
           (if (= 0 (comp-step-num-nts (caar new-steps)))
               (if (and (= (comp-step-len (caar new-steps)) word-len)
                        (equal? w (comp-step-word (caar new-steps))))
-                  (begin (displayln (format "num steps: ~a" (add1 num-steps)))
-                         (car new-steps))
+                  (car new-steps)
                   (find-deriving-word (rest new-steps) filtered-new-steps))
               (find-deriving-word (rest new-steps) (cons (first new-steps) filtered-new-steps)))))
     (if (root-empty? tovisit)
@@ -167,143 +166,10 @@
                       (comp-step-idx l)))))
          result))))
 
-
-(define (map-reverse f as)
-  (for/fold ([rbs '()]) ([a (in-list as)]) (cons (f a) rbs)))
-
-(define (treelist-foldr proc init as . bss)
-  (define m (add1 (length bss)))
-  #;(check-procedure-arity-includes 'treelist-foldr proc (add1 m))
-  #;(check-treelist 'treelist-foldr as)
-  (define n (treelist-length as))
-  #;(for ([bs (in-list bss)])
-      (check-treelist 'treelist-foldr bs))
-  (for/foldr ([acc init])
-    ([a (in-treelist as)] [i (in-naturals)])
-    (apply proc a
-           (reverse (cons acc (map-reverse (λ (bs) (treelist-ref bs i)) bss))))))
-
-#;(define (test-csg-derive-edited g w)
-  (define generated-derivs (mutable-set))
-  (define nts-set (list->seteq (csg-getv g)))
-  (define rules-with-lengths
-    (map (lambda (rule)
-           (rule-with-metrics rule
-                              (length (csg-rule-lhs rule))
-                              (- (count (lambda (symb) (set-member? nts-set symb))
-                                        (csg-rule-rhs rule))
-                                 (count (lambda (symb) (set-member? nts-set symb))
-                                        (csg-rule-lhs rule)))
-                              (- (length (filter (lambda (x) (not (eq? EMP x))) (csg-rule-rhs rule)))
-                                 (length (csg-rule-lhs rule)))))
-         (csg-getrules g)))
-  
-  ; (listof symbol) (listof csg-rule) --> (listof (listof symbol))
-
-  (define (subst-in-list word start-idx tosub-len tosub)
-    (define end-idx (+ start-idx tosub-len))
-    (define (end-word idx word)
-      (if (= idx end-idx)
-          (append tosub word)
-          (end-word (add1 idx) (cdr word))))
-    (define (begin-word idx word)
-      (if (= idx start-idx)
-          (end-word idx word)
-          (cons (car word) (begin-word (add1 idx) (cdr word)))))
-    (begin-word 0 word))
-  
-  (define (apply-one-step curr)
-    (define yield-len (comp-step-len curr))
-    (define (apply-one-rule rules-left word idx stop-idx)
-      (if (null? rules-left)
-          '()
-          (if (= idx stop-idx)
-              (apply-one-rule (cdr rules-left)
-                              (comp-step-word curr)
-                              0
-                              (if (null? (cdr rules-left))
-                                  0
-                                  (add1 (- (comp-step-len curr) (rule-with-metrics-lhs-len (cadr rules-left))))))
-              (if (> (rule-with-metrics-lhs-len (car rules-left))
-                           (length word))
-                  (apply-one-rule (cdr rules-left)
-                                  (comp-step-word curr)
-                                  0
-                                  (min yield-len (add1 (- (comp-step-len curr) (rule-with-metrics-lhs-len (cadr rules-left))))))
-              (if (equal? (csg-rule-lhs (rule-with-metrics-rule (car rules-left)))
-                          (take word (rule-with-metrics-lhs-len (car rules-left))))
-                  (cons (list (comp-step (subst-in-list (comp-step-word curr)
-                                                        idx
-                                                        (rule-with-metrics-lhs-len (car rules-left))
-                                                        (if (equal?
-                                                             (csg-rule-rhs (rule-with-metrics-rule (car rules-left)))
-                                                             (list EMP))
-                                                            '()
-                                                            (csg-rule-rhs (rule-with-metrics-rule (car rules-left)))))
-                                         (+ (comp-step-len curr)
-                                            (rule-with-metrics-num-change-len (car rules-left)))
-                                         (+ (comp-step-num-nts curr)
-                                            (rule-with-metrics-num-change-nts (car rules-left))))
-                              (csg-rule-lhs (rule-with-metrics-rule (car rules-left)))
-                              (csg-rule-rhs (rule-with-metrics-rule (car rules-left)))
-                              idx)
-                        (apply-one-rule rules-left
-                                        (cdr word)
-                                        (add1 idx)
-                                        stop-idx))
-                  (apply-one-rule rules-left (cdr word) (add1 idx) stop-idx))))))
-    (apply-one-rule rules-with-lengths
-                    (comp-step-word curr)
-                    0
-                    (add1 (- (comp-step-len curr)
-                             (rule-with-metrics-lhs-len (car rules-with-lengths))))))
-
-  ; (listof symbol) (listof (listof (listof symbol))) -> (listof (listof symbol))
-  (define (bfs-deriv tovisit num-steps)
-    (define (find-deriving-word new-steps filtered-new-steps)
-      (if (null? new-steps)
-          (bfs-deriv (treelist-foldr (lambda (val accum)
-                                       (treelist-cons accum val ))
-                                     (treelist-rest tovisit)
-                                     filtered-new-steps)
-                     (add1 num-steps))
-          (if (= 0 (comp-step-num-nts (caaar new-steps)))
-              (if (equal? w (comp-step-word (caaar new-steps)))
-                  (begin (displayln (format "num steps: ~a" (add1 num-steps)))
-                         (car new-steps))
-                  (find-deriving-word (rest new-steps) filtered-new-steps))
-              (find-deriving-word (rest new-steps) (treelist-cons filtered-new-steps (first new-steps))))))
-    (if (treelist-empty? tovisit)
-        (treelist)
-        (let ([firstpath (treelist-first tovisit)])
-          (find-deriving-word (for/list ([step (in-list (apply-one-step (caar firstpath)))]
-                                         #:when (not (set-member? generated-derivs (comp-step-word (car step)))))
-                                (set-add! generated-derivs (comp-step-word (car step)))
-                                (cons step firstpath))
-                              (treelist)))))
-
-  (let ([result (reverse (bfs-deriv
-                          (treelist (list (list (comp-step (list (csg-getstart g)) 1 1) '() '() '())))
-                          #;(heap comparator
-                                  (list (list (comp-step (list (csg-getstart g)) 1 1) '() '() '()))) 0))])
-    (if (null? result)
-        (format "~s is not in L(G)." w)
-        (append-map
-         (lambda (l)
-           (if (equal? w (comp-step-word (first l)))
-               (if (null? l)
-                   (list (list EMP))
-                   (list
-                    (list (los->symbol (comp-step-word (first l))) (los->symbol (second l)) (los->symbol (third l)) (fourth l))))
-               (list
-                (list (los->symbol (comp-step-word (first l))) (los->symbol (second l)) (los->symbol (third l)) (fourth l)))))
-         result))))
-
 ;; symbol -> symbol
 ;; Just removes number renaming that we have to do for graphviz and returns the original symbol
 (define (undo-renaming symb)
-  (string->symbol (list->string (takef (string->list (symbol->string symb)) (lambda (x) (not (equal? #\_ x))))
-                                )))
+  (string->symbol (list->string (takef (string->list (symbol->string symb)) (lambda (x) (not (equal? #\_ x)))))))
 
 ;; (listof symbols) (listof rules) MutableHashtable
 ;; Returns the levels for each graph needed to display the derivation
@@ -428,17 +294,17 @@
 ;; graph lon -> graph
 ;; Purpose: To make a node graph
 (define (make-node-graph graph lon hedge-nodes hex-nodes yield-node invariant)
+  
   (let ([invariant-result (if (not (eq? 'NO-INV invariant))
                               (invariant (map undo-renaming yield-node))
                               '())])
     (foldl (λ (state result)
              (add-node result
                        state
-                       #:atb (hash 'color (if (member state hedge-nodes)
-                                              HEDGE-COLOR
-                                              (if (member state yield-node)
-                                                  YIELD-COLOR
-                                                  'black))
+                       #:atb (hash 'color (cond
+                                          [(member state yield-node) YIELD-COLOR]
+                                          [(member state hedge-nodes) HEDGE-COLOR]
+                                          [else 'black])
                                    'fillcolor (if (not (eq? 'NO-INV invariant))
                                                   (if (member state yield-node)
                                                       (if invariant-result
@@ -705,12 +571,3 @@
                         (AAaAAA ,ARROW ,EMP)
                         (B ,ARROW A))
                       'S))
-
-#;(for ([word (in-list '(#;(a a b b c c)
-                       #;(a a a b b b c c c)
-                       #;(a a a a b b b b c c c c)
-                       (a a a a a b b b b b c c c c c)
-                       #;(a a a a a a b b b b b b)
-                       #;(i i b i b i i i)
-                       ))])
-  (time (test-csg-derive-edited anbncn word)))
