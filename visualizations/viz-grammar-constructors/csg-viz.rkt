@@ -540,7 +540,7 @@
    (create-line-of-edges (dgrph-yield-nodes a-dgrph))))
 
 (define (csg-viz g w #:cpu-cores [cpu-cores #f] . invariant)
-  (let* [(derv (csg-derive g w))
+  (let* [(derv (csg-derive-edited g w))
          (w-derv (map (lambda (x) (symbol->fsmlos (first x))) derv))
          (moved-stuff (move-rule-applications-in-list derv))
          (moved-rules

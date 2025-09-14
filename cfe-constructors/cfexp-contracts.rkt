@@ -2,7 +2,7 @@
 
 (require "../fsm-core/private/macros/shared/shared-predicates.rkt"
          "../fsm-core/private/macros/error-formatting.rkt"
-         "../fsm-core/private/cfg.rkt"
+         "../fsm-core/private/cfg-struct.rkt"
          "cfexp-structs.rkt"
          racket/contract)
 

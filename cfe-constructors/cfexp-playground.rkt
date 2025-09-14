@@ -2,14 +2,215 @@
 
 (require  "../fsm-core/private/constants.rkt"
           "context-free-expressions-constructors.rkt"
+          "../fsm-core/private/cfg-struct.rkt"
           "../fsm-core/private/cfg.rkt"
           "../fsm-core/private/pda.rkt"
-          ;"../visualizations/viz-grammar-constructors/cfg-derive-leftmost.rkt"
           "../sm-graph.rkt"
+          racket/syntax-srcloc
+          (for-syntax racket/base
+                      syntax/parse
+                      racket/set
+                      syntax/parse/experimental/template
+                      racket/contract/combinator
+                      )
+          
           rackunit)
 
 (define WORD-AMOUNT 100)
 
+#;(define-syntax (syntax/loc-helper stx)
+  (syntax-parse stx
+    [(_ origin-stx constructor vals:expr ...)
+     (syntax/loc #'origin-stx
+       (constructor (if (procedure? vals)
+                                 (vals)
+                                 vals) ...))]))
+
+(define-struct (exn:fail:contract:srcloc exn:fail:contract) (a-srcloc)
+  #:property prop:exn:srclocs
+  (lambda (a-struct)
+    (match a-struct
+      [(exn:fail:contract:srcloc msg marks (list a-srcloc))
+       (list a-srcloc)])))
+
+(define-syntax (construct-cfe stx)
+  (define-syntax-class concat-expr
+    #:attributes (id (vals 1))
+    (pattern (id:id ((~literal concat) vals:expr ...))))
+
+  (define-syntax-class singleton-expr
+    #:attributes (id val)
+    (pattern (id:id ((~literal singleton) val:expr))))
+
+  (define-syntax-class empty-var-expr
+    #:attributes (id)
+    (pattern (id:id ((~literal var)))))
+
+  (define-syntax-class var-expr
+    #:attributes (id binding)
+    (pattern (id:id ((~literal var) binding:expr))))
+
+  (define-syntax-class union-expr
+    #:attributes (id (vals 1))
+    (pattern (id:id ((~literal union) vals:expr ...))))
+
+  (define-syntax-class empty-expr
+    #:attributes (id)
+    (pattern (id:id ((~literal empty)))))
+
+  (define-syntax-class null-expr
+    #:attributes (id)
+    (pattern (id:id ((~literal null)))))
+  
+  (syntax-parse stx
+    [(_ [(~or* empty-var-expr:empty-var-expr
+               var-expr:var-expr
+               singleton-expr:singleton-expr
+               concat-expr:concat-expr
+               union-expr:union-expr
+               empty-expr:empty-expr
+               null-expr:null-expr) ...]
+        res-cfe-id:id)
+     
+     #:with var-cfe-lst #`(list (~? (syntax->datum #'var-expr.id) #f) ...)
+     #`(letrec ([symb-lookup (for/hash ([cfe-id (in-list var-cfe-lst)]
+                                        #:when cfe-id)
+                               (values cfe-id (gensym 'A-)))]
+                (~? [empty-expr.id (lambda ()
+                                    (set! empty-expr.id (empty-cfexp))
+                                    empty-expr.id)])
+                ...
+                (~? [null-expr.id (lambda ()
+                                     (set! null-expr.id (null-cfexp))
+                                     null-expr.id)])
+                ...
+                (~? [singleton-expr.id (lambda ()
+                                        (set! singleton-expr.id
+                                              (with-handlers
+                                               ([exn:fail:contract?
+                                                 (lambda (e)
+                                                   (raise (exn:fail:contract:srcloc
+                                                           (exn-message e)
+                                                           (current-continuation-marks)
+                                                           (list (syntax-srcloc #'singleton-expr)))))])
+                                             (singleton-cfexp singleton-expr.val)))
+                                        singleton-expr.id)])
+                ...
+                (~? [empty-var-expr.id (lambda ()
+                                        (set! empty-var-expr.id (var-cfexp #f))
+                                        empty-var-expr.id)])
+                ...
+                (~? [var-expr.id (lambda ()
+                                  (set! var-expr.id
+                                        (with-handlers
+                                               ([exn:fail:contract?
+                                                 (lambda (e)
+                                                   (raise (exn:fail:contract:srcloc
+                                                           (exn-message e)
+                                                           (current-continuation-marks)
+                                                           (list (syntax-srcloc #'var-expr)))))])
+                                             (var-cfexp (hash-ref symb-lookup (syntax->datum #'var-expr.id)))))
+                                  var-expr.id)])
+                ...
+                (~? [union-expr.id (lambda ()
+                                     (set! union-expr.id
+                                           (with-handlers
+                                               ([exn:fail:contract?
+                                                 (lambda (e)
+                                                   (raise (exn:fail:contract:srcloc
+                                                           (exn-message e)
+                                                           (current-continuation-marks)
+                                                           (list (syntax-srcloc #'union-expr)))))])
+                                             (union-cfexp (if (procedure? union-expr.vals)
+                                                              (union-expr.vals)
+                                                              union-expr.vals)...)))
+                                     union-expr.id)])
+                ...
+                (~? [concat-expr.id (lambda ()
+                                     (set! concat-expr.id
+                                           (with-handlers
+                                               ([exn:fail:contract?
+                                                 (lambda (e)
+                                                   (raise (exn:fail:contract:srcloc
+                                                           (exn-message e)
+                                                           (current-continuation-marks)
+                                                           (list (syntax-srcloc #'concat-expr)))))])
+                                             (concat-cfexp (if (procedure? concat-expr.vals)
+                                                             (concat-expr.vals)
+                                                             concat-expr.vals) ...)))
+                                     concat-expr.id)])
+                ...)
+         (~? (with-handlers
+                 ([exn:fail:contract?
+                   (lambda (e)
+                     #;(println (blame-contract (exn:fail:contract:blame-object e)))
+                     (raise (exn:fail:contract:srcloc (exn-message e)
+                                                      (current-continuation-marks)
+                                                      (list (syntax-srcloc #'var-expr)))))])
+               (update-binding! (if (procedure? var-expr.id)
+                                    (var-expr.id)
+                                    var-expr.id)
+                                (hash-ref symb-lookup (syntax->datum #'var-expr.id))
+                                (if (procedure? var-expr.binding)
+                                    (var-expr.binding)
+                                    var-expr.binding))))
+         ...
+         (if (procedure? res-cfe-id)
+             (res-cfe-id)
+             res-cfe-id))]))
+
+(define EMPTY (empty-cfexp))
+
+(define A (singleton-cfexp 'a))
+
+(define B (singleton-cfexp 'b))
+
+(define C (singleton-cfexp 'c))
+
+#;(define WWR
+    (let* [(WWR (var-cfexp 'S))
+           (AHA (concat-cfexp A WWR A))
+           (BHB (concat-cfexp B WWR B))]
+      (begin
+        (update-binding! WWR 'S (union-cfexp EMPTY AHA BHB))
+        WWR)))
+
+(define AiBj
+  (let* [(AiBj (var-cfexp 'A))
+         (AIB (concat-cfexp A AiBj B))
+         (AIBB (concat-cfexp A AiBj B B))
+         (EUAIBUAIBB (union-cfexp EMPTY AIB AIBB))]
+    (begin
+      (update-binding! AiBj 'A EUAIBUAIBB)
+      AiBj)))
+
+(time (let* [(AiBj (var-cfexp 'A))
+             (AIB (concat-cfexp A AiBj B))
+             (AIBB (concat-cfexp A AiBj B B))
+             (EUAIBUAIBB (union-cfexp EMPTY AIB AIBB))]
+        (begin
+          (update-binding! AiBj 'A EUAIBUAIBB)
+          AiBj)))
+
+(time (construct-cfe [(AiBj (var EUAIBUAIBB))
+                      (EUAIBUAIBB (union EMPTY 'AIB AIBB))
+                      (AIB (concat A AiBj B))
+                      (AIBB (concat A AiBj B B))]
+                     AiBj))
+
+#;(equal? AiBj (construct-cfe [(AiBj (_var-cfexp 'A EUAIBUAIBB))
+                               (EUAIBUAIBB (_union-cfexp EMPTY AIB AIBB))
+                               (AIB (_concat-cfexp A AiBj B))
+                               (AIBB (_concat-cfexp A AiBj B B))]
+                              AiBj))
+  
+
+#;(construct-cfe [(AHA (_concat-cfexp A WWR A))
+                  (BHB (_concat-cfexp B WWR B))
+                  (WWR (_var-cfexp 'S (union-cfexp EMPTY AHA BHB)))]
+                 WWR)
+
+#|
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;CFEXP;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define EMPTY (empty-cfexp))
@@ -560,3 +761,4 @@
 (check-true (pda-checker (cfe->pda Gina-a^mb^nc^pd^q-cfe) Gina-a^mb^nc^pd^q-WORDS))
 
 (check-true (pda-checker (cfe->pda Gina-a^mb^nc^p-cfe) Gina-a^mb^nc^p-WORDS))
+|#
