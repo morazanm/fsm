@@ -83,20 +83,6 @@
                           (format "~adot~s_~s" SAVE-DIR idx inner-idx))
                         (begin
                           (cfg-graph->dot graph a-rank-node-lst SAVE-DIR (format "dot~s" idx))
-                          (format "~adot~s" SAVE-DIR idx))))]
-                 [(eq? 'csg graph-type)
-                  (for/vector/concurrent
-                      #:length graphs-len
-                    ([graph (in-list graphs)]
-                     [idx (in-naturals)]
-                     [a-rank-node-lst (in-list rank-node-lst)])
-                    (if (list? graph)
-                        (for/list/concurrent ([inner-graph (in-list graph)]
-                                              [inner-idx (in-naturals)])
-                          (special-graph->dot inner-graph a-rank-node-lst SAVE-DIR (format "dot~s_~s" idx inner-idx))
-                          (format "~adot~s_~s" SAVE-DIR idx inner-idx))
-                        (begin
-                          (special-graph->dot graph a-rank-node-lst SAVE-DIR (format "dot~s" idx))
                           (format "~adot~s" SAVE-DIR idx))))]))
         
          (define graphviz-thread-group (make-thread-group))
@@ -105,7 +91,7 @@
            (delay/thread
             #:group graphviz-thread-group
             (semaphore-wait cpu-cores-avail)
-            (define shell-process (make-process))
+            (define shell-process (make-process a-file-path))
             (define result (get-shell-process-result (first shell-process)))
             (close-input-port (first shell-process))
             (close-output-port (second shell-process))
