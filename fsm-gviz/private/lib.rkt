@@ -196,7 +196,7 @@
           
     (if (null? main-lst)
         (cons "}" '())
-        (cons "    {rank=same;" (create-rank-node-lst (car main-lst)))))
+        (cons "    {rank=same;" (create-rank-node-lst-helper (car main-lst)))))
   
   (define (create-subgraphs lst)
     (if (null? lst)
@@ -211,7 +211,7 @@
   (define (create-nodes lst)
     (if (null? lst)
         (create-edges (graph-edge-list g))
-        (cons (node->str (car lst) (formatters-node fmtrs)) (add-nodes (cdr lst)))))
+        (cons (node->str (car lst) (formatters-node fmtrs)) (create-nodes (cdr lst)))))
   
   (string-append*
    name

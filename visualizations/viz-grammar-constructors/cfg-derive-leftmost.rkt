@@ -91,7 +91,7 @@
                                        (list EMP)
                                        (list (list (los->symbol (first l)) (los->symbol (second l)))))
                                    (list (list (los->symbol (first l)) (los->symbol (second l)))
-                                         ARROW)))
+                                         )))
                              (reverse fderiv))
                  (make-deriv visited (dequeue! derivs) g chomsky))
              (let* ([rls (hash-ref nt-to-rules-ht fnt)]
