@@ -5,7 +5,6 @@
 #lang racket/base
   (require "word.rkt"
            "constants.rkt"
-           "cfg.rkt"
            "cfg-struct.rkt"
            "misc.rkt"
            racket/list)
@@ -17,6 +16,9 @@
            union-pda concat-pda kleenestar-pda
            pdaconfig-state pdaconfig-wi pdaconfig-stack
            pda-transitions-with-rules
+
+
+           pda->spda ;;;REMOVE 
            )
   ;;; pdaconfig
   
@@ -248,7 +250,7 @@
                   states)
             (let* ((ns (gen-symbol froms states))
                    (newrule (list (list (car states) EMP EMP) (list ns (list (car pushlist))))))
-              (create-push-rules (cdr pushlist) tos (cons newrule rls) (cons ns states)))))
+              (create-push-rules (cdr pushlist) froms tos (cons newrule rls) (cons ns states)))))
       
       ; (listof symbol) state (listof state) -->
       ;pdarule --> (listof pdarule)

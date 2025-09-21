@@ -1,7 +1,6 @@
 #lang racket/base
 (require "../2htdp/image.rkt"
-         "call-with-values-chained.rkt"
-         )
+         "call-with-values-chained.rkt")
 (provide resize-image
          find-new-floor)
 
