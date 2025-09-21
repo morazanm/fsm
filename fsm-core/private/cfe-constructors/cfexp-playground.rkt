@@ -173,7 +173,7 @@
         (update-binding! WWR 'S (union-cfexp EMPTY AHA BHB))
         WWR)))
 
-(define AiBj
+#;(define AiBj
   (let* [(AiBj (var-cfexp 'A))
          (AIB (concat-cfexp A AiBj B))
          (AIBB (concat-cfexp A AiBj B B))
@@ -182,7 +182,7 @@
       (update-binding! AiBj 'A EUAIBUAIBB)
       AiBj)))
 
-(time (let* [(AiBj (var-cfexp 'A))
+#;(time (let* [(AiBj (var-cfexp 'A))
              (AIB (concat-cfexp A AiBj B))
              (AIBB (concat-cfexp A AiBj B B))
              (EUAIBUAIBB (union-cfexp EMPTY AIB AIBB))]
@@ -190,7 +190,7 @@
           (update-binding! AiBj 'A EUAIBUAIBB)
           AiBj)))
 
-(time (construct-cfe [(AiBj (var EUAIBUAIBB))
+#;(time (construct-cfe [(AiBj (var EUAIBUAIBB))
                       (EUAIBUAIBB (union EMPTY 'AIB AIBB))
                       (AIB (concat A AiBj B))
                       (AIBB (concat A AiBj B B))]
