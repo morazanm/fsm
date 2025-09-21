@@ -434,13 +434,8 @@
                   #:rank-node-lst [rank-node-lst '()])
   (let ()
     (run-viz
-     (cons (add-node (create-graph 'dgraph #:atb (hash 'rankdir "TB" 'font "Sans" 'ordering "in"))
-               (first (first w-der))
-               #:atb
-               (hash 'color 'black 'shape 'circle 'label (first (first w-der)) 'fontcolor 'black 'font "Sans"))
-           (rest graphs))
-     (list->vector (map (lambda (x) (lambda (y) y)) graphs))
-     #;(create-first-img (first (first w-der)))
+     graphs
+     (create-first-img (first (first w-der)))
      (posn (/ E-SCENE-WIDTH 2) (/ E-SCENE-HEIGHT 2))
      E-SCENE-WIDTH
      E-SCENE-HEIGHT

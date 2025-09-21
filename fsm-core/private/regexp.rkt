@@ -215,9 +215,7 @@
                                  ")"))
                     (string-append r1 "*")]
                    [else (string-append "(" r1 ")" "*")]))]))
-  (if (regexp? r)
-      (helper r)
-      (error 'printable-regexp (format "Give input is not a regexp: ~s" r))))
+  (helper r))
 
 ;regexp?: element --> boolean
 (define (regexp? x)
