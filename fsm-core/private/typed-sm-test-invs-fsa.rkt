@@ -6,7 +6,8 @@
          racket/list
          racket/set
          racket/vector
-         typed/racket/unsafe)
+         typed/racket/unsafe
+         racket/undefined)
 
 (unsafe-require/typed "fsa.rkt"
                       [make-unchecked-dfa (-> (Listof Symbol) (Listof Symbol) Symbol (Listof Symbol) (Listof (List Symbol Symbol Symbol))
@@ -22,6 +23,88 @@
 (unsafe-require/typed racket/vector
                       [vector-set/copy (-> (Vectorof Byte) Byte Byte (Vectorof Byte))])
 
+(struct path-with-hash ([path : gbvector] [hash : Bytes]) #:transparent)
+
+(struct array-queue ([vec : (Vectorof (Option path-with-hash))]
+                     [capacity : Index]
+                     [front : Index]
+                     [size : Index])
+  #:mutable
+  #:transparent)
+
+
+
+
+(: new-make-queue (-> Positive-Index array-queue))
+(define (new-make-queue capacity)
+  (define new-vec : (Mutable-Vectorof (Option path-with-hash)) (make-vector capacity #f))
+  #;(vector-set! new-vec 0 init-elem)
+  (array-queue new-vec capacity 0 0))
+
+(: new-ensure-free-space! (-> array-queue Positive-Index Void))
+(define (new-ensure-free-space! a-q needed-free-space)
+  #;(define vec (gvector-vec gv))
+  #;(define n (gvector-n gv))
+  (define cap (vector-length (array-queue-vec a-q)))
+  (define needed-cap (+ (array-queue-size a-q) needed-free-space))
+  (unless (<= needed-cap cap)
+    (: loop (-> Index Index))
+    (define (loop new-cap)
+      (if (<= needed-cap new-cap)
+          new-cap
+          (loop (let ([res (* 2 new-cap)])
+                  (if (index? res)
+                      res
+                      (error "Too large"))))))
+    (define new-cap (loop (max DEFAULT-CAPACITY cap)))
+    (: new-vec (Mutable-Vectorof (Option path-with-hash)))
+    (define new-vec (make-vector new-cap #f))
+    (for ([idx (in-range new-cap)])
+      (vector-set! new-vec
+                   idx
+                   (vector-ref (array-queue-vec a-q)
+                               (modulo (+ (array-queue-front a-q)
+                                          idx)
+                                       (array-queue-capacity a-q)))))
+    (set-array-queue-vec! a-q new-vec)
+    (set-array-queue-capacity! a-q new-cap)
+    (set-array-queue-front! a-q 0)
+    #;(vector-copy! new-vec 0 vec)
+    #;(set-gvector-vec! gv new-vec)))
+
+(: new-enqueue! (-> array-queue path-with-hash Void))
+(define (new-enqueue! a-q val)
+  (when (= (array-queue-size a-q) (array-queue-capacity a-q))
+    (new-ensure-free-space! a-q 1)) ;; Need to figure out how to use ensure-free-space function here
+  (vector-set! (array-queue-vec a-q)
+               (modulo (+ (array-queue-front a-q)
+                          (array-queue-size a-q))
+                       (array-queue-capacity a-q))
+               val)
+  (set-array-queue-size! a-q (let ([res (add1 (array-queue-size a-q))])
+                               (if (index? res)
+                                   res
+                                   (error "Too big")))))
+
+(: new-dequeue! (-> array-queue path-with-hash))
+(define (new-dequeue! a-q)
+  #;(when (= (array-queue-size a-q) 0)
+    (error "huh?"))
+  (define res (vector-ref (array-queue-vec a-q)
+                          (array-queue-front a-q)))
+  (set-array-queue-front! a-q (modulo (add1 (array-queue-front a-q))
+                                      (array-queue-capacity a-q)))
+  (set-array-queue-size! a-q (let ([res (sub1 (array-queue-size a-q))])
+                               (if (index? res)
+                                   res
+                                   (error "Too small"))))
+  (if res
+      res
+      (error "Something went wrong")))
+
+(: new-queue-empty? (-> array-queue Boolean))
+(define (new-queue-empty? a-q)
+  (= (array-queue-size a-q) 0))
 
 (define DEFAULT-CAPACITY 10)
 
@@ -192,7 +275,7 @@
 (define (always-true-thunk)
   always-true)
 
-(struct path-with-hash ([path : gbvector] [hash : Bytes]) #:transparent)
+
 
 (struct rule-struct ([start-state : Symbol] [read-elem : Symbol] [dest-state : Symbol] [idx : Byte]) #:transparent)
 ;(struct path-rule-struct (start-state read-elem dest-state) #:transparent)
@@ -249,6 +332,8 @@
               (word-of-path-helper accum (cdr a-lor))
               (word-of-path-helper (cons (rule-struct-read-elem (vector-ref rules (car a-lor))) accum) (cdr a-lor)))))
     (word-of-path-helper '() a-lor))
+
+  (define new-queue (new-make-queue 10))
   
   ;(define a-config (list (word-of-path path) final-state))]
   ;#:when (not ((hash-ref a-loi-hash final-state always-true-thunk) (car a-config))
@@ -259,10 +344,10 @@
   (: find-paths-helper (-> (Listof (List (Listof Symbol) Symbol)) (Listof (List (Listof Symbol) Symbol))))
   (define (find-paths-helper accum)
     (collect-garbage 'incremental)
-    (collect-garbage 'minor)
-    (if (queue-empty?)
+    #;(displayln new-queue)
+    (if (new-queue-empty? new-queue)
         accum
-        (let* [(qfirst (dequeue!))
+        (let* [(qfirst (new-dequeue! new-queue) #;(dequeue!))
                (final-state (rule-struct-dest-state
                              (vector-ref rules
                                          (gbvector-ref (path-with-hash-path qfirst)
@@ -274,7 +359,16 @@
                                  (rule-struct-start-state rule))
                             (< curr-rep-count
                                rep-limit)))
-            (enqueue! (path-with-hash (gbvector-add/copy (path-with-hash-path qfirst) (rule-struct-idx rule))
+            (new-enqueue! new-queue (path-with-hash (gbvector-add/copy (path-with-hash-path qfirst) (rule-struct-idx rule))
+                                       (let ([new-vec (bytes-copy (path-with-hash-hash qfirst))])
+                                         (bytes-set! new-vec
+                                                     (rule-struct-idx rule)
+                                                     (let ([res (add1 curr-rep-count)])
+                                                       (if (< 255 res)
+                                                           (error "Rep count cannot be above 255")
+                                                           res)))
+                                         new-vec)))
+            #;(enqueue! (path-with-hash (gbvector-add/copy (path-with-hash-path qfirst) (rule-struct-idx rule))
                                        (let ([new-vec (bytes-copy (path-with-hash-hash qfirst))])
                                          (bytes-set! new-vec
                                                      (rule-struct-idx rule)
@@ -295,8 +389,11 @@
         #:when (eq? (rule-struct-start-state rule) (sm-start a-machine)))
     (let ([vec (make-bytes rules-len 0)])
       (bytes-set! vec (rule-struct-idx rule) 1)
-      (enqueue! (path-with-hash (make-gbvector 10 (rule-struct-idx rule))
+      (new-enqueue! new-queue (path-with-hash (make-gbvector 10 (rule-struct-idx rule))
+                                vec))
+      #;(enqueue! (path-with-hash (make-gbvector 10 (rule-struct-idx rule))
                                 vec))))
+  
   (find-paths-helper '()))
 
 ;; ndfa -> ndfa
@@ -595,7 +692,7 @@
                                    (list 'R DNA-R-INV)))])
   'done)
 (time (length (sm-test-invs-fsa EVIL-dna-sequence
-                  #:rep-limit 2
+                  #:rep-limit 1
                   #:ds-remove #f
                   (list 'K DNA-K-INV)
                   (list 'H DNA-H-INV)
@@ -606,3 +703,16 @@
                   (list 'B DNA-B-INV)
                   (list 'S DNA-S-INV)
                   (list 'R DNA-R-INV))))
+
+#;(sm-test-invs-fsa EVIL-dna-sequence
+                  #:rep-limit 1
+                  #:ds-remove #f
+                  (list 'K DNA-K-INV)
+                  (list 'H DNA-H-INV)
+                  (list 'F DNA-F-INV)
+                  (list 'M DNA-M-INV)
+                  (list 'I DNA-I-INV)
+                  (list 'D DNA-D-INV)
+                  (list 'B DNA-B-INV)
+                  (list 'S DNA-S-INV)
+                  (list 'R DNA-R-INV))
