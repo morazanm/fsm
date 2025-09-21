@@ -8,8 +8,8 @@
          "circular-queue-treelist.rkt"
          racket/list
          racket/set)
-(provide cfg-derive-leftmost)
 
+(provide cfg-derive-leftmost)
 (define (cfg-derive-leftmost g w)
   (define alphabet-set (list->set (cfg-get-alphabet g)))
   (define nt-set (list->set (cfg-get-v g)))
@@ -91,7 +91,7 @@
                                        (list EMP)
                                        (list (list (los->symbol (first l)) (los->symbol (second l)))))
                                    (list (list (los->symbol (first l)) (los->symbol (second l)))
-                                         )))
+                                         ARROW)))
                              (reverse fderiv))
                  (make-deriv visited (dequeue! derivs) g chomsky))
              (let* ([rls (hash-ref nt-to-rules-ht fnt)]
@@ -141,7 +141,7 @@
                                       (C ,ARROW b))
                       'S))
 
-#;(define cfg-moreAs-than-Bs (make-cfg '(S T)
+(define cfg-moreAs-than-Bs (make-cfg '(S T)
                                        '(a b)
                                        `((S -> TaT)
                                          (T -> aTb)

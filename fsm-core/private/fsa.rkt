@@ -645,9 +645,9 @@
                                   new-states
                                   new-start
                                   new-final)))
-    (if (null? final-graph)
-        (null-regexp)
-        (simplify-regexp (second (first final-graph))))))
+    
+    ;(printable-regexp
+     (simplify-regexp (second (first final-graph)))));)
   
 ; regexp --> fsa
 (define (regexp->fsa r)
