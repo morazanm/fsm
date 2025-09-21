@@ -1021,6 +1021,20 @@ word are returned.
          the given words. If the invariant predicate does hold for any
          of the words, the test fails.
 
+@defproc[(check-gen? [R fsm-regexp]
+                     [w word] ...)
+         (void)]
+         Checks if the given regular expression generates all the given words.
+         If the regular expression does not generate any of the words, the
+         test fails.
+
+@defproc[(check-not-gen? [R fsm-regexp]
+                         [w word] ...)
+         (void)]
+         Checks if the given regular expression does not generate any of the given words.
+         If the regular expression does generate any of the words, the
+         test fails.
+
 @section{Some Useful Functions}
 
 @defproc[(los->symbol [l (listof symbol)])
