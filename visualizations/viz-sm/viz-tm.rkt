@@ -15,15 +15,17 @@
          "../../fsm-core/private/constants.rkt"
          "../../fsm-core/private/tm.rkt"
          "david-imsg-state.rkt"
-         (except-in "david-viz-constants.rkt"
+         "david-viz-constants.rkt"
+         (except-in "david-imsg-dimensions.rkt"
                     FONT-SIZE)
          "default-informative-messages.rkt")
 
 
 (provide tm-viz)
 
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define FONT-SIZE 12)
 
 ;;tape is the input the tape
 ;;computations is a (listof computation) that attempt to consume the ci
@@ -36,14 +38,15 @@
 ;;head-pos is the beginning head position of the tape=
 (struct building-viz-state (tape
                             computations
-                            tracked-accept-trace
+                            tracked-trace
                             all-accept-traces
                             all-reject-traces
                             M
                             inv
                             max-cmps
                             head-pos
-                            machine-decision)
+                            machine-decision
+                            pallete)
   #:transparent)
 
 (define DUMMY-RULE (list (list BLANK BLANK) (list BLANK BLANK)))
@@ -52,7 +55,7 @@
 ;;word (listof rule) symbol number -> (listof computation)
 ;;Purpose: Returns all possible computations using the given word, (listof rule) and start symbol
 ;;   that are within the bounds of the max computation limit
-(define (get-computations a-word lor start finals max-cmps head-pos)
+(define (get-computations a-word lor start finals accepting-final max-cmps head-pos)
 
 ;;computation rule -> computation
 ;;Purpose: Applys the given rule to the given config and returns the updated computation
@@ -102,7 +105,8 @@
   (struct-copy computation a-comp
                [LoC (treelist-add (computation-LoC a-comp) (apply-rule-helper (treelist-last (computation-LoC a-comp))))]
                [LoR (treelist-add (computation-LoR a-comp) a-rule)]
-               [visited (set-add (computation-visited a-comp) (treelist-last (computation-LoC a-comp)))]))
+               [visited (set-add (computation-visited a-comp) (treelist-last (computation-LoC a-comp)))]
+               [length (add1 (computation-length a-comp))]))
 
   ;;hash-set
   ;;Purpose: accumulates the number of computations in a hashset
@@ -132,20 +136,37 @@
   ;;     that are within the bounds of the max computation limit
   (define (make-computations QoC path)
     (if (qempty? QoC)
-        (list path)
+        path
         (let* ([current-config (treelist-last (computation-LoC (qfirst QoC)))]
                [current-state (tm-config-state current-config)]
                [current-tape (tm-config-tape current-config)]
-               [current-head-position (tm-config-head-position current-config)])
-          (if (or (> (treelist-length (computation-LoC (qfirst QoC))) max-cmps)
-                  (member? current-state finals eq?))
+               [current-head-position (tm-config-head-position current-config)]
+               [member-of-finals? (member? current-state finals eq?)]
+               [reached-threshold? (> (computation-length (qfirst QoC)) max-cmps)])
+          (if (or reached-threshold? (member? current-state finals eq?))
               (begin
                 ;(update-hash current-config current-tape)
-                (make-computations (dequeue QoC) (treelist-add path (qfirst QoC))))
+                (make-computations (dequeue QoC) (if (eq? current-state accepting-final)
+                                                     (struct-copy paths path
+                                                                  [accepting (treelist-add (paths-accepting path) (qfirst QoC))]
+                                                                  [reached-final? (cond [(paths-reached-final? path) (paths-reached-final? path)]
+                                                                                        [member-of-finals? #t]
+                                                                                        [else (paths-reached-final? path)])]
+                                                                  [cut-off? (cond [(paths-cut-off? path) (paths-cut-off? path)]
+                                                                                  [reached-threshold? #t]
+                                                                                  [else (paths-cut-off? path)])])
+                                                     (struct-copy paths path
+                                                                  [rejecting (treelist-add (paths-rejecting path) (qfirst QoC))]
+                                                                  [reached-final? (cond [(paths-reached-final? path) (paths-reached-final? path)]
+                                                                                        [member-of-finals? #t]
+                                                                                        [else (paths-reached-final? path)])]
+                                                                  [cut-off? (cond [(paths-cut-off? path) (paths-cut-off? path)]
+                                                                                  [reached-threshold? #t]
+                                                                                  [else (paths-cut-off? path)])]))))
               (let* (;;(listof rules)
                      ;;Purpose: Filters all the rules that can be applied to the configuration by reading the element in the rule
                      [connected-read-rules (treelist-filter (λ (rule)
-                                                     (and (< current-head-position (length current-tape))
+                                                     (and (< current-head-position(length current-tape))
                                                           (eq? (rule-source rule) current-state)
                                                           (eq? (rule-read rule) (list-ref current-tape current-head-position))))
                                                    lor)]
@@ -156,14 +177,15 @@
                 (begin
                   ;(update-hash current-config current-tape)
                   (if (treelist-empty? new-configs)
-                      (make-computations (dequeue QoC) (treelist-add path (qfirst QoC)))
+                      (make-computations (dequeue QoC) (struct-copy paths path [rejecting (treelist-add (paths-rejecting path) (qfirst QoC))]))
                       (make-computations (enqueue new-configs (dequeue QoC)) path))))))))
   (let (;;computation
         ;;Purpose: The starting computation
         [starting-computation (computation (treelist (tm-config start head-pos a-word 0))
                                            empty-treelist
-                                           (set))])
-    (make-computations (enqueue (treelist starting-computation) E-QUEUE) empty-treelist)))
+                                           (set)
+                                           1)])
+    (make-computations (enqueue (treelist starting-computation) E-QUEUE) (paths empty-treelist empty-treelist #f #f))))
 
 
 ;;(listof configurations) (listof rules) (listof configurations) -> (listof configurations)
@@ -182,35 +204,36 @@
 ;;(listof configurations) (listof (listof symbol ((listof sybmols) -> boolean))) -> (listof configurations)
 ;;Purpose: Adds the results of each invariant oredicate to its corresponding invariant configuration 
 (define (get-inv-config-results computations invs)
+  ;;(listof configurations) (listof (listof symbol ((listof sybmols) -> boolean))) -> (listof configurations)
+  ;;Purpose: Adds the results of each invariant oredicate to its corresponding invariant configuration
+  (define (get-inv-config-results-helper computations)
+    (if (or (empty? invs) (treelist-empty? computations))
+        '()
+        (let* ([get-inv-for-inv-config (filter (λ (inv)
+                                                 (equal? (first inv) (tm-config-state (treelist-first computations))))
+                                               invs)]
+               [inv-for-inv-config (if (empty? get-inv-for-inv-config)
+                                       '()
+                                       (second (first get-inv-for-inv-config)))]
+               [inv-config-result (if (empty? inv-for-inv-config)
+                                      '()
+                                      (list (treelist-first computations)
+                                            (inv-for-inv-config (tm-config-tape (treelist-first computations))
+                                                                (tm-config-head-position (treelist-first computations)))))])
+          (if (empty? inv-config-result)
+              (get-inv-config-results-helper (treelist-rest computations))
+              (cons inv-config-result
+                    (get-inv-config-results-helper (treelist-rest computations)))))))
   (append-map (λ (comp)
-                (get-inv-config-results-helper (computation-LoC comp) invs))
+                (get-inv-config-results-helper comp))
               computations))
 
-;;(listof configurations) (listof (listof symbol ((listof sybmols) -> boolean))) -> (listof configurations)
-;;Purpose: Adds the results of each invariant oredicate to its corresponding invariant configuration
-(define (get-inv-config-results-helper computations invs)
-  (if (or (empty? invs) (treelist-empty? computations))
-      '()
-      (let* ([get-inv-for-inv-config (filter (λ (inv)
-                                               (equal? (first inv) (tm-config-state (treelist-first computations))))
-                                             invs)]
-             [inv-for-inv-config (if (empty? get-inv-for-inv-config)
-                                     '()
-                                     (second (first get-inv-for-inv-config)))]
-             [inv-config-result (if (empty? inv-for-inv-config)
-                                    '()
-                                    (list (treelist-first computations)
-                                          (inv-for-inv-config (tm-config-tape (treelist-first computations))
-                                                                            (tm-config-head-position (treelist-first computations)))))])
-        (if (empty? inv-config-result)
-            (get-inv-config-results-helper (treelist-rest computations) invs)
-            (cons inv-config-result
-                (get-inv-config-results-helper (treelist-rest computations) invs))))))
 
 ;;(listof configurations) (listof sybmols) -> (listof configurations)
 ;;Purpose: Extracts all the invariant configurations that failed
 (define (return-brk-inv-configs inv-config-results)
-  (remove-duplicates (filter (λ (config) (not (second config))) inv-config-results)))
+  (remove-duplicates (filter-map (λ (config) (and (not (second config))
+                                                  (first config))) inv-config-results)))
 
 ;;(listof rules)
 ;;Purpose: Transforms the pda rules into triples similiar to an ndfa 
@@ -237,14 +260,6 @@
                     (equal? (third rule) (third r))))
              lor)))
 
-;;(X -> Y) (X -> Y) (X -> Y) (X -> Y) (listof (listof X)) -> (listof (listof X))
-;;Purpose: filtermaps the given f-on-x on the given (listof (listof X))
-(define (filter-map-acc filter-func map-func bool-func accessor a-lolox)
-  (filter-map (λ (x)
-                (and (bool-func (filter-func x))
-                     (map-func (accessor x))))
-              a-lolox))
-
 ;;(listof trace) (X -> Y) -> (listof rule)
 ;;Purpose: Extracts the rule from the first trace in a (listof trace)
 (define (get-trace-X LoT map-func)
@@ -261,7 +276,7 @@
 ;;(listof trace) -> (listof trace)
 ;;Purpose: Extracts the empty trace from the (listof trace) and maps rest onto the non-empty trace
 (define (get-next-traces LoT)
-  (filter-map-acc empty? rest not id LoT))
+  (filter-map-acc empty? rest not identity LoT))
 
 ;;(listof rules) -> (listof rules)
 ;;Purpose: Converts the given (listof configurations)s to rules
@@ -305,54 +320,73 @@
 
 ;;graph machine -> graph
 ;;Purpose: Creates the nodes for the given graph
-(define (make-node-graph dgraph M held-inv fail-inv cut-off)
+(define (make-node-graph dgraph M held-inv fail-inv cut-off color-scheme)
   (foldl (λ (state graph)
            (let ([member-of-held-inv? (member? state held-inv eq?)]
-                 [member-of-fail-inv? (member? state fail-inv eq?)])
+                 [member-of-fail-inv? (member? state fail-inv eq?)]
+                 [member-of-cut-off?  (member? state cut-off eq?)]
+                 [graph-attributes (graph-attributes-node-attributes default-graph-attributes)])
              (add-node graph
                        state
-                       #:atb (hash 'color (if (eq? (tm-start M) state) 'green 'black)
-                                   'style (cond [(and member-of-held-inv? member-of-fail-inv?) 'wedged]
-                                                [(or member-of-held-inv? member-of-fail-inv?
-                                                     (member? state cut-off equal?)) 'filled]
-                                                [else 'solid])
-                                   'shape (cond [(eq? state (tm-accepting-final M)) 'doubleoctagon]
-                                                [(member? state (tm-finals M) equal?) 'doublecircle]
-                                                [else 'circle])
-                                   'fillcolor (cond [(member? state cut-off equal?) GRAPHVIZ-CUTOFF-GOLD]
+                       #:atb (hash 'color (if (eq? (tm-start M) state)
+                                              (color-palette-start-state-color color-scheme)
+                                              (color-palette-font-color color-scheme))
+                                   'style (cond [(and member-of-held-inv? member-of-fail-inv?)
+                                                 (node-data-bi-inv-node graph-attributes)]
+                                                [(or member-of-held-inv? member-of-fail-inv? member-of-cut-off?)
+                                                 (node-data-inv-node graph-attributes)]
+                                                [else (node-data-regular-node graph-attributes)])
+                                   'shape (cond [(eq? state (tm-accepting-final M))
+                                                 (node-data-accepting-final-state graph-attributes)]
+                                                [(member? state (tm-finals M) eq?)
+                                                 (node-data-final-state graph-attributes)]
+                                                [else (node-data-regular-state graph-attributes)])
+                                   'fillcolor (cond [member-of-cut-off? (color-palette-cut-off-color color-scheme)]
                                                     [(and member-of-held-inv? member-of-fail-inv?)
-                                                     "red:chartreuse4"]
-                                                    [member-of-held-inv? HELD-INV-COLOR ]
-                                                    [member-of-fail-inv? BRKN-INV-COLOR]
-                                                    [else 'white])
+                                                     (color-palette-split-inv-color color-scheme)]
+                                                    [member-of-held-inv? (color-palette-inv-hold-color color-scheme)]
+                                                    [member-of-fail-inv? (color-palette-inv-fail-color color-scheme)]
+                                                    [else (color-palette-blank-color color-scheme)])
                                    'label state
-                                   'fontcolor 'black
-                                   'fontname (if (and (member? state held-inv equal?) (member? state fail-inv equal?))
-                                                 "times-bold"
-                                                 "Times-Roman")))))
+                                   'fontcolor (color-palette-font-color color-scheme)
+                                   'fontname (if (and member-of-held-inv? member-of-fail-inv?)
+                                                 (node-data-bi-inv-font graph-attributes)
+                                                 (node-data-regular-font graph-attributes))))))
          dgraph
          (tm-states M)))
 
 ;;graph machine -> graph
 ;;Purpose: Creates the edges for the given graph
-(define (make-edge-graph dgraph rules current-shown-accept-rules current-accept-rules current-reject-rules)
+(define (make-edge-graph dgraph rules current-tracked-rules current-accept-rules current-reject-rules accepted? color-scheme)
   (foldl (λ (rule graph)
-           (add-edge graph
-                     (second rule)
-                     (first rule)
-                     (third rule)
-                     #:atb (hash 'color (cond [(and (member? rule current-shown-accept-rules equal?)
-                                                    (member? rule current-accept-rules equal?))
-                                               SPLIT-ACCEPT-COLOR]
-                                              [(find-rule? rule current-shown-accept-rules) TRACKED-ACCEPT-COLOR]
-                                              [(find-rule? rule current-accept-rules) ALL-ACCEPT-COLOR]
-                                              [(find-rule? rule current-reject-rules) REJECT-COLOR]
-                                              [else 'black])
-                                 'style (if (member? rule current-accept-rules equal?)
-                                            'bold
-                                            'solid)
-                                 ;'labelfloat 'true
-                                 'fontsize 12)))
+           (let ([found-tracked-rule? (find-rule? rule current-tracked-rules)]
+                 [found-accept-rule? (find-rule? rule current-accept-rules)]
+                 [found-reject-rule? (find-rule? rule current-reject-rules)]
+                 [graph-attributes (graph-attributes-edge-attributes default-graph-attributes)])
+             (add-edge graph
+                       (second rule)
+                       (first rule)
+                       (third rule)                     
+                       #:atb (hash 'color
+                                   (cond [(and found-tracked-rule? found-accept-rule?)
+                                          (color-palette-split-accept-color color-scheme)] ;;<--- watch out if coloring issue
+                                         [(and found-tracked-rule? found-reject-rule? (not accepted?))
+                                          (color-palette-split-reject-color color-scheme)] ;;<-- may cause issue
+                                         [(and found-tracked-rule? found-reject-rule? accepted?)
+                                          (color-palette-split-accept-reject-color color-scheme)] ;;<-- may cause issue
+                                         [(and found-tracked-rule? found-accept-rule? found-reject-rule? accepted?)
+                                          (color-palette-bi-accept-reject-color color-scheme)]
+                                         [(and accepted? found-tracked-rule?) (color-palette-shown-accept-color color-scheme)] 
+                                         [found-tracked-rule?  (color-palette-shown-reject-color color-scheme)]
+                                         [found-accept-rule?   (color-palette-other-accept-color color-scheme)]
+                                         [found-reject-rule?   (color-palette-other-reject-color color-scheme)]
+                                         [else (color-palette-font-color color-scheme)])
+                                   'style (cond [found-tracked-rule? #;(and found-tracked-rule? accepted?)
+                                                 (edge-data-accept-edge graph-attributes)]
+                                                [(or found-accept-rule? #;found-tracked-rule? found-reject-rule?)
+                                                 (edge-data-reject-edge graph-attributes)]
+                                                [else (edge-data-regular-edge graph-attributes)])
+                                   'fontsize FONT-SIZE))))
          dgraph
          rules))
 
@@ -377,7 +411,7 @@
 
          ;;(listof rule-struct)
          ;;Purpose: Extracts the rules from of shown accepting computation
-         [tracked-accepting-rules (get-trace-X (building-viz-state-tracked-accept-trace a-vs) trace-rules)]
+         [tracked-rules (get-trace-X (building-viz-state-tracked-trace a-vs) trace-rules)]
          
          ;;(listof rule-struct)
          ;;Purpose: Extracts the rules from all of the accepting computations
@@ -397,7 +431,7 @@
 
          ;;(listof rules)
          ;;Purpose: Converts the current rules from the accepting computations and makes them usable for graphviz
-         [current-shown-accept-rules (configs->rules tracked-accepting-rules)]
+         [current-shown-tracked-rules (configs->rules tracked-rules)]
          
          ;;(listof rules)
          ;;Purpose: All of the pda rules converted to triples
@@ -418,22 +452,21 @@
          
          ;;(listof symbols)
          ;;Purpose: Returns all states whose invariants holds
-         [held-invs (map (λ (inv) (get-invariants inv id)) get-invs)])
+         [held-invs (map (λ (inv) (get-invariants inv identity)) get-invs)])
     (make-edge-graph
      (make-node-graph
       (create-graph 'tmgraph #:atb (hash 'rankdir "LR"))
       (building-viz-state-M a-vs)
       held-invs
       brkn-invs
-      cut-off-states)
+      cut-off-states
+      (building-viz-state-pallete a-vs))
      all-rules
-     (if (equal? (building-viz-state-machine-decision a-vs) 'accept)
-         current-shown-accept-rules
-         '())
+     current-shown-tracked-rules
      all-current-accept-rules
-     (if (equal? (building-viz-state-machine-decision a-vs) 'accept)
-         current-reject-rules
-         (append current-reject-rules current-shown-accept-rules)))))
+     current-reject-rules
+     (equal? (building-viz-state-machine-decision a-vs) 'accept)
+     (building-viz-state-pallete a-vs))))
 
 ;;viz-state (listof graph-thunks) -> (listof graph-thunks)
 ;;Purpose: Creates all the graphs needed for the visualization
@@ -456,12 +489,10 @@
                                       [head-pos (if (zipper-at-end? (building-viz-state-head-pos a-vs))
                                                     (building-viz-state-head-pos a-vs)
                                                     (zipper-next (building-viz-state-head-pos a-vs)))]
-                                      [tracked-accept-trace (get-next-traces (building-viz-state-tracked-accept-trace a-vs))]
+                                      [tracked-trace (get-next-traces (building-viz-state-tracked-trace a-vs))]
                                       [all-accept-traces (get-next-traces (building-viz-state-all-accept-traces a-vs))]
                                       [all-reject-traces (get-next-traces (building-viz-state-all-reject-traces a-vs))])
                                      (cons next-graph acc)))]))
-
-
 
 ;;viz-state -> viz-state
 ;;Purpose: Progresses the visualization forward by one step
@@ -511,8 +542,8 @@
                      
        [invs-zipper (cond [(zipper-empty? imsg-state-invs-zipper) imsg-state-invs-zipper]
                           [(and (not (zipper-at-end? imsg-state-invs-zipper))
-                                (>= (get-tm-config-index-frm-trace imsg-state-shown-accepting-trace)
-                                    (fourth (first (zipper-unprocessed imsg-state-invs-zipper)))))
+                                (>= (add1 (get-tm-config-index-frm-trace imsg-state-shown-accepting-trace))
+                                    (tm-config-index (zipper-current imsg-state-invs-zipper))))
                            (zipper-next imsg-state-invs-zipper)]
                           [else imsg-state-invs-zipper])])])])))
 
@@ -617,8 +648,8 @@
                                   (zipper-prev imsg-state-shown-accepting-trace))]
        [invs-zipper (cond [(zipper-empty? imsg-state-invs-zipper) imsg-state-invs-zipper]
                           [(and (not (zipper-at-begin? imsg-state-invs-zipper))
-                                (<= (get-tm-config-index-frm-trace imsg-state-shown-accepting-trace)
-                                    (fourth (first (zipper-processed imsg-state-invs-zipper)))))
+                                (<= (sub1 (get-tm-config-index-frm-trace imsg-state-shown-accepting-trace))
+                                    (tm-config-index (zipper-current imsg-state-invs-zipper))))
                            (zipper-prev imsg-state-invs-zipper)]
                           [else imsg-state-invs-zipper])])])])))
 
@@ -725,8 +756,6 @@
         [imsg-state-invs-zipper (imsg-state-tm-invs-zipper (informative-messages-component-state
                                                             (viz-state-informative-messages a-vs)))])
   (if (or (zipper-empty? imsg-state-invs-zipper)
-          (and (zipper-at-begin? imsg-state-invs-zipper)
-               (not (zipper-at-end? imsg-state-invs-zipper)))
           (< (get-tm-config-index-frm-trace imsg-state-shown-accepting-trace)
              (get-tm-config-index-frm-invs imsg-state-invs-zipper)))
       a-vs
@@ -779,8 +808,6 @@
         [imsg-state-invs-zipper (imsg-state-tm-invs-zipper (informative-messages-component-state
                                                             (viz-state-informative-messages a-vs)))])
   (if (or (zipper-empty? imsg-state-invs-zipper)
-          (and (zipper-at-end? imsg-state-invs-zipper)
-               (not (zipper-at-begin? imsg-state-invs-zipper)))
           (> (get-tm-config-index-frm-trace imsg-state-shown-accepting-trace)
                               (get-tm-config-index-frm-invs imsg-state-invs-zipper)))
       a-vs
@@ -817,50 +844,38 @@
              [invs-zipper zip])])])))))
 
 
-;;tm tape [natnum] [natnum] . -> (void) Throws error
-;;Purpose: Visualizes the given ndfa processing the given word
-;;Assumption: The given machine is a ndfa or dfa
-(define (tm-viz M a-word head-pos #:cut-off [cut-off 100] invs) ;;GET RID OF . FOR TESTING
+;;tm tape natnum [natnum] [symbol] . (listof (list state (t i -> boolean))) -> (void) 
+;;Purpose: Visualizes the given tm processing the given word
+;;Assumption: The given machine is tm
+(define (tm-viz M a-word head-pos #:cut-off [cut-off 100] #:palette [palette 'default] invs) ;;GET RID OF . FOR TESTING
   (let* (;;tm-struct
          [M (remake-tm M)]
+         ;;color-pallete ;;The corresponding color scheme to used in the viz
+         [color-scheme (cond [(eq? palette 'prot) protanopia-color-scheme] ;;red color blind
+                             [(eq? palette 'deut) deuteranopia-color-scheme] ;;green color blind 
+                             [(eq? palette 'trit) tritanopia-color-scheme] ;;blue color blind
+                             [else standard-color-scheme])]
          ;;(listof computations) ;;Purpose: All computations that the machine can have
          ;[computations (get-computations a-word (tm-rules M) (tm-start M) (tm-finals M) cut-off head-pos)]
-
-         [computations (treelist->list (get-computations a-word (tm-rules M) (tm-start M) (tm-finals M) cut-off head-pos))]
-         ;;(listof configurations) ;;Purpose: Extracts the configurations from the computation
-         [LoC (map computation-LoC computations)]
-
-         [reached-final? (ormap (λ (computation) (member? (tm-config-state (treelist-last computation)) (tm-finals M) eq?)) LoC)]
+         [all-paths (get-computations a-word (tm-rules M) (tm-start M) (tm-finals M) (tm-accepting-final M) cut-off head-pos)]
+         ;;boolean ;;Purpose: Determines if any computation 
+         [reached-final? (paths-reached-final? all-paths)]
          ;;(listof computation) ;;Purpose: Extracts all accepting computations
-         [accepting-computations (if (eq? (tm-type M) 'tm-language-recognizer)
-                                     (filter (λ (comp)
-                                           (eq? (tm-config-state (treelist-last (computation-LoC comp))) (tm-accepting-final M)))
-                                         computations)
-                                     '())]
+         [accepting-computations (treelist->list (paths-accepting all-paths))]
+         ;;boolean ;;Purpose: Determines if the word has been rejected
+         [rejected? (empty? accepting-computations)]
+         ;;(listof computation) ;;Purpose: Extracts all rejecting computations
+         [rejecting-computations (treelist->list (paths-rejecting all-paths))]
+         ;;(listof computation) ;;Purpose: Extracts the configurations from the computation
+         [LoC (map2 computation-LoC (append accepting-computations rejecting-computations))]
          ;;(listof trace) ;;Purpose: Makes traces from the accepting computations
          [accepting-traces (map (λ (acc-comp)
                                   (make-trace (computation-LoC acc-comp)
                                               (computation-LoR acc-comp)
                                               '()))
                                 accepting-computations)]
-         [computation-has-cut-off? (ormap (λ (comp-length)
-                                            (>= comp-length cut-off))
-                                          (if (empty? accepting-traces)
-                                              (map treelist-length LoC)
-                                              '()))]
-         ;;(listof trace) ;;Purpose: Gets the cut off trace if the the word length is greater than the cut
-         [cut-accept-traces '()]
-         ;;(listof trace) ;;Purpose: Gets the cut off trace if the the word length is greater than the cut
-         [accept-cmps (if (empty? cut-accept-traces)
-                          accepting-traces
-                          (map (λ (configs last-reject)
-                                 (append configs (list last-reject)))
-                               accepting-traces
-                               cut-accept-traces))]
-         ;;(listof computation) ;;Purpose: Extracts all rejecting computations
-         [rejecting-computations (filter (λ (config)
-                                           (not (member? config accepting-computations equal?)))
-                                         computations)]
+         ;;boolean ;;Purpose: Determines if any computation reaches the cuts off treshold
+         [computation-has-cut-off? (paths-cut-off? all-paths)] 
          ;;(listof trace) ;;Purpose: Makes traces from the rejecting computations
          [rejecting-traces (map (λ (comp)
                                   (make-trace (computation-LoC comp)
@@ -869,61 +884,65 @@
                                 rejecting-computations)]
          
          ;;(listof rules) ;;Purpose: Returns the first accepting computations (listof rules)
-         [accepting-trace (if (empty? accept-cmps) '() (first accept-cmps))]
-         [rejecting-trace (if (empty? accept-cmps) (find-longest-computation rejecting-traces '()) '())]
+         [accepting-trace (if rejected? '() (first accepting-traces))]
+         [rejecting-trace (if rejected? (find-longest-computation rejecting-traces '()) '())]
          [displayed-tape (map (λ (trace) (tm-config-tape (trace-config trace)))
-                              (cond [(and (empty? accepting-trace)
-                                          (not computation-has-cut-off?)
-                                          (= (length rejecting-computations) 1))
-                                     rejecting-trace]
-                                    [(and (not computation-has-cut-off?) (not (empty? accepting-trace))) accepting-trace]
-                                    [else '()]))]
+                              (if (not (empty? accepting-trace))
+                             accepting-trace
+                             rejecting-trace))]
          [all-displayed-tape (list->zipper displayed-tape)]
          [tracked-head-pos (let ([head-pos (map (λ (trace) (tm-config-head-position (trace-config trace)))
-                                               (if (empty? accepting-trace)
-                                                   rejecting-trace
-                                                   accepting-trace))])
-                             (if reached-final? head-pos (append head-pos '(-1))))]
-                                 
-                             
+                                                (if rejected?
+                                                    rejecting-trace
+                                                    accepting-trace))])
+                             head-pos)]
          [all-head-pos (list->zipper tracked-head-pos)]
-         [machine-decision (if (not (empty? accepting-computations))
+         [machine-decision (if (not rejected?)
                                'accept
                                'reject)]
          
-         [tracked-trace (cond [(and (empty? accepting-trace)
-                                    (not computation-has-cut-off?)
-                                    (= (length rejecting-computations) 1))
-                               (list rejecting-trace)]
-                              [(and (not computation-has-cut-off?) (not (empty? accepting-trace))) (list accepting-trace)]
-                              [computation-has-cut-off? (if (empty? accepting-trace)
-                                                            (list rejecting-trace)
-                                                            (list accepting-trace))]
-                              [else '()])]
+         [tracked-trace (list (if (not rejected?) accepting-trace rejecting-trace))]
          ;;(listof number) ;;Purpose: Gets all the invariant configurations
-         [all-inv-configs (reverse (get-inv-config-results accepting-computations invs))]
+         [all-inv-configs (if (empty? invs)
+                              '()
+                              (get-inv-config-results (if (and reached-final? (eq? (tm-type M) 'tm))
+                                                                   LoC
+                                                                   (map computation-LoC accepting-computations))
+                                                               invs))]
          [failed-inv-configs (return-brk-inv-configs all-inv-configs)]
-         
-         
-         
          ;;building-state struct
          [building-state (building-viz-state all-displayed-tape
                                              LoC
                                              tracked-trace
-                                             (if (empty? accept-cmps) '() (rest accept-cmps))
-                                             rejecting-traces
+                                             (if rejected? '() (rest accepting-traces))
+                                             (if rejected? (filter (λ (config) (not (equal? config rejecting-trace)))
+                                                                                   rejecting-traces)
+                                                 rejecting-traces)
                                              M
                                              all-inv-configs
                                              cut-off
                                              all-head-pos
-                                             machine-decision)]
+                                             machine-decision
+                                             color-scheme)]
                      
          ;;(listof graph-thunk) ;;Purpose: Gets all the graphs needed to run the viz
          [graphs (create-graph-thunks building-state '())]
          ;;(listof number) ;;Purpose: Gets the number of computations for each step
-         [cut-off-computations-lengths (take (count-computations LoC '()) (length tracked-head-pos))])
-    (run-viz graphs
-             (lambda () (graph->bitmap (first graphs)))
+         [cut-off-computations-lengths (take (count-computations LoC '()) (length tracked-head-pos))]
+         [color-legend (let* ([buffer-sqaure (square HEIGHT-BUFFER 'solid (color-palette-blank-color color-scheme))]
+                              [spacer (beside buffer-sqaure buffer-sqaure buffer-sqaure buffer-sqaure)])
+                         (if rejected?
+                           (beside (text "Reject traced" 20 (color-palette-legend-shown-reject-color color-scheme))
+                                   spacer
+                                   (text "Reject not traced" 20 (color-palette-legend-other-reject-color color-scheme)))
+                           (beside (text "Accept traced" 20 (color-palette-legend-shown-accept-color color-scheme))
+                                   spacer
+                                   (text "Accept not traced" 20 (color-palette-legend-other-accept-color color-scheme))
+                                   spacer
+                                   (text "Reject not traced" 20 (color-palette-legend-other-reject-color color-scheme)))))])
+   (run-viz graphs
+            (list->vector (map (λ (x) (λ (grph) grph)) graphs))
+             #;(lambda () (list (graph->bitmap (first graphs))))
              (posn (/ E-SCENE-WIDTH 2) (/ TM-E-SCENE-HEIGHT 2))
              E-SCENE-WIDTH TM-E-SCENE-HEIGHT PERCENT-BORDER-GAP
              DEFAULT-ZOOM
@@ -933,28 +952,22 @@
                                    (imsg-state-tm M
                                                   (if (zipper-empty? all-displayed-tape) (list->zipper (list a-word)) all-displayed-tape)
                                                   all-head-pos
-                                                  (list->zipper (map (λ (trace)
-                                                                       (list (rule-read (trace-rules trace))
-                                                                             (rule-action (trace-rules trace))))
-                                                                     (cond [(empty? tracked-trace) tracked-trace]
-                                                                           [(or (and (not computation-has-cut-off?)
-                                                                                     (not (empty? accepting-trace)))
-                                                                                (and (empty? accepting-trace)
-                                                                                     (not computation-has-cut-off?)
-                                                                                     (= (length rejecting-computations) 1)))
-                                                                            (first tracked-trace)]
-                                                                           [else '()])))
+                                                  (list->zipper (map2 (λ (trace)
+                                                                        (list (rule-read (trace-rules trace))
+                                                                              (rule-action (trace-rules trace))))
+                                                                      (first tracked-trace)) )
                                                   (list->zipper (if (empty? tracked-trace) tracked-trace (first tracked-trace)))
                                                   (list->zipper failed-inv-configs) 
                                                   (list->zipper cut-off-computations-lengths)
                                                   cut-off
                                                   machine-decision
                                                   0
-                                                  (let ([offset-cap (- (length a-word) TAPE-SIZE)])
+                                                  (let ([offset-cap (- (length a-word) TM-TAPE-SIZE)])
                                                     (if (> 0 offset-cap) 0 offset-cap))
-                                                  0)
+                                                  0
+                                                  color-scheme)
                                    tm-img-bounding-limit)
-             (instructions-graphic E-SCENE-TOOLS
+             (instructions-graphic (above color-legend E-SCENE-TOOLS)
                                    (bounding-limits 0
                                                     (image-width E-SCENE-TOOLS)
                                                     (+ EXTRA-HEIGHT-FROM-CURSOR
@@ -971,15 +984,15 @@
                                      [ "left" viz-go-prev left-key-pressed]
                                      [ "up" viz-go-to-begin up-key-pressed]
                                      [ "down" viz-go-to-end down-key-pressed]
-                                     [ "w" viz-zoom-in identity]
-                                     [ "s" viz-zoom-out identity]
-                                     [ "r" viz-max-zoom-out identity]
-                                     [ "f" viz-max-zoom-in identity]
-                                     [ "e" viz-reset-zoom identity]
+                                     [ "w" tm-viz-zoom-in identity]
+                                     [ "s" tm-viz-zoom-out identity]
+                                     [ "r" tm-viz-max-zoom-out identity]
+                                     [ "f" tm-viz-max-zoom-in identity]
+                                     [ "e" tm-viz-reset-zoom identity]
                                      [ "a" identity a-key-pressed]
                                      [ "d" identity d-key-pressed]
-                                     [ "wheel-down" viz-zoom-in identity]
-                                     [ "wheel-up" viz-zoom-out identity]
+                                     [ "wheel-down" tm-viz-zoom-in identity]
+                                     [ "wheel-up" tm-viz-zoom-out identity]
                                      [ "j" tm-jump-prev j-key-pressed]
                                      [ "l" tm-jump-next l-key-pressed]
                                      )
@@ -989,16 +1002,36 @@
                                       TM-E-SCENE-HEIGHT
                                       CLICK-BUFFER-SECONDS
                                       ( [tm-img-bounding-limit
-                                         (lambda (a-imsgs x-diff y-diff) a-imsgs)])
+                                         (lambda (a-imsgs x-diff y-diff)
+                                           (let ([new-scroll-accum (+ (imsg-state-tm-scroll-accum a-imsgs) x-diff)])
+                                             (cond
+                                               [(and (>= (imsg-state-tm-word-img-offset-cap a-imsgs)
+                                                         (imsg-state-tm-word-img-offset a-imsgs))
+                                                     (<= (quotient (+ (imsg-state-tm-scroll-accum a-imsgs) x-diff) 25) -1))
+                                                (struct-copy imsg-state-tm
+                                                             a-imsgs
+                                                             [word-img-offset (+ (imsg-state-tm-word-img-offset a-imsgs) 1)]
+                                                             [scroll-accum 0])]
+                                               [(and (> (imsg-state-tm-word-img-offset a-imsgs) 0)
+                                                     (>= (quotient (+ (imsg-state-tm-scroll-accum a-imsgs) x-diff) 25) 1))
+                                                (struct-copy imsg-state-tm
+                                                             a-imsgs
+                                                             [word-img-offset (- (imsg-state-tm-word-img-offset a-imsgs) 1)]
+                                                             [scroll-accum 0])]
+                                               [else
+                                                (struct-copy imsg-state-tm
+                                                             a-imsgs
+                                                             [scroll-accum
+                                                              (+ (imsg-state-tm-scroll-accum a-imsgs) x-diff)])])))])
                                       ( [ ARROW-UP-KEY-DIMS viz-go-to-begin up-key-pressed]
                                         [ ARROW-DOWN-KEY-DIMS viz-go-to-end down-key-pressed]
                                         [ ARROW-LEFT-KEY-DIMS viz-go-prev left-key-pressed]
                                         [ ARROW-RIGHT-KEY-DIMS viz-go-next right-key-pressed]
-                                        [ W-KEY-DIMS viz-zoom-in identity]
-                                        [ S-KEY-DIMS viz-zoom-out identity]
-                                        [ R-KEY-DIMS viz-max-zoom-out identity]
-                                        [ E-KEY-DIMS viz-reset-zoom identity]
-                                        [ F-KEY-DIMS viz-max-zoom-in identity]
+                                        [ W-KEY-DIMS tm-viz-zoom-in identity]
+                                        [ S-KEY-DIMS tm-viz-zoom-out identity]
+                                        [ R-KEY-DIMS tm-viz-max-zoom-out identity]
+                                        [ E-KEY-DIMS tm-viz-reset-zoom identity]
+                                        [ F-KEY-DIMS tm-viz-max-zoom-in identity]
                                         [ A-KEY-DIMS identity a-key-pressed]
                                         [ D-KEY-DIMS identity d-key-pressed]
                                         [ J-KEY-DIMS tm-jump-prev j-key-pressed]

@@ -5,6 +5,7 @@
 #lang racket/base
 
 (require
+  "private/sm-test/sm-test-invs-fsa.rkt"
   "private/cyk.rkt"
   "private/fsa.rkt"
   "private/cfg.rkt"
@@ -47,6 +48,7 @@
   racket/contract)
   
 (provide
+ sm-test-invs-fsa
  check-machine
  empties
 
@@ -143,6 +145,12 @@
         [(cfg? G) (apply cfg-viz G w #:cpu-cores cpu-cores #:derv-type derv-type invariants)]
         [(csg? G) (apply csg-viz G w #:cpu-cores cpu-cores invariants)]
         [else (error "Unknown grammar type given to grammar-viz.")]))
+
+(define (sm-test-invs M . invs)
+  (let ([type (sm-type M)])
+    (cond [(or (eq? 'ndfa type) (eq? 'dfa type))
+           (sm-test-invs-fsa M invs)]
+          [else (error "Support for other types of automata is coming soon!")])))
   
 ; sm word [natnum] --> image
 (define (sm-cmpgraph M w #:palette [p 'default] #:cutoff [c 100] . headpos)

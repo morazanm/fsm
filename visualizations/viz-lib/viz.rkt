@@ -4,11 +4,9 @@
          "vector-zipper.rkt"
          "bounding-limits.rkt"
          "viz-state.rkt"
-         "../2htdp/image.rkt"
          racket/list
-         racket/promise
          "resize-viz-image.rkt"
-         )
+         "viz-image-loading-functions.rkt")
 
 (provide run-viz)
 
@@ -17,13 +15,19 @@
 ;; create-graph-imgs
 ;; (listof dgraph) -> (listof image)
 ;; Purpose: To create a list of graph images built level by level
-(define (create-graph-imgs graphs #:graph-type [graph-type 'rg] #:rank-node-lst [rank-node-lst '()] #:cpu-cores [cpu-cores #f])
+(define (create-graph-imgs graphs graphic-formatters #:graph-type [graph-type 'rg] #:rank-node-lst [rank-node-lst '()] #:cpu-cores [cpu-cores #f])
   (if (empty? graphs)
       '()
       (if (not cpu-cores)
-          (streaming-parallel-graphs->bitmap-thunks graphs #:graph-type graph-type #:rank-node-lst rank-node-lst)
-          (streaming-parallel-graphs->bitmap-thunks graphs #:graph-type graph-type #:rank-node-lst rank-node-lst #:cpu-cores cpu-cores)
-          )))
+          (graphs->bitmap-thunks graphs
+                                 graphic-formatters
+                                 #:graph-type graph-type
+                                 #:rank-node-lst rank-node-lst)
+          (graphs->bitmap-thunks graphs
+                                 graphic-formatters
+                                 #:graph-type graph-type
+                                 #:rank-node-lst rank-node-lst
+                                 #:cpu-cores cpu-cores))))
 
 ;; viz-state int int MouseEvent
 ;; Updates viz-state as to whether the mouse is currently being pressed while on the visualization
@@ -75,42 +79,36 @@
 ;; special-graphs - Boolean that lets us know we are using graphs meant for csgs
 ;; rank-node-lst - List of list of symbols that are in a specific order so that they are forced to be
 ;; in said order and positioned at the same level
-(define (run-viz graphs first-img first-img-coord E-SCENE-WIDTH E-SCENE-HEIGHT PERCENT-BORDER-GAP
+(define (run-viz graphs graphic-formatters first-img-coord E-SCENE-WIDTH E-SCENE-HEIGHT PERCENT-BORDER-GAP
                  DEFAULT-ZOOM DEFAULT-ZOOM-CAP DEFAULT-ZOOM-FLOOR
                  imsg-struct instructions-struct draw-world process-key process-tick name
-                 
                  #:cpu-cores [cpu-cores #f] #:special-graphs? [special-graphs? 'rg] #:rank-node-lst [rank-node-lst '()])
-  (define (load-image new-img)
-    (if (list? new-img)
-        (force (delay/thread (lambda () (apply above (map (lambda (img) ((force img))) new-img)))))
-        (force (delay/thread ((force new-img))))
-        )
-    )
-  (let* [(imgs (let ([res (create-graph-imgs graphs
+  (let* [(imgs (create-graph-imgs graphs
+                                  graphic-formatters
+                                  #:rank-node-lst rank-node-lst
+                                  #:graph-type special-graphs?
+                                  #:cpu-cores cpu-cores)
+               #;(let ([res (create-graph-imgs graphs
+                                             graphic-formatters
                                              #:rank-node-lst rank-node-lst
                                              #:graph-type special-graphs?
                                              #:cpu-cores cpu-cores)])
-                 (vector-set! res 0 first-img)
+                 #;(vector-set! res 0 first-img)
                  res))
-         (curr-img (if (list? (vector-ref imgs (sub1 (vector-length imgs))))
-                       (above ((force (first (vector-ref imgs (sub1 (vector-length imgs)))))) ((force (second (vector-ref imgs (sub1 (vector-length imgs)))))))
-                       ((force (vector-ref imgs (sub1 (vector-length imgs)))))
-                       ))
-         (new-floor (find-new-floor curr-img
+         (first-img-cached (cache-image (vector-ref imgs 0))
+                           #;(lambda () (apply (vector-ref graphic-formatters 0) ((vector-ref imgs 0)))))
+           (first-img (load-image first-img-cached)
+                      #;(apply (vector-ref graphic-formatters 0) (load-image (cache-image (vector-ref imgs 0)))))
+         (new-floor (find-new-floor first-img
                                     (* E-SCENE-WIDTH PERCENT-BORDER-GAP)
                                     (* E-SCENE-HEIGHT PERCENT-BORDER-GAP)))]
     (viz (viz-state (vector->vector-zipper imgs)
-                    'BEGIN
-                    ((vector-ref imgs 0))
-                    (if (= (vector-length imgs) 1)
-                        'DNE
-                        (load-image (vector-ref imgs 1)))
-                    ((vector-ref imgs 0))
-                    (if (list? (vector-ref imgs (sub1 (vector-length imgs))))
-                        (above ((force (first (vector-ref imgs (sub1 (vector-length imgs)))))) ((force (second (vector-ref imgs (sub1 (vector-length imgs)))))))
-                        ((force (vector-ref imgs (sub1 (vector-length imgs)))))
-                        )
-                    ((vector-ref imgs 0))
+                    'BEGIN ;; PREV
+                     first-img ;; CURR
+                    (cache-image (vector-ref imgs 1)) ;; NEXT
+                    first-img ;;  BEGIN
+                    (cache-image (vector-ref imgs (sub1 (vector-length imgs)))) ;; END
+                    first-img
                     first-img-coord
                     DEFAULT-ZOOM
                     DEFAULT-ZOOM-CAP
