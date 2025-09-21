@@ -3,6 +3,7 @@
          "../../fsm-core/private/cfg-struct.rkt"
          "../../fsm-core/private/constants.rkt"
          "../../fsm-core/private/misc.rkt"
+         "../../fsm-core/private/chomsky.rkt"
          "circular-queue-treelist.rkt"
          "grammar-viz.rkt"
          "../viz-lib/zipper.rkt"
