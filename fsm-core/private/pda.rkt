@@ -5,7 +5,6 @@
 #lang racket/base
   (require "word.rkt"
            "constants.rkt"
-           "cfg.rkt"
            "cfg-struct.rkt"
            "misc.rkt"
            racket/list)

@@ -1,18 +1,12 @@
 #lang racket/base
 (provide get-all-regexp
          find-paths)
-(require rackunit
-         racket/list
+(require racket/list
          racket/treelist
          racket/set
-         "../fsm-core/private/regexp.rkt"
-         "../fsm-core/private/fsa.rkt"
-         "../fsm-core/private/sm-getters.rkt")
-
-;; A queue of X, (qof X), is eithe(r:
-;;  1. empty
-;;  2. (cons X (qof X))
-
+         "../regexp.rkt"
+         "../fsa.rkt"
+         "../sm-getters.rkt")
 
 (define E-QUEUE (treelist))
 

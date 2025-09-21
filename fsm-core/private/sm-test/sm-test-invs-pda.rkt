@@ -2,11 +2,12 @@
 
 ;(provide sm-all-possible-words sm-test-invs-pda)
 (provide (all-defined-out))
+
 (require racket/list
          rackunit
          racket/set
-         "../fsm-core/private/sm-getters.rkt"
-         "../fsm-core/private/pda.rkt")
+         "../sm-getters.rkt"
+         "../pda.rkt")
 
 ;; USEFUL FUNCTIONS
 

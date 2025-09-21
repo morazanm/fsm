@@ -3,9 +3,8 @@
          rackunit
          racket/list
          "reg-exp-function.rkt"
-         "../fsm-core/private/regexp.rkt"
-         "../fsm-core/private/fsa.rkt"
-         "../fsm-core/private/sm-apply.rkt")
+         "../regexp.rkt"
+         "../fsa.rkt")
 (provide quickcheck-invs)
 
 (define MAX-KLEENE-LENGTH 20)

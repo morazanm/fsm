@@ -483,23 +483,7 @@
                                           (list (list (cfg-get-start cfg)))))]
                    [yield-trees (map (lambda (x) (create-yield-tree x (cfg-get-start cfg))) (map reverse (create-list-of-levels renamed)))]
                    
-                   #;[test (begin
-                           (println (car (car (car der-with-fsmlos))))
-                           (println (list-of-rules der-with-fsmlos-moved))
-                           (let ([a-hash (make-hash)])
-                             (println (map (lambda (x) (map (lambda (y) (rename-symb a-hash y)) x))
-                                           (list-of-rules der-with-fsmlos-moved))))
-                           (println (map (lambda (x) (map (lambda (y) (cadr y)) x)) renamed))
-
-                           (println (map get-leftmost-order yield-trees))
-                           #;(println "")
-                           #;(println (accumulate-previous-ranks
-                                          renamed-rule-rhss
-                                          (list (list (cfg-get-start cfg)))))
-                           #;(println (create-list-of-levels renamed))
-                           #;(println "")
-                           #;(println renamed)
-                           )]
+                   
                    [lod (create-dgrphs (dgrph renamed
                                               '()
                                               '()
@@ -531,7 +515,7 @@
                                                        [ordered-nodes (in-list (cons (list (cfg-get-start cfg)) (reverse (map get-leftmost-order yield-trees))))]
                                                        #:do [(define invar-nodes (create-invariant-nodes dgraph invariants (cfg-get-start cfg) derv-type))]
                                                        )
-                                              (println invar-nodes)
+                                              
                                               (reverse (rest (for/list ([inv-nodes (in-list invar-nodes)])
                                                                (undo-renaming (filter (lambda (node) (member node inv-nodes)) ordered-nodes))))))
                                             #;(map (lambda (lst) (map undo-renaming lst))
@@ -593,4 +577,4 @@
     ))
 
 
-(cfg-viz palindrome '(a a b a a b a) (list 'A A-INV) (list 'S S-INV))
+#;(cfg-viz palindrome '(a a b a a b a) (list 'A A-INV) (list 'S S-INV))

@@ -1,11 +1,10 @@
 #lang racket
 
-(require  "../fsm-core/private/constants.rkt"
+(require  "../constants.rkt"
           "context-free-expressions-constructors.rkt"
-          "../fsm-core/private/cfg-struct.rkt"
-          "../fsm-core/private/cfg.rkt"
-          "../fsm-core/private/pda.rkt"
-          "../sm-graph.rkt"
+          "../cfg-struct.rkt"
+          "../cfg.rkt"
+          "../pda.rkt"
           racket/syntax-srcloc
           (for-syntax racket/base
                       syntax/parse
@@ -13,7 +12,6 @@
                       syntax/parse/experimental/template
                       racket/contract/combinator
                       )
-          
           rackunit)
 
 (define WORD-AMOUNT 100)
