@@ -25,6 +25,7 @@
    empties
 
    ; sm constructors
+   sm-test-invs
    make-dfa make-ndfa make-ndpda make-tm
    regexp->fsa ndfa->dfa fsa->regexp
    sm-rename-states 
