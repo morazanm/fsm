@@ -22,7 +22,7 @@ jobs:
           version: stable
 
       - name: install base package
-        run: xvfb-run raco pkg install
+        run: xvfb-run raco pkg install --auto
       - name: push main website to ph-pages
         shell: "bash"
         run: |
