@@ -5,7 +5,8 @@
 (require racket/list
          racket/set
          racket/vector
-         typed/racket/unsafe)
+         typed/racket/unsafe
+         racket/undefined)
 
 (unsafe-require/typed "../fsa.rkt"
                       [make-unchecked-dfa (-> (Listof Symbol) (Listof Symbol) Symbol (Listof Symbol) (Listof (List Symbol Symbol Symbol))
@@ -21,7 +22,60 @@
 (unsafe-require/typed racket/vector
                       [vector-set/copy (-> (Vectorof Byte) Byte Byte (Vectorof Byte))])
 
-(struct path-with-hash ([path : gbvector] [hash : Bytes]))
+(struct path-with-hash ([path : gbvector] [hash : Bytes]) #:transparent)
+
+(struct array-stack ([vec : (Vectorof (Option path-with-hash))]
+                     [capacity : Index]
+                     [size : Index])
+  #:mutable)
+
+(: make-stack (-> Positive-Index array-stack))
+(define (make-stack capacity)
+  (define new-vec : (Mutable-Vectorof (Option path-with-hash)) (make-vector capacity #f))
+  (array-stack new-vec capacity 0))
+
+(: ensure-free-space-stack! (-> array-stack Positive-Index Void))
+(define (ensure-free-space-stack! a-q needed-free-space)
+  (define cap (vector-length (array-stack-vec a-q)))
+  (define needed-cap (+ (array-stack-size a-q) needed-free-space))
+  (unless (<= needed-cap cap)
+    (: loop (-> Index Index))
+    (define (loop new-cap)
+      (if (<= needed-cap new-cap)
+          new-cap
+          (loop (let ([res (* 2 new-cap)])
+                  (if (index? res)
+                      res
+                      (error "Too large"))))))
+    (define new-cap (loop (max DEFAULT-CAPACITY cap)))
+    (: new-vec (Mutable-Vectorof (Option path-with-hash)))
+    (define new-vec (make-vector new-cap #f))
+    (vector-copy! new-vec 0 (array-stack-vec a-q))
+    (set-array-stack-vec! a-q new-vec)
+    (set-array-stack-capacity! a-q new-cap)))
+
+(: push! (-> array-stack path-with-hash Void))
+(define (push! stack val)
+  (when (= (array-stack-size stack) (array-stack-capacity stack))
+    (ensure-free-space-stack! stack 1))
+  (vector-set! (array-stack-vec stack)
+               (array-stack-size stack)
+               val)
+  (set-array-stack-size! stack (let ([res (add1 (array-stack-size stack))])
+                                 (if (index? res)
+                                     res
+                                     (error "")))))
+
+(: pop! (-> array-stack path-with-hash))
+(define (pop! stack)
+  (define temp (vector-ref (array-stack-vec stack) (sub1 (array-stack-size stack))))
+  (set-array-stack-size! stack (let ([res (sub1 (array-stack-size stack))])
+                                   (if (index? res)
+                                       res
+                                       (error ""))))
+  (if temp
+      temp
+      (error "")))
 
 (define DEFAULT-CAPACITY 10)
 
@@ -78,35 +132,6 @@
              (gbvector-n gv)))
   (gbvector-add! new-vec val)
   new-vec)
-
-(: head (MListof path-with-hash))
-(define head '())
-
-(: tail (MListof path-with-hash))
-(define tail '())
-
-(: enqueue! (-> path-with-hash Void))
-(define (enqueue! v)
-  (let ([val : (MListof path-with-hash) (mcons v '())])
-    (if (null? tail)
-        (begin
-          (set! head val)
-          (set! tail val))
-        (begin
-          (set-mcdr! tail val)
-          (set! tail val)))))
-
-(define (dequeue!)
-  (let ([val (mcar head)])
-        (if (null? (mcdr head))
-            (begin
-              (set! head '())
-              (set! tail '()))
-            (set! head (mcdr head)))
-        val))
-
-(define (queue-empty?)
-  (null? head))
 
 ;                                                                                                     
 ;                                                                                                     
@@ -179,19 +204,28 @@
                                    (sub1 idx)))))
     (word-of-path-helper '() (sub1 (gbvector-n a-gv))))
   
-  ;(define a-config (list (word-of-path path) final-state))]
-  ;#:when (not ((hash-ref a-loi-hash final-state always-true-thunk) (car a-config))
+  (: new-word-of-path (-> (Listof Byte) (Listof Symbol)))
+  (define (new-word-of-path a-lor)
+    (: word-of-path-helper (-> (Listof Symbol) (Listof Byte) (Listof Symbol)))
+    (define (word-of-path-helper accum a-lor)
+      (if (null? a-lor)
+          accum
+          (if (eq? 'ε (rule-struct-read-elem (vector-ref rules (car a-lor))))
+              (word-of-path-helper accum (cdr a-lor))
+              (word-of-path-helper (cons (rule-struct-read-elem (vector-ref rules (car a-lor))) accum) (cdr a-lor)))))
+    (word-of-path-helper '() a-lor))
+
+  (define new-stack (make-stack 10))
   
-  ;; (queueof (listof rule)) (listof (listof rule)) -> (listof (listof rule))
-  ;; Purpose: To return all the paths of the given machine
-  ;; Accumulator invarient: paths = list of current paths
-  (: find-paths-helper (-> (Listof (List (Listof Symbol) Symbol)) (Listof (List (Listof Symbol) Symbol))))
-  (define (find-paths-helper accum)
+  (: find-paths-helper (-> Natural (Listof (List (Listof Symbol) Symbol)) (Listof (List (Listof Symbol) Symbol))))
+  (define (find-paths-helper count accum )
     (collect-garbage 'incremental)
-    
-    (if (queue-empty?)
+    (when (= 0 (modulo count 1000000))
+      (display "Current count: ")
+      (displayln count))
+    (if (= (array-stack-size new-stack) 0)
         accum
-        (let* [(qfirst (dequeue!))
+        (let* [(qfirst (pop! new-stack))
                (final-state (rule-struct-dest-state
                              (vector-ref rules
                                          (gbvector-ref (path-with-hash-path qfirst)
@@ -203,7 +237,7 @@
                                  (rule-struct-start-state rule))
                             (< curr-rep-count
                                rep-limit)))
-            (enqueue! (path-with-hash (gbvector-add/copy (path-with-hash-path qfirst) (rule-struct-idx rule))
+            (push! new-stack (path-with-hash (gbvector-add/copy (path-with-hash-path qfirst) (rule-struct-idx rule))
                                        (let ([new-vec (bytes-copy (path-with-hash-hash qfirst))])
                                          (bytes-set! new-vec
                                                      (rule-struct-idx rule)
@@ -217,46 +251,42 @@
                            final-state
                            always-true-thunk)
                  word-path)
-                (find-paths-helper accum)
-                (find-paths-helper (cons (list word-path final-state) accum)))))))
+                (find-paths-helper (add1 count) accum)
+                (find-paths-helper (add1 count) (cons (list word-path final-state) accum)))))))
   
   (for ([rule (in-vector rules)]
         #:when (eq? (rule-struct-start-state rule) (sm-start a-machine)))
     (let ([vec (make-bytes rules-len 0)])
       (bytes-set! vec (rule-struct-idx rule) 1)
-      (enqueue! (path-with-hash (make-gbvector 10 (rule-struct-idx rule))
+      (push! new-stack (path-with-hash (make-gbvector 10 (rule-struct-idx rule))
                                 vec))))
   
-  (find-paths-helper '()))
+  (find-paths-helper 0 '()))
 
 ;; ndfa -> ndfa
 ;; Purpose: Takes in ndfa and remove states and rules that can't reach a final state
-#;(: remove-states-that-cannot-reach-finals (-> Procedure Procedure))
 #;(define (remove-states-that-cannot-reach-finals a-ndfa)
   (define rules (sm-rules a-ndfa))
   
   ;; machine -> (listof rules)
-  ;; Purpose: To return all the paths in the given machine
-  (: explore-all-paths (-> Procedure (Listof (List Symbol Symbol Symbol))))
+  ;; Purpose: To return all the paths in the given machine 
   (define (explore-all-paths a-machine)
     ;; (queueof (listof rule)) (listof (listof rule)) -> (listof (listof rule))
     ;; Purpose: To return all the paths of the given machine
     ;; Accumulator invariant: paths = list of current paths
-    (: explore-all-paths-helper (-> (Listof (List Symbol Symbol Symbol)) (Listof (List Symbol Symbol Symbol))))
-    (define (explore-all-paths-helper accum)
+    (define (explore-all-paths-helper)
       (if (queue-empty?)
-          accum
+          '()
           (let [(firstofq (dequeue!))]
             (for ([rule (in-list rules)]
                   #:when (and (eq? (caddr (car firstofq)) (car rule))
                               (not (member rule firstofq))))
               (enqueue! (cons rule firstofq)))
-            (explore-all-paths-helper (cons firstofq accum))
-            #;(cons firstofq (explore-all-paths-helper)))))
+            (cons firstofq (explore-all-paths-helper)))))
     (for ([rule (in-list rules)]
           #:when (eq? (car rule) (sm-start a-machine)))
       (enqueue! (list rule)))
-    (explore-all-paths-helper '()))
+    (explore-all-paths-helper))
   
   (define new-states-set (mutable-seteq))
   (define new-rules-set (mutable-set))
@@ -369,7 +399,7 @@
             (cons (list (list '() (sm-start a-machine)))
                   (new-find-paths new-machine rep-limit a-loi-hash))))))
 
-#;(define NO-AA
+(define NO-AA
   (make-unchecked-dfa
    '(S A B R)
    '(a b)
@@ -378,8 +408,7 @@
    '((S a A) (S b B)
              (B a A) (B b B)
              (A a R) (A b B)
-             (R a R) (R b R))
-   'no-dead))
+             (R a R) (R b R))))
 
 (define DNA-SEQUENCE (make-unchecked-dfa '(K H F M I D B S R)
                                          '(a t c g)
@@ -463,71 +492,6 @@
         [num-c (length (filter (λ (w) (equal? w 'c)) a-word))])
     (= num-g num-c)))
 
-
-#;(time (let ([res (find-paths EVIL-dna-sequence 1)])
-          'done))
-#;(collect-garbage 'major)
-#;(time (let ([res (new-find-paths EVIL-dna-sequence 1 (for/hash ([inv (in-list (list (list 'K DNA-K-INV)
-                                                                                      (list 'H DNA-H-INV)
-                                                                                      (list 'F DNA-F-INV)
-                                                                                      (list 'M DNA-M-INV)
-                                                                                      (list 'I DNA-I-INV)
-                                                                                      (list 'D DNA-D-INV)
-                                                                                      (list 'B DNA-B-INV)
-                                                                                      (list 'S DNA-S-INV)
-                                                                                      (list 'R DNA-R-INV)))])
-                                                         (values (car inv) (cadr inv))))])
-          'done))
-#;(equal? (new-find-paths EVIL-dna-sequence 1 (for/hash ([inv (in-list (list (list 'K DNA-K-INV)
-                                                                             (list 'H DNA-H-INV)
-                                                                             (list 'F DNA-F-INV)
-                                                                             (list 'M DNA-M-INV)
-                                                                             (list 'I DNA-I-INV)
-                                                                             (list 'D DNA-D-INV)
-                                                                             (list 'B DNA-B-INV)
-                                                                             (list 'S DNA-S-INV)
-                                                                             (list 'R DNA-R-INV)))])
-                                                (values (car inv) (cadr inv))))
-          #;(find-paths EVIL-dna-sequence 1))
-
-#;(new-find-paths EVIL-dna-sequence 1 (for/hash ([inv (in-list (list (list 'K DNA-K-INV)
-                                                                     (list 'H DNA-H-INV)
-                                                                     (list 'F DNA-F-INV)
-                                                                     (list 'M DNA-M-INV)
-                                                                     (list 'I DNA-I-INV)
-                                                                     (list 'D DNA-D-INV)
-                                                                     (list 'B DNA-B-INV)
-                                                                     (list 'S DNA-S-INV)
-                                                                     (list 'R DNA-R-INV)))])
-                                        (values (car inv) (cadr inv))))
-
-
-#;(sm-test-invs-fsa EVIL-dna-sequence
-                    #:rep-limit 1
-                    #:ds-remove #f
-                    (list 'K DNA-K-INV)
-                    (list 'H DNA-H-INV)
-                    (list 'F DNA-F-INV)
-                    (list 'M DNA-M-INV)
-                    (list 'I DNA-I-INV)
-                    (list 'D DNA-D-INV)
-                    (list 'B DNA-B-INV)
-                    (list 'S DNA-S-INV)
-                    (list 'R DNA-R-INV))
-
-#;(let ([res (time (sm-test-invs-fsa EVIL-dna-sequence
-                                   #:rep-limit 2
-                                   #:ds-remove #f
-                                   (list 'K DNA-K-INV)
-                                   (list 'H DNA-H-INV)
-                                   (list 'F DNA-F-INV)
-                                   (list 'M DNA-M-INV)
-                                   (list 'I DNA-I-INV)
-                                   (list 'D DNA-D-INV)
-                                   (list 'B DNA-B-INV)
-                                   (list 'S DNA-S-INV)
-                                   (list 'R DNA-R-INV)))])
-  'done)
 #;(time (length (sm-test-invs-fsa EVIL-dna-sequence
                   #:rep-limit 1
                   #:ds-remove #f
@@ -541,15 +505,15 @@
                   (list 'S DNA-S-INV)
                   (list 'R DNA-R-INV))))
 
-#;(sm-test-invs-fsa EVIL-dna-sequence
+(length (sm-test-invs-fsa EVIL-dna-sequence
                   #:rep-limit 1
                   #:ds-remove #f
-                  (list 'K DNA-K-INV)
-                  (list 'H DNA-H-INV)
-                  (list 'F DNA-F-INV)
-                  (list 'M DNA-M-INV)
-                  (list 'I DNA-I-INV)
-                  (list 'D DNA-D-INV)
-                  (list 'B DNA-B-INV)
-                  (list 'S DNA-S-INV)
-                  (list 'R DNA-R-INV))
+                  (list 'K always-true)
+                  (list 'H always-true)
+                  (list 'F always-true)
+                  (list 'M always-true)
+                  (list 'I always-true)
+                  (list 'D always-true)
+                  (list 'B always-true)
+                  (list 'S always-true)
+                  (list 'R always-true)))
