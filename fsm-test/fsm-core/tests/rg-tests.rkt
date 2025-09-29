@@ -95,7 +95,7 @@ The given grammar nonterminals must be a list: S"))
                           (S ,ARROW aA)
                           (A ,ARROW bS))
                         'S)
-               (format "Step four of the design recipe has not been successfully completed.
+               (format "Step three of the design recipe has not been successfully completed.
 The following rules cannot have EMP in their RHS: ((A -> ε))"))
   ; The list of rules must contain distinct elements
   (check-error (make-rg '(S A)
@@ -136,7 +136,7 @@ The following starting state, B, is not in the given list of states: (A S)"))
                           (A ,ARROW bS))
                         'S
                         #:accepts 'aaa)
-               (format "Step two of the design recipe has not been successfully completed.
+               (format "Step four of the design recipe has not been successfully completed.
 The expected accepts is not a list of words: aaa"))
 
   (check-error (make-rg '(A S)
@@ -146,7 +146,7 @@ The expected accepts is not a list of words: aaa"))
                           (A ,ARROW bS))
                         'S
                         #:accepts '((a c d)))
-               (format "Step two of the design recipe has not been successfully completed.
+               (format "Step four of the design recipe has not been successfully completed.
 The following words in the accepts list contain symbols not included in sigma: ((a c d))"))
   (check-error (make-rg '(A S)
                         '(a b)
@@ -156,7 +156,7 @@ The following words in the accepts list contain symbols not included in sigma: (
                         'S
                         #:accepts '((a a a) (a b a b)))
                (format "Step six of the design recipe has not been successfully completed.
-The constructed grammar does not accept the following words: ((a a a))"))
+The constructed grammar does not derive the following words it should derive: ((a a a))"))
   (check-error (make-rg '(A S)
                         '(a b)
                         `((S ,ARROW ,EMP)
@@ -165,7 +165,7 @@ The constructed grammar does not accept the following words: ((a a a))"))
                         'S
                         #:rejects '((a a a) (a b a b a b)))
                (format "Step six of the design recipe has not been successfully completed.
-The constructed grammar does not reject the following words: ((a b a b a b))"))
+The constructed grammar derives the following words it should not derive: ((a b a b a b))"))
   
 
   (test)
