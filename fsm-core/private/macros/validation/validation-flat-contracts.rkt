@@ -309,6 +309,13 @@
     )
 
   ;; grammars
+
+  (define (grammar-derive-error-formatter type derives?)
+    (format "Step six of the design recipe has not been successfully completed.\nThe constructed ~a ~a the following words it ~a"
+            type
+            (if derives? "does not derive" "derives")
+            (if derives? "should derive" "should not derive")))
+  
   (define (rg-input/c states sigma rules start accepts?)
     (make-flat-contract
      #:name 'rg-accepting-correctly
@@ -327,7 +334,7 @@
                                              make-unchecked-rg
                                              rg-derive
                                              )
-                       (accepts/rejects-formatter 'grammar accepts?))))))
+                       (grammar-derive-error-formatter 'grammar accepts?))))))
 
   (define (cfg-input/c states sigma rules start accepts?)
     (make-flat-contract
@@ -347,7 +354,7 @@
                                              make-unchecked-cfg
                                              cfg-derive
                                              )
-                       (accepts/rejects-formatter 'grammar accepts?))))))
+                       (grammar-derive-error-formatter 'grammar accepts?))))))
 
 
   (define (csg-input/c states sigma rules start accepts?)
@@ -368,5 +375,5 @@
                                              make-unchecked-csg
                                              csg-derive
                                              )
-                       (accepts/rejects-formatter 'grammar accepts?))))))
+                       (grammar-derive-error-formatter 'grammar accepts?))))))
   )
