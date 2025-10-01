@@ -48,7 +48,7 @@
   racket/contract)
   
 (provide
- sm-test-invs-fsa
+ sm-test-invs
  check-machine
  empties
 
