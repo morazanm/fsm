@@ -357,32 +357,32 @@ type -> the type of the ndfa (ndfa/dfa) | symbol
 
 ;; graph machine word (listof rules) (listof rules) symbol -> graph
 ;; Purpose: To create a graph of edges from the given list of rules
-(define (edge-graph cgraph M current-shown-accept-rules other-current-accept-rules current-reject-rules dead color-scheme accepted?)
+(define (edge-graph cgraph M current-shown-rules other-current-accept-rules current-reject-rules dead color-scheme accepted?)
   (foldl (λ (rule result)
            (let ([other-current-accept-rule-find-rule? (find-rule? rule dead other-current-accept-rules)]
-                 [current-shown-accept-rule-find-rule? (find-rule? rule dead current-shown-accept-rules)]
+                 [current-shown-rule-find-rule? (find-rule? rule dead current-shown-rules)]
                  [found-current-reject-rule? (find-rule? rule dead current-reject-rules)]
                  [graph-attributes (graph-attributes-edge-attributes default-graph-attributes)])
              (add-edge result
                        (triple-read rule)
                        (triple-source rule)
                        (triple-destination rule)
-                       #:atb (hash 'color (cond [(and current-shown-accept-rule-find-rule? other-current-accept-rule-find-rule?)
+                       #:atb (hash 'color (cond [(and current-shown-rule-find-rule? other-current-accept-rule-find-rule? accepted?)
                                                  (color-palette-split-accept-color color-scheme)]
-                                                [(and current-shown-accept-rule-find-rule? found-current-reject-rule? (not accepted?))
+                                                [(and current-shown-rule-find-rule? found-current-reject-rule? (not accepted?))
                                                  (color-palette-split-reject-color color-scheme)]
-                                                [(and current-shown-accept-rule-find-rule? found-current-reject-rule? accepted?)
+                                                [(and current-shown-rule-find-rule? found-current-reject-rule? accepted?)
                                                  (color-palette-split-accept-reject-color color-scheme)]
-                                                [(and current-shown-accept-rule-find-rule? other-current-accept-rule-find-rule?
+                                                [(and current-shown-rule-find-rule? other-current-accept-rule-find-rule?
                                                       found-current-reject-rule?)
                                                  (color-palette-bi-accept-reject-color color-scheme)]
-                                                [(and accepted? current-shown-accept-rule-find-rule?) (color-palette-shown-accept-color color-scheme)]
-                                                [current-shown-accept-rule-find-rule? (color-palette-shown-reject-color color-scheme)]
+                                                [(and accepted? current-shown-rule-find-rule?) (color-palette-shown-accept-color color-scheme)]
+                                                [current-shown-rule-find-rule? (color-palette-shown-reject-color color-scheme)]
                                                 [other-current-accept-rule-find-rule? (color-palette-other-accept-color color-scheme)]
                                                 [found-current-reject-rule? (color-palette-other-reject-color color-scheme)]
                                                 [else (color-palette-font-color color-scheme)])
                                    'fontsize FONT-SIZE
-                                   'style (cond [current-shown-accept-rule-find-rule? (edge-data-accept-edge graph-attributes)]
+                                   'style (cond [current-shown-rule-find-rule? (edge-data-accept-edge graph-attributes)]
                                                 [(or other-current-accept-rule-find-rule? found-current-reject-rule?)
                                                  (edge-data-reject-edge graph-attributes)]
                                                 [(equal? (triple-destination rule) dead) (edge-data-dead-edge graph-attributes)]
@@ -402,7 +402,7 @@ type -> the type of the ndfa (ndfa/dfa) | symbol
 ;;reject-traces -> All of the computations that machine rejects                                            | (listof trace) 
 ;;farthest-consumed -> the portion of the word that machine can consume the most of                        | word
 ;;palette -> the color scheme used for the transition diagrams in the visualization                        | (color-palette-struct)
-(struct building-viz-state (CI M inv dead tracked-accept-trace accepting-computations accept-traces reject-traces farthest-consumed palette)
+(struct building-viz-state (CI M inv dead tracked-trace accepting-computations accept-traces reject-traces farthest-consumed palette rejected?)
   #:transparent)
 
 ;;viz-state -> (list graph-thunk computation-length)
@@ -416,7 +416,7 @@ type -> the type of the ndfa (ndfa/dfa) | symbol
 
          ;;(listof rule-struct)
          ;;Purpose: Extracts the rules from of shown accepting computation
-         [tracked-accepting-rules (get-trace-rule (building-viz-state-tracked-accept-trace a-vs))]
+         [tracked-rules (get-trace-rule (building-viz-state-tracked-trace a-vs))]
 
          ;;(listof rule-structs)
          ;;Purpose: Extracts the rules from the first of all configurations
@@ -434,8 +434,8 @@ type -> the type of the ndfa (ndfa/dfa) | symbol
 
          ;;(listof rules)
          ;;Purpose: Converts the current rules from the accepting computations and makes them usable for graphviz
-         [current-shown-accept-rules (filter (λ (rule) (not (equal? rule dummy-rule)))
-                                             (append-map extract-rules tracked-accepting-rules))]
+         [current-shown-rules (filter (λ (rule) (not (equal? rule dummy-rule)))
+                                             (append-map extract-rules tracked-rules))]
 
          ;;(listof rules)
          ;;Purpose: Reconstructs the rules from rule-structs
@@ -465,17 +465,18 @@ type -> the type of the ndfa (ndfa/dfa) | symbol
       brkn-invs
       (building-viz-state-palette a-vs))
      (building-viz-state-M a-vs)
-     current-shown-accept-rules
+     current-shown-rules
      current-a-rules
      current-rules
      (building-viz-state-dead a-vs)
      (building-viz-state-palette a-vs)
-     (not (empty? (building-viz-state-accepting-computations a-vs))))))
+     (not (building-viz-state-rejected? a-vs)))))
 
 ;;viz-state (listof graph-thunks) -> (listof graph-thunks)
 ;;Purpose: Creates all the graphs needed for the visualization
 (define (create-graph-thunks a-vs acc)
-  (cond [(zipper-at-end? (building-viz-state-CI a-vs)) (reverse (cons (create-graph-thunk a-vs) acc))]
+  (cond [(zipper-at-end? (building-viz-state-CI a-vs))
+         (reverse (cons (create-graph-thunk a-vs) acc))]
         [(equal? (ci-upci (zipper-current (building-viz-state-CI a-vs))) 
                  (ndfa-config-word (building-viz-state-farthest-consumed a-vs)))
          (reverse (cons (create-graph-thunk a-vs) acc))]
@@ -483,7 +484,7 @@ type -> the type of the ndfa (ndfa/dfa) | symbol
                 (create-graph-thunks (struct-copy building-viz-state
                                                   a-vs
                                                   [CI (zipper-next (building-viz-state-CI a-vs))]
-                                                  [tracked-accept-trace (get-next-traces (building-viz-state-tracked-accept-trace a-vs))]
+                                                  [tracked-trace (get-next-traces (building-viz-state-tracked-trace a-vs))]
                                                   [accept-traces (get-next-traces (building-viz-state-accept-traces a-vs))]
                                                   [reject-traces (get-next-traces (building-viz-state-reject-traces a-vs))])
                                      (cons next-graph acc)))]))
@@ -825,7 +826,7 @@ type -> the type of the ndfa (ndfa/dfa) | symbol
          ;;building-state struct
          [building-state (building-viz-state CIs
                                              new-M
-                                             (if (and add-dead (not (empty? invs))) (cons (list dead-state (λ (w) #t)) invs) invs) 
+                                             invs #;(if (and add-dead (not (empty? invs))) (cons (list dead-state (λ (w) #t)) invs) invs) 
                                              dead-state
                                              (if rejected? (list rejecting-trace) (list (first accepting-traces)))
                                              (if (eq? (ndfa-type new-M) 'ndfa) accepting-computations pre-loc)
@@ -834,7 +835,8 @@ type -> the type of the ndfa (ndfa/dfa) | symbol
                                                                                    rejecting-traces)
                                                  rejecting-traces)
                                              most-consumed-word
-                                             color-scheme)]
+                                             color-scheme
+                                             rejected?)]
          ;;(listof graph-thunk) ;;Purpose: Gets all the graphs needed to run the viz
          [graphs (create-graph-thunks building-state '())]
          ;;(listof number) ;;Purpose: Gets the number of computations for each step
@@ -864,6 +866,7 @@ type -> the type of the ndfa (ndfa/dfa) | symbol
                                    (text "Reject not traced" 20 (color-palette-legend-other-reject-color color-scheme)))))])
     #;(map (λ (x) (λ (grph) (identity grph))) graphs)
     ;(list->vector (map (lambda (x) (lambda (graph0 graph1) (above graph0 graph1))) graphs))
+    #;(values rejected? rejecting-trace pre-loc)
     (run-viz graphs
              (list->vector (map (λ (x) (λ (grph) grph)) graphs)
                            #;(map (λ (x) (λ (grph) (identity grph))) graphs))

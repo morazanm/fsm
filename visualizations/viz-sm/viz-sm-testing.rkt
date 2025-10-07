@@ -1847,7 +1847,7 @@
     (sm-viz n '(b a a))
     (sm-viz nk '(b a a))
     (sm-viz aa-ab '(a a a a b a))
-    (sm-viz aa-ab '(a a a a b a) #:add-dead #t)
+    (sm-viz aa-ab '(a a a a b a) #:add-dead #t (list 'A (λ (w) #t)) (list 'B (λ (w) #f)))
     (sm-viz aa-ab '(a a a a b a) #:add-dead 3)
 
     (sm-viz aa-ab '(a a a a a a a))
