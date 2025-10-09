@@ -508,7 +508,7 @@
           [else (let ((u1 (second (first edges)))
                       (u2 (merge-edges (rest edges))))
                   (list (first (first edges))
-                        (mk-union-label u1 u2)
+                        (mk-union-label u1 (second u2))
                         (third (first edges))))]))
 
   (define (merge-medges G ne)
@@ -820,5 +820,18 @@
 ;(fsa-getstart BB)
 ;(fsa-getfinals BB)
 ;(fsa-getrules BB)
+
+(define DNA-SEQUENCE (make-unchecked-dfa '(K H F M I D B S R)
+                                         '(a t c g)
+                                         'K
+                                         '(K F I B R)
+                                         `((K a H) (H t F) (F a H) (F t M) (F c D) (F g S)  
+                                                   (K t M) (M a I) (I a H) (I t M) (I c D) (I g S)
+                                                   (K c D) (D g B) (B a H) (B t M) (B c D) (B g S)
+                                                   (K g S) (S c R) (R a H) (R t M) (R c D) (R g S))))
+
+(define EVIL-dna-sequence (complement-fsa DNA-SEQUENCE))
+
+(define EVIL-regexp (fsa->regexp EVIL-dna-sequence))
                          
 ; closes module
