@@ -34,12 +34,11 @@
 ;; state regexp invariant natnum -> void throw error
 ;; Purpose: To test if a word generated from the given regexp holds for the invariant of the state
 (define (testing-function state regexp inv tests)
-  (let [(machine (regexp->fsa regexp))]
     (check-property
      (make-config #:tests tests)
      (property #:name (format "~a-invariant" state)
                ([generated-word (gen:map (translate-regexp regexp) flatten)])
-               (inv generated-word)))))
+               (inv generated-word))))
 
 
 ;; machine (listof (state invariant)) natnum -> void throw error 
