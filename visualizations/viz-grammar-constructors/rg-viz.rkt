@@ -100,44 +100,47 @@
 ;; tree (listof Symbol) (listof (list Symbol ((listof Symbol) -> (U boolean Symbol)) -> (U boolean Symbol)
 ;; Checks all invariants against all of their respective nodes
 (define (check-all-invariants tree nonterminals-to-check invariants)
-  (local [(define (check-invariant invariant-nt invariant-func)
-            (local [(define (find-all-invariant-nodes nts)
-                      (if (empty? nts)
-                          '()
-                          (if (equal? invariant-nt (undo-renaming (first nts)))
-                              (cons (first nts) (find-all-invariant-nodes (rest nts)))
-                              (find-all-invariant-nodes (rest nts)))))
-                    (define (check-all-invariant-nodes nonterminals invar-func broken-nodes)
-                      (if (empty? nonterminals)
-                          (if (empty? broken-nodes) #t broken-nodes)
-                          (if (invariant-holds? (dfs tree (first nonterminals)) invar-func)
-                              (check-all-invariant-nodes (rest nonterminals) invar-func broken-nodes)
-                              (check-all-invariant-nodes (rest nonterminals)
-                                                         invar-func
-                                                         (cons (first nonterminals) broken-nodes)))))]
-                   (check-all-invariant-nodes (find-all-invariant-nodes nonterminals-to-check)
-                                              invariant-func
-                                              '())))
-          (define (check-all-invariants-helper nonterminals-to-check invariants broken-nodes)
-            (if (empty? invariants)
-                (if (empty? broken-nodes) '() broken-nodes)
-                (let ([result (check-invariant (first (first invariants))
-                                               (second (first invariants)))])
-                  (if (list? result)
-                      (check-all-invariants-helper nonterminals-to-check
-                                                   (rest invariants)
-                                                   (append result broken-nodes))
-                      (check-all-invariants-helper nonterminals-to-check
-                                                   (rest invariants)
-                                                   broken-nodes)))))]
-         (check-all-invariants-helper nonterminals-to-check invariants '())))
+  (define (check-invariant invariant-nt invariant-func)
+    (define (find-all-invariant-nodes nts)
+      (if (empty? nts)
+          '()
+          (if (equal? invariant-nt (undo-renaming (first nts)))
+              (cons (first nts) (find-all-invariant-nodes (rest nts)))
+              (find-all-invariant-nodes (rest nts)))))
+    (define (check-all-invariant-nodes nonterminals invar-func broken-nodes)
+      (if (empty? nonterminals)
+          (if (empty? broken-nodes) #t broken-nodes)
+          (if (invariant-holds? (dfs tree (first nonterminals)) invar-func)
+              (check-all-invariant-nodes (rest nonterminals) invar-func broken-nodes)
+              (check-all-invariant-nodes (rest nonterminals)
+                                         invar-func
+                                         (cons (first nonterminals) broken-nodes)))
+          ))
+    (check-all-invariant-nodes (find-all-invariant-nodes nonterminals-to-check)
+                               invariant-func
+                               '()))
+  (define (check-all-invariants-helper nonterminals-to-check invariants broken-nodes)
+    (if (empty? invariants)
+        (if (empty? broken-nodes) '() broken-nodes)
+        (let ([result (check-invariant (first (first invariants))
+                                       (second (first invariants)))])
+          (if (list? result)
+              (check-all-invariants-helper nonterminals-to-check
+                                           (rest invariants)
+                                           (append result broken-nodes))
+              (check-all-invariants-helper nonterminals-to-check
+                                           (rest invariants)
+                                           broken-nodes)))))
+  (check-all-invariants-helper nonterminals-to-check invariants '()))
 
 ;; levels -> (listof levels)
 ;; Creates a list containing the levels used for each graph generated
 (define (create-list-of-levels levels)
-  (local [(define (create-list-of-levels-helper lvls)
-            (if (empty? lvls) '() (cons lvls (create-list-of-levels-helper (rest lvls)))))]
-         (create-list-of-levels-helper (reverse levels))))
+  (define (create-list-of-levels-helper lvls)
+            (if (empty? lvls)
+                '()
+                (cons lvls (create-list-of-levels-helper (rest lvls)))))
+  (create-list-of-levels-helper (reverse levels)))
 
 ;; upper?
 ;; symbol -> Boolean
@@ -287,8 +290,6 @@
                          producing-nodes
                          has-invariant)
   (foldl (λ (state result)
-           #;(displayln (and (member (undo-renaming state) has-invariant)
-                                                    (not (member state producing-nodes))))
            (add-node result
                      state
                      #:atb (hash 'color (cond
@@ -311,7 +312,7 @@
                                                     (not (member state broken-invariants?)))
                                                INVARIANT-HOLDS-COLOR])
                                  'shape 'circle
-                                 'label (undo-renaming state) #;(string->symbol (string (string-ref (symbol->string state) 0)))
+                                 'label (undo-renaming state)
                                  'fontcolor 'black
                                  'font "Sans")))
          graph
@@ -423,31 +424,35 @@
 
 ;; run function
 (define (rg-viz rg word #:cpu-cores [cpu-cores #f] . invariants)
-  (if (string? (rg-derive rg word))
-      (rg-derive rg word)
+  (define rg-derv-res (rg-derive rg word))
+  (if (string? rg-derv-res)
+      rg-derv-res
       (let* ([derivation (rg-derive-with-rules rg word)]
-             [w-der (map symbol->fsmlos
-                         (map first (filter (λ (x) (not (equal? (first x) '->))) derivation)))]
+             [w-der (for/list ([derv-elem (in-list derivation)]
+                               #:when (not (equal? (first derv-elem) '->)))
+                      (symbol->fsmlos (first derv-elem)))]
              [rules (cons ""
-                          (map (lambda (x)
-                                 (string-append (symbol->string (first x))
-                                                " → "
-                                                (symbol->string (third x))))
-                               (map second (rest derivation))))]
-             [extracted-edges (create-edges w-der)]
+                          (for/list ([derv-elem (in-list (rest derivation))])
+                            (string-append (symbol->string (first (second derv-elem)))
+                                           " → "
+                                           (symbol->string (third (second derv-elem))))))]
              [used-node-names (make-hash)]
-             [renamed (rename-nodes (rename-edges extracted-edges used-node-names) used-node-names)]
-             [loe (map (λ (el) (if (symbol? (first el)) (list el '()) el)) renamed)]
-             [loe-without-empty (map (λ (el) (if (symbol? (first el)) (list el) el)) renamed)]
-             [yield-trees (map create-yield-tree
-                               (map reverse (create-list-of-levels loe-without-empty)))]
-             [dgraph (dgrph loe
+             [renamed (rename-nodes (rename-edges (create-edges w-der) used-node-names) used-node-names)]
+             [dgraph (dgrph (map (λ (el) (if (symbol? (first el))
+                                             (list el '())
+                                             el))
+                                 renamed)
                             '()
                             '()
                             '()
                             (rest rules)
                             (list (first rules))
-                            (reverse yield-trees)
+                            (reverse (for/list ([lvl (in-list (create-list-of-levels
+                                                               (map (λ (el) (if (symbol? (first el))
+                                                                                (list el)
+                                                                                el))
+                                                                    renamed)))])
+                                       (create-yield-tree (reverse lvl))))
                             (list (tree (grammar-start rg) '())))]
              [lod (reverse (create-dgrphs dgraph '()))]
              [broken-invariants
