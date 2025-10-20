@@ -497,37 +497,3 @@
                            (C ,ARROW bA)
                            (C ,ARROW b))
            'S))
-
-
-
-
-
-
-
-(define MULT3-as 
-  (make-unchecked-rg '(S B C)
-           '(a b)
-           `((S -> ,EMP) (S -> aB) (S -> bB)  
-             (B -> aC)  (B -> bB)
-             (C -> aS)  (C -> bS))
-           'S))
-
-(define (S-INV w)
-  (= 0 (remainder (length (filter (lambda (s) (eq? s' a)) w)) 3)))
-
-(define (B-INV w)
-  (let [(as (filter (lambda (s) (eq? s 'a)) w))]
-    (and (>= (length as) 2)
-         (= 2 (remainder (length as) 3)))))
-
-(define (C-INV w)
-  (let [(as (filter (lambda (s) (eq? s 'a)) w))]
-    (and (>= (length as) 1)
-         (= 1 (remainder (length as) 3)))))
-
-(rg-viz
-   MULT3-as
-   '(b a a)
-   (list 'S S-INV)
-   (list 'B B-INV)
-   (list 'C C-INV))
