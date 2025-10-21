@@ -65,7 +65,7 @@
                                        (< (hash-ref (path-with-hash-hash (qfirst a-qop))
                                                     rule
                                                     0)
-                                          1)))
+                                          2)))
                   (path-with-hash (cons rule (path-with-hash-path (qfirst a-qop)))
                                   (hash-set (path-with-hash-hash (qfirst a-qop))
                                             rule
@@ -107,9 +107,11 @@
   (let* [(regexp-ht (make-hash))
          (machine-paths (find-paths M))
          (paths-to-finals (get-paths-to-finals machine-paths (sm-finals M)))
+         
          (new-rules (extract-rule-set paths-to-finals))
          (new-states (extract-state-set new-rules))
-         (refactored-paths (filter-paths machine-paths new-states))]
+         (refactored-paths (filter-paths machine-paths new-states))
+         #;(refactored-paths machine-paths)]     ;; <- this is the unrefactored paths
     (for ([A new-states])
       (if (and (eq? A (sm-start M))
                (empty? (all-paths-to A refactored-paths)))

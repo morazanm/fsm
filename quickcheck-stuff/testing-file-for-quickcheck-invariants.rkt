@@ -1,12 +1,16 @@
 #lang racket
 (require "quickcheck-invariants.rkt"
          "reg-exp-function.rkt"
+         "new-new-regexp.rkt"
          "../fsm-core/private/fsa.rkt"
          "../fsm-core/private/sm-apply.rkt"
          "../fsm-core/private/constants.rkt"
          "../fsm-core/private/sm-getters.rkt"
+         "../sm-graph.rkt"
          racket/list
          rackunit)
+
+(provide (all-defined-out)) 
 
 
 (struct test-case (name num-tests thunk))
@@ -81,12 +85,16 @@
 ;; B: b has been detected, final state
 ;; R: aa has been detected
 
-
+#|
 ;; word -> Boolean
 ;; Purpose: Determine if the consumed input contains PROHIBITED PATTERN
 ;; Assume: |ci| >= 2
 (define (R-INV ci)
   (not(contains? ci PROHIBITED-PATTERN)))            ;<-- purposely broken for testing
+
+|#
+(define (R-INV ci)
+  (contains? ci PROHIBITED-PATTERN))  
 
 
 ;; tests for R-INV
@@ -190,14 +198,14 @@
 ;;word -> boolean
 ;;Purpose: Determines if the given word is empty
 (define (DNA-K-INV a-word)
-  (not (empty? a-word)))
+  (empty? a-word))
 
 ;;word -> boolean
 ;;Purpose: Determines if the given word has more a's than t's
 (define (DNA-H-INV a-word)
   (let ([num-a (length (filter (λ (w) (equal? w 'a)) a-word))]
         [num-t (length (filter (λ (w) (equal? w 't)) a-word))])
-    (< num-a num-t)))
+    (> num-a num-t)))
 
 ;;word -> boolean
 ;;Purpose: Determines if the given word has an even amount of a's and t's
@@ -523,6 +531,11 @@
                                          'no-dead))
 
 ;; Tests for EVEN-A-ODD-B
+#;(check-reject? EVEN-A-ODD-B '() '(a b b a) '(b a b b a a) '(a b) '(a b b b b)
+                            '(b a b b a a b))
+#;(check-accept? EVEN-A-ODD-B '(b) '(b b b) '(a a b) '(a a a b a b b) '(a a a b b a b))
+                             
+
 (check-equal? (sm-apply EVEN-A-ODD-B '()) 'reject)
 (check-equal? (sm-apply EVEN-A-ODD-B '(a b b a)) 'reject)
 (check-equal? (sm-apply EVEN-A-ODD-B '(b a b b a a)) 'reject)
@@ -649,8 +662,8 @@
 
 ;; L = {w | w does not contain bababa}
 ;; States
-;; S: a*, baa is detected, or babaa is detected , start and final state
-;; A: last of ci is b and no bababa is detected, final state
+;; S: no prefix of bababa is detected, start and final state
+;; A: last of ci is b and no other prefix of bababa is detected, final state
 ;; B: last of ci is ba and no bababa is detected, final state
 ;; C: last of ci is bab and no bababa is detected, final state
 ;; D: last of ci is baba and no bababa is detected, final state
@@ -671,6 +684,11 @@
                                               ))
 
 ;;tests for no-contain-bababa
+#;(check-accept? no-contain-bababa '() '(a) '(b) '(a a a) '(a b b) '(a b b a b a b))
+#;(check-reject? no-contain-bababa '(b a b a b a) '(a b a b a b a b b a)
+                                 '(b b a b a b a a a b a b a b a)
+                                 '(a b a b a b a b a b a a b b a))
+
 (check-equal? (sm-apply no-contain-bababa '()) 'accept)
 (check-equal? (sm-apply no-contain-bababa '(a)) 'accept)
 (check-equal? (sm-apply no-contain-bababa '(b)) 'accept)
@@ -1665,22 +1683,29 @@
 ;; word -> Boolean
 ;; Purpose: Determine if the given word belongs in E
 (define (E-INV-lots-of-kleenes ci)
-  (let [(Bs (takef ci (λ (x) (eq? 'b x))))
-        (As (takef ci (λ (x) (eq? 'a x))))]
-  (or (andmap (λ (x) (eq? 'a x)) ci))))
-
+  (let* [(AorBs (takef ci
+                       (λ (x) (or (eq? 'a x)(eq? 'b x)))))
+         (Cs (drop ci (length AorBs)))]
+    (and (or (andmap (λ (s) (eq? s 'a)) AorBs)
+             (andmap (λ (s) (eq? s 'b)) AorBs))
+         (andmap (λ (s) (eq? s 'c)) Cs))))
 
 (define (F-INV-lots-of-kleenes ci)
-  (let [(Bs (takef ci (λ (x) (eq? 'b x))))
-        (As (takef  ci(λ (x) (eq? 'a x))))]
-  (or (andmap (λ (x) (eq? 'a x)) ci))))
+  (let* [(AorBs (takef ci
+                       (λ (x) (or (eq? 'a x)(eq? 'b x)))))
+         (Ds (drop ci (length AorBs)))]
+    (and (or (andmap (λ (s) (eq? s 'a)) AorBs)
+             (andmap (λ (s) (eq? s 'b)) AorBs))
+         (andmap (λ (s) (eq? s 'd)) Ds))))
 
 
 (define (G-INV-lots-of-kleenes ci)
-  (let [(Bs (takef ci (λ (x) (eq? 'b x))))
-        (As (takef ci (λ (x) (eq? 'a x))))]
-  (or (andmap (λ (x) (eq? 'a x)) ci))))
-
+  (let* [(CorDs (takef ci
+                       (λ (x) (or (eq? 'c x)(eq? 'd x)))))
+         (As (drop ci (length CorDs)))]
+    (and (or (andmap (λ (s) (eq? s 'c)) CorDs)
+             (andmap (λ (s) (eq? s 'd)) CorDs))
+         (andmap (λ (s) (eq? s 'a)) As))))
 
 
 
@@ -1756,6 +1781,97 @@
                                        (list 'C C-INV-AT-LEAST-ONE-MISSING)))
 
 
+
+
+
+
+
+(define big-container (make-unchecked-ndfa '(S A B C D E F H I)
+                                           '(u n e a r
+                                               ;c l d i g o
+                                               )
+                                           'S
+                                           '(C F I)
+                                           '((S u A) (A n B) (S e H) (H r I) (D e E) (E a F)    
+                                                     (C u C) (C n C) (C e C) (C a C) (C r C)
+                                                     (D u D)
+                                                     (D n D) (D e D) (D a D) (D r D)
+                                                     (F u F) (F n F)
+                                                     (F e F) (F a F) (F r F)
+                                                     (S u D) (S n D)
+                                                     (S a D) (S r D)
+                                                     (B u C) (B n C) (B e C) (B a C)
+                                                     (B r C)
+                                                     (S e E) (B e H) (B e E) (F e H) (C e H))))
+
+(define LOI-big-container (list (list 'S INVS=T)
+                                (list 'A INVS=T)
+                                (list 'B INVS=T)
+                                (list 'C INVS=T)
+                                (list 'D INVS=T)
+                                (list 'E INVS=T)
+                                (list 'F INVS=T)
+                                (list 'G INVS=T)
+                                (list 'H INVS=T)
+                                (list 'I INVS=T))) 
+
+
+
+
+
+(define mini-monster-kaboom (make-unchecked-ndfa '(S A B J K L M)
+                                                 '(k a
+                                                     ;l
+                                                     b
+                                                     ;u g c h
+                                                     o
+                                                     ;i n
+                                                     m)
+                                                 'S
+                                                 '(M)
+                                                 `((S a S) (S b S)
+                                                           (S o S)
+                                                           (S m S) (S k A)
+                                                                        
+                                                           (A a B) (A k S) (A b S)
+                                                           (A o S)
+                                                           (A m S)
+                                                                        
+                                                           (B b J) (B k S) (B a S)
+                                                           (B o S)
+                                                           (B m S)
+
+
+                                                           (J k S) (J a S)
+                                                           (J b S)
+                                                           (J m S) (J o K)
+
+                                                           (K k S) (K a S) (K b S)
+                                                          
+                                                           (K m S) (K o L)
+
+                                                           (L m M) (L k S) (L a S) (L b S)
+                                                           (L o S)
+                                                          
+
+                                                           (M k M) (M a M) (M b M)
+                                                           (M o M)
+                                                           (M m M)
+
+                                                           )))
+
+
+(define LOI-mini-monster-kaboom (list (list 'S INVS=T)
+                                      (list 'A INVS=T)
+                                      (list 'B INVS=T)
+                                      (list 'J INVS=T)
+                                      (list 'K INVS=T)
+                                      (list 'L INVS=T)
+                                      (list 'M INVS=T)
+                                      ))
+
+
+(define EVIL-dna-sequence (complement-fsa DNA-SEQUENCE))
 
 
 (define loM (list CONTAINS-aabab no-contain-bababa M3 lots-of-kleenes ONE-LETTER-MISSING ab*b*Uab* a+b+c+a+b+))
@@ -1910,7 +2026,32 @@
 |#
 
 
-(define tests (list (test-case 'dna-sequence
+(define tests (list
+
+               (test-case 'big-container
+                                 50
+                                 (lambda () (quickcheck-invs big-container
+                                                          LOI-big-container)))
+                    (test-case 'mini-monster-kaboom
+                               50
+                               (lambda () (quickcheck-invs mini-monster-kaboom
+                                                        LOI-mini-monster-kaboom)))
+
+                    (test-case 'evil-dna-sequence
+                               50
+                               (lambda () (quickcheck-invs EVIL-dna-sequence
+                                                        (list (list 'K DNA-K-INV)
+                                                        (list 'H DNA-H-INV)
+                                                        (list 'F DNA-F-INV)
+                                                        (list 'M DNA-M-INV)
+                                                        (list 'I DNA-I-INV)
+                                                        (list 'D DNA-D-INV)
+                                                        (list 'B DNA-B-INV)
+                                                        (list 'S DNA-S-INV)
+                                                        (list 'R DNA-R-INV)))))
+
+
+               (test-case 'dna-sequence
                                50
                                (lambda () (quickcheck-invs DNA-SEQUENCE
                                                         (list (list 'K DNA-K-INV)
@@ -2025,8 +2166,10 @@
                                                         (list 'A A-INV-EX-NDFA)
                                                         (list 'B B-INV-EX-NDFA)
                                                         (list 'C C-INV-EX-NDFA)))))
+
+                    
                     ))
-(define res
+#;(define res
   (for/list ([test (in-list tests)])
       (displayln (test-case-name test))
       (let ([result (for/vector #:length (test-case-num-tests test)
@@ -2039,4 +2182,4 @@
         (println result)
         (list (test-case-name test)
             result))))
-(println res)
+;(println res)

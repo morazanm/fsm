@@ -85,10 +85,8 @@
 (define (get-all-regexp a-machine)
   (define finals-set (list->seteq (sm-finals a-machine)))
   (define new-states (mutable-seteq))
-  (define machine-paths (find-paths a-machine))
-  (define new-rules 
-    (remove-duplicates (for*/list ([path (in-list machine-paths)]
-                                   ;; eliminate all paths that do not end in a final state
+  (define new-rules
+    (remove-duplicates (for*/list ([path (in-list (find-paths a-machine))]
                                    #:when (set-member? finals-set (third (last path)))
                                    [rule (in-list path)])
                          (set-add! new-states (first rule))
@@ -97,41 +95,20 @@
   (cond [(not (set-member? new-states (sm-start a-machine)))
          (null-regexp)]
         [else 
-         #;(define machine-with-states-that-reach-finals
-             (make-unchecked-ndfa (set->list new-states)
-                                  (sm-sigma a-machine)
-                                  (sm-start a-machine)
-                                  (filter (λ (final-state)
-                                            (set-member? new-states final-state))
-                                          (sm-finals a-machine))
-                                  new-rules))
-
-         ;; path sethash -> Boolean
-         ;; Purpose: Determine if all states in given path are in the given sethash
-         (define (no-dead-states-in-path? path new-states)
-           (let [(path-states (remove-duplicates
-                               (append-map (λ (rule) (list (first rule) (third rule)))
-                                           path)))]
-             (andmap (λ (st) (set-member? new-states st))
-                     path-states)))
-                 
-         ;; (listof paths) sethash -> (listof paths)
-         ;; Purpose: Remove paths containing dead states
-         (define (remove-dead-paths machine-paths new-states)
-           (filter (λ (path) (no-dead-states-in-path? path new-states))
-                   machine-paths))
+         (define machine-with-states-that-reach-finals
+           (make-unchecked-ndfa (set->list new-states)
+                                (sm-sigma a-machine)
+                                (sm-start a-machine)
+                                (filter (λ (final-state) (set-member? new-states final-state)) (sm-finals a-machine))
+                                new-rules)
+           #;a-machine)
          
          (define state&its-machine (make-hash))
-         (define refactored-states (set->list new-states))
-         (define refactored-sigma (sm-sigma a-machine))
-         (define refactored-start (sm-start a-machine))
-         (define refactored-finals (filter (λ (final-state)
-                                             (set-member? new-states final-state))
-                                           (sm-finals a-machine)))
-         (define refactored-rules new-rules)
-         (define refactored-paths (remove-dead-paths machine-paths new-states)
-           #;(find-paths machine-with-states-that-reach-finals))
-         ;#(define states (sm-states machine-with-states-that-reach-finals))
+         (define all-paths (find-paths machine-with-states-that-reach-finals))
+         
+         (displayln all-paths)
+         
+         (define states (sm-states machine-with-states-that-reach-finals))
   
          ;; (listof symbols) (listof regexp) -> (listof (listof symbol regexp))
          ;; Purpose: To return a hashtable of all regular expressions that
@@ -139,20 +116,17 @@
          (define (get-all-regexp-helper los)
            (for ([symb (in-list los)])
              
-             (define paths-to-first-los
-               (filter (λ (path) (eq? (third (last path)) symb))
-                       refactored-paths))
+             (define paths-to-first-los (filter (λ (path) (eq? (third (last path)) symb)) all-paths))
               
              (define (make-rules-states rules states paths)
                (define (make-rules-states-helper rules states path)
                  (if (empty? path)
                      (values rules states)
-                     (make-rules-states-helper
-                      (cons (first path) rules)
-                      (cons (first (first path))
-                            (cons (third (first path))
-                                  states))
-                      (rest path))))
+                     (make-rules-states-helper (cons (first path) rules)
+                                               (cons (first (first path))
+                                                     (cons (third (first path))
+                                                           states))
+                                               (rest path))))
                (if (empty? paths)
                    (values (remove-duplicates rules) (remove-duplicates states))
                    (call-with-values (lambda () (make-rules-states-helper rules states (first paths)))
@@ -162,27 +136,21 @@
              
              (define machine-only-paths-to-first-los
                (make-unchecked-ndfa states-to-first-los
-                                    refactored-sigma
-                                    refactored-start
+                                    (sm-sigma machine-with-states-that-reach-finals)
+                                    (sm-start machine-with-states-that-reach-finals)
                                     (list symb)
                                     rules-for-first-los))
              
-             (hash-set! state&its-machine
-                        symb
-                        (simplify-regexp
-                         (fsa->regexp machine-only-paths-to-first-los))))
+             (hash-set! state&its-machine symb (simplify-regexp (fsa->regexp machine-only-paths-to-first-los))))
            state&its-machine)
-         (define states-no-start-state
-           (filter (λ (state) (not (eq? state refactored-start)))
-                   refactored-states))
-         (define paths-to-start-state
-           (filter (λ (path) (eq? (third (last path)) refactored-start))
-                   refactored-paths))
+         (define states-no-start-state (filter (λ (state) (not (eq? state (sm-start machine-with-states-that-reach-finals)))) states))
+         (define paths-to-start-state (filter (λ (path) (eq? (third (last path)) (sm-start machine-with-states-that-reach-finals))) all-paths))
+         (displayln paths-to-start-state)
          (if (empty? paths-to-start-state)
              (begin (hash-set! state&its-machine
-                               refactored-start
+                               (sm-start machine-with-states-that-reach-finals)
                                (empty-regexp))
                     (get-all-regexp-helper states-no-start-state))
-             (get-all-regexp-helper refactored-states))]))
+             (get-all-regexp-helper states))]))
  
 
