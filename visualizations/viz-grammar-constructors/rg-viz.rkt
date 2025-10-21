@@ -51,12 +51,12 @@
 
 ;; levels -> tree
 ;; Creates a tree structure from the levels
-(define (create-yield-tree levels)
+(define (create-yield-tree levels start-elem)
   (foldl (lambda (val accum)
            (set-tree-subtrees! (dfs accum (first (first val)))
                                (map (lambda (edge) (tree (second edge) '())) val))
            accum)
-         (tree 'S '())
+         (tree start-elem '())
          levels))
 
 ;; Symbol -> Symbol
@@ -379,6 +379,13 @@
          [producing-nodes (get-producing-nodes (append* levels))]
          [invariant-nodes
           (cons root-node
+                (append-map
+                 (lambda (lvl)
+                   (filter (lambda (node) (member node producing-nodes))
+                                               (map (lambda (edge) (second edge))
+                                                    (filter (lambda (edge) (not (empty? edge))) lvl))))
+                 levels))
+          #;(cons root-node
                 (append-map (lambda (lvl)
                               (let* ([nodes (map (lambda (edge) (second edge))
                                                  (filter (lambda (edge) (not (empty? edge))) lvl))])
@@ -438,6 +445,10 @@
                                            (symbol->string (third (second derv-elem))))))]
              [used-node-names (make-hash)]
              [renamed (rename-nodes (rename-edges (create-edges w-der) used-node-names) used-node-names)]
+             [yield-trees (map (lambda (x) (create-yield-tree x (grammar-start rg))) (map reverse (create-list-of-levels (map (λ (el) (if (symbol? (first el))
+                                                                                (list el)
+                                                                                el))
+                                                                    renamed))))]
              [dgraph (dgrph (map (λ (el) (if (symbol? (first el))
                                              (list el '())
                                              el))
@@ -447,12 +458,15 @@
                             '()
                             (rest rules)
                             (list (first rules))
-                            (reverse (for/list ([lvl (in-list (create-list-of-levels
+                            
+                            (map (lambda (x) (first yield-trees))
+                                 yield-trees)
+                            #;(reverse (for/list ([lvl (in-list (create-list-of-levels
                                                                (map (λ (el) (if (symbol? (first el))
                                                                                 (list el)
                                                                                 el))
                                                                     renamed)))])
-                                       (create-yield-tree (reverse lvl))))
+                                       (create-yield-tree (reverse lvl) (grammar-start rg))))
                             (list (tree (grammar-start rg) '())))]
              [lod (reverse (create-dgrphs dgraph '()))]
              [broken-invariants
