@@ -65,7 +65,7 @@
                                        (< (hash-ref (path-with-hash-hash (qfirst a-qop))
                                                     rule
                                                     0)
-                                          2)))
+                                          1)))
                   (path-with-hash (cons rule (path-with-hash-path (qfirst a-qop)))
                                   (hash-set (path-with-hash-hash (qfirst a-qop))
                                             rule
