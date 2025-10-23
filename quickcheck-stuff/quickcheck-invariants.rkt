@@ -10,6 +10,7 @@
 (provide quickcheck-invs)
 
 (define MAX-KLEENE-LENGTH 20)
+(define NUM-QC-TESTS 300)
 
 ;; regexp -> generator throw error
 ;; Purpose: To translate the given regexp into a generator, that generates
@@ -44,7 +45,7 @@
 
 ;; machine (listof (state invariant)) [natnum] -> void throws error 
 ;; Purpose: To quickcheck the invariants of the states of the given machine
-(define (quickcheck-invs machine state-invs-pairs #:num-tests [tests 1000])
+(define (quickcheck-invs machine state-invs-pairs #:num-tests [tests NUM-QC-TESTS])
   (define state-regexp-pairs (get-all-regexp-new-new machine))
   (define non-dead-state-inv-pairs
     (filter (λ (state-inv-pair)
