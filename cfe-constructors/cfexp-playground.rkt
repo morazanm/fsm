@@ -6,16 +6,30 @@
           "../fsm-core/private/pda.rkt"
           ;"../visualizations/viz-grammar-constructors/cfg-derive-leftmost.rkt"
           "../sm-graph.rkt"
+          racket/syntax-srcloc
+          (for-syntax racket/base
+                      syntax/parse
+                      racket/set
+                      syntax/parse/experimental/template
+                      racket/contract/combinator
+                      )
+          "construct-cfe-macro.rkt"
           )
 
-
 (provide (all-defined-out))
+
+
+
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;CFEXP;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define EMPTY (empty-cfexp))
 
 (define A (singleton-cfexp 'a))
+
+(construct-cfe [(A (singleton "a"))]
+                 A)
 
 (define B (singleton-cfexp 'b))
 
@@ -57,6 +71,13 @@
     (begin
       (update-binding! AiBj 'A EUAIBUAIBB)
       AiBj)))
+
+#;(define AiBj-new
+  (construct-cfe [(AiBj (var EUAIBUAIBB))
+                  (EUAIBUAIBB (union EMPTY AIB AIBB))
+                  (AIB (concat A AiBj B))
+                  (AIBB (concat A AiBj B B))]
+                 AiBj))
 
 ;;w = b^na^n
 (define BNAN

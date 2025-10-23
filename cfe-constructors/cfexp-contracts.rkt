@@ -7,9 +7,13 @@
          racket/contract)
 
 (provide singleton-cfexp/c
+         singleton-cfexp-input-pred
          concat-cfexp/c
+         concat-cfexp-input-pred
          union-cfexp/c
+         union-cfexp-input-pred
          var-cfexp/c
+         var-cfexp-input-pred
          kleene-cfexp/c
          update-binding!/c
          gen-cfexp-word/c
@@ -241,11 +245,20 @@
                             message))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;COMBINATOR CONTRACTS;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(define singleton-cfexp-input-pred
+  (flat-contract-predicate (and/c valid-singleton-input
+                                  valid-singleton-exp)))
 
 (define singleton-cfexp/c
   (-> (and/c valid-singleton-input
              valid-singleton-exp)
       mk-singleton-cfexp?))
+
+(define concat-cfexp-input-pred
+  (flat-contract-predicate (and/c (is-a-list/c "concat-cfexp expects an arbitrary amount of cfes, given")
+                                  (at-least-two/c "concat-cfexp")
+                                  (or/c (valid-listof/c cfexp? "concat-cfexp" "list of cfes" "cfe")
+                                        (valid-listof/c (listof cfexp?) "concat-cfexp" "list of cfes" "cfe")))))
 
 (define concat-cfexp/c
   (->* () #:rest (and/c (is-a-list/c "concat-cfexp expects an arbitrary amount of cfes, given")
@@ -255,6 +268,12 @@
       (or/c mk-concat-cfexp?
             mk-empty-cfexp?)))
 
+(define union-cfexp-input-pred
+  (flat-contract-predicate (and/c (is-a-list/c "union-cfexp expects an arbitrary amount of cfes, given")
+                                  (at-least-two/c "union-cfexp")
+                                  (or/c (valid-listof/c cfexp? "union-cfexp" "list of cfes" "cfe") 
+                                        (valid-listof/c (listof cfexp?) "union-cfexp" "list of cfes" "cfe")))))
+
 (define union-cfexp/c
   (->* () #:rest (and/c (is-a-list/c "union-cfexp expects an arbitrary amount of cfes, given")
                         (at-least-two/c "union-cfexp")
@@ -262,6 +281,10 @@
                               (valid-listof/c (listof cfexp?) "union-cfexp" "list of cfes" "cfe")))
        (or/c mk-union-cfexp?
              mk-empty-cfexp?)))
+
+(define var-cfexp-input-pred
+  (flat-contract-predicate (and/c (is-symbol?/c "var-cfexp expects a symbol as input, given")
+                                  is-a-valid-symbol/c)))
 
 (define var-cfexp/c
   (-> (and/c (is-symbol?/c "var-cfexp expects a symbol as input, given")
