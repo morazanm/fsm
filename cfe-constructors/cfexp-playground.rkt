@@ -156,14 +156,14 @@
 
 
 (define Gina-aˆnbˆn (make-unchecked-ndpda '(S M F)
-                           '(a b)
-                           '(a)
-                           'S
-                           '(F)
-                           `(((S ,EMP ,EMP) (M ,EMP))
-                             ((S a ,EMP) (S (a)))
-                             ((M b (a)) (M ,EMP))
-                             ((M ,EMP ,EMP) (F ,EMP)))))
+                                          '(a b)
+                                          '(a)
+                                          'S
+                                          '(F)
+                                          `(((S ,EMP ,EMP) (M ,EMP))
+                                            ((S a ,EMP) (S (a)))
+                                            ((M b (a)) (M ,EMP))
+                                            ((M ,EMP ,EMP) (F ,EMP)))))
 
 (define Gina-wcwˆr (make-unchecked-ndpda '(S P Q F)
                           '(a b c)
@@ -254,11 +254,13 @@
                                 ((F c (a)) (F ,EMP)))))
 
 ;;w = a*
+
 (define A*-cfe (pda->cfe A*))
 
 (define Gina-aˆnbˆn-cfe (pda->cfe Gina-aˆnbˆn))
 
 (define Gina-wcwˆr-cfe (pda->cfe Gina-wcwˆr))
+
 
 (define Gina-palindrome-pda-cfe (pda->cfe Gina-palindrome-pda))
 

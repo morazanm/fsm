@@ -25,7 +25,9 @@
          printable-cfexp
          )
 
-(define MAX-KLEENESTAR-LIMIT 1)
+(define MAX-KLEENESTAR-LIMIT 50)
+
+(define EMPTY-CHANCE .01)
 
 ;;a context-free expression is either:
 ;; 1. null (base case)
@@ -128,7 +130,7 @@
   (if (contains-empty? cfexps)
         (let ([filtered-empties (vector-filter-not mk-empty-cfexp? cfexps)])
           (if (or (vector-empty? filtered-empties)
-                  (< (random) 0.1))
+                  (< (random) EMPTY-CHANCE))
             (empty-cfexp)
             (vector-ref filtered-empties (random (vector-length filtered-empties)))))
         (vector-ref cfexps (random (vector-length cfexps)))))
@@ -247,7 +249,7 @@
       
 ;;cfexp [(setof cfe)] -> string
 ;;Purpose: Converts the given cfe into a string to make it readable
-(define (printable-cfexp cfe #:seen[seen (set)])
+(define (printable-cfexp cfe #:seen[seen (set)]) 
   ;;(listof cfe) string (setof cfe) -> string
   ;;Purpose: Converts and appends all of the cfes in the given (listof cfe) 
   (define (printable-helper locfe connector seen)
@@ -262,8 +264,8 @@
   (define (printable-var var-cfe seen)
     (if (set-member? seen var-cfe)
         (symbol->string (mk-var-cfexp-cfe cfe))
-        (string-append ;(symbol->string (mk-var-cfexp-cfe cfe))
-                       ;" -> "
+        (string-append (symbol->string (mk-var-cfexp-cfe cfe))
+                       " -> "
                        (printable-helper (vector->list (first (hash-values (mk-var-cfexp-env cfe))))
                                          "|"
                                          (set cfe)))))
@@ -275,8 +277,10 @@
         [(mk-var-cfexp? cfe) (printable-var cfe (if (set-empty? seen)
                                                     (set)
                                                     seen))]
-        [(mk-concat-cfexp? cfe) (string-append "(" (printable-helper (vector->list (mk-concat-cfexp-locfe cfe)) "" seen) ")")]
-        [(mk-union-cfexp? cfe) (string-append "(" (printable-helper (vector->list (mk-union-cfexp-locfe cfe)) " ∪ " seen) ")")]
+        [(mk-concat-cfexp? cfe) (printable-helper (vector->list (mk-concat-cfexp-locfe cfe)) "" seen)
+                                #;(string-append "(" (printable-helper (vector->list (mk-concat-cfexp-locfe cfe)) "" seen) ")")]
+        [(mk-union-cfexp? cfe) (printable-helper (vector->list (mk-union-cfexp-locfe cfe)) " | "#;" ∪ " seen)
+                               #;(string-append "(" (printable-helper (vector->list (mk-union-cfexp-locfe cfe)) " | "#;" ∪ " seen) ")")]
         [else (string-append (printable-cfexp (mk-kleene-cfexp cfe)) "*")]))
   
 

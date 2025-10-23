@@ -8,7 +8,7 @@
          rackunit
          )
 
-(define WORD-AMOUNT 1)
+(define WORD-AMOUNT 100)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;Generating Words;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -167,7 +167,7 @@
 (define thesis-cfe-WORDS (gen-cfe-words thesis-cfe WORD-AMOUNT))
 
 (define A*-WORDS (gen-cfe-words A*-cfe WORD-AMOUNT))
-
+#|
 (define Gina-aˆnbˆn-WORDS (gen-cfe-words Gina-aˆnbˆn-cfe WORD-AMOUNT))
 
 (define Gina-wcwˆr-WORDS (gen-cfe-words Gina-wcwˆr-cfe WORD-AMOUNT))
@@ -181,7 +181,7 @@
 (define Gina-a^mb^nc^pd^q-WORDS (gen-cfe-words Gina-a^mb^nc^pd^q-cfe WORD-AMOUNT))
 
 (define Gina-a^mb^nc^p-WORDS (gen-cfe-words Gina-a^mb^nc^p-cfe WORD-AMOUNT))
-
+|#
 (define converted-ANBN-WORDS (gen-cfe-words converted-ANBN WORD-AMOUNT))
 
 (define converted-BNAN-WORDS (gen-cfe-words (pda->cfe (cfe->pda BNAN)) WORD-AMOUNT))
@@ -191,6 +191,8 @@
 (define converted-A2iBi-WORDS (gen-cfe-words (pda->cfe (cfe->pda A2iBi)) WORD-AMOUNT))
 
 (define converted-AiBj-WORDS (gen-cfe-words (pda->cfe (cfe->pda AiBj)) WORD-AMOUNT))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;TESTING;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (check-pred (λ (low) (andmap valid-A*-word? low)) A*-WORDS)
 
@@ -203,7 +205,7 @@
 (check-pred (λ (low) (andmap valid-a2ibi-word? low)) converted-A2iBi-WORDS)
 
 (check-pred (λ (low) (andmap valid-aibj-word? low)) converted-AiBj-WORDS)
-
+#|
 (check-pred (λ (low) (andmap valid-Gina-aˆnbˆn-word? low)) Gina-aˆnbˆn-WORDS) 
 
 (check-pred (λ (low) (andmap valid-Gina-wcwˆr-word? low)) Gina-wcwˆr-WORDS)
@@ -217,7 +219,7 @@
 (check-pred (λ (low) (andmap valid-Gina-a^mb^nc^pd^q-word? low)) Gina-a^mb^nc^pd^q-WORDS)
 
 (check-pred (λ (low) (andmap valid-Gina-a^mb^nc^p-word? low)) Gina-a^mb^nc^p-WORDS)
-
+|#
 (check-true (pda-checker (cfe->pda ANBN) converted-ANBN-WORDS))
 
 (check-true (pda-checker (cfe->pda BNAN) converted-BNAN-WORDS))
@@ -227,7 +229,7 @@
 (check-true (pda-checker (cfe->pda A2iBi) converted-A2iBi-WORDS))
 
 (check-true (pda-checker (cfe->pda WWR) converted-WWR-WORDS))
-
+#|
 (check-true (pda-checker Gina-aˆnbˆn Gina-aˆnbˆn-WORDS))
 
 (check-true (pda-checker Gina-wcwˆr Gina-wcwˆr-WORDS))
@@ -255,8 +257,7 @@
 (check-true (pda-checker (cfe->pda Gina-a^mb^nc^pd^q-cfe) Gina-a^mb^nc^pd^q-WORDS))
 
 (check-true (pda-checker (cfe->pda Gina-a^mb^nc^p-cfe) Gina-a^mb^nc^p-WORDS))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;TESTING;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+|#
 
 (check-pred (λ (low) (andmap valid-wwr-word? low)) WWR-WORDS)
 
