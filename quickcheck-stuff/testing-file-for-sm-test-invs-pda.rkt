@@ -5,6 +5,7 @@
          "../fsm-core/private/pda.rkt"
          "../fsm-core/private/sm-apply.rkt"
          "../fsm-core/private/constants.rkt"
+         "../sm-graph.rkt"
          )
 
 

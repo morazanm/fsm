@@ -508,7 +508,7 @@
           [else (let ((u1 (second (first edges)))
                       (u2 (merge-edges (rest edges))))
                   (list (first (first edges))
-                        (mk-union-label u1 u2)
+                        (mk-union-label u1 (second u2))
                         (third (first edges))))]))
 
   (define (merge-medges G ne)
@@ -787,7 +787,7 @@
   (let ((test-words (generate-words number-tests (fsa-getalphabet m) null))) ;(build-list number-tests (lambda (i) (generate-word (fsa-getalphabet m))))))
     (map (lambda (w) (list w (apply-fsa m w))) test-words)))
 
-(define aUb (regexp->fsa (make-unchecked-union
+#;(define aUb (regexp->fsa (make-unchecked-union
                           (make-unchecked-singleton "a")
                           (make-unchecked-singleton "b"))))
 
