@@ -106,9 +106,14 @@
 ;; word -> Boolean
 ;; Purpose: To determine if the consumed input ends with a
 ;;          and does not contain the prohibited input
-(define (A-INV ci)
-  (and (equal? (drop ci (- (length ci) 1)) '(a))
+#;(define (A-INV ci)
+  (and (equal? (drop ci (- (length ci) 1)) '(a))    ;<-- broken 
        (contains? ci PROHIBITED-PATTERN)))
+
+(define (A-INV ci)
+  (and (equal? (drop ci (- (length ci) 1)) '(a))    ;<-- broken 
+       (not (contains? ci PROHIBITED-PATTERN))))
+
 
 ;;tests for A-INV
 #;(check-equal? (A-INV '(a)) #t)
@@ -1136,8 +1141,11 @@
 
 ;; word -> Boolean
 ;; Purpose: Determine if ci should be in S
-(define (S-INV-ab*b*Uab* ci)
+#;(define (S-INV-ab*b*Uab* ci)
   (not (= (length ci) 0)))           ;<-- purposely broken for testing
+
+(define (S-INV-ab*b*Uab* ci)
+  (= (length ci) 0))
 
 ;; tests for S-INV-L
 ;(check-equal? (S-INV-ab*b*Uab* '()) #t)
@@ -1147,8 +1155,11 @@
 
 ;; word -> Boolean
 ;; Purpose: Determine if ci should be in A
-(define (A-INV-ab*b*Uab* ci)          
+#;(define (A-INV-ab*b*Uab* ci)          
   (not (= (length ci) 0)))           ;<-- purposely broken for testing
+
+(define (A-INV-ab*b*Uab* ci)          
+  (= (length ci) 0))
 
 ;; tests for A-INV-ab*b*Uab*
 ;(check-equal? (A-INV-ab*b*Uab* '()) #t)
@@ -1269,10 +1280,19 @@
 
 ;; word -> Boolean
 ;; Purpose: To determine whether ci = ab*
-(define (aa-ab-D-INV ci)                ;; <-- this one is purposely broken
+#;(define (aa-ab-D-INV ci)                ;; <-- this one is purposely broken
   (and (not (empty? ci))
        (eq? (first ci) 'a)
        (andmap (λ (el) (eq? el 'b)) ci)))
+
+(define (aa-ab-D-INV ci)                
+  (and (not (empty? ci))
+       (eq? (first ci) 'a)
+       (andmap (λ (el) (eq? el 'b)) (drop ci 1))))
+
+
+
+
 
 
 (define LOI-aa*-ab* (list (list 'K  aa-ab-K-INV) (list 'B aa-ab-B-INV) (list 'D aa-ab-D-INV)))
@@ -2032,12 +2052,12 @@
                                  1
                                  (lambda () (quickcheck-invs big-container
                                                           LOI-big-container)))
-                    #;(test-case 'mini-monster-kaboom
+                    (test-case 'mini-monster-kaboom
                                1
                                (lambda () (quickcheck-invs mini-monster-kaboom
                                                         LOI-mini-monster-kaboom)))
 
-                   #; (test-case 'evil-dna-sequence
+                    (test-case 'evil-dna-sequence
                                1
                                (lambda () (quickcheck-invs EVIL-dna-sequence
                                                         (list (list 'K DNA-K-INV)
@@ -2051,7 +2071,7 @@
                                                         (list 'R DNA-R-INV)))))
 
 
-               #;(test-case 'dna-sequence
+               (test-case 'dna-sequence
                                1
                                (lambda () (quickcheck-invs DNA-SEQUENCE
                                                         (list (list 'K DNA-K-INV)
@@ -2072,13 +2092,13 @@
                                                         (list 'D D-INV-no-contain-bababa)
                                                         (list 'E E-INV-no-contain-bababa)
                                                         (list 'F F-INV-no-contain-bababa)))))
-                    (test-case 'AT-LEAST-ONE-MISSING
+                    #;(test-case 'AT-LEAST-ONE-MISSING
                                1
                                (lambda () (quickcheck-invs AT-LEAST-ONE-MISSING  (list (list 'S S-INV-AT-LEAST-ONE-MISSING)
                                                         (list 'A A-INV-AT-LEAST-ONE-MISSING)
                                                         (list 'B B-INV-AT-LEAST-ONE-MISSING)
                                                         (list 'C C-INV-AT-LEAST-ONE-MISSING)))))
-                    (test-case 'lots-of-kleenes
+                    #;(test-case 'lots-of-kleenes
                                1
                                (lambda () (quickcheck-invs lots-of-kleenes (list (list 'S S-INV-lots-of-kleenes)
                                                         (list 'A A-INV-lots-of-kleenes)
@@ -2088,7 +2108,7 @@
                                                         (list 'E E-INV-lots-of-kleenes)
                                                         (list 'F F-INV-lots-of-kleenes)
                                                         (list 'G G-INV-lots-of-kleenes)))))
-                    (test-case 'ONE-LETTER-MISSING
+                    #;(test-case 'ONE-LETTER-MISSING
                                1
                                (lambda () (quickcheck-invs ONE-LETTER-MISSING (list (list 'S S-INV-1-MISSING)
                                                         (list 'A A-INV-1-MISSING)
@@ -2101,7 +2121,7 @@
                                1
                                (lambda () (quickcheck-invs ab*b*Uab* (list (list 'A A-INV-ab*b*Uab*) (list 'B B-INV-ab*b*Uab*) (list 'C C-INV-ab*b*Uab*)
                                                         (list 'D D-INV-ab*b*Uab*) (list 'E E-INV-ab*b*Uab*) (list 'S S-INV-ab*b*Uab*)))))
-                    (test-case 'M3
+                    #;(test-case 'M3
                                1
                                (lambda () (quickcheck-invs M3 (list (list 'S S3-INV)
                                                         (list 'A A3-INV)
@@ -2110,7 +2130,7 @@
                                                         (list 'D D3-INV)
                                                         (list 'E E3-INV)
                                                         (list 'F F3-INV)))))
-                    (test-case 'a+b+c+a+b+
+                    #;(test-case 'a+b+c+a+b+
                                1
                                (lambda () (quickcheck-invs a+b+c+a+b+ (list (list 'S INVS=T)
                                                         (list 'A INVS=T)
@@ -2118,12 +2138,12 @@
                                                         (list 'C INVS=T)
                                                         (list 'D INVS=T)
                                                         (list 'E INVS=T)))))
-                    (test-case 'CONTAINS-aabab
+                    #;(test-case 'CONTAINS-aabab
                                1
                                (lambda () (quickcheck-invs CONTAINS-aabab (list (list 'S S2-INV) (list 'A A2-INV)
                               (list 'B B2-INV) (list 'C C2-INV)
                               (list 'D D2-INV) (list 'E E2-INV)))))
-                    (test-case 'a+b+c+a+b+ndfa
+                    #;(test-case 'a+b+c+a+b+ndfa
                                1
                                (lambda () (quickcheck-invs (make-unchecked-ndfa '(S A B C D E)
                              '(a b c)
@@ -2151,7 +2171,7 @@
                                                         (list 'A A-INV)
                                                         (list 'B B-INV)
                                                         (list 'R R-INV)))))
-                    (test-case 'EVEN-NUM-Bs
+                    #;(test-case 'EVEN-NUM-Bs
                                1
                                (lambda () (quickcheck-invs EVEN-NUM-Bs
                                                         (list (list 'S EVEN-NUM-Bs-S-INV) (list 'F EVEN-NUM-Bs-F-INV)))))
@@ -2159,7 +2179,7 @@
                                1
                                (lambda () (quickcheck-invs aa*Uab*
                                                         (list (list 'K  aa-ab-K-INV) (list 'B aa-ab-B-INV) (list 'D aa-ab-D-INV)))))
-                    (test-case 'EX-NDFA
+                    #;(test-case 'EX-NDFA
                                1
                                (lambda () (quickcheck-invs EX-NDFA
                                                         (list (list 'S S-INV-EX-NDFA)
