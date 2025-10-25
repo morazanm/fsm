@@ -3,12 +3,13 @@
 (require "../fsm-error-types/regexp-error-types.rkt"
          "../macro-subexpr-contract.rkt"
          "../../fsa.rkt"
-         "../../sm-apply.rkt")
+         "../../sm-apply.rkt"
+         "../syntax-value-struct.rkt")
 
 (provide check-regexp)
 
 (define (check-regexp accept? regex words)
-  (define regexp-machine (regexp->fsa regex))
+  (define regexp-machine (regexp->fsa (val-stx-pair-val regex)))
   (check-syntax (property-check list?
                                 words
                                 warn:fsm:app:regexp:invalid-words
