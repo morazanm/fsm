@@ -28,7 +28,7 @@
 
 (define A (singleton-cfexp 'a))
 
-(construct-cfe [(A (singleton "a"))]
+(construct-cfe [(A (singleton 'a))]
                  A)
 
 (define B (singleton-cfexp 'b))

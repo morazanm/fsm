@@ -71,45 +71,56 @@
          #,@(for/list ([id-stx (in-list (syntax-e #'((~? empty-expr.id) ...)))]
                        [stx (in-list (syntax-e #'((~? empty-expr) ...)))])
               (quasisyntax/loc stx
-                (define id-stx (lambda ()
-                              (set! id-stx (empty-cfexp))
-                              id-stx))))
+                (define #,id-stx (lambda ()
+                              (set! #,id-stx (empty-cfexp))
+                              #,id-stx))))
          #;(~? (define empty-expr.id (lambda ()
                                           (set! empty-expr.id (empty-cfexp))
                                           empty-expr.id)))
          #;...
-         (~? (define null-expr.id (lambda ()
+
+         #,@(for/list ([id-stx (in-list (syntax-e #'((~? null-expr.id) ...)))]
+                       [stx (in-list (syntax-e #'((~? null-expr) ...)))])
+              (quasisyntax/loc stx
+                (define #,id-stx (lambda ()
+                                   (set! #,id-stx (null-cfexp))
+                                   #,id-stx))))
+         #;(~? (define null-expr.id (lambda ()
                                      (set! null-expr.id (null-cfexp))
                                      null-expr.id)))
-         ...
+         #;...
+
+         
          #,@(for/list ([id-stx (in-list (syntax-e #'((~? singleton-expr.id) ...)))]
                        [val-stx (in-list (syntax-e #'((~? singleton-expr.val) ...)))]
                        [stx (in-list (syntax-e #'((~? singleton-expr) ...)))])
-              (with-syntax [(stx-loc stx)]
-                #`(begin
-                    (unless (singleton-cfexp-input-pred #,val-stx)
-                      (raise (exn:fail:srcloc (format "singleton-cfexp expected a symbol [a-Z] or number [0-9] as input, given: ~a" #,val-stx)
-                                              (current-continuation-marks)
-                                              (list (srcloc '#,(syntax-source stx)
-                                                            '#,(syntax-line stx)
-                                                            '#,(syntax-column stx)
-                                                            '#,(syntax-position stx)
-                                                            '#,(syntax-span stx))))))
-                    (define #,id-stx (lambda ()
-                                       (set! #,id-stx
-                                             (singleton-cfexp #,val-stx))
-                                       #,id-stx))))
+              (quasisyntax/loc stx
+                (begin
+                  (unless (singleton-cfexp-input-pred #,val-stx)
+                    (raise (exn:fail:srcloc (format "singleton-cfexp expected a symbol [a-Z] or number [0-9] as input, given: ~s" #,val-stx)
+                                            (current-continuation-marks)
+                                            (list (srcloc '#,(syntax-source stx)
+                                                          '#,(syntax-line stx)
+                                                          '#,(syntax-column stx)
+                                                          '#,(syntax-position stx)
+                                                          '#,(syntax-span stx))))))
+                  (define #,id-stx (lambda ()
+                                     (set! #,id-stx
+                                           (singleton-cfexp #,val-stx))
+                                     #,id-stx))))
+
+              
               #;(let ([stx-loc (syntax stx)])
-                (quasisyntax/loc stx
-                  (begin
-                    (unless (singleton-cfexp-input-pred #,val-stx)
-                      (raise (exn:fail:srcloc (format "singleton-cfexp expected a symbol [a-Z] or number [0-9] as input, given: ~a" #,val-stx)
-                                              (current-continuation-marks)
-                                              (list (syntax-srcloc #,stx)))))
-                    (define #,id-stx (lambda ()
-                                       (set! #,id-stx
-                                             (singleton-cfexp #,val-stx))
-                                       #,id-stx))))))
+                  (quasisyntax/loc stx
+                    (begin
+                      (unless (singleton-cfexp-input-pred #,val-stx)
+                        (raise (exn:fail:srcloc (format "singleton-cfexp expected a symbol [a-Z] or number [0-9] as input, given: ~a" #,val-stx)
+                                                (current-continuation-marks)
+                                                (list (syntax-srcloc #,stx)))))
+                      (define #,id-stx (lambda ()
+                                         (set! #,id-stx
+                                               (singleton-cfexp #,val-stx))
+                                         #,id-stx))))))
          #;(~? (define singleton-expr.id (lambda ()
                                         (set! singleton-expr.id
                                               (with-handlers
@@ -122,11 +133,28 @@
                                              (singleton-cfexp singleton-expr.val)))
                                         singleton-expr.id)))
          #;...
-         (~? (define empty-var-expr.id (lambda ()
+         
+         #;(~? (define empty-var-expr.id (lambda ()
                                         (set! empty-var-expr.id (var-cfexp #f))
                                         empty-var-expr.id)))
-         ...
-         (~? (define var-expr.id (lambda ()
+         #;...
+         #,@(for/list ([id-stx (in-list (syntax-e #'((~? var-expr.id) ...)))]
+                       [binding-stx (in-list (syntax-e #'((~? var-expr.binding) ...)))]
+                       [stx (in-list (syntax-e #'((~? var-expr) ...)))])
+              (quasisyntax/loc stx
+                (begin
+                  (unless (some-pred #,binding-stx)
+                    (raise (exn:fail:srcloc (format "some error msg: ~s" #,(syntax->datum binding-stx))
+                                            (current-continuation-marks)
+                                            (list (srcloc '#,(syntax-source stx)
+                                                          '#,(syntax-line stx)
+                                                          '#,(syntax-column stx)
+                                                          '#,(syntax-position stx)
+                                                          '#,(syntax-span stx))))))
+                  (define #,id-stx (lambda ()
+                                     (set! #,id-stx (var-cfexp (hash-ref symb-lookup (syntax->datum #,id-stx))))
+                                     #,id-stx)))))
+         #;(~? (define var-expr.id (lambda ()
                                   (set! var-expr.id
                                         (with-handlers
                                                ([exn:fail:contract?
@@ -137,8 +165,26 @@
                                                            (list (syntax-srcloc #'var-expr)))))])
                                              (var-cfexp (hash-ref symb-lookup (syntax->datum #'var-expr.id)))))
                                   var-expr.id)))
-         ...
-         (~? (define union-expr.id (lambda ()
+         #;...
+         #,@(for/list ([id-stx (in-list (syntax-e #'((~? union-expr.id) ...)))]
+                       [vals-stx (in-list (syntax-e #'((~? (union-expr.vals ...)) ...)))]
+                       [stx (in-list (syntax-e #'((~? union-expr) ...)))])
+              (quasisyntax/loc stx
+                (begin
+                  (unless (some-pred #,vals-stx)
+                    (raise (exn:fail:srcloc (format "some error msg: ~s" #,(syntax->datum vals-stx))
+                                            (current-continuation-marks)
+                                            (list (srcloc '#,(syntax-source stx)
+                                                          '#,(syntax-line stx)
+                                                          '#,(syntax-column stx)
+                                                          '#,(syntax-position stx)
+                                                          '#,(syntax-span stx))))))
+                  (define #,id-stx (lambda ()
+                                     (set! #,id-stx (union-cfexp (if (procedure? #,vals-stx)
+                                                                     (#,vals-stx)
+                                                                     #,vals-stx)...))
+                                     #,id-stx)))))
+         #;(~? (define union-expr.id (lambda ()
                               (set! union-expr.id
                                     (with-handlers
                                         ([exn:fail:contract?
@@ -151,7 +197,7 @@
                                                        (union-expr.vals)
                                                        union-expr.vals)...)))
                               union-expr.id)))
-         ...
+         #;...
          (~? (define concat-expr.id (lambda ()
                                      (set! concat-expr.id
                                            (with-handlers
