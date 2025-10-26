@@ -37,7 +37,8 @@
 ;; Purpose: To test if a word generated from the given regexp holds for the invariant of the state
 (define (testing-function state generator inv tests)
   (check-property
-     (make-config #:tests tests)
+     (make-config #:tests tests ;#:deadline (+ (current-inexact-milliseconds) 1000000)
+                  )
      (property #:name (format "~a-invariant" state)
                ([generated-word (gen:map generator flatten)])
                (inv generated-word))))

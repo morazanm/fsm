@@ -11,7 +11,7 @@
 
 (struct test-case (name num-tests thunk))
 
-
+(define NUM-TESTS-PER-MACHINE 1)
 
 ;; USEFUL FUNCTIONS
 
@@ -87,8 +87,14 @@
 ;; word -> Boolean
 ;; Purpose: Determine if the consumed input contains PROHIBITED PATTERN
 ;; Assume: |ci| >= 2
-(define (R-INV ci)
+#;(define (R-INV ci)
   (not(contains? ci PROHIBITED-PATTERN)))            ;<-- purposely broken for testing
+
+
+
+
+(define (R-INV ci)
+  (contains? ci PROHIBITED-PATTERN))  ;<- correct version
 
 
 ;; tests for R-INV
@@ -101,8 +107,13 @@
 ;; Purpose: To determine if the consumed input ends with a
 ;;          and does not contain the prohibited input
 (define (A-INV ci)
-  (and (equal? (drop ci (- (length ci) 1)) '(a))
+  (and (equal? (drop ci (- (length ci) 1)) '(a))    ;<-- broken 
        (contains? ci PROHIBITED-PATTERN)))
+
+#;(define (A-INV ci)
+  (and (equal? (drop ci (- (length ci) 1)) '(a))    ;<-- not broken 
+       (not (contains? ci PROHIBITED-PATTERN))))
+
 
 ;;tests for A-INV
 #;(check-equal? (A-INV '(a)) #t)
@@ -114,8 +125,14 @@
 ;; Purpose: Determine if NO-AA shoule be in B
 (define (B-INV ci)
   (and (equal? (drop ci (- (length ci) 1)) '(b))
-       (not (contains? ci PROHIBITED-PATTERN))))
+       (not (contains? ci PROHIBITED-PATTERN))))    ;<-- not broken
 
+#;(define (B-INV ci)
+  (and (equal? (drop ci (- (length ci) 1)) '(b))
+       (contains? ci PROHIBITED-PATTERN)))          ; <- broken
+
+
+#|
 ;;tests for B-INV
 (check-equal? (B-INV '(b)) #t)
 (check-equal? (B-INV '(a b)) #t)
@@ -123,6 +140,8 @@
 (check-equal? (B-INV '(a a b b)) #f)
 (check-equal? (B-INV '(a a a b b a a)) #f)      
 (check-equal? (B-INV '(a a b a b b a b b)) #f)
+|#
+
 
 ;; word -> Boolean
 ;; Purpose: Determine if NO-AA should be in S
@@ -131,24 +150,28 @@
       (and (not (contains? ci PROHIBITED-PATTERN))
            (eq? (last ci) 'b)
            (or (= (length ci) 1)
-               (not (equal? (drop ci (- (length ci) 2))
+               (not (equal? (drop ci (- (length ci) 2))    ; <- not broken
                             '(a a)))))))
 
-;(check-equal? (S-INV '(b)) #t)
-;(check-equal? (S-INV '(a b)) #t)
-;(check-equal? (S-INV '(a b a b)) #t)
-;(check-equal? (S-INV '(a a b b)) #f)
-;(check-equal? (S-INV '(a)) #f)
-#;(sm-test-invs NO-AA (list 'S S-INV)
-                (list 'A A-INV)
-                (list 'B B-INV)
-                (list 'R R-INV))
-#;(check-equal? (length (first (sm-test-invs NO-AA (list 'S S-INV)
-                                             (list 'A A-INV)
-                                             (list 'B B-INV)
-                                             (list 'R R-INV)))) 19)
+
+#;(define (S-INV ci)
+  (or (= (length ci) 0)
+      (and (contains? ci PROHIBITED-PATTERN)
+           (eq? (last ci) 'b)
+           (or (= (length ci) 1)
+               (equal? (drop ci (- (length ci) 2)    ; <- broken
+                            '(a a)))))))
+
+#|
+(check-equal? (S-INV '(b)) #t)
+(check-equal? (S-INV '(a b)) #t)
+(check-equal? (S-INV '(a b a b)) #t)
+(check-equal? (S-INV '(a a b b)) #f)
+(check-equal? (S-INV '(a)) #f)
+
         
-;(check-equal? (sm-apply NO-AA '()) 'accept)
+
+(check-equal? (sm-apply NO-AA '()) 'accept)
 (check-equal? (sm-apply NO-AA '(a)) 'accept)
 (check-equal? (sm-apply NO-AA '(a b)) 'accept)
 (check-equal? (sm-apply NO-AA '(a b a)) 'accept)
@@ -156,7 +179,7 @@
 (check-equal? (sm-apply NO-AA '(a a)) 'reject)
 (check-equal? (sm-apply NO-AA '(a b a a)) 'reject)
 (check-equal? (sm-apply NO-AA '(a b b a a b)) 'reject)
-
+|#
 (define (DEAD-INV ci)
   #true)
 
@@ -195,91 +218,125 @@
                                                    (K c D) (D g B) (B a H) (B t M) (B c D) (B g S)
                                                    (K g S) (S c R) (R a H) (R t M) (R c D) (R g S))))
 
-(define EVIL-dna-sequence (complement-fsa DNA-SEQUENCE))
-
-
 ;;word -> boolean
 ;;Purpose: Determines if the given word is empty
 (define (DNA-K-INV a-word)
-  (not (empty? a-word)))
+  (empty? a-word))   ;<- not broken
+
+
+#;(define (DNA-K-INV a-word)
+  (not (empty? a-word)))   ;<- broken
 
 ;;word -> boolean
 ;;Purpose: Determines if the given word has more a's than t's
 (define (DNA-H-INV a-word)
   (let ([num-a (length (filter (λ (w) (equal? w 'a)) a-word))]
         [num-t (length (filter (λ (w) (equal? w 't)) a-word))])
-    (< num-a num-t)))
+    (> num-a num-t)))   ;<-- not broken
+
+#;(define (DNA-H-INV a-word)
+  (let ([num-a (length (filter (λ (w) (equal? w 'a)) a-word))]
+        [num-t (length (filter (λ (w) (equal? w 'c)) a-word))])
+    (> num-a num-t)))   ;<-- broken
+
 
 ;;word -> boolean
 ;;Purpose: Determines if the given word has an even amount of a's and t's
 (define (DNA-F-INV a-word)
   (let ([num-a (length (filter (λ (w) (equal? w 'a)) a-word))]
-        [num-t (length (filter (λ (w) (equal? w 't)) a-word))])
+        [num-t (length (filter (λ (w) (equal? w 't)) a-word))]) ;<-- not broken
     (= num-a num-t)))
+
+#;(define (DNA-F-INV a-word)
+  (let ([num-a (length (filter (λ (w) (equal? w 'a)) a-word))]
+        [num-t (length (filter (λ (w) (equal? w 't)) a-word))]) ;<--  broken
+    (not (= num-a num-t))))
 
 ;;word -> boolean
 ;;Purpose: Determines if the given word has more t's than a's
 (define (DNA-M-INV a-word)
   (let ([num-a (length (filter (λ (w) (equal? w 'a)) a-word))]
-        [num-t (length (filter (λ (w) (equal? w 't)) a-word))])
+        [num-t (length (filter (λ (w) (equal? w 't)) a-word))])  ;<- not broken
     (> num-t num-a)))
+
+
+#;(define (DNA-M-INV a-word)
+  (let ([num-a (length (filter (λ (w) (equal? w 'a)) a-word))]
+        [num-t (length (filter (λ (w) (equal? w 't)) a-word))])  ;<-  broken
+    (not (> num-t num-a))))
+
+
 
 ;;word -> boolean
 ;;Purpose: Determines if the given word has an even amount of t's and a's
 (define (DNA-I-INV a-word)
   (let ([num-a (length (filter (λ (w) (equal? w 'a)) a-word))]
-        [num-t (length (filter (λ (w) (equal? w 't)) a-word))])
+        [num-t (length (filter (λ (w) (equal? w 't)) a-word))])  ;<- not broken
     (= num-a num-t)))
+
+#;(define (DNA-I-INV a-word)
+  (let ([num-a (length (filter (λ (w) (equal? w 'a)) a-word))]
+        [num-t (length (filter (λ (w) (equal? w 't)) a-word))])  ;<- broken
+    (not (= num-a num-t))))
 
 ;;word -> boolean
 ;;Purpose: Determines if the given word has more c's than g's
 (define (DNA-D-INV a-word)
   (let ([num-g (length (filter (λ (w) (equal? w 'g)) a-word))]
-        [num-c (length (filter (λ (w) (equal? w 'c)) a-word))])
+        [num-c (length (filter (λ (w) (equal? w 'c)) a-word))])  ;<- not broken
     (> num-c num-g)))
+
+
+#;(define (DNA-D-INV a-word)
+  (let ([num-g (length (filter (λ (w) (equal? w 'g)) a-word))]
+        [num-c (length (filter (λ (w) (equal? w 'c)) a-word))])  ;<- broken
+    (not (> num-c num-g))))
+
+
 
 ;;word -> boolean
 ;;Purpose: Determines if the given word has an even amount of c's and g's
 (define (DNA-B-INV a-word)
   (let ([num-g (length (filter (λ (w) (equal? w 'g)) a-word))]
-        [num-c (length (filter (λ (w) (equal? w 'c)) a-word))])
+        [num-c (length (filter (λ (w) (equal? w 'c)) a-word))])  ;<-- not broken
     (= num-g num-c)))
+
+
+#;(define (DNA-B-INV a-word)
+  (let ([num-g (length (filter (λ (w) (equal? w 'g)) a-word))]
+        [num-c (length (filter (λ (w) (equal? w 'c)) a-word))])  ;<-- broken
+    (not (= num-g num-c))))
 
 ;;word -> boolean
 ;;Purpose: Determines if the given word has more g's than c's
 (define (DNA-S-INV a-word)
   (let ([num-g (length (filter (λ (w) (equal? w 'g)) a-word))]
-        [num-c (length (filter (λ (w) (equal? w 'c)) a-word))])
+        [num-c (length (filter (λ (w) (equal? w 'c)) a-word))]) ;<-- not broken
     (> num-g num-c)))
+
+#;(define (DNA-S-INV a-word)
+  (let ([num-g (length (filter (λ (w) (equal? w 'g)) a-word))]
+        [num-c (length (filter (λ (w) (equal? w 'c)) a-word))]) ;<-- broken
+    (not (> num-g num-c))))
 
 ;;word -> boolean
 ;;Purpose: Determines if the given word has an even amount of g's and c's
 (define (DNA-R-INV a-word)
   (let ([num-g (length (filter (λ (w) (equal? w 'g)) a-word))]
-        [num-c (length (filter (λ (w) (equal? w 'c)) a-word))])
+        [num-c (length (filter (λ (w) (equal? w 'c)) a-word))])  ;<-- not broken
     (= num-g num-c)))
 
-(define DNA-INVS (list (list 'K DNA-K-INV)
-                       (list 'H DNA-H-INV)
-                       (list 'F DNA-F-INV)
-                       (list 'M DNA-M-INV)
-                       (list 'I DNA-I-INV)
-                       (list 'D DNA-D-INV)
-                       (list 'B DNA-B-INV)
-                       (list 'S DNA-S-INV)
-                       (list 'R DNA-R-INV)))
+
+#;(define (DNA-R-INV a-word)
+  (let ([num-g (length (filter (λ (w) (equal? w 'g)) a-word))]
+        [num-c (length (filter (λ (w) (equal? w 'c)) a-word))])  ;<-- broken
+    (not (= num-g num-c))))
+
+(define DNA-INVS (list (list 'K DNA-K-INV) (list 'H DNA-H-INV) (list 'F DNA-F-INV)
+                       (list 'M DNA-M-INV) (list 'I DNA-I-INV) (list 'D DNA-D-INV)
+                       (list 'B DNA-B-INV) (list 'S DNA-S-INV) (list 'R DNA-R-INV)))
 
 
-
-#;(time (sm-test-invs EVIL-dna-sequence (list 'K DNA-K-INV)
-                      (list 'H DNA-H-INV)
-                      (list 'F DNA-F-INV)
-                      (list 'M DNA-M-INV)
-                      (list 'I DNA-I-INV)
-                      (list 'D DNA-D-INV)
-                      (list 'B DNA-B-INV)
-                      (list 'S DNA-S-INV)
-                      (list 'R DNA-R-INV)))
 
 
 ;; Let Σ = {a b}. Design and implement a dfa for the following language:
@@ -303,17 +360,24 @@
 
 ;;word -> boolean
 ;;Purpose: Determine if the given word has an even number of Bs
-(define (EVEN-NUM-Bs-S-INV a-word)
+(define (EVEN-NUM-Bs-S-INV a-word)                         ;<-- not broken
   (even? (length (filter (λ (w) (equal? w 'b)) a-word))))
+
+#;(define (EVEN-NUM-Bs-S-INV a-word)                         ;<-- broken
+  (odd? (length (filter (λ (w) (equal? w 'b)) a-word))))
 
 ;;word -> boolean
 ;;Purpose: Determine if the given word has an odd number of Bs
 (define (EVEN-NUM-Bs-F-INV a-word)
-  (odd? (length (filter (λ (w) (equal? w 'b)) a-word))))
+  (odd? (length (filter (λ (w) (equal? w 'b)) a-word))))    ;<- not broken
+
+#;(define (EVEN-NUM-Bs-F-INV a-word)
+  (even? (length (filter (λ (w) (equal? w 'b)) a-word))))    ;<- broken
 
 
 
-(define LOI-EVEN-Bs (list (list 'S EVEN-NUM-Bs-S-INV) (list 'F EVEN-NUM-Bs-F-INV)))
+(define LOI-EVEN-Bs (list (list 'S EVEN-NUM-Bs-S-INV)
+                          (list 'F EVEN-NUM-Bs-F-INV)))
 
 
 #| Sophia's version of CONTAINS-aabab
@@ -460,22 +524,13 @@
                                 (D a B) (D b E) (E a E) (E b E))
                       'no-dead))
 
-(define BUGGY-CONTAINS-aabab 
-  (make-unchecked-dfa '(S A B C D E)
-                      '(a b)
-                      'S
-                      '(E)
-                      '((S a A) (S b S) (A a B) (A b S)
-                                (B a B) (B b C) (C a D) (C b S)
-                                (D a A) #;(D a B) (D b E) (E a E) (E b E))
-                      'no-dead))
-
 (check-equal? (sm-apply CONTAINS-aabab  '(a a b a b)) 'accept)
 (check-equal? (sm-apply CONTAINS-aabab  '(b b a a a b a b b)) 'accept)
 (check-equal? (sm-apply CONTAINS-aabab  '()) 'reject)
 (check-equal? (sm-apply CONTAINS-aabab  '(b b a a a b a)) 'reject)
 (check-equal? (sm-apply CONTAINS-aabab  '(a a b a a)) 'reject)
        
+
 ;; word --> Boolean
 ;; Purpose: Determine of word contains aabab
 (define (contains-aabab? w)
@@ -495,69 +550,237 @@
   (and (not (end-with? '(a) ci))
        (not (end-with? '(a a) ci))
        (not (end-with? '(a a b) ci))
-       (not (end-with? '(a a b a) ci))
+       (not (end-with? '(a a b a) ci))  ;<- not broken
        (not (contains-aabab? ci))))
+
+#;(define (S2-INV ci)
+  (and (not (end-with? '(a) ci))
+       (not (end-with? '(a a) ci))
+       (not (end-with? '(a a b) ci))
+       (not (end-with? '(a a b a) ci))  ;<- broken
+       (contains-aabab? ci)))
+
 
 ;; word -> Boolean
 ;; Purpose: Determine that only a is detected
 (define (A2-INV ci)
   (and (end-with? '(a) ci)
        (not (end-with? '(a a) ci))
-       (not (end-with? '(a a b a) ci))
+       (not (end-with? '(a a b a) ci)) ;<- not broken
        (not (contains-aabab? ci))))
+
+#;(define (A2-INV ci)
+  (and (end-with? '(a) ci)
+       (not (end-with? '(a a) ci))
+       (not (end-with? '(a a b a) ci)) ;<- broken
+       (contains-aabab? ci)))
+
 
 ;; word -> Boolean
 ;; Purpose: Determine that only aa is detected
 (define (B2-INV ci)
-  (and (end-with? '(a a) ci)
+  (and (end-with? '(a a) ci)           ;<-not broken
        (not (contains-aabab? ci))))
+
+#;(define (B2-INV ci)
+  (and (end-with? '(a a) ci)           ;<- broken
+       (contains-aabab? ci)))
+
 
 ;; word -> Boolean
 ;; Purpose: Determine that only aab is detected
 (define (C2-INV ci)
-  (and (end-with? '(a a b) ci)
+  (and (end-with? '(a a b) ci)         ;<- not broken
        (not (contains-aabab? ci))))
+
+#;(define (C2-INV ci)
+  (and (end-with? '(a a b) ci)         ;<- broken
+       (contains-aabab? ci)))
+
 
 ;; word -> Boolean
 ;; Purpose: Determine that only aaba is detected
 (define (D2-INV ci)
-  (and (end-with? '(a a b a) ci)
+  (and (end-with? '(a a b a) ci)     ;<- not broken
        (not (contains-aabab? ci))))
+
+
+#;(define (D2-INV ci)
+  (and (end-with? '(a a b a) ci)     ;<- broken
+       (contains-aabab? ci)))
+
 
 ;; word -> Boolean
 ;; Purpose: Determine that only aabab is detected
-(define E2-INV contains-aabab?)
+(define E2-INV contains-aabab?)   ;<- not broken
 
-(define LOI-aabab-marco (list (list 'S S2-INV) (list 'A A2-INV)
-                              (list 'B B2-INV) (list 'C C2-INV)
-                              (list 'D D2-INV) (list 'E E2-INV)))
+#;(define E2-INV (not contains-aabab?))   ;<- broken
 
 
-#;(define RES (sm-test-invs CONTAINS-aabab
-                            (list 'S S2-INV)
-                            (list 'A A2-INV)
-                            (list 'B B2-INV)
-                            (list 'C C2-INV)
-                            (list 'D D2-INV)
-                            (list 'E E2-INV)))
 
-#;(define RES-WORDS (sm-all-possible-words CONTAINS-aabab
-                                           (list (list 'S S2-INV)
-                                                 (list 'A A2-INV)
-                                                 (list 'B B2-INV)
-                                                 (list 'C C2-INV)
-                                                 (list 'D D2-INV)
-                                                 (list 'E E2-INV))))
+(define LOI-CONTAINS-aabab (list (list 'S S2-INV)
+                                 (list 'A A2-INV)
+                                 (list 'B B2-INV)
+                                 (list 'C C2-INV)
+                                 (list 'D D2-INV)
+                                 (list 'E E2-INV)))
 
-#;(define TOTAL-WORDS (foldl (λ (pair acc) (+ (length (second pair)) acc))
-                             0
-                             RES-WORDS))
+;; L = {w | w has an even number of and an odd number of b}
+
+;; States
+;; S: even number of a and even number of b, start state
+;; M: odd number of a and odd number of b
+;; N: even number of a and odd number of b, final state
+;; P: odd number of a and even number of b
+
+(define EVEN-A-ODD-B (make-unchecked-dfa '(S M N P)
+                                         '(a b)
+                                         'S
+                                         '(N)
+                                         '((S a P)
+                                           (S b N)
+                                           (M a N)
+                                           (M b P)
+                                           (N a M)
+                                           (N b S)
+                                           (P a S)
+                                           (P b M))
+                                         'no-dead))
+
+;; Tests for EVEN-A-ODD-B
+#;(check-reject? EVEN-A-ODD-B '() '(a b b a) '(b a b b a a) '(a b) '(a b b b b)
+                            '(b a b b a a b))
+#;(check-accept? EVEN-A-ODD-B '(b) '(b b b) '(a a b) '(a a a b a b b) '(a a a b b a b))
+                             
+
+(check-equal? (sm-apply EVEN-A-ODD-B '()) 'reject)
+(check-equal? (sm-apply EVEN-A-ODD-B '(a b b a)) 'reject)
+(check-equal? (sm-apply EVEN-A-ODD-B '(b a b b a a)) 'reject)
+(check-equal? (sm-apply EVEN-A-ODD-B '(a b)) 'reject)
+(check-equal? (sm-apply EVEN-A-ODD-B '(a b b b b)) 'reject)
+(check-equal? (sm-apply EVEN-A-ODD-B '(b a b b a a b)) 'reject)
+(check-equal? (sm-apply EVEN-A-ODD-B '(b)) 'accept)
+(check-equal? (sm-apply EVEN-A-ODD-B '(a a b)) 'accept)
+(check-equal? (sm-apply EVEN-A-ODD-B '(a a a b a b b)) 'accept)
+
+
+;; word --> Boolean
+;; Purpose: Determine if given word has an even number of a
+;;          and an odd number of b
+(define (S-INV-EVEN-A-ODD-B ci)
+  (and (even? (length (filter (λ (s) (eq? s 'a)) ci)))
+       (even? (length (filter (λ (s) (eq? s 'b)) ci)))))
+
+;; Tests for S-INV-EVEN-A-ODD-B
+(check-equal? (S-INV-EVEN-A-ODD-B '(a)) #f)
+(check-equal? (S-INV-EVEN-A-ODD-B '(a b b b a)) #f)
+(check-equal? (S-INV-EVEN-A-ODD-B '()) #t)
+(check-equal? (S-INV-EVEN-A-ODD-B '(a a b b)) #t)
+
+
+;; word --> Boolean
+;; Purpose: Determine if given word has an odd number of a
+;;          and an odd number of b
+(define (M-INV-EVEN-A-ODD-B ci)
+  (and (odd? (length (filter (λ (s) (eq? s 'a)) ci)))
+       (odd? (length (filter (λ (s) (eq? s 'b)) ci)))))
+
+;; Tests for M-INV-EVEN-A-ODD-B
+(check-equal? (M-INV-EVEN-A-ODD-B '(a)) #f)
+(check-equal? (M-INV-EVEN-A-ODD-B '(a b b b a)) #f)
+(check-equal? (M-INV-EVEN-A-ODD-B '(a b b b a a b)) #f)
+(check-equal? (M-INV-EVEN-A-ODD-B '(b a)) #t)
+(check-equal? (M-INV-EVEN-A-ODD-B '(b a a b a b)) #t)
+
+
+;; word --> Boolean
+;; Purpose: Determine if given word has an even number of a
+;;          and an odd number of b
+(define (N-INV-EVEN-A-ODD-B ci)
+  (and (even? (length (filter (λ (s) (eq? s 'a)) ci)))
+       (odd? (length (filter (λ (s) (eq? s 'b)) ci)))))
+
+;; Tests for N-INV-EVEN-A-ODD-B
+(check-equal? (N-INV-EVEN-A-ODD-B '()) #f)
+(check-equal? (N-INV-EVEN-A-ODD-B '(a b a b a)) #f)
+(check-equal? (N-INV-EVEN-A-ODD-B '(a b b a a b)) #f)
+(check-equal? (N-INV-EVEN-A-ODD-B '(b a a)) #t)
+(check-equal? (N-INV-EVEN-A-ODD-B '(a b a a b a b b b)) #t)
+
+
+;; word --> Boolean
+;; Purpose: Determine if given word has an odd number of a
+;;          and an even number of b
+(define (P-INV-EVEN-A-ODD-B ci)
+  (and (odd? (length (filter (λ (s) (eq? s 'a)) ci)))
+       (even? (length (filter (λ (s) (eq? s 'b)) ci)))))
+
+;; Tests for P-INV-EVEN-A-ODD-B
+(check-equal? (P-INV-EVEN-A-ODD-B '()) #f)
+(check-equal? (P-INV-EVEN-A-ODD-B '(a b)) #f)
+(check-equal? (P-INV-EVEN-A-ODD-B '(a b b a a b a)) #f)
+(check-equal? (P-INV-EVEN-A-ODD-B '(b a b)) #t)
+(check-equal? (P-INV-EVEN-A-ODD-B '(a b a a b b b)) #t)
+
+
+(check-equal? (sm-apply EVEN-A-ODD-B '()) 
+              'reject)
+(check-equal? (sm-apply EVEN-A-ODD-B '(a b b a)) 
+              'reject)
+(check-equal? (sm-apply EVEN-A-ODD-B '(b a b b a a)) 
+              'reject)
+(check-equal? (sm-apply EVEN-A-ODD-B '(a b)) 
+              'reject)
+(check-equal? (sm-apply EVEN-A-ODD-B '(a b b b b)) 
+              'reject)
+(check-equal? 
+ (sm-apply EVEN-A-ODD-B '(b a b b a a b)) 
+ 'reject)
+
+
+
+(check-equal? (sm-apply EVEN-A-ODD-B '(b)) 
+              'accept)
+(check-equal? (sm-apply EVEN-A-ODD-B '(b b b)) 
+              'accept)
+(check-equal? (sm-apply EVEN-A-ODD-B '(a b b a b)) 
+              'accept)
+(check-equal? (sm-apply EVEN-A-ODD-B '(a a b)) 
+              'accept)
+(check-equal? 
+ (sm-apply EVEN-A-ODD-B '(a a a b a b b)) 
+ 'accept)
+
+(check-equal? (sm-apply EVEN-A-ODD-B '(b)) 'accept)
+(check-equal? (sm-apply EVEN-A-ODD-B '(b b b)) 'accept)
+(check-equal? (sm-apply EVEN-A-ODD-B'(a b b a b)) 'accept)
+(check-equal? (sm-apply EVEN-A-ODD-B'(a a b)) 'accept)
+(check-equal? (sm-apply EVEN-A-ODD-B'(a a a b a b b)) 'accept)
+(check-equal? (sm-apply EVEN-A-ODD-B '()) 'reject)
+(check-equal? (sm-apply EVEN-A-ODD-B '(a b b a)) 'reject)
+(check-equal? (sm-apply EVEN-A-ODD-B '(b a b b a a)) 'reject)
+(check-equal? (sm-apply EVEN-A-ODD-B '(a b)) 'reject)
+(check-equal? (sm-apply EVEN-A-ODD-B '(a b b b b)) 'reject)
+(check-equal? (sm-apply EVEN-A-ODD-B '(b a b b a a b)) 'reject)
+
+(define LOI-EVEN-A-ODD-B (list (list 'S S-INV-EVEN-A-ODD-B)
+                               (list 'M M-INV-EVEN-A-ODD-B)
+                               (list 'N N-INV-EVEN-A-ODD-B)
+                               (list 'P P-INV-EVEN-A-ODD-B)))
+
+
+
+
+
+
+
+
 
 
 ;; L = {w | w does not contain bababa}
 ;; States
-;; S: a*, baa is detected, or babaa is detected , start and final state
-;; A: last of ci is b and no bababa is detected, final state
+;; S: no prefix of bababa is detected, start and final state
+;; A: last of ci is b and no other prefix of bababa is detected, final state
 ;; B: last of ci is ba and no bababa is detected, final state
 ;; C: last of ci is bab and no bababa is detected, final state
 ;; D: last of ci is baba and no bababa is detected, final state
@@ -578,6 +801,11 @@
                                               ))
 
 ;;tests for no-contain-bababa
+#;(check-accept? no-contain-bababa '() '(a) '(b) '(a a a) '(a b b) '(a b b a b a b))
+#;(check-reject? no-contain-bababa '(b a b a b a) '(a b a b a b a b b a)
+                                 '(b b a b a b a a a b a b a b a)
+                                 '(a b a b a b a b a b a a b b a))
+
 (check-equal? (sm-apply no-contain-bababa '()) 'accept)
 (check-equal? (sm-apply no-contain-bababa '(a)) 'accept)
 (check-equal? (sm-apply no-contain-bababa '(b)) 'accept)
@@ -600,9 +828,19 @@
        (not (end-with? '(b) ci))
        (not (end-with? '(b a) ci))
        (not (end-with? '(b a b) ci))
-       (not (end-with? '(b a b a) ci))
+       (not (end-with? '(b a b a) ci))    ;<-- not broken
        (not (end-with? '(b a b a b) ci))))
 
+
+#;(define (S-INV-no-contain-bababa ci)
+  (and (not (contains? ci '(b a b a b a)))
+       (end-with? '(b) ci)
+       (not (end-with? '(b a) ci))
+       (not (end-with? '(b a b) ci))
+       (not (end-with? '(b a b a) ci))    ;<-- broken
+       (not (end-with? '(b a b a b) ci))))
+
+#|
 ;; tests for S-INV-no-contain-bababa
 (check-equal? (S-INV-no-contain-bababa '()) #t)
 (check-equal? (S-INV-no-contain-bababa '(a)) #t)
@@ -615,7 +853,7 @@
 (check-equal? (S-INV-no-contain-bababa '(b a b a b a a a)) #f)
 (check-equal? (S-INV-no-contain-bababa '(b b a b a b a b b b a a b)) #f)
 (check-equal? (S-INV-no-contain-bababa '(a b a b a b a b a b)) #f)
-
+|#
 
 ;; word -> Boolean
 ;; Purpose: Determine if ci should be in A
@@ -624,9 +862,19 @@
        (end-with? '(b) ci)
        (not (end-with? '(b a) ci))
        (not (end-with? '(b a b) ci))
-       (not (end-with? '(b a b a) ci))
+       (not (end-with? '(b a b a) ci))     ;<- not broken
        (not (end-with? '(b a b a b) ci))))
 
+#;(define (A-INV-no-contain-bababa ci)
+  (and (not (contains? ci '(b a b a b a)))
+       (not (end-with? '(b) ci))
+       (not (end-with? '(b a) ci))
+       (not (end-with? '(b a b) ci))
+       (not (end-with? '(b a b a) ci))     ;<-  broken
+       (not (end-with? '(b a b a b) ci))))
+
+
+#|
 ;; tests for A-INV-no-contains-bababa
 (check-equal? (A-INV-no-contain-bababa '(b)) #t)
 (check-equal? (A-INV-no-contain-bababa '(a a b a a b)) #t)
@@ -640,15 +888,27 @@
 (check-equal? (A-INV-no-contain-bababa '(b a b a b)) #f)
 (check-equal? (A-INV-no-contain-bababa '(b a b a b a)) #f)
 
+|#
+
 ;; word -> Boolean
-;; Purpose: Determine if ci should be in B
+;; Purpose: Determine if ci should be in B 
 (define (B-INV-no-contain-bababa ci)
   (and (not (contains? ci '(b a b a b a)))
        (end-with? '(b a) ci)
        (not (end-with? '(b a b) ci))
-       (not (end-with? '(b a b a) ci))
+       (not (end-with? '(b a b a) ci))    ;<-- not broken
        (not (end-with? '(b a b a b) ci))))
 
+
+#;(define (B-INV-no-contain-bababa ci)
+  (and (not (contains? ci '(b a b a b a)))
+       (end-with? '(b a) ci)
+       (end-with? '(b a b) ci)
+       (not (end-with? '(b a b a) ci))    ;<-- broken
+       (not (end-with? '(b a b a b) ci))))
+
+
+#|
 ;; tests for B-INV-no-contains-bababa
 (check-equal? (B-INV-no-contain-bababa '(b a)) #t)
 (check-equal? (B-INV-no-contain-bababa '(a a b a a b a)) #t)
@@ -661,16 +921,24 @@
 (check-equal? (B-INV-no-contain-bababa '(b a b a)) #f)
 (check-equal? (B-INV-no-contain-bababa '(b a b a b)) #f)
 (check-equal? (B-INV-no-contain-bababa '(b a b a b a)) #f)
-
+|#
 
 ;; word -> Boolean
 ;; Purpose: Determine if ci should be in C
 (define (C-INV-no-contain-bababa ci)
   (and (not (contains? ci '(b a b a b a)))
        (end-with? '(b a b) ci)
-       (not (end-with? '(b a b a) ci))
+       (not (end-with? '(b a b a) ci))     ; <- not broken
        (not (end-with? '(b a b a b) ci))))
 
+
+#;(define (C-INV-no-contain-bababa ci)
+  (and (not (contains? ci '(b a b a b a)))
+       (not (end-with? '(b a b) ci))
+       (not (end-with? '(b a b a) ci))     ; <- broken
+       (not (end-with? '(b a b a b) ci))))
+
+#|
 ;; tests for C-INV-no-contains-bababa
 (check-equal? (C-INV-no-contain-bababa '(b a b)) #t)
 (check-equal? (C-INV-no-contain-bababa '(a a b a a b a b)) #t)
@@ -683,15 +951,22 @@
 (check-equal? (C-INV-no-contain-bababa '(b a b a)) #f)
 (check-equal? (C-INV-no-contain-bababa '(b a b a b)) #f)
 (check-equal? (C-INV-no-contain-bababa '(b a b a b a)) #f)
-
+|#
 
 ;; word -> Boolean
 ;; Purpose: Determine if ci should be in D
 (define (D-INV-no-contain-bababa ci)
-  (and (not (contains? ci '(b a b a b a)))
+  (and (not (contains? ci '(b a b a b a)))  ;<-- not broken
        (end-with? '(b a b a) ci)
        (not (end-with? '(b a b a b) ci))))
 
+
+#;(define (D-INV-no-contain-bababa ci)
+  (and (not (contains? ci '(b a b a b a)))  ;<- broken
+       (not (end-with? '(b a b a) ci))
+       (not (end-with? '(b a b a b) ci))))
+
+#|
 ;; tests for D-INV-no-contains-bababa
 (check-equal? (D-INV-no-contain-bababa '(b a b a)) #t)
 (check-equal? (D-INV-no-contain-bababa '(a a b a a b a b a)) #t)
@@ -704,14 +979,19 @@
 (check-equal? (D-INV-no-contain-bababa '(b a b)) #f)
 (check-equal? (D-INV-no-contain-bababa '(b a b a b)) #f)
 (check-equal? (D-INV-no-contain-bababa '(b a b a b a)) #f)
-
+|#
 
 ;; word -> Boolean
 ;; Purpose: Determine if ci should be in E
 (define (E-INV-no-contain-bababa ci)
-  (and (not (contains? ci '(b a b a b a)))
+  (and (not (contains? ci '(b a b a b a)))  ;<- not broken
        (end-with? '(b a b a b) ci)))
 
+#;(define (E-INV-no-contain-bababa ci)
+  (and (contains? ci '(b a b a b a))  ;<- broken
+       (end-with? '(b a b a b) ci)))
+
+#|
 ;; tests for E-INV-no-contains-bababa
 (check-equal? (E-INV-no-contain-bababa '(b a b a b)) #t)
 (check-equal? (E-INV-no-contain-bababa '(a a b a a b a b a b)) #t)
@@ -724,13 +1004,17 @@
 (check-equal? (E-INV-no-contain-bababa '(b a b)) #f)
 (check-equal? (E-INV-no-contain-bababa '(b a b a)) #f)
 (check-equal? (E-INV-no-contain-bababa '(b a b a b a)) #f)
-
+|#
 
 ;; word -> Boolean
 ;; Purpose: Determine if ci should be in F
-(define (F-INV-no-contain-bababa ci)
+(define (F-INV-no-contain-bababa ci)  ;<- not broken
   (contains? ci '(b a b a b a)))
 
+#;(define (F-INV-no-contain-bababa ci)  ;<- broken
+  (not (contains? ci '(b a b a b a))))
+
+#|
 ;; tests for F-INV-no-contains-bababa
 (check-equal? (F-INV-no-contain-bababa '(b a b a b a)) #t)
 (check-equal? (F-INV-no-contain-bababa '(a a b a a b a b a b a)) #t)
@@ -743,7 +1027,7 @@
 (check-equal? (F-INV-no-contain-bababa '(b a b)) #f)
 (check-equal? (F-INV-no-contain-bababa '(b a b a)) #f)
 (check-equal? (F-INV-no-contain-bababa '(b a b a b)) #f)
-
+|#
 
 (define LOI-no-bababa (list (list 'S S-INV-no-contain-bababa)
                             (list 'A A-INV-no-contain-bababa)
@@ -761,22 +1045,25 @@
 ; L = a+b+c+a+b+c+
 
 (define a+b+c+a+b+ (make-unchecked-dfa '(S A B C D E)
-                                       '(a b c)
-                                       'S
-                                       '(E)
-                                       '((S a A)
-                                         (A a A)
-                                         (A b B)
-                                         (B b B)
-                                         (B c C)
-                                         (C c C)
-                                         (C a D)
-                                         (D a D)
-                                         (D b E)
-                                         (E b E))))
+                             '(a b c)
+                             'S
+                             '(E)
+                             '((S a A)
+                               (A a A)
+                               (A b B)
+                               (B b B)
+                               (B c C)
+                               (C c C)
+                               (C a D)
+                               (D a D)
+                               (D b E)
+                               (E b E))))
+
+#;(define (INVS=T ci)
+  #true) ;<- not broken
 
 (define (INVS=T ci)
-  #true)
+  #f)
 
 (define LOI-a+b+c+a+b+ (list (list 'S INVS=T)
                              (list 'A INVS=T)
@@ -790,25 +1077,25 @@
 ; L = contains a+b+c+a+
 
 (define contains-abca (make-unchecked-dfa '(S A B C D)
-                                          '(a b c)
-                                          'S
-                                          '(D)
-                                          '((S a A)
-                                            (S b S)
-                                            (S c S)
-                                            (A a A)
-                                            (A b B)
-                                            (A c S)
-                                            (B b S)
-                                            (B a A)
-                                            (B c C)
-                                            (C a D)
-                                            (C b S)
-                                            (C c S)
-                                            (D a D)
-                                            (D b D)
-                                            (D c D))
-                                          'no-dead))
+                                      '(a b c)
+                                      'S
+                                      '(D)
+                                      '((S a A)
+                                        (S b S)
+                                        (S c S)
+                                        (A a A)
+                                        (A b B)
+                                        (A c S)
+                                        (B b S)
+                                        (B a A)
+                                        (B c C)
+                                        (C a D)
+                                        (C b S)
+                                        (C c S)
+                                        (D a D)
+                                        (D b D)
+                                        (D c D))
+                                      'no-dead))
 
 
 (define LOI-contains-a+b+c+a+b+ (list (list 'S INVS=T)
@@ -818,6 +1105,8 @@
                                       (list 'D INVS=T)
                                       (list 'E INVS=T)))
                                       
+
+
 
 ;                                               
 ;                                               
@@ -876,20 +1165,32 @@
 
 ;; word -> Boolean
 ;; Purpose: To determine if ci should be in S
-(define (S-INV-1-MISSING ci)
+(define (S-INV-1-MISSING ci)   ;<- not broken
   (empty? ci))
 
+#;(define (S-INV-1-MISSING ci)   ;<- broken
+  (not (empty? ci)))
+
+#|
 ;; tests for S-INV-1-MISSING
 (check-equal? (S-INV-1-MISSING '()) #t)
 (check-equal? (S-INV-1-MISSING '(a b c)) #f)
 (check-equal? (S-INV-1-MISSING '(a b a c)) #f)
 
+|#
+
 ;; word -> Boolean
 ;; Purpose: To determine if ci should be in A
 (define (A-INV-1-MISSING ci)
-  (and (<= 1 (length ci))
+  (and (<= 1 (length ci))                   ;<- not broken
        (andmap (λ (x) (equal? x 'a)) ci)))
 
+#;(define (A-INV-1-MISSING ci)
+  (and (<= 1 (length ci))                   ;<- broken
+       (andmap (λ (x) (equal? x 'b)) ci)))
+
+
+#|
 ;; tests for A-INV-1-MISSING
 (check-equal? (A-INV-1-MISSING '(a)) #t)
 (check-equal? (A-INV-1-MISSING '(a a a a a)) #t)
@@ -899,14 +1200,24 @@
 (check-equal? (A-INV-1-MISSING '(c b)) #f)
 (check-equal? (A-INV-1-MISSING '(a c)) #f)
 
+|#
+
 ;; word -> Boolean
 ;; Purpose: To determine if ci should be in B
 (define (B-INV-1-MISSING ci)
   (and (<= 1 (length ci))
        (contains? ci '(a))
-       (contains? ci '(b))
+       (contains? ci '(b))            ;<- not broken
        (not (contains? ci '(c)))))
 
+#;(define (B-INV-1-MISSING ci)
+  (and (<= 1 (length ci))
+       (contains? ci '(a))
+       (contains? ci '(b))            ;<- broken
+       (not (contains? ci '(a)))))
+
+
+#|
 ;; tests for B-INV-1-MISSING
 (check-equal? (B-INV-1-MISSING '(a b)) #t)
 (check-equal? (B-INV-1-MISSING '(b a)) #t)
@@ -917,16 +1228,24 @@
 (check-equal? (B-INV-1-MISSING '(b a a c c b)) #f)
 (check-equal? (B-INV-1-MISSING '(a c a b c a c)) #f)
 (check-equal? (B-INV-1-MISSING '(c b a a b)) #f)
-
+|#
 
 ;; word -> Boolean
 ;; Purpose: To determine if ci should be in C
 (define (C-INV-1-MISSING ci)
   (and (<= 1 (length ci))
        (contains? ci '(a))
-       (contains? ci '(c))
+       (contains? ci '(c))           ;<- not broken
        (not (contains? ci '(b)))))
 
+
+#;(define (C-INV-1-MISSING ci)
+  (and (<= 1 (length ci))
+       (contains? ci '(a))
+       (contains? ci '(c))           ;<- broken
+       (not (contains? ci '(c)))))
+
+#|
 ;; tests for C-INV-1-MISSING
 (check-equal? (C-INV-1-MISSING '(a c)) #t)
 (check-equal? (C-INV-1-MISSING '(c a)) #t)
@@ -935,30 +1254,42 @@
 (check-equal? (C-INV-1-MISSING '(a c b)) #f)
 (check-equal? (C-INV-1-MISSING '(b a c a c b)) #f)
 (check-equal? (C-INV-1-MISSING '(b a a c a a b)) #f)
-
+|#
 
 ;; word -> Boolean
 ;; Purpose: To determine if ci should be in D
 (define (D-INV-1-MISSING ci)
-  (and (<= 1 (length ci))
+  (and (<= 1 (length ci))          ;<- not broken
        (andmap (λ (x) (equal? x 'b)) ci)))
 
+#;(define (D-INV-1-MISSING ci)
+  (and (<= 1 (length ci))          ;<- broken
+       (andmap (λ (x) (equal? x 'c)) ci)))
+
+#|
 ;; tests for D-INV-1-MISSING
 (check-equal? (D-INV-1-MISSING '(b)) #t)
 (check-equal? (D-INV-1-MISSING '(a)) #f)
 (check-equal? (D-INV-1-MISSING '(c)) #f)
 (check-equal? (D-INV-1-MISSING '(a b c)) #f)
 (check-equal? (D-INV-1-MISSING '(b c a b a c)) #f)
-
+|#
 
 ;; word -> Boolean
 ;; Purpose: To determine if ci should be in E
 (define (E-INV-1-MISSING ci)
   (and (<= 1 (length ci))
        (contains? ci '(b))
-       (contains? ci '(c))
+       (contains? ci '(c))       ;<- not broken
        (not (contains? ci '(a)))))
 
+#;(define (E-INV-1-MISSING ci)
+  (and (<= 1 (length ci))
+       (contains? ci '(b))
+       (contains? ci '(c))       ;<- broken
+       (not (contains? ci '(b)))))
+
+#|
 ;; tests for E-INV-1-MISSING
 (check-equal? (E-INV-1-MISSING '(b c)) #t)
 (check-equal? (E-INV-1-MISSING '(c c b b)) #t)
@@ -966,13 +1297,21 @@
 (check-equal? (E-INV-1-MISSING '(a b c)) #f)
 (check-equal? (E-INV-1-MISSING '(a b a)) #f)
 (check-equal? (E-INV-1-MISSING '(a c b a c)) #f)
+|#
+
 
 ;; word -> Boolean
 ;; Purpose: To determine if ci should be in F
 (define (F-INV-1-MISSING ci)
-  (and (<= 1 (length ci))
+  (and (<= 1 (length ci))                 ;<- not broken
        (andmap (λ (x) (equal? x 'c)) ci)))
 
+
+#;(define (F-INV-1-MISSING ci)
+  (and (<= 1 (length ci))                 ;<- broken
+       (andmap (λ (x) (equal? x 'a)) ci)))
+
+#|
 ;; tests for E-INV-1-MISSING
 (check-equal? (F-INV-1-MISSING '(c)) #t)
 (check-equal? (F-INV-1-MISSING '(c c c c c c)) #t)
@@ -982,15 +1321,11 @@
 (check-equal? (F-INV-1-MISSING '(a b)) #f)
 (check-equal? (F-INV-1-MISSING '(c a b c)) #f)
 (check-equal? (F-INV-1-MISSING '(a b a b c a c b)) #f)
+|#
 
-
-(define LOI-ONE-MISSING (list (list 'S S-INV-1-MISSING)
-                              (list 'A A-INV-1-MISSING)
-                              (list 'B B-INV-1-MISSING)
-                              (list 'C C-INV-1-MISSING)
-                              (list 'D D-INV-1-MISSING)
-                              (list 'E E-INV-1-MISSING)
-                              (list 'F F-INV-1-MISSING)))
+(define LOI-ONE-MISSING (list (list 'A A-INV-1-MISSING) (list 'B B-INV-1-MISSING)
+                              (list 'C C-INV-1-MISSING) (list 'D D-INV-1-MISSING)
+                              (list 'E E-INV-1-MISSING) (list 'F F-INV-1-MISSING)))
 
 
 
@@ -1025,11 +1360,13 @@
 
 |#
 
-
 ;; word -> Boolean
 ;; Purpose: Determine if ci should be in S
-(define (S-INV-ab*b*Uab* ci)
+#;(define (S-INV-ab*b*Uab* ci)
   (not (= (length ci) 0)))           ;<-- purposely broken for testing
+
+(define (S-INV-ab*b*Uab* ci)   ;<- not broken 
+  (= (length ci) 0))
 
 ;; tests for S-INV-L
 ;(check-equal? (S-INV-ab*b*Uab* '()) #t)
@@ -1039,8 +1376,11 @@
 
 ;; word -> Boolean
 ;; Purpose: Determine if ci should be in A
-(define (A-INV-ab*b*Uab* ci)          
+#;(define (A-INV-ab*b*Uab* ci)          
   (not (= (length ci) 0)))           ;<-- purposely broken for testing
+
+(define (A-INV-ab*b*Uab* ci)          
+  (= (length ci) 0))
 
 ;; tests for A-INV-ab*b*Uab*
 ;(check-equal? (A-INV-ab*b*Uab* '()) #t)
@@ -1053,17 +1393,13 @@
 ;; Purpose: Determine if ci should be in B
 (define (B-INV-ab*b*Uab* ci)
   (or (= (length ci) 1)
-      (and (eq? 'a (first ci))
+      (and (eq? 'a (first ci))                      ;<-- not broken
            (andmap (λ (x) (equal? x 'b)) (rest ci)))))
 
-;; tests for B-INV-ab*b*Uab*
-(check-equal? (B-INV-ab*b*Uab* '(a)) #t)
-(check-equal? (B-INV-ab*b*Uab* '(a b)) #t)
-(check-equal? (B-INV-ab*b*Uab* '(a b b b b b b b b)) #t)
-(check-equal? (B-INV-ab*b*Uab* '(a b a)) #f)
-(check-equal? (B-INV-ab*b*Uab* '(a a)) #f)
-
-
+#;(define (B-INV-ab*b*Uab* ci)
+  (or (= (length ci) 1)
+      (and (eq? 'a (first ci))                      ;<-- broken
+           (andmap (λ (x) (equal? x 'c)) (rest ci)))))
 
 
 (define (filter-abs ci)
@@ -1079,58 +1415,47 @@
 (define (C-INV-ab*b*Uab* ci)
   (or (empty? ci)
       (and (<= 2 (length ci))
-           (eq? (first ci) 'a)
+           (eq? (first ci) 'a)         ;<- not broken
            (eq? (second ci) 'b)
            (C-INV-ab*b*Uab* (rest (rest ci))))))
 
-;; tests for C-INV-ab*b*Uab*
-(check-equal? (C-INV-ab*b*Uab* '()) #t)
-(check-equal? (C-INV-ab*b*Uab* '(a b)) #t)
-(check-equal? (C-INV-ab*b*Uab* '(a b a b a b)) #t)
-(check-equal? (C-INV-ab*b*Uab* '(b)) #f)
-(check-equal? (C-INV-ab*b*Uab* '(a)) #f)
-(check-equal? (C-INV-ab*b*Uab* '(a a)) #f)
-(check-equal? (C-INV-ab*b*Uab* '(a b a b a b a)) #f)
-
+#;(define (C-INV-ab*b*Uab* ci)
+  (or (empty? ci)
+      (and (<= 2 (length ci))
+           (eq? (first ci) 'a)         ;<- broken
+           (eq? (second ci) 'a)
+           (C-INV-ab*b*Uab* (rest (rest ci))))))
 
 
 ;; word -> Boolean
 ;; Purpose: Determine if ci should be in D
 (define (D-INV-ab*b*Uab* ci)
   (and (<= 1 (length ci))
-       (eq? (last ci) 'a)
+       (eq? (last ci) 'a)                                     ;<-- not broken
+       (empty? (filter-abs (take ci (- (length ci) 1))))))
+
+#;(define (D-INV-ab*b*Uab* ci)
+  (and (<= 1 (length ci))
+       (eq? (last ci) 'b)                                     ;<-- broken
        (empty? (filter-abs (take ci (- (length ci) 1))))))
 
 
-(check-equal? (D-INV-ab*b*Uab* '(a)) #t)
-(check-equal? (D-INV-ab*b*Uab* '(a b a)) #t)
-(check-equal? (D-INV-ab*b*Uab* '(a b a b a)) #t)
-(check-equal? (D-INV-ab*b*Uab* '(b)) #f)
-(check-equal? (D-INV-ab*b*Uab* '(a b a b b)) #f)
-(check-equal? (D-INV-ab*b*Uab* '(a b a b a b)) #f)
-(check-equal? (D-INV-ab*b*Uab* '(b a b b b b)) #f)
-
-
-  
 ;; word -> Boolean
 ;; Purpose: Determine if ci should be in E
-(define (E-INV-ab*b*Uab* ci)
+ (define (E-INV-ab*b*Uab* ci)
   (let ([no-abs (filter-abs ci)])
     (and (<= 1 (length ci))
          (eq? (last ci) 'b)
-         (<= 1 (length no-abs))
+         (<= 1 (length no-abs))                 ;<- not broken
          (andmap (λ (x) (eq? 'b x)) no-abs))))
 
-;; tests for E-INV-ab*b*Uab*
-(check-equal? (E-INV-ab*b*Uab* '(b)) #t)
-(check-equal? (E-INV-ab*b*Uab* '(b b)) #t)
-(check-equal? (E-INV-ab*b*Uab* '(b b b b b b b b)) #t)
-(check-equal? (E-INV-ab*b*Uab* '(a b)) #f)
-(check-equal? (E-INV-ab*b*Uab* '(a b b b b b)) #t)
-(check-equal? (E-INV-ab*b*Uab* '(a b b a b)) #f)
-(check-equal? (E-INV-ab*b*Uab* '(b b a b b a b)) #f)
 
-
+#;(define (E-INV-ab*b*Uab* ci)
+  (let ([no-abs (filter-abs ci)])
+    (and (<= 1 (length ci))
+         (eq? (last ci) 'b)
+         (<= 1 (length no-abs))                 ;<-  broken
+         (andmap (λ (x) (eq? 'c x)) no-abs))))
 
 (define LOI-ab*b*Uab* (list (list 'A A-INV-ab*b*Uab*) (list 'B B-INV-ab*b*Uab*) (list 'C C-INV-ab*b*Uab*)
                             (list 'D D-INV-ab*b*Uab*) (list 'E E-INV-ab*b*Uab*) (list 'S S-INV-ab*b*Uab*)))
@@ -1149,27 +1474,42 @@
 
 ;; word -> Boolean
 ;; Purpose: To determine whether ci = emp
-(define (aa-ab-K-INV ci)
+(define (aa-ab-K-INV ci)  ;<- not broken
   (empty? ci))
+
+#;(define (aa-ab-K-INV ci)   ;<- broken
+  (not (empty? ci)))
 
 ;; word -> Boolean
 ;; Purpose: To determine whether ci = aa*
 (define (aa-ab-B-INV ci)
-  (and (not (empty? ci))
+  (and (not (empty? ci))      ;<- not broken
        (eq? (first ci) 'a)
        (andmap (λ (w) (eq? w 'a)) ci)))
 
+#;(define (aa-ab-B-INV ci)
+  (and (not (empty? ci))      ;<- broken
+       (eq? (first ci) 'a)
+       (andmap (λ (w) (eq? w 'b)) ci)))
+
 ;; word -> Boolean
 ;; Purpose: To determine whether ci = ab*
-(define (aa-ab-D-INV ci)               ;; <-- this one is purposely broken
+#;(define (aa-ab-D-INV ci)                ;; <-- this one is purposely broken
   (and (not (empty? ci))
        (eq? (first ci) 'a)
        (andmap (λ (el) (eq? el 'b)) ci)))
 
+(define (aa-ab-D-INV ci)                
+  (and (not (empty? ci))
+       (eq? (first ci) 'a)                     ;<-- not broken 
+       (andmap (λ (el) (eq? el 'b)) (drop ci 1))))
 
-(define LOI-aa*-ab* (list (list 'K aa-ab-K-INV)
-                          (list 'B aa-ab-B-INV)
-                          (list 'D aa-ab-D-INV)))
+
+
+
+
+
+(define LOI-aa*-ab* (list (list 'K  aa-ab-K-INV) (list 'B aa-ab-B-INV) (list 'D aa-ab-D-INV)))
 
 
 
@@ -1202,40 +1542,29 @@
 
 ;; word -> Boolean
 ;; Purpose: Determine if ci should be in S
-(define (S-INV-EX-NDFA ci)
+(define (S-INV-EX-NDFA ci)    ;<-- not broken
   (empty? ci))
 
-;; tests for S-INV-EX-NDFA
-(check-equal? (S-INV-EX-NDFA '()) #t)
-(check-equal? (S-INV-EX-NDFA '(a a b a c)) #f)
-(check-equal? (S-INV-EX-NDFA '(a c b)) #f)
-(check-equal? (S-INV-EX-NDFA '(a c a b c)) #f)
+
+#;(define (S-INV-EX-NDFA ci)    ;<-- broken
+  (not (empty? ci)))
 
 ;; word -> Boolean
 ;; Purpose: Determine if ci should be in A
 (define (A-INV-EX-NDFA ci)
-  (andmap (λ (x) (eq? 'a x)) ci))
+  (andmap (λ (x) (eq? 'a x)) ci))    ;<- not broken 
 
-;; tests for A-INV-EX-NDFA
-(check-equal? (A-INV-EX-NDFA '()) #t)
-(check-equal? (A-INV-EX-NDFA '(a)) #t)
-(check-equal? (A-INV-EX-NDFA '(a a a a a)) #t)
-(check-equal? (A-INV-EX-NDFA '(a a b a c)) #f)
-(check-equal? (A-INV-EX-NDFA '(a c b)) #f)
-(check-equal? (A-INV-EX-NDFA '(a c a b c)) #f)
+#;(define (A-INV-EX-NDFA ci)
+  (andmap (λ (x) (eq? 'b x)) ci))    ;<- broken 
 
 ;; word -> Boolean
 ;; Purpose: Determine if ci should be in B
 (define (B-INV-EX-NDFA ci)
-  (andmap (λ (x) (eq? 'b x)) ci))
+  (andmap (λ (x) (eq? 'b x)) ci))    ;<-- not broken
 
-;; tests for B-INV-EX-NDFA
-(check-equal? (B-INV-EX-NDFA '()) #t)
-(check-equal? (B-INV-EX-NDFA '(b)) #t)
-(check-equal? (B-INV-EX-NDFA '(b b b b b b)) #t)
-(check-equal? (B-INV-EX-NDFA '(a a b a c)) #f)
-(check-equal? (B-INV-EX-NDFA '(a c b)) #f)
-(check-equal? (B-INV-EX-NDFA '(a c a b c)) #f)
+#;(define (B-INV-EX-NDFA ci)
+  (andmap (λ (x) (eq? 'a x)) ci))    ;<-- broken
+
 
 ;; word -> Boolean
 ;; Purpose: Determine if ci should be in C
@@ -1243,25 +1572,17 @@
   (and (not (empty? ci))
        (eq? (last ci) 'c)
        (<= 1 (length ci))
-       (or (andmap (λ (x) (eq? 'a x)) (take ci (- (length ci) 1)))
+       (or (andmap (λ (x) (eq? 'a x)) (take ci (- (length ci) 1)))    ;<-- not broken
            (andmap (λ (x) (eq? 'b x)) (take ci (- (length ci) 1))))))
   
+#;(define (C-INV-EX-NDFA ci)
+  (and (not (empty? ci))
+       (eq? (last ci) 'c)
+       (<= 1 (length ci))
+       (or (andmap (λ (x) (eq? 'b x)) (take ci (- (length ci) 1)))    ;<-- broken
+           (andmap (λ (x) (eq? 'b x)) (take ci (- (length ci) 1))))))
 
-;; tests for C-INV-EX-NDFA
-(check-equal? (C-INV-EX-NDFA '(c)) #t)
-(check-equal? (C-INV-EX-NDFA '(b c)) #t)
-(check-equal? (C-INV-EX-NDFA '(b b b b b b c)) #t)
-(check-equal? (C-INV-EX-NDFA '(a c)) #t)
-(check-equal? (C-INV-EX-NDFA '(a a a a a a c)) #t)
-(check-equal? (C-INV-EX-NDFA '()) #f)
-(check-equal? (C-INV-EX-NDFA '(a a b a c)) #f)
-(check-equal? (C-INV-EX-NDFA '(a c b)) #f)
-(check-equal? (C-INV-EX-NDFA '(a c a b c)) #f)
-(check-equal? (C-INV-EX-NDFA '(c c)) #f)
-(check-equal? (C-INV-EX-NDFA '(a c c b)) #f)
-
-
-(define EX-NDFA-LOI (list (list 'S S-INV-EX-NDFA)
+(define LOI-EX-NDFA (list (list 'S S-INV-EX-NDFA)
                           (list 'A A-INV-EX-NDFA)
                           (list 'B B-INV-EX-NDFA)
                           (list 'C C-INV-EX-NDFA)))
@@ -1407,38 +1728,79 @@
                                     (B b C) (C b B) (C c D) (D c E)
                                     (E c F) (F c D))))
 
-(define S3-INV empty?)
+(define S3-INV empty?)   ;<- not broken
+
+#;(define(S3-INV ci)
+  (not (empty? ci)))   ;<-  broken
+
 
 (define (A3-INV ci)
-  (andmap (λ (s) (eq? s 'a)) ci))
+  (andmap (λ (s) (eq? s 'a)) ci))  ;<-- not broken
+
+#;(define (A3-INV ci)
+  (andmap (λ (s) (eq? s 'b)) ci))  ;<-- broken
+
+
 
 (define (B3-INV ci)
-  (and (even? (length ci))
+  (and (even? (length ci))         ;<- not broken
        (andmap (λ (s) (eq? s 'b)) ci)))
 
-(define (C3-INV ci)
+#;(define (B3-INV ci)
+  (and (even? (length ci))         ;<- broken
+       (andmap (λ (s) (eq? s 'a)) ci)))
+
+
+(define (C3-INV ci)           ;<-- not broken
   (and (odd? (length ci))
        (andmap (λ (s) (eq? s 'b)) ci)))
 
+
+#;(define (C3-INV ci)           ;<-- broken
+  (and (even? (length ci))
+       (andmap (λ (s) (eq? s 'b)) ci)))
+
+
 (define (D3-INV ci)
-  (let* [(bcs (takef ci (λ (s) (not (eq? s 'c)))))
+  (let* [(bcs (takef ci (λ (s) (not (eq? s 'c)))))    ;<- not broken
          (cs (drop ci (length bcs)))]
     (and (or (C3-INV bcs) (A3-INV bcs))
          (andmap (λ (s) (eq? s 'c)) cs)
          (= (remainder (length cs) 3) 1))))
 
+#;(define (D3-INV ci)
+  (let* [(bcs (takef ci (λ (s) (not (eq? s 'c)))))    ;<- broken
+         (cs (drop ci (length bcs)))]
+    (and (or (C3-INV bcs) (A3-INV bcs))
+         (andmap (λ (s) (eq? s 'a)) cs)
+         (= (remainder (length cs) 3) 1))))
+
 (define (E3-INV ci)
-  (let* [(bcs (takef ci (λ (s) (not (eq? s 'c)))))
+  (let* [(bcs (takef ci (λ (s) (not (eq? s 'c)))))     ;<-- not broken
          (cs (drop ci (length bcs)))]
     (and (or (C3-INV bcs) (A3-INV bcs))
          (andmap (λ (s) (eq? s 'c)) cs)
          (= (remainder (length cs) 3) 2))))
 
+#;(define (E3-INV ci)
+  (let* [(bcs (takef ci (λ (s) (not (eq? s 'c)))))     ;<-- broken
+         (cs (drop ci (length bcs)))]
+    (and (or (C3-INV bcs) (A3-INV bcs))
+         (andmap (λ (s) (eq? s 'b)) cs)
+         (= (remainder (length cs) 3) 2))))
+
 (define (F3-INV ci)
-  (let* [(bcs (takef ci (λ (s) (not (eq? s 'c)))))
+  (let* [(bcs (takef ci (λ (s) (not (eq? s 'c)))))  ;<- not broken
          (cs (drop ci (length bcs)))]
     (and (or (C3-INV bcs) (A3-INV bcs))
          (andmap (λ (s) (eq? s 'c)) cs)
+         (= (remainder (length cs) 3) 0))))
+
+#;(define (F3-INV ci)
+  (let* [(bcs (takef ci (λ (s) (not (eq? s 'c)))))  ;<- broken
+         (cs (drop ci (length bcs)))]
+    (and (or (C3-INV bcs) (A3-INV bcs))
+         (andmap (λ (s) (eq? s 'a)) cs)
          (= (remainder (length cs) 3) 0))))
 
 (define LOI-M3 (list (list 'S S3-INV)
@@ -1448,31 +1810,7 @@
                      (list 'D D3-INV)
                      (list 'E E3-INV)
                      (list 'F F3-INV)))
-
-#;(define RES2 (sm-test-invs M3
-                             (list 'S S3-INV)
-                             (list 'A A3-INV)
-                             (list 'B B3-INV)
-                             (list 'C C3-INV)
-                             (list 'D D3-INV)
-                             (list 'E E3-INV)
-                             (list 'F F3-INV)))
-
-#;(define RES2-WORDS (sm-all-possible-words M3
-                                            (list (list 'S S3-INV)
-                                                  (list 'A A3-INV)
-                                                  (list 'B B3-INV)
-                                                  (list 'C C3-INV)
-                                                  (list 'D D3-INV)
-                                                  (list 'E E3-INV)
-                                                  (list 'F F3-INV))))
-
-#;(define TOTAL-WORDS2 (foldl (λ (pair acc) (+ (length (second pair)) acc))
-                              0
-                              RES2-WORDS))
-
-
-
+                     
 ;; (a*Ub*)(c*Ud*)U(c*Ud*)a*
 
 ;; States:
@@ -1526,174 +1864,160 @@
 (check-equal? (sm-apply lots-of-kleenes '(d d d d d d c c)) 'reject)
 
 
+
 ;; word -. Boolean
 ;; Purpose: To determine if the given ci belongs in S
 (define (S-INV-lots-of-kleenes ci)
-  (empty? ci))
+  (empty? ci))    ;<- not broken
 
-;; tests for S-INV-lots-of-kleenes
-(check-equal? (S-INV-lots-of-kleenes '()) #t)
-(check-equal? (S-INV-lots-of-kleenes '(a)) #f)
-(check-equal? (S-INV-lots-of-kleenes '(b)) #f)
-(check-equal? (S-INV-lots-of-kleenes '(c)) #f)
-(check-equal? (S-INV-lots-of-kleenes '(a a)) #f)
+#;(define (S-INV-lots-of-kleenes ci)   ;<- broken
+  (not (empty? ci)))
+
 
 
 ;; word -> boolean
 ;; Purpose: To determine if the given word belong in A
-(define (A-INV-lots-of-kleenes ci)
+(define (A-INV-lots-of-kleenes ci)   ;<-- not broken
   (andmap (λ (x) (eq? 'c x)) ci))
 
-;; tests for A-INV-lots-of-kleenes
-(check-equal? (A-INV-lots-of-kleenes '()) #t)
-(check-equal? (A-INV-lots-of-kleenes '(c)) #t)
-(check-equal? (A-INV-lots-of-kleenes '(c c c c)) #t)
-(check-equal? (A-INV-lots-of-kleenes '(a)) #f)
-(check-equal? (A-INV-lots-of-kleenes '(b)) #f)
-(check-equal? (A-INV-lots-of-kleenes '(d)) #f)
-(check-equal? (A-INV-lots-of-kleenes '(a b)) #f)
-
+#;(define (A-INV-lots-of-kleenes ci)   ;<--  broken
+  (andmap (λ (x) (eq? 'a x)) ci))
 
 ;; word -> Boolean
 ;; Purpose: Determine if the give word belongs in B
 (define (B-INV-lots-of-kleenes ci)
-  (andmap (λ (x) (eq? 'd x)) ci))
+  (andmap (λ (x) (eq? 'd x)) ci))   ;<- not broken
 
-;; tests B-INV-lots-of-kleenes
-(check-equal? (B-INV-lots-of-kleenes '()) #t)
-(check-equal? (B-INV-lots-of-kleenes '(d)) #t)
-(check-equal? (B-INV-lots-of-kleenes '(d d)) #t)
-(check-equal? (B-INV-lots-of-kleenes '(d d d)) #t)
-(check-equal? (B-INV-lots-of-kleenes '(a)) #f)
-(check-equal? (B-INV-lots-of-kleenes '(b)) #f)
-(check-equal? (B-INV-lots-of-kleenes '(c)) #f)
-
+#;(define (B-INV-lots-of-kleenes ci)
+  (andmap (λ (x) (eq? 'c x)) ci))   ;<- broken
 
 ;; word -> Boolean
 ;; Purpose: Determine if the given word belongs in C
-(define (C-INV-lots-of-kleenes ci)
+(define (C-INV-lots-of-kleenes ci)   ;<-- not broken
   (andmap (λ (x) (eq? 'a x)) ci))
 
-;; tests for C-INV-lots-of-kleenes
-(check-equal? (C-INV-lots-of-kleenes '()) #t)
-(check-equal? (C-INV-lots-of-kleenes '(a)) #t)
-(check-equal? (C-INV-lots-of-kleenes '(a a a a)) #t)
-(check-equal? (C-INV-lots-of-kleenes '(a a)) #t)
-(check-equal? (C-INV-lots-of-kleenes '(b)) #f)
-(check-equal? (C-INV-lots-of-kleenes '(c)) #f)
-(check-equal? (C-INV-lots-of-kleenes '(d)) #f)
-
+#;(define (C-INV-lots-of-kleenes ci)
+  (andmap (λ (x) (eq? 'b x)) ci))   ;<-- broken
 
 ;; word -> Boolean
 ;; Purpose: Determine if the give word belongs in D
 (define (D-INV-lots-of-kleenes ci)
-  (andmap (λ (x) (eq? 'b x)) ci))
+  (andmap (λ (x) (eq? 'b x)) ci))   ;<- not broken
 
-;; tests for D-INV-lots-of-kleenes
-(check-equal? (D-INV-lots-of-kleenes '()) #t)
-(check-equal? (D-INV-lots-of-kleenes '(b)) #t)
-(check-equal? (D-INV-lots-of-kleenes '(b b b b)) #t)
-(check-equal? (D-INV-lots-of-kleenes '(a)) #f)
-(check-equal? (D-INV-lots-of-kleenes '(c)) #f)
-(check-equal? (D-INV-lots-of-kleenes '(d)) #f)
+#;(define (D-INV-lots-of-kleenes ci)
+  (andmap (λ (x) (eq? 'a x)) ci))   ;<- broken
 
 
 ;; word -> Boolean
 ;; Purpose: Determine if the given word belongs in E
 (define (E-INV-lots-of-kleenes ci)
-  (let [(Bs (takef ci (λ (x) (eq? 'b x))))
-        (As (takef ci (λ (x) (eq? 'a x))))]
-    (or (andmap (λ (x) (eq? 'a x)) ci))))
+  (let* [(AorBs (takef ci
+                       (λ (x) (or (eq? 'a x)(eq? 'b x)))))
+         (Cs (drop ci (length AorBs)))]
+    (and (or (andmap (λ (s) (eq? s 'a)) AorBs)
+             (andmap (λ (s) (eq? s 'b)) AorBs))      ;<-- not broken
+         (andmap (λ (s) (eq? s 'c)) Cs))))
 
+
+#;(define (E-INV-lots-of-kleenes ci)
+  (let* [(AorBs (takef ci
+                       (λ (x) (or (eq? 'a x)(eq? 'b x)))))
+         (Cs (drop ci (length AorBs)))]
+    (and (or (andmap (λ (s) (eq? s 'a)) AorBs)
+             (andmap (λ (s) (eq? s 'b)) AorBs))      ;<-- broken
+         (andmap (λ (s) (eq? s 'a)) Cs))))
 
 (define (F-INV-lots-of-kleenes ci)
-  (let [(Bs (takef ci (λ (x) (eq? 'b x))))
-        (As (takef  ci(λ (x) (eq? 'a x))))]
-    (or (andmap (λ (x) (eq? 'a x)) ci))))
+  (let* [(AorBs (takef ci
+                       (λ (x) (or (eq? 'a x)(eq? 'b x))))) ;<-- not broken
+         (Ds (drop ci (length AorBs)))]
+    (and (or (andmap (λ (s) (eq? s 'a)) AorBs)
+             (andmap (λ (s) (eq? s 'b)) AorBs))
+         (andmap (λ (s) (eq? s 'd)) Ds))))
+
+#;(define (F-INV-lots-of-kleenes ci)
+  (let* [(AorBs (takef ci
+                       (λ (x) (or (eq? 'a x)(eq? 'b x))))) ;<-- broken
+         (Ds (drop ci (length AorBs)))]
+    (and (or (andmap (λ (s) (eq? s 'a)) AorBs)
+             (andmap (λ (s) (eq? s 'b)) AorBs))
+         (andmap (λ (s) (eq? s 'c)) Ds))))
 
 
 (define (G-INV-lots-of-kleenes ci)
-  (let [(Bs (takef ci (λ (x) (eq? 'b x))))
-        (As (takef ci (λ (x) (eq? 'a x))))]
-    (or (andmap (λ (x) (eq? 'a x)) ci))))
+  (let* [(CorDs (takef ci
+                       (λ (x) (or (eq? 'c x)(eq? 'd x))))) ;<-- not broken
+         (As (drop ci (length CorDs)))]
+    (and (or (andmap (λ (s) (eq? s 'c)) CorDs)
+             (andmap (λ (s) (eq? s 'd)) CorDs))
+         (andmap (λ (s) (eq? s 'a)) As))))
 
-(define LOI-lots-of-kleenes (list (list 'S S-INV-lots-of-kleenes)
-                                  (list 'A A-INV-lots-of-kleenes)
-                                  (list 'B B-INV-lots-of-kleenes)
-                                  (list 'C C-INV-lots-of-kleenes)
-                                  (list 'D D-INV-lots-of-kleenes)
-                                  (list 'E E-INV-lots-of-kleenes)
-                                  (list 'F F-INV-lots-of-kleenes)
-                                  (list 'G G-INV-lots-of-kleenes)))
+#;(define (G-INV-lots-of-kleenes ci)
+  (let* [(CorDs (takef ci
+                       (λ (x) (or (eq? 'c x)(eq? 'd x))))) ;<-- broken
+         (As (drop ci (length CorDs)))]
+    (and (or (andmap (λ (s) (eq? s 'c)) CorDs)
+             (andmap (λ (s) (eq? s 'd)) CorDs))
+         (andmap (λ (s) (eq? s 'b)) As))))
 
-;  (a*Ub*)(c*Ud*)U(c*Ud*)a*
+
+
+
+
+
 
 (define AT-LEAST-ONE-MISSING (make-unchecked-ndfa '(S A B C)
-                                                  '(a b c)
-                                                  'S
-                                                  '(A B C)
-                                                  `((S ,EMP A)
-                                                    (S ,EMP B)
-                                                    (S ,EMP C)
-                                                    (A b A)
-                                                    (A c A)
-                                                    (B a B)
-                                                    (B c B)
-                                                    (C a C)
-                                                    (C b C))))
+                                        '(a b c)
+                                        'S
+                                        '(A B C)
+                                        `((S ,EMP A)
+                                          (S ,EMP B)
+                                          (S ,EMP C)
+                                          (A b A)
+                                          (A c A)
+                                          (B a B)
+                                          (B c B)
+                                          (C a C)
+                                          (C b C))))
 
 
 ;; word → Boolean
 ;; Purpose: Determine if the given word is empty
-(define (S-INV-AT-LEAST-ONE-MISSING ci) (empty? ci))
+(define (S-INV-AT-LEAST-ONE-MISSING ci) (empty? ci)) ;<-- not broken
 
-;; Test for S-INV-AT-LEAST-ONE-MISSING
-(check-equal? (S-INV-AT-LEAST-ONE-MISSING '()) #t)
-(check-equal? (S-INV-AT-LEAST-ONE-MISSING '(a b)) #f)
+
+#;(define (S-INV-AT-LEAST-ONE-MISSING ci) (not (empty? ci))) ;<-- broken
 
 
 ;; word → Boolean
 ;; Purpose: Determine if the given word does not contain a
-(define (A-INV-AT-LEAST-ONE-MISSING ci) (empty? (filter (λ (a) (eq? a 'a)) ci)))
+(define (A-INV-AT-LEAST-ONE-MISSING ci) (empty? (filter (λ (a) (eq? a 'a)) ci))) ;<-- not broken
 
-;; Test for A-INV-AT-LEAST-ONE-MISSING
-(check-equal? (A-INV-AT-LEAST-ONE-MISSING '(a)) #f)
-(check-equal? (A-INV-AT-LEAST-ONE-MISSING '(a c b)) #f)
-(check-equal? (A-INV-AT-LEAST-ONE-MISSING '(c c b a b)) #f)
-(check-equal? (A-INV-AT-LEAST-ONE-MISSING '(b)) #t)
-(check-equal? (A-INV-AT-LEAST-ONE-MISSING '(c c b c b)) #t)
-(check-equal? (A-INV-AT-LEAST-ONE-MISSING '()) #t)
+#;(define (A-INV-AT-LEAST-ONE-MISSING ci) (empty? (filter (λ (a) (eq? a 'b)) ci))) ;<-- broken
 
 
 ;; word → Boolean
 ;; Purpose: Determine if the given word does not contain b
-(define (B-INV-AT-LEAST-ONE-MISSING ci) (empty? (filter (λ (a) (eq? a 'b)) ci)))
-;; Test for B-INV-AT-LEAST-ONE-MISSING
-(check-equal? (B-INV-AT-LEAST-ONE-MISSING '(b)) #f)
-(check-equal? (B-INV-AT-LEAST-ONE-MISSING '(a c b)) #f)
-(check-equal? (B-INV-AT-LEAST-ONE-MISSING '(a a b a b)) #f)
-(check-equal? (B-INV-AT-LEAST-ONE-MISSING '(c)) #t)
-(check-equal? (B-INV-AT-LEAST-ONE-MISSING '(c c a c c a a a)) #t)
-(check-equal? (B-INV-AT-LEAST-ONE-MISSING '()) #t)
+(define (B-INV-AT-LEAST-ONE-MISSING ci) (empty? (filter (λ (a) (eq? a 'b)) ci))) ;<-- not broken
+
+#;(define (B-INV-AT-LEAST-ONE-MISSING ci) (empty? (filter (λ (a) (eq? a 'a)) ci))) ;<-- broken
 
 
 ;; word → Boolean
 ;; Purpose: Determine if the given word does not contain c
-(define (C-INV-AT-LEAST-ONE-MISSING ci) (empty? (filter (λ (a) (eq? a 'c)) ci)))
+(define (C-INV-AT-LEAST-ONE-MISSING ci) (empty? (filter (λ (a) (eq? a 'c)) ci))) ;<-- not broken
 
-;; Test for C-INV-AT-LEAST-ONE-MISSING
-(check-equal? (C-INV-AT-LEAST-ONE-MISSING '(c)) #f)
-(check-equal? (C-INV-AT-LEAST-ONE-MISSING '(a b c b)) #f)
-(check-equal? (C-INV-AT-LEAST-ONE-MISSING '(c c b a b)) #f)
-(check-equal? (C-INV-AT-LEAST-ONE-MISSING '(b)) #t)
-(check-equal? (C-INV-AT-LEAST-ONE-MISSING '(b b a a b a a a)) #t)
-(check-equal? (C-INV-AT-LEAST-ONE-MISSING '()) #t)
+
+#;(define (C-INV-AT-LEAST-ONE-MISSING ci) (empty? (filter (λ (a) (eq? a 'a)) ci))) ;<--  broken
 
 
 (define LOI-AT-LEAST-ONE-MISSING (list (list 'S S-INV-AT-LEAST-ONE-MISSING)
                                        (list 'A A-INV-AT-LEAST-ONE-MISSING)
                                        (list 'B B-INV-AT-LEAST-ONE-MISSING)
                                        (list 'C C-INV-AT-LEAST-ONE-MISSING)))
+
+
+
 
 
 
@@ -1731,8 +2055,6 @@
 
 
 
-
-
 (define mini-monster-kaboom (make-unchecked-ndfa '(S A B J K L M)
                                                  '(k a
                                                      ;l
@@ -1749,7 +2071,7 @@
                                                                         
                                                            (A a B) (A k S) (A b S)
                                                            (A o S)
-                                                           (A w S) (A m S)
+                                                           (A m S)
                                                                         
                                                            (B b J) (B k S) (B a S)
                                                            (B o S)
@@ -1785,6 +2107,8 @@
                                       ))
 
 
+(define EVIL-dna-sequence (complement-fsa DNA-SEQUENCE))
+
 
 (define loM (list big-container
                   DNA-SEQUENCE
@@ -1804,8 +2128,9 @@
 
 
 
-(define tests (list #;(test-case 'big-container
-                                 50
+(define tests (list
+               (test-case 'big-container
+                                 NUM-TESTS-PER-MACHINE
                                  (lambda () (sm-test-invs big-container
                                                           (list 'S INVS=T)
                                                           (list 'A INVS=T)
@@ -1817,8 +2142,8 @@
                                                           (list 'G INVS=T)
                                                           (list 'H INVS=T)
                                                           (list 'I INVS=T))))
-                    #;(test-case 'mini-monster-kaboom
-                               50
+                    (test-case 'mini-monster-kaboom
+                               NUM-TESTS-PER-MACHINE
                                (lambda () (sm-test-invs mini-monster-kaboom
                                                         (list 'S INVS=T)
                                                         (list 'A INVS=T)
@@ -1828,8 +2153,8 @@
                                                         (list 'L INVS=T)
                                                         (list 'M INVS=T))))
 
-                    #;(test-case 'evil-dna-sequence
-                               50
+                    (test-case 'evil-dna-sequence
+                               NUM-TESTS-PER-MACHINE
                                (lambda () (sm-test-invs EVIL-dna-sequence
                                                         (list 'K DNA-K-INV)
                                                         (list 'H DNA-H-INV)
@@ -1842,8 +2167,8 @@
                                                         (list 'R DNA-R-INV))))
 
 
-                    #;(test-case 'dna-sequence
-                               50
+                    (test-case 'dna-sequence
+                               NUM-TESTS-PER-MACHINE
                                (lambda () (sm-test-invs DNA-SEQUENCE
                                                         (list 'K DNA-K-INV)
                                                         (list 'H DNA-H-INV)
@@ -1854,8 +2179,8 @@
                                                         (list 'B DNA-B-INV)
                                                         (list 'S DNA-S-INV)
                                                         (list 'R DNA-R-INV))))
-                    #;(test-case 'no-contain-bababa
-                               50
+                    (test-case 'no-contain-bababa
+                               NUM-TESTS-PER-MACHINE
                                (lambda () (sm-test-invs no-contain-bababa (list 'S S-INV-no-contain-bababa)
                                                         (list 'A A-INV-no-contain-bababa)
                                                         (list 'B B-INV-no-contain-bababa)
@@ -1863,14 +2188,14 @@
                                                         (list 'D D-INV-no-contain-bababa)
                                                         (list 'E E-INV-no-contain-bababa)
                                                         (list 'F F-INV-no-contain-bababa))))
-                    #;(test-case 'AT-LEAST-ONE-MISSING
-                               50
+                    (test-case 'AT-LEAST-ONE-MISSING
+                               NUM-TESTS-PER-MACHINE
                                (lambda () (sm-test-invs AT-LEAST-ONE-MISSING  (list 'S S-INV-AT-LEAST-ONE-MISSING)
                                                         (list 'A A-INV-AT-LEAST-ONE-MISSING)
                                                         (list 'B B-INV-AT-LEAST-ONE-MISSING)
                                                         (list 'C C-INV-AT-LEAST-ONE-MISSING))))
-                    #;(test-case 'lots-of-kleenes
-                               50
+                    (test-case 'lots-of-kleenes
+                               NUM-TESTS-PER-MACHINE
                                (lambda () (sm-test-invs lots-of-kleenes (list 'S S-INV-lots-of-kleenes)
                                                         (list 'A A-INV-lots-of-kleenes)
                                                         (list 'B B-INV-lots-of-kleenes)
@@ -1879,8 +2204,8 @@
                                                         (list 'E E-INV-lots-of-kleenes)
                                                         (list 'F F-INV-lots-of-kleenes)
                                                         (list 'G G-INV-lots-of-kleenes))))
-                    #;(test-case 'ONE-LETTER-MISSING
-                               50
+                    (test-case 'ONE-LETTER-MISSING
+                               NUM-TESTS-PER-MACHINE
                                (lambda () (sm-test-invs ONE-LETTER-MISSING (list 'S S-INV-1-MISSING)
                                                         (list 'A A-INV-1-MISSING)
                                                         (list 'B B-INV-1-MISSING)
@@ -1888,12 +2213,12 @@
                                                         (list 'D D-INV-1-MISSING)
                                                         (list 'E E-INV-1-MISSING)
                                                         (list 'F F-INV-1-MISSING))))
-                    #;(test-case 'ab*b*Uab*
-                               50
+                    (test-case 'ab*b*Uab*
+                               NUM-TESTS-PER-MACHINE
                                (lambda () (sm-test-invs ab*b*Uab* (list 'A A-INV-ab*b*Uab*) (list 'B B-INV-ab*b*Uab*) (list 'C C-INV-ab*b*Uab*)
                                                         (list 'D D-INV-ab*b*Uab*) (list 'E E-INV-ab*b*Uab*) (list 'S S-INV-ab*b*Uab*))))
-                    #;(test-case 'M3
-                               50
+                    (test-case 'M3
+                               NUM-TESTS-PER-MACHINE
                                (lambda () (sm-test-invs M3 (list 'S S3-INV)
                                                         (list 'A A3-INV)
                                                         (list 'B B3-INV)
@@ -1902,20 +2227,20 @@
                                                         (list 'E E3-INV)
                                                         (list 'F F3-INV))))
                     (test-case 'a+b+c+a+b+
-                               50
+                               NUM-TESTS-PER-MACHINE
                                (lambda () (sm-test-invs a+b+c+a+b+ (list 'S INVS=T)
                                                         (list 'A INVS=T)
                                                         (list 'B INVS=T)
                                                         (list 'C INVS=T)
                                                         (list 'D INVS=T)
                                                         (list 'E INVS=T))))
-                    #;(test-case 'CONTAINS-aabab
-                               50
+                    (test-case 'CONTAINS-aabab
+                               NUM-TESTS-PER-MACHINE
                                (lambda () (sm-test-invs CONTAINS-aabab (list 'S S2-INV) (list 'A A2-INV)
                                                         (list 'B B2-INV) (list 'C C2-INV)
                                                         (list 'D D2-INV) (list 'E E2-INV))))
-                    #;(test-case 'a+b+c+a+b+ndfa
-                               50
+                    (test-case 'a+b+c+a+b+ndfa
+                               NUM-TESTS-PER-MACHINE
                                (lambda () (sm-test-invs (make-unchecked-ndfa '(S A B C D E)
                                                                              '(a b c)
                                                                              'S
@@ -1936,31 +2261,31 @@
                                                                                          (list 'D INVS=T)
                                                                                          (list 'E INVS=T))))
                     (test-case 'NO-AA
-                               50
+                               NUM-TESTS-PER-MACHINE
                                (lambda () (sm-test-invs NO-AA
                                                         (list 'S S-INV)
                                                         (list 'A A-INV)
                                                         (list 'B B-INV)
                                                         (list 'R R-INV))))
                     (test-case 'EVEN-NUM-Bs
-                               50
+                               NUM-TESTS-PER-MACHINE
                                (lambda () (sm-test-invs EVEN-NUM-Bs
                                                         (list 'S EVEN-NUM-Bs-S-INV) (list 'F EVEN-NUM-Bs-F-INV))))
                     (test-case 'aa*Uab*
-                               50
+                               NUM-TESTS-PER-MACHINE
                                (lambda () (sm-test-invs aa*Uab*
                                                         (list 'K  aa-ab-K-INV)
                                                         (list 'B aa-ab-B-INV)
                                                         (list 'D aa-ab-D-INV))))
                     (test-case 'EX-NDFA
-                               50
+                               NUM-TESTS-PER-MACHINE
                                (lambda () (sm-test-invs EX-NDFA
                                                         (list 'S S-INV-EX-NDFA)
                                                         (list 'A A-INV-EX-NDFA)
                                                         (list 'B B-INV-EX-NDFA)
                                                         (list 'C C-INV-EX-NDFA))))
                     ))
-#;(define res
+(define res
   (for/list ([test (in-list tests)])
     (displayln (test-case-name test))
     (let ([result (for/vector #:length (test-case-num-tests test)
@@ -1973,7 +2298,7 @@
       (println result)
       (list (test-case-name test)
             result))))
-#;(println res)
+(println res)
 
 
 

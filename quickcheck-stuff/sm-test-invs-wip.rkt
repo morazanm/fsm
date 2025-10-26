@@ -1,6 +1,6 @@
 #lang racket/base
 
-(provide sm-all-possible-words sm-test-invs)
+(provide sm-all-possible-words sm-test-invs find-paths)
 (require "../fsm-core/private/sm-getters.rkt"
          "../fsm-core/private/fsa.rkt"
          "../sm-graph.rkt"
@@ -126,10 +126,9 @@
 ;; Purpose: To return a list of all posible words that can be at each state in a machine 
 (define (sm-all-possible-words a-machine)
   ;; the given machine without the states and rules of states that cannot reach a final state
-  (define new-machine (remove-states-that-cannot-reach-finals a-machine)
-    #;(if (eq? (sm-type a-machine) 'dfa)
-                          a-machine
-                          (remove-states-that-cannot-reach-finals a-machine)))
+  (define new-machine #;(remove-states-that-cannot-reach-finals a-machine)
+                       a-machine
+    )
   ;; list of invariants that are reachable from the starting configuration
   #;(define reachable-inv (filter (λ (x) (member? (car x) (sm-states new-machine))) a-loi))
   ;; all paths of new-machine
@@ -188,16 +187,44 @@
 
 
 
+
+(define (get-paths-to-finals paths finals)
+  (filter (λ (path) (member (third (first path)) finals))
+          paths))
+
+(define (extract-rule-set paths)
+  (remove-duplicates (apply append paths)))
+
+(define (extract-state-set rules)
+  (remove-duplicates (append-map (λ (r) (list (first r) (third r))) rules)))
+
+(define (filter-paths paths states)
+  (define (has-only? p states) (andmap (λ (r) (and (member (first r) states)
+                                                   (member (third r) states)))
+                                       p))
+  (filter (λ (p) (has-only? p states)) paths))
+
+
 ;; machine . (list state (word -> boolean)) -> (listof (listof symbol))
 ;; Purpose: To return a list of the invarients that don't hold and the words that cause it not to hold
-(define (sm-test-invs a-machine . a-loi)
+(define (sm-test-invs a-machine #:rep-limit [rep-limit 1] . a-loi)
   (define a-loi-hash (for/hash ([inv (in-list a-loi)])
                        (values (car inv) (cadr inv))))
-  ;; the given machine without the states and rules of states that cannot reach a final state
-  (define new-machine (remove-states-that-cannot-reach-finals a-machine))
+
+  (define machine-paths (find-paths a-machine rep-limit))
+    
+  (define paths-to-finals (get-paths-to-finals machine-paths (sm-finals a-machine)))
+
+  
+  (define new-rules (extract-rule-set paths-to-finals))
+
+  
+  (define new-states (extract-state-set new-rules))
+  (define all-paths-new-machine (filter-paths machine-paths new-states))
   
   ;; all paths of new-machine
-  (define all-paths-new-machine (find-paths new-machine REPETITION-LIMIT))
+  #;(define new-machine (remove-states-that-do-not-reach-finals a-machine))
+  #;(define all-paths-new-machine (find-paths new-machine REPETITION-LIMIT))
 
   ;; (listof (listof rule)) (listof (listof symbol)) -> (listof (listof symbol))
   ;; Purpose: To return a list of the invarients and the word that causes them not to hold
