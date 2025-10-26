@@ -11,7 +11,9 @@
 
 (struct test-case (name num-tests thunk))
 
-(define NUM-TESTS-PER-MACHINE 1)
+(define NUM-TESTS-PER-MACHINE 50)
+
+(define num-reps 1)
 
 ;; USEFUL FUNCTIONS
 
@@ -1059,10 +1061,10 @@
                                (D b E)
                                (E b E))))
 
-#;(define (INVS=T ci)
+(define (INVS=T ci)
   #true) ;<- not broken
 
-(define (INVS=T ci)
+#;(define (INVS=T ci)
   #f)
 
 (define LOI-a+b+c+a+b+ (list (list 'S INVS=T)
@@ -2129,7 +2131,7 @@
 
 
 (define tests (list
-               (test-case 'big-container
+               #;(test-case 'big-container
                                  NUM-TESTS-PER-MACHINE
                                  (lambda () (sm-test-invs big-container
                                                           (list 'S INVS=T)
@@ -2142,7 +2144,7 @@
                                                           (list 'G INVS=T)
                                                           (list 'H INVS=T)
                                                           (list 'I INVS=T))))
-                    (test-case 'mini-monster-kaboom
+                    #;(test-case 'mini-monster-kaboom
                                NUM-TESTS-PER-MACHINE
                                (lambda () (sm-test-invs mini-monster-kaboom
                                                         (list 'S INVS=T)
@@ -2153,7 +2155,7 @@
                                                         (list 'L INVS=T)
                                                         (list 'M INVS=T))))
 
-                    (test-case 'evil-dna-sequence
+                    #;(test-case 'evil-dna-sequence
                                NUM-TESTS-PER-MACHINE
                                (lambda () (sm-test-invs EVIL-dna-sequence
                                                         (list 'K DNA-K-INV)
@@ -2167,7 +2169,7 @@
                                                         (list 'R DNA-R-INV))))
 
 
-                    (test-case 'dna-sequence
+                    #;(test-case 'dna-sequence
                                NUM-TESTS-PER-MACHINE
                                (lambda () (sm-test-invs DNA-SEQUENCE
                                                         (list 'K DNA-K-INV)

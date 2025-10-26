@@ -8,7 +8,7 @@
          racket/set
          data/queue)
 
-(define REPETITION-LIMIT 1)
+(define REPETITION-LIMIT 2)
 
 ;                                                                                                     
 ;                                                                                                     
@@ -211,8 +211,10 @@
   (define a-loi-hash (for/hash ([inv (in-list a-loi)])
                        (values (car inv) (cadr inv))))
 
-  (define machine-paths (find-paths a-machine rep-limit))
-    
+  #;(define machine-paths (find-paths a-machine rep-limit))
+  (define machine-paths (find-paths a-machine REPETITION-LIMIT))
+
+  
   (define paths-to-finals (get-paths-to-finals machine-paths (sm-finals a-machine)))
 
   
@@ -220,7 +222,9 @@
 
   
   (define new-states (extract-state-set new-rules))
-  (define all-paths-new-machine (filter-paths machine-paths new-states))
+  (define all-paths-new-machine (filter-paths machine-paths new-states))  ;<- refactored
+  #;(define all-paths-new-machine machine-paths) ;<- not refact
+  
   
   ;; all paths of new-machine
   #;(define new-machine (remove-states-that-do-not-reach-finals a-machine))
