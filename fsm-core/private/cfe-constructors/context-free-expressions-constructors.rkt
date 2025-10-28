@@ -1,13 +1,12 @@
 #lang racket
 
-(require "../constants.rkt"
-         "../cfg-struct.rkt"
-         (except-in "../pda.rkt" pda->spda)
-         "../misc.rkt"
+(require "../fsm-core/private/constants.rkt"
+         "../fsm-core/private/cfg-struct.rkt"
+         (except-in "../fsm-core/private/pda.rkt" pda->spda)
+         "../fsm-core/private/misc.rkt"
          "cfexp-contracts.rkt"
          "cfexp-structs.rkt"
          "cfexp-helpers.rkt"
-         data/queue
          )
 
 (provide null-cfexp
@@ -27,6 +26,8 @@
          )
 
 (define MAX-KLEENESTAR-LIMIT 50)
+
+(define EMPTY-CHANCE .01)
 
 ;;a context-free expression is either:
 ;; 1. null (base case)
@@ -129,7 +130,7 @@
   (if (contains-empty? cfexps)
         (let ([filtered-empties (vector-filter-not mk-empty-cfexp? cfexps)])
           (if (or (vector-empty? filtered-empties)
-                  (< (random) 0.1))
+                  (< (random) EMPTY-CHANCE))
             (empty-cfexp)
             (vector-ref filtered-empties (random (vector-length filtered-empties)))))
         (vector-ref cfexps (random (vector-length cfexps)))))
@@ -248,7 +249,7 @@
       
 ;;cfexp [(setof cfe)] -> string
 ;;Purpose: Converts the given cfe into a string to make it readable
-(define (printable-cfexp cfe #:seen[seen (set)])
+(define (printable-cfexp cfe #:seen[seen (set)]) 
   ;;(listof cfe) string (setof cfe) -> string
   ;;Purpose: Converts and appends all of the cfes in the given (listof cfe) 
   (define (printable-helper locfe connector seen)
@@ -263,8 +264,8 @@
   (define (printable-var var-cfe seen)
     (if (set-member? seen var-cfe)
         (symbol->string (mk-var-cfexp-cfe cfe))
-        (string-append ;(symbol->string (mk-var-cfexp-cfe cfe))
-                       ;" -> "
+        (string-append (symbol->string (mk-var-cfexp-cfe cfe))
+                       " -> "
                        (printable-helper (vector->list (first (hash-values (mk-var-cfexp-env cfe))))
                                          "|"
                                          (set cfe)))))
@@ -276,8 +277,10 @@
         [(mk-var-cfexp? cfe) (printable-var cfe (if (set-empty? seen)
                                                     (set)
                                                     seen))]
-        [(mk-concat-cfexp? cfe) (string-append "(" (printable-helper (vector->list (mk-concat-cfexp-locfe cfe)) "" seen) ")")]
-        [(mk-union-cfexp? cfe) (string-append "(" (printable-helper (vector->list (mk-union-cfexp-locfe cfe)) " ∪ " seen) ")")]
+        [(mk-concat-cfexp? cfe) (printable-helper (vector->list (mk-concat-cfexp-locfe cfe)) "" seen)
+                                #;(string-append "(" (printable-helper (vector->list (mk-concat-cfexp-locfe cfe)) "" seen) ")")]
+        [(mk-union-cfexp? cfe) (printable-helper (vector->list (mk-union-cfexp-locfe cfe)) " | "#;" ∪ " seen)
+                               #;(string-append "(" (printable-helper (vector->list (mk-union-cfexp-locfe cfe)) " | "#;" ∪ " seen) ")")]
         [else (string-append (printable-cfexp (mk-kleene-cfexp cfe)) "*")]))
   
 
@@ -289,23 +292,33 @@
   ;;singles | the accumulated singletons found from traversing the given cfe | (listof singleton-cfexp)
   (struct extraction-results (vars singles) #:transparent)
 
-  (define queue (make-queue))
-  #;(define e-queue (make-queue))
+  (define e-queue '())
 
-  #;(define qfirst first)
+  (define qfirst first)
 
-  (define qempty? queue-empty?)
+  (define qempty? empty?)
 
   ;;(queueof X) -> (queueof X)
   ;;Purpose: Removes the first element from the queue
-  #;(define (dequeue qox)
+  (define (dequeue qox)
     (rest qox))
 
   ;;(queueof X) X -> (queueof X)
   ;;Purpose: Adds the given X to the back of the queue
-  #;(define (enqueue qox x)
+  (define (enqueue qox x)
     (let ([x (if (list? x) x (list x))])
       (append qox x)))
+
+  ;;cfe -> extraction-results
+  ;;Purpose: Extracts all var-cfexp and singleton-cfexp from the given cfe
+  (define (extract-var-and-singles-cfe cfe)
+    (let ([init-queue (foldl (λ (env acc)
+                               (enqueue acc env))
+                             e-queue
+                             (map vector->list (hash-values (mk-var-cfexp-env cfe))))])
+      (extract-var-and-singles init-queue
+                               (update-extraction-results cfe (extraction-results '() '()))
+                               (list cfe))))
 
   ;;cfe extraction-results -> extraction-results
   ;;Purpose: Updates the given extraction-results to add the given cfe if it is a singleton or variable
@@ -320,38 +333,16 @@
 
   ;;(queueof cfe) extraction-results (listof cfe) -> extraction-results
   ;;Purpose: Extracts the cfe and adds it to the extraction-results if its a singleton or variable
-  (define (extract-var-and-singles queue extract-res visited)
-    (if (qempty? queue)
+  (define (extract-var-and-singles qocfe extract-res visited)
+    (if (qempty? qocfe)
         extract-res
-        (let ([cfe (dequeue! queue)])
-          (for ([cfe-to-add (in-list (extract-cfe-data cfe))]
-                #:when (not (member cfe visited)))
-            (enqueue! queue cfe-to-add))
-            (let (#;[cfe (dequeue! queue)]
-                   #;[cfes-to-add (extract-cfe-data cfe)]
-                   #;[new-queue (enqueue (dequeue qocfe)
-                                         (filter (λ (cfe) (not (member cfe visited))) cfes-to-add))]
-                   [new-acc (update-extraction-results cfe extract-res)]
-                   [new-visited (cons cfe visited)])
-          
-              (extract-var-and-singles queue new-acc new-visited)))))
-
-  ;;cfe -> extraction-results
-  ;;Purpose: Extracts all var-cfexp and singleton-cfexp from the given cfe
-  (define (extract-var-and-singles-cfe cfe)
-    (define queue (make-queue))
-    (for ([hash-values (in-hash-values (mk-var-cfexp-env cfe))])
-      (enqueue! queue (vector->list hash-values)))
-    (extract-var-and-singles queue
-                             (update-extraction-results cfe (extraction-results '() '()))
-                             (list cfe))
-    #;(let ([init-queue (foldl (λ (env acc)
-                               (enqueue acc env))
-                             e-queue
-                             (map vector->list (hash-values (mk-var-cfexp-env cfe))))])
-      (extract-var-and-singles init-queue
-                               (update-extraction-results cfe (extraction-results '() '()))
-                               (list cfe))))
+        (let* ([cfe (qfirst qocfe)]
+               [cfes-to-add (extract-cfe-data cfe)]
+               [new-queue (enqueue (dequeue qocfe)
+                                   (filter (λ (cfe) (not (member cfe visited))) cfes-to-add))]
+               [new-acc (update-extraction-results cfe extract-res)]
+               [new-visited (cons cfe visited)])
+          (extract-var-and-singles new-queue new-acc new-visited))))
 
   ;;cfe -> (listof cfe)
   ;;Purpose: Extracts the sub-expressions from the given cfe
@@ -359,41 +350,29 @@
     (cond [(mk-concat-cfexp? cfe) (vector->list (mk-concat-cfexp-locfe cfe))]
           [(mk-union-cfexp? cfe) (vector->list (mk-union-cfexp-locfe cfe))]
           [(mk-kleene-cfexp? cfe) (list (mk-kleene-cfexp-cfe cfe))]
-          [(mk-var-cfexp? cfe) #;(for ([hash-values (in-hash-values (mk-var-cfexp-env cfe))])
-                                   (enqueue! queue (vector->list hash-values)))
-                               (foldr (λ (env acc) (cons env acc))
-                                      '()
+          [(mk-var-cfexp? cfe) (foldl (λ (env acc)
+                                        (enqueue acc env))
+                                      e-queue
                                       (map vector->list (hash-values (mk-var-cfexp-env cfe))))]
           [else '()]))
-
-  ;;nonterminal (queueof cfe) (listof rule) -> (listof rule)
-  ;;Purpose: Converts each cf in the (queueof cfe) into the proper grammar rules
-  (define (remake-rules rules-to-convert nt)
-    (define (remake-rules-helper nt finished-rules)
-      (if (qempty? rules-to-convert)
-          finished-rules
-          (let ([cfe (dequeue! rules-to-convert)])
-            (if (mk-union-cfexp? cfe)
-                (begin
-                  (for ([rule (in-vector (mk-union-cfexp-locfe cfe))])
-                    (enqueue! rules-to-convert rule))
-                  (remake-rules-helper nt #;(enqueue (dequeue rules-to-convert) (vector->list (mk-union-cfexp-locfe cfe))) finished-rules))
-                (remake-rules-helper nt #;(dequeue rules-to-convert) (cons (cfe->rule nt cfe) finished-rules))))))
-    (remake-rules-helper nt '()))
 
   ;;(listof var-cfexp) (listof rule) -> (listof rule)
   ;;Purpose: Converts every var-cfexp into the corresponding grammar rule
   (define (variables->rules lovcfe results)
     (foldl (λ (vcfe res)
-             (append (remake-rules (let ([queue (make-queue)])
-                                        (for ([hash-values (in-vector (first (hash-values (mk-var-cfexp-env vcfe))))])
-                                          (enqueue! queue hash-values))
-                                      queue)
-                      (mk-var-cfexp-cfe vcfe)) res))
+             (append (remake-rules (mk-var-cfexp-cfe vcfe) (vector->list (first (hash-values (mk-var-cfexp-env vcfe)))) '()) res))
            '()
            lovcfe))
 
-  
+  ;;nonterminal (queueof cfe) (listof rule) -> (listof rule)
+  ;;Purpose: Converts each cf in the (queueof cfe) into the proper grammar rules
+  (define (remake-rules nt rules-to-convert finished-rules)
+    (if (qempty? rules-to-convert)
+        finished-rules
+        (let ([cfe (qfirst rules-to-convert)])
+          (if (mk-union-cfexp? cfe)
+              (remake-rules nt (enqueue (dequeue rules-to-convert) (vector->list (mk-union-cfexp-locfe cfe))) finished-rules)
+              (remake-rules nt (dequeue rules-to-convert) (cons (cfe->rule nt cfe) finished-rules))))))
 
   ;;non-terminal cfe -> rule
   ;;Purpose: Converts the cfe into a grammar rule using the given non-terminal

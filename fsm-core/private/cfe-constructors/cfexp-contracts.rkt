@@ -1,8 +1,8 @@
 #lang racket/base
 
-(require "../macros/shared/shared-predicates.rkt"
-         "../macros/error-formatting.rkt"
-         "../cfg-struct.rkt"
+(require "../fsm-core/private/macros/shared/shared-predicates.rkt"
+         "../fsm-core/private/macros/error-formatting.rkt"
+         "../fsm-core/private/cfg-struct.rkt"
          "cfexp-structs.rkt"
          racket/contract)
 
@@ -16,8 +16,7 @@
          cfe->cfg/c
          cfg->cfe/c
          pda->cfe/c
-         cfe->pda/c
-         )
+         cfe->pda/c)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;PREDICATES;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -39,19 +38,19 @@
 (define (at-least-two/c message)
   (make-flat-contract
    #:name 'at-least-two?
-   #:first-order (λ (x) (or (>= (length x) 2)
+   #:first-order list? #;(λ (x) (or (>= (length x) 2)
                             (>= (length (car x)) 2)))
    #:projection (λ (blame)
-                         (λ (symbol)
-                           (current-blame-format format-error)
-                           (raise-blame-error
-                            blame
-                            symbol
-                            (format "~a needs at least 2 cfes, given" message))))))
+                  (λ (symbol)
+                    (current-blame-format format-error)
+                    (raise-blame-error
+                     blame
+                     symbol
+                     (format "~a needs at least 2 cfes, given" message))))))
 
 ;; string -> flat-contract
 ;;Purpose: Creates a flat contract that determines if the input is a symbol
-(define (is-symbol?/c message)
+#;(define (is-symbol?/c message)
   (make-flat-contract
           #:name 'is-symbol?
           #:first-order symbol?
@@ -64,7 +63,7 @@
                             message)))))
 ;;-> flat-contract
 ;;Purpose: Creates a flat contract that determines if the input is a structure
-(define is-struct/c
+#;(define is-struct/c
   (make-flat-contract
    #:name 'is-struct?
    #:first-order struct?
@@ -79,7 +78,7 @@
 ;; string -> flat-contract
 ;;Purpose: Creates a flat contract that determines if the input is a cfexp
 (define (is-cfexp/c message)
-  (and/c is-struct/c
+  (and/c struct?
          (make-flat-contract
           #:name 'is-cfe?
           #:first-order cfexp?
@@ -90,6 +89,8 @@
                             blame
                             x
                             message))))))
+
+
 
 ;;-> flat-contract
 ;;Purpose: Creates a flat contract that determines if the input is a valid fsm symbol
@@ -184,7 +185,7 @@
 ;;-> flat-contract
 ;;Purpose: Creates a flat contract that determines if the input is cfexp
 (define valid-kleene-exp
-  (and/c is-struct/c
+  (and/c struct?
          (make-flat-contract
           #:name 'is-cfe-for-kleene?
           #:first-order cfexp?
@@ -228,7 +229,7 @@
 ;; string -> flat-contract
 ;;Purpose: Creates a flat contract that determines if the input is a pda
 (define (is-cfg? message)
-  (and/c is-struct/c
+  (and/c struct?
          (make-flat-contract
           #:name 'is-cfg?
           #:first-order cfg?
@@ -241,7 +242,6 @@
                             message))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;COMBINATOR CONTRACTS;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define singleton-cfexp/c
   (-> (and/c valid-singleton-input
              valid-singleton-exp)
@@ -264,7 +264,7 @@
              mk-empty-cfexp?)))
 
 (define var-cfexp/c
-  (-> (and/c (is-symbol?/c "var-cfexp expects a symbol as input, given")
+  (-> (and/c symbol? #;(is-symbol?/c "var-cfexp expects a symbol as input, given")
          is-a-valid-symbol/c)
   mk-var-cfexp?))
 
@@ -275,7 +275,7 @@
 
 (define update-binding!/c
   (-> is-var-cfexp?/c
-      (and/c (is-symbol?/c "update-binding! expects a symbol as the second input, given")
+      (and/c symbol? #;(is-symbol?/c "update-binding! expects a symbol as the second input, given")
              is-a-valid-symbol/c)
       (is-cfexp/c "update-binding! expects a cfe as the third input, given") 
       void?))
