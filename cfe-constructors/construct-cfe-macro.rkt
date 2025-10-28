@@ -1,18 +1,10 @@
 #lang racket/base
 
 (require "context-free-expressions-constructors.rkt"
-          (for-syntax racket/base
-                      syntax/parse)
-          racket/match)
+         (for-syntax racket/base
+                     syntax/parse))
 
 (provide construct-cfe)
-
-(define-struct (exn:fail:srcloc exn:fail) (a-srcloc)
-  #:property prop:exn:srclocs
-  (lambda (a-struct)
-    (match a-struct
-      [(exn:fail:srcloc msg marks (list a-srcloc))
-       (list a-srcloc)])))
 
 (define-syntax (construct-cfe stx)
   (define-syntax-class concat-expr
@@ -55,17 +47,15 @@
                       #:when cfe-id)
              (values cfe-id (gensym 'A-))))
          ;; Empty cfes
-         #,@(for/list ([id-stx (in-list (syntax-e #'((~? empty-expr.id) ...)))]
-                       [stx (in-list (syntax-e #'((~? empty-expr) ...)))])
-              #`(define #,id-stx (lambda ()
-                                   (set! #,id-stx (empty-cfexp))
-                                   #,id-stx)))
+         (~? (define empty-expr.id (lambda ()
+                                     (set! empty-expr.id (empty-cfexp))
+                                     empty-expr.id)))
+         ...
          ;; Null cfes
-         #,@(for/list ([id-stx (in-list (syntax-e #'((~? null-expr.id) ...)))]
-                       [stx (in-list (syntax-e #'((~? null-expr) ...)))])
-              #`(define #,id-stx (lambda ()
-                                   (set! #,id-stx (null-cfexp))
-                                   #,id-stx)))
+         (~? (define null-expr.id (lambda ()
+                                    (set! null-expr.id (null-cfexp))
+                                    null-expr.id)))
+         ...
          ;; Singleton cfes
          #,@(for/list ([id-stx (in-list (syntax-e #'((~? singleton-expr.id) ...)))]
                        [val-stx (in-list (syntax-e #'((~? singleton-expr.val) ...)))]
@@ -89,36 +79,39 @@
                        [vals-stx (in-list (syntax-e #'((~? (union-expr.vals ...)) ...)))]
                        [stx (in-list (syntax-e #'((~? union-expr) ...)))])
               #`(define #,id-stx (lambda ()
+                                   #,@(for/list ([vals (in-list (syntax->list vals-stx))])
+                                        #`(when (procedure? #,vals)
+                                            (#,vals)))
                                    (set! #,id-stx
                                          #,(quasisyntax/loc stx
                                              (union-cfexp #,@(for/list ([vals (in-list (syntax->list vals-stx))])
-                                                               #`(if (procedure? #,vals)
-                                                                     (#,vals)
-                                                                     #,vals)))))
+                                                               vals))))
                                    #,id-stx)))
          ;; Concat cfes
          #,@(for/list ([id-stx (in-list (syntax-e #'((~? concat-expr.id) ...)))]
                        [vals-stx (in-list (syntax-e #'((~? (concat-expr.vals ...)) ...)))]
                        [stx (in-list (syntax-e #'((~? concat-expr) ...)))])
               #`(define #,id-stx (lambda ()
+                                   #,@(for/list ([vals (syntax->list vals-stx)])
+                                        #`(when (procedure? #,vals)
+                                            (#,vals)))
                                    (set! #,id-stx
                                          #,(quasisyntax/loc stx
                                              (concat-cfexp #,@(for/list ([vals (syntax->list vals-stx)])
-                                                                #`(if (procedure? #,vals)
-                                                                      (#,vals)
-                                                                      #,vals)))))
+                                                                vals))))
                                    #,id-stx)))
          
          ;; Update bindings for var cfes
          #,@(for/list ([id-stx (in-list (syntax-e #'((~? var-expr.id) ...)))]
                        [binding-stx (in-list (syntax-e #'((~? var-expr.binding) ...)))]
                        [stx (in-list (syntax-e #'((~? var-expr) ...)))])
-              (quasisyntax/loc stx
-                (update-binding! #,id-stx
-                                 (hash-ref symb-lookup '#,(syntax->datum id-stx))
-                                 (if (procedure? #,binding-stx)
-                                     (#,binding-stx)
-                                     #,binding-stx))))
+              #`(begin
+                  (when (procedure? #,binding-stx)
+                    (#,binding-stx))
+                  #,(quasisyntax/loc stx
+                      (update-binding! #,id-stx
+                                       (hash-ref symb-lookup '#,(syntax->datum id-stx))
+                                       #,binding-stx))))
          (if (procedure? res-cfe-id)
              (res-cfe-id)
              res-cfe-id))]))

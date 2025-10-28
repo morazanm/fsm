@@ -28,7 +28,7 @@
 
 (define A (singleton-cfexp 'a))
 
-(construct-cfe [(A (singleton 'a))]
+#;(construct-cfe [(A (singleton 'a))]
                  A)
 
 (define B (singleton-cfexp 'b))
@@ -72,13 +72,14 @@
       (update-binding! AiBj 'A EUAIBUAIBB)
       AiBj)))
 
-#;(define AiBj-new
+(define AiBj-new
   (construct-cfe [(AiBj (var EUAIBUAIBB))
                   (EUAIBUAIBB (union EMPTY AIB AIBB))
                   (AIB (concat A AiBj B))
                   (AIBB (concat A AiBj B B))]
                  AiBj))
 
+AiBj-new
 ;;w = b^na^n
 (define BNAN
   (let* [(BNAN (var-cfexp 'S))
