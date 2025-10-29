@@ -1,8 +1,8 @@
 #lang racket/base
 
-(require "../fsm-core/private/macros/shared/shared-predicates.rkt"
-         "../fsm-core/private/macros/error-formatting.rkt"
-         "../fsm-core/private/cfg-struct.rkt"
+(require "../macros/shared/shared-predicates.rkt"
+         "../macros/error-formatting.rkt"
+         "../cfg-struct.rkt"
          "cfexp-structs.rkt"
          racket/contract)
 
