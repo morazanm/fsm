@@ -24,6 +24,9 @@
    check-machine
    empties
 
+   ; cfexp
+   construct-cfe cfg->cfe cfe->cfg pda->cfe cfe->pda printable-cfexp
+
    ; sm constructors
    sm-test-invs
    make-dfa make-ndfa make-ndpda make-tm

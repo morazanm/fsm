@@ -43,6 +43,8 @@
   ;"private/Chomsky-Greibach-CFG-Transformations/chomsky.rkt"
   "private/Chomsky-Greibach-CFG-Transformations/greibach.rkt"
   "private/fsmunit/interface.rkt"
+  "private/cfe-constructors/construct-cfe-macro.rkt"
+  "private/cfe-constructors/context-free-expressions-constructors.rkt"
   racket/list
   racket/bool
   racket/contract)
@@ -90,6 +92,9 @@
 
  ; grammar transformations
  cfg->chomsky cfg->greibach
+
+ ; cfexp
+ construct-cfe cfg->cfe cfe->cfg pda->cfe cfe->pda printable-cfexp
  
  ; regexp constructors
  empty-regexp singleton-regexp union-regexp concat-regexp kleenestar-regexp null-regexp
