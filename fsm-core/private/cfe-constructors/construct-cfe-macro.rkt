@@ -25,18 +25,19 @@
 
   (define-syntax-class empty-expr
     #:attributes (id)
-    (pattern (id:id ((~literal empty)))))
+    (pattern (id:id ((~datum empty)))))
 
   (define-syntax-class null-expr
     #:attributes (id)
-    (pattern (id:id ((~literal null)))))
+    (pattern (id:id ((~datum null)))))
 
   (syntax-parse stx
-    [(_ [(~or* var-expr:var-expr
+    [(_ [(~or* empty-expr:empty-expr
+               var-expr:var-expr
                singleton-expr:singleton-expr
                concat-expr:concat-expr
                union-expr:union-expr
-               empty-expr:empty-expr
+               
                null-expr:null-expr) ...]
         res-cfe-id:id)
      
