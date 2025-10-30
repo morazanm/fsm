@@ -5,7 +5,7 @@
                      syntax/parse))
 
 (provide construct-cfe)
-
+(define-for-syntax circular-binding-message "Bad circular reference with binding identifier")
 (define-syntax (construct-cfe stx)
   (define-syntax-class concat-expr
     #:attributes (id (vals 1))
@@ -37,7 +37,6 @@
                singleton-expr:singleton-expr
                concat-expr:concat-expr
                union-expr:union-expr
-               
                null-expr:null-expr) ...]
         res-cfe-id:id)
      
@@ -61,6 +60,9 @@
          #,@(for/list ([id-stx (in-list (syntax-e #'((~? singleton-expr.id) ...)))]
                        [val-stx (in-list (syntax-e #'((~? singleton-expr.val) ...)))]
                        [stx (in-list (syntax-e #'((~? singleton-expr) ...)))])
+              (when (and (identifier? val-stx)
+                         (free-identifier=? id-stx val-stx))
+                (raise-syntax-error 'singleton-cfexp circular-binding-message stx val-stx '() ""))
               #`(define #,id-stx (lambda ()
                                    (set! #,id-stx
                                          #,(quasisyntax/loc stx
@@ -68,8 +70,11 @@
                                    #,id-stx)))
          ;; Var cfes
          #,@(for/list ([id-stx (in-list (syntax-e #'((~? var-expr.id) ...)))]
-                       [binding-stx (in-list (syntax-e #'((~? var-expr.binding) ...)))]
+                       [val-stx (in-list (syntax-e #'((~? var-expr.binding) ...)))]
                        [stx (in-list (syntax-e #'((~? var-expr) ...)))])
+              (when (and (identifier? val-stx)
+                         (free-identifier=? id-stx val-stx))
+                (raise-syntax-error 'var-cfexp circular-binding-message stx val-stx '() ""))
               #`(define #,id-stx (lambda ()
                                    (set! #,id-stx
                                          #,(quasisyntax/loc stx
@@ -79,25 +84,35 @@
          #,@(for/list ([id-stx (in-list (syntax-e #'((~? union-expr.id) ...)))]
                        [vals-stx (in-list (syntax-e #'((~? (union-expr.vals ...)) ...)))]
                        [stx (in-list (syntax-e #'((~? union-expr) ...)))])
+              (define vals-stx-lst (syntax->list vals-stx))
+              (for ([val-stx (in-list vals-stx-lst)])
+                (when (and (identifier? val-stx)
+                         (free-identifier=? id-stx val-stx))
+                (raise-syntax-error 'union-cfexp circular-binding-message stx val-stx '() "")))
               #`(define #,id-stx (lambda ()
-                                   #,@(for/list ([vals (in-list (syntax->list vals-stx))])
+                                   #,@(for/list ([vals (in-list vals-stx-lst)])
                                         #`(when (procedure? #,vals)
                                             (#,vals)))
                                    (set! #,id-stx
                                          #,(quasisyntax/loc stx
-                                             (union-cfexp #,@(syntax->list vals-stx))))
+                                             (union-cfexp #,@vals-stx-lst)))
                                    #,id-stx)))
          ;; Concat cfes
          #,@(for/list ([id-stx (in-list (syntax-e #'((~? concat-expr.id) ...)))]
                        [vals-stx (in-list (syntax-e #'((~? (concat-expr.vals ...)) ...)))]
                        [stx (in-list (syntax-e #'((~? concat-expr) ...)))])
+              (define vals-stx-lst (syntax->list vals-stx))
+              (for ([val-stx (in-list vals-stx-lst)])
+                (when (and (identifier? val-stx)
+                         (free-identifier=? id-stx val-stx))
+                (raise-syntax-error 'concat-cfexp circular-binding-message stx val-stx '() "")))
               #`(define #,id-stx (lambda ()
-                                   #,@(for/list ([vals (syntax->list vals-stx)])
+                                   #,@(for/list ([vals vals-stx-lst])
                                         #`(when (procedure? #,vals)
                                             (#,vals)))
                                    (set! #,id-stx
                                          #,(quasisyntax/loc stx
-                                             (concat-cfexp #,@(syntax->list vals-stx))))
+                                             (concat-cfexp #,@vals-stx-lst)))
                                    #,id-stx)))
          
          ;; Update bindings for var cfes
@@ -107,6 +122,8 @@
               #`(begin
                   (when (procedure? #,binding-stx)
                     (#,binding-stx))
+                  (when (procedure? #,id-stx)
+                    (#,id-stx))
                   #,(quasisyntax/loc stx
                       (update-binding! #,id-stx
                                        (hash-ref symb-lookup '#,(syntax->datum id-stx))
