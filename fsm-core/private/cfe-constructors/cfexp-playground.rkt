@@ -1,11 +1,11 @@
-#lang racket
+#lang racket/base
 
-(require  "../fsm-core/private/constants.rkt"
+(require  "../constants.rkt"
           "context-free-expressions-constructors.rkt"
-          "../fsm-core/private/cfg-struct.rkt"
-          "../fsm-core/private/pda.rkt"
+          "../cfg-struct.rkt"
+          "../pda.rkt"
           ;"../visualizations/viz-grammar-constructors/cfg-derive-leftmost.rkt"
-          "../sm-graph.rkt"
+          "../../../sm-graph.rkt"
           racket/syntax-srcloc
           (for-syntax racket/base
                       syntax/parse
@@ -24,20 +24,35 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;CFEXP;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define EMPTY (empty-cfexp))
+(define EMPTY (construct-cfe [(EMPTY (empty))]
+                 EMPTY
+                 #;(empty))
+  #;(empty-cfexp))
 
-(define A (singleton-cfexp 'a))
+
+(define A (construct-cfe [(A (singleton 'a))]
+                 A)
+  #;(singleton-cfexp 'a))
 
 #;(construct-cfe [(A (singleton 'a))]
                  A)
 
-(define B (singleton-cfexp 'b))
+(define B (construct-cfe [(B (singleton 'b))]
+                 B)
+  #;(singleton-cfexp 'b))
 
-(define C (singleton-cfexp 'c))
+(define C (construct-cfe [(C (singleton 'c))]
+                 C)
+  #;(singleton-cfexp 'c))
 
 ;; w = ww^r
 (define WWR
-  (let* [(WWR (var-cfexp 'S))
+  (construct-cfe [(WWR (var EUAHAUBHB))
+                  (AHA (concat A WWR A))
+                  (BHB (concat B WWR B))
+                  (EUAHAUBHB (union EMPTY AHA BHB))]
+                 WWR)
+  #;(let* [(WWR (var-cfexp 'S))
          (AHA (concat-cfexp A WWR A))
          (BHB (concat-cfexp B WWR B))]
     (begin
@@ -87,6 +102,52 @@ AiBj-new
     (begin
       (update-binding! BNAN 'S (union-cfexp EMPTY BSA))
       BNAN)))
+
+;;w = a^ib^jc^k, i=j or j=k
+
+;;AiBjCk =>  a^ib^ic^k or a^ib^kc^k, i=j or j=k
+;;EF => a^ib^ic^k 
+;;E => a^ib^i
+;;F => c^k
+;;ZW => a^ib^kc^k
+;;Z => a^i
+;;W => b^kc^k
+;;A -> 'a
+;;B -> 'b
+;;C -> 'c
+
+(define AiBjCk
+  (construct-cfe ([A (singleton 'a)]
+                  [B (singleton 'b)]
+                  [C (singleton 'c)]
+                  [AEB (concat A E B)] ;; AEB = A^iB^j, i=j
+                  [CF (concat C F)] ;;c^k
+                  [AEBUEMP (union AEB EMPTY)] ;;AEB U EMP
+                  [CFUEMP (union CF EMPTY)] ;;CF U EMP
+                  [E (var AEBUEMP)]
+                  [F (var CFUEMP)]
+                  [EF (concat E F)] ;;a^ib^jc^k, i=j
+                  [BWC (concat B W C)] ;;BWC = B^jC^k, j=k
+                  [AZ (concat A Z)] ;;a^i
+                  [BWCUEMP (union BWC EMPTY)]
+                  [AZUEMP (union AZ EMPTY)]
+                  [W (var BWCUEMP)]
+                  [Z (var AZUEMP)]
+                  [ZW (concat Z W)] ;;a^ib^jc^k, j=k
+                  [EFUWZ (union EF ZW)]
+                  [AiBjCk (var EFUWZ)])
+                 AiBjCk))
+
+(define G (cfe->cfg AiBjCk))
+
+;;We do NOT need kleene because the variable binding is functionally equivalent.
+;;   L*    = L U EMP
+;; kleene^    var^
+;;We *could* use a kleene BUT it would be harder to understand and read. Especially since the implementation
+;;of CFEs are closely related to CFGs. Consider the cfg for L = a*, the rules would be S -> aS and S -> EMP
+;;the way of using a var (L U EMP) is directly reflects how the cfg rules would look AND captures the same
+;;(if not better) nature of kleene. Also, it makes converting easier since there is no need for the kleene
+;;as theres one less expression to check for AND everything I need would be found in the environment of the
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;CFG->CFE & CFE->CFG Transformations;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -295,4 +356,4 @@ AiBj-new
 (define Gina-a^mb^nc^p-cfe (pda->cfe Gina-a^mb^nc^p))
 
 ;;w = a^nb^n
-(define converted-ANBN (pda->cfe (cfe->pda ANBN)))
+#;(define converted-ANBN (pda->cfe (cfe->pda ANBN)))

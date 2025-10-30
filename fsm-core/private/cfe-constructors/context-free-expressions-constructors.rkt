@@ -319,7 +319,7 @@
     (let ([init-queue (foldl (λ (env acc)
                                (enqueue acc env))
                              e-queue
-                             (map vector->list (hash-values (mk-var-cfexp-env cfe))))])
+                             (extract-cfe-data cfe))])
       (extract-var-and-singles init-queue
                                (update-extraction-results cfe (extraction-results '() '()))
                                (list cfe))))
@@ -360,51 +360,56 @@
                                       (map vector->list (hash-values (mk-var-cfexp-env cfe))))]
           [else '()]))
 
-  ;;(listof var-cfexp) (listof rule) -> (listof rule)
+  ;;(listof var-cfexp) (hash old-nt . new-nt) (listof rule) -> (listof rule)
   ;;Purpose: Converts every var-cfexp into the corresponding grammar rule
-  (define (variables->rules lovcfe results)
+  (define (variables->rules lovcfe new-nts results)
+    ;;nonterminal (queueof cfe) (listof rule) -> (listof rule)
+    ;;Purpose: Converts each cf in the (queueof cfe) into the proper grammar rules
+    (define (remake-rules nt rules-to-convert finished-rules)
+      ;;non-terminal cfe -> rule
+      ;;Purpose: Converts the cfe into a grammar rule using the given non-terminal
+      (define (cfe->rule nt cfe)
+        ;;if union found in concat split union and make concat using every branch
+        (let ([RHS (cond [(mk-empty-cfexp? cfe) EMP]
+                         [(mk-singleton-cfexp? cfe) (mk-singleton-cfexp-char cfe)]
+                         [(mk-var-cfexp? cfe) (hash-ref new-nts (mk-var-cfexp-cfe cfe))]
+                         [(mk-concat-cfexp? cfe) (string->symbol (foldr (λ (cfe acc)
+                                                                          (string-append
+                                                                           (symbol->string
+                                                                            (if (mk-singleton-cfexp? cfe)
+                                                                                (mk-singleton-cfexp-char cfe)
+                                                                                (hash-ref new-nts (mk-var-cfexp-cfe cfe))))
+                                                                           acc))
+                                                                        ""
+                                                                        (vector->list (mk-concat-cfexp-locfe cfe))))]
+                         [else (error (format "unsuitable cfe ~a" cfe))])])
+          (list nt ARROW RHS)))
+      (if (qempty? rules-to-convert)
+          finished-rules
+          (let ([cfe (qfirst rules-to-convert)])
+            (if (mk-union-cfexp? cfe)
+                (remake-rules nt (enqueue (dequeue rules-to-convert) (vector->list (mk-union-cfexp-locfe cfe))) finished-rules)
+                (remake-rules nt (dequeue rules-to-convert) (cons (cfe->rule nt cfe) finished-rules))))))
     (foldl (λ (vcfe res)
-             (append (remake-rules (mk-var-cfexp-cfe vcfe) (vector->list (first (hash-values (mk-var-cfexp-env vcfe)))) '()) res))
+             (append (remake-rules (hash-ref new-nts (mk-var-cfexp-cfe vcfe)) (vector->list (first (hash-values (mk-var-cfexp-env vcfe)))) '()) res))
            '()
            lovcfe))
-
-  ;;nonterminal (queueof cfe) (listof rule) -> (listof rule)
-  ;;Purpose: Converts each cf in the (queueof cfe) into the proper grammar rules
-  (define (remake-rules nt rules-to-convert finished-rules)
-    (if (qempty? rules-to-convert)
-        finished-rules
-        (let ([cfe (qfirst rules-to-convert)])
-          (if (mk-union-cfexp? cfe)
-              (remake-rules nt (enqueue (dequeue rules-to-convert) (vector->list (mk-union-cfexp-locfe cfe))) finished-rules)
-              (remake-rules nt (dequeue rules-to-convert) (cons (cfe->rule nt cfe) finished-rules))))))
-
-  ;;non-terminal cfe -> rule
-  ;;Purpose: Converts the cfe into a grammar rule using the given non-terminal
-  (define (cfe->rule nt cfe)
-    ;;if union found in concat split union and make concat using every branch
-    (let ([RHS (cond [(mk-empty-cfexp? cfe) EMP]
-                     [(mk-singleton-cfexp? cfe) (mk-singleton-cfexp-char cfe)]
-                     [(mk-var-cfexp? cfe) (mk-var-cfexp-cfe cfe)]
-                     [(mk-concat-cfexp? cfe) (string->symbol (foldr (λ (cfe acc)
-                                                                      (string-append
-                                                                       (symbol->string
-                                                                        (if (mk-singleton-cfexp? cfe)
-                                                                            (mk-singleton-cfexp-char cfe)
-                                                                            (mk-var-cfexp-cfe cfe)))
-                                                                       acc))
-                                                                    ""
-                                                                    (vector->list (mk-concat-cfexp-locfe cfe))))]
-                     [else (error (format "unsuitable cfe ~a" cfe))])])
-      (list nt ARROW RHS)))
   (let* ([extracted-components (extract-var-and-singles-cfe cfe)]
          [variables (extraction-results-vars extracted-components)]
-         [singletons (extraction-results-singles extracted-components)]
-         [alphabet (remove-duplicates (map mk-singleton-cfexp-char singletons))]
-         [rules (variables->rules variables '())]
-         [nts (remove-duplicates (map mk-var-cfexp-cfe variables))]
-         [starting-nt (cond [(mk-var-cfexp? cfe) (mk-var-cfexp-cfe cfe)]
+         [var-symbols (map mk-var-cfexp-cfe variables)]
+         [new-nts (foldl (λ (var acc)
+                           (hash-set acc
+                                     (mk-var-cfexp-cfe var)
+                                     (gen-nt (append (hash-values acc) var-symbols))))
+                         (hash)
+                         variables)]
+         [singletons (map mk-singleton-cfexp-char (extraction-results-singles extracted-components))]
+         [alphabet (remove-duplicates singletons)]
+         [rules (variables->rules variables new-nts '())]
+         [nts (remove-duplicates (hash-values new-nts))]
+         [starting-nt (cond [(mk-var-cfexp? cfe) (hash-ref new-nts (mk-var-cfexp-cfe cfe))]
                             [(= (length nts) 1) (first nts)]
-                            [else (gen-nt extracted-components)])])
+                            [else (gen-nt nts)])])
     (make-unchecked-cfg nts alphabet rules starting-nt)))
 
 ;; pda -> cfe
