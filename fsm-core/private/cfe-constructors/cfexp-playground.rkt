@@ -94,7 +94,8 @@
                   (AIBB (concat A AiBj B B))]
                  AiBj))
 
-AiBj-new
+;AiBj-new
+
 ;;w = b^na^n
 (define BNAN
   (let* [(BNAN (var-cfexp 'S))
@@ -356,4 +357,4 @@ AiBj-new
 (define Gina-a^mb^nc^p-cfe (pda->cfe Gina-a^mb^nc^p))
 
 ;;w = a^nb^n
-#;(define converted-ANBN (pda->cfe (cfe->pda ANBN)))
+(define converted-ANBN (pda->cfe (cfe->pda ANBN)))

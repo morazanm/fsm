@@ -399,10 +399,10 @@
          [var-symbols (map mk-var-cfexp-cfe variables)]
          [new-nts (foldl (λ (var acc)
                            (hash-set acc
-                                     (mk-var-cfexp-cfe var)
+                                     var
                                      (gen-nt (append (hash-values acc) var-symbols))))
                          (hash)
-                         variables)]
+                         var-symbols)]
          [singletons (map mk-singleton-cfexp-char (extraction-results-singles extracted-components))]
          [alphabet (remove-duplicates singletons)]
          [rules (variables->rules variables new-nts '())]
