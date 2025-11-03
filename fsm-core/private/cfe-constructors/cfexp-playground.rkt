@@ -13,7 +13,7 @@
                       syntax/parse/experimental/template
                       racket/contract/combinator
                       )
-          "construct-cfe-macro.rkt"
+          ;"construct-cfe-macro.rkt"
           )
 
 (provide (all-defined-out))
@@ -139,7 +139,29 @@
                   [AiBjCk (var EFUWZ)])
                  AiBjCk))
 
+(define AiBjCk2
+  (construct-cfe ([A (singleton 'a)]
+                  [B (singleton 'b)]
+                  [C (singleton 'c)]
+                  [AEB (concat A E B)] ;; AEB = A^iB^j, i=j
+                  [CF (concat C F)] ;;c^k
+                  [AEBUEMP (union AEB EMPTY)] ;;AEB U EMP
+                  [CFUEMP (union CF EMPTY)] ;;CF U EMP
+                  [E (var AEBUEMP)]
+                  [F (var CFUEMP)]
+                  [EF (concat E F)] ;;a^ib^jc^k, i=j
+                  [BWC (concat B W C)] ;;BWC = B^jC^k, j=k
+                  [AZ (concat A Z)] ;;a^i
+                  [BWCUEMP (union BWC EMPTY)]
+                  [AZUEMP (union AZ EMPTY)]
+                  [W (var BWCUEMP)]
+                  [Z (var AZUEMP)]
+                  [ZW (concat Z W)] ;;a^ib^jc^k, j=k
+                  [AiBjCk (union EF ZW)])
+                 AiBjCk))
+
 (define G (cfe->cfg AiBjCk))
+(define G2 (cfe->cfg AiBjCk2))
 
 ;;We do NOT need kleene because the variable binding is functionally equivalent.
 ;;   L*    = L U EMP
@@ -151,7 +173,7 @@
 ;;as theres one less expression to check for AND everything I need would be found in the environment of the
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;CFG->CFE & CFE->CFG Transformations;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
+#|
 ;;w = a^nb^n
 (define ANBN-cfg (make-unchecked-cfg '(S)
                                      '(a b)
@@ -358,3 +380,4 @@
 
 ;;w = a^nb^n
 (define converted-ANBN (pda->cfe (cfe->pda ANBN)))
+|#
