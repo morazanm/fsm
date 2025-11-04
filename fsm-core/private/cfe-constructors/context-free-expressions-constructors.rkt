@@ -549,7 +549,8 @@
          [alphabet (remove-duplicates singletons)]
          [rules (variables->rules variables new-nts '())]
          [nts (hash-values new-nts)]
-         [starting-nt (cond [(mk-var-cfexp? cfe) (hash-ref new-nts (mk-var-cfexp-cfe cfe))]
+         [starting-nt (hash-ref new-nts (mk-var-cfexp-cfe cfe))
+                      #;(cond [(mk-var-cfexp? cfe) (hash-ref new-nts (mk-var-cfexp-cfe cfe))]
                             [(= (length nts) 1) (first nts)]
                             [else (gen-nt nts)])])
     (make-unchecked-cfg nts alphabet rules starting-nt)))

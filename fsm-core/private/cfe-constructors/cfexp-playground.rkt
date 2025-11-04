@@ -173,7 +173,7 @@
 ;;as theres one less expression to check for AND everything I need would be found in the environment of the
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;CFG->CFE & CFE->CFG Transformations;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-#|
+
 ;;w = a^nb^n
 (define ANBN-cfg (make-unchecked-cfg '(S)
                                      '(a b)
@@ -380,4 +380,3 @@
 
 ;;w = a^nb^n
 (define converted-ANBN (pda->cfe (cfe->pda ANBN)))
-|#
