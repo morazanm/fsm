@@ -2,6 +2,7 @@
 
 (require "../macros/shared/shared-predicates.rkt"
          "../macros/error-formatting.rkt"
+         racket/bool
          "../cfg-struct.rkt"
          "cfexp-structs.rkt"
          racket/contract)
@@ -47,6 +48,14 @@
                      blame
                      symbol
                      (format "~a needs at least 2 cfes, given" message))))))
+
+;; valid-alpha-string?: any --> boolean
+;; purpose: Returns true if the given input is a single alphabet character string,
+;;          and false for every other input.
+(define (valid-alpha-string? x)
+  (define regex-pattern (regexp "^[a-zA-Z0-9$&!*]$"))
+  (not (false? (and (string? x)
+                    (regexp-match regex-pattern x)))))
 
 ;; string -> flat-contract
 ;;Purpose: Creates a flat contract that determines if the input is a symbol
@@ -144,28 +153,28 @@
 (define valid-singleton-input
   (make-flat-contract
    #:name 'is-valid-singleton-input
-   #:first-order (or/c symbol? natural-number/c)
+   #:first-order (or/c string? natural-number/c)
    #:projection (λ (blame)
                   (λ (val)
                     (current-blame-format format-error)
                     (raise-blame-error
                      blame
                      val
-                     "singleton-cfexp expected a symbol [a-Z] or number [0-9] as input, given")))))
+                     "singleton-cfexp expected a string [a-Z] or number [0-9] as input, given")))))
 
 ;;-> flat-contract
 ;;Purpose: Creates a flat contract that determines if the input is a valid alphabet symbol
 (define valid-singleton-exp
   (make-flat-contract
               #:name 'is-valid-singleton-exp?
-              #:first-order valid-alpha?
+              #:first-order valid-alpha-string? 
               #:projection (λ (blame)
                              (λ (val)
                                (current-blame-format format-error)
                                (raise-blame-error
                                 blame
                                 val
-                                "singleton-cfexp expected a symbol [a-Z] or number [0-9] as input, given")))))
+                                "singleton-cfexp expected a string [a-Z] or number [0-9] as input, given")))))
 
 ;;-> flat-contract
 ;;Purpose: Creates a flat contract that determines if the input is a var-cfexp
