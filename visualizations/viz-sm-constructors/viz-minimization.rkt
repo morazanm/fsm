@@ -768,6 +768,8 @@ ismg "finished machine"
       (above (text "Rebuilding the machine" FONT-SIZE BLACK)
              (if (or (empty? merged-state)
                         (< (set-count (merged-state-old-symbols merged-state)) 2))
+                 (displayln remaining-states)
+                 (displayln merged-state)
                     (text (format "States remaining to be used for building the minimized machine: ~a"
                                   (if (or (empty? merged-state) (empty? remaining-states))
                                       "none"
