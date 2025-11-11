@@ -75,7 +75,11 @@
 
 ;; . cfexp -> concat-cfexp/empty-cfexp
 ;;Purpose: A wrapper to create a concat-cfexp unless all the given cfexps are empty-cfexp
+<<<<<<< Updated upstream
 (define (concat-cfexp . cfexps)
+=======
+(define #;define/contract (concat-cfexp . cfexps)
+>>>>>>> Stashed changes
   #;concat-cfexp/c
   (if (all-empty? cfexps)
         (empty-cfexp)
@@ -83,7 +87,11 @@
 
 ;; . cfexp -> union-cfexp/empty-cfexp
 ;;Purpose: A wrapper to create a union-cfexp unless all the given cfexps are empty-cfexp
+<<<<<<< Updated upstream
 (define (union-cfexp . cfexps)
+=======
+(define #;define/contract (union-cfexp . cfexps)
+>>>>>>> Stashed changes
   #;union-cfexp/c
   (if (all-empty? cfexps)
         (empty-cfexp)
@@ -91,8 +99,8 @@
 
 ;;cfexp -> Kleene-cfexp/empty-cfexpmessage
 ;;Purpose: A wrapper to create a Kleene-cfexp
-(define/contract (kleene-cfexp cfe)
-  kleene-cfexp/c
+(define #;define/contract (kleene-cfexp cfe)
+  #;kleene-cfexp/c
   (if (mk-empty-cfexp? cfe)
       cfe
       (mk-kleene-cfexp cfe)))
@@ -380,12 +388,17 @@
 
 ;; cfe [natnum] -> word
 ;; Purpose: Generates a word using 
+<<<<<<< Updated upstream
 (define (gen-cfexp-word cfe . reps)
+=======
+(define #;define/contract (gen-cfexp-word cfe . reps)
+>>>>>>> Stashed changes
   #;gen-cfexp-word/c
   (define MAX-KLEENESTAR-REPS (if (empty? reps) MAX-KLEENESTAR-LIMIT (first reps)))
   (cond [(mk-null-cfexp? cfe) (error "A word cannot be generated using the null-regexp.")]
         [(mk-empty-cfexp? cfe) EMP]
         [(mk-singleton-cfexp? cfe) (list (mk-singleton-cfexp-char cfe))]
+        [(box? cfe) (gen-cfexp-word (unbox cfe) reps)]
         [else (let ([res (gen-cfexp-word-helper cfe MAX-KLEENESTAR-REPS)])
                 (if (string-empty? res)
                     EMP
@@ -400,7 +413,11 @@
         [(mk-var-cfexp? cfe) (substitute-var cfe reps)]
         [(mk-concat-cfexp? cfe) (gen-concat-word cfe gen-cfexp-word-helper reps)]
         [(mk-union-cfexp? cfe) (gen-cfexp-word-helper (pick-cfexp (mk-union-cfexp-locfe cfe)) reps)]
+<<<<<<< Updated upstream
         [(box? cfe) #;(displayln cfe) (gen-cfexp-word-helper (unbox cfe) reps)]
+=======
+        [(box? cfe) (gen-cfexp-word-helper (unbox cfe) reps)]
+>>>>>>> Stashed changes
         [else (gen-cfe-kleene-word cfe reps gen-cfexp-word-helper)]))
 
 ;;context-free grammar -> cfe

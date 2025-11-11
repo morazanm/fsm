@@ -117,11 +117,47 @@
 ;;B -> 'b
 ;;C -> 'c
 
+(define AiBjCk3
+  (let ([EMPTY (empty-cfexp)]
+        [A (singleton-cfexp "a")]
+        [B (singleton-cfexp "b")]
+        [C (singleton-cfexp "c")]
+        [AEB (box (void))] ;; AEB = A^iB^j, i=j
+        [CF (box (void))]
+        [BWC (box (void))] ;;BWC = B^jC^k, j=k
+        [AZ (box (void))])
+    (begin
+      (set-box! AEB (union-cfexp EMPTY (concat-cfexp A AEB B)))
+      (set-box! CF (union-cfexp (concat-cfexp C CF) EMPTY))
+      (set-box! BWC (union-cfexp (concat-cfexp B BWC C) EMPTY))
+      (set-box! AZ (union-cfexp (concat-cfexp A AZ) EMPTY))      
+      (union-cfexp (concat-cfexp AEB CF) (concat-cfexp AZ BWC)))))
+
+;;w = a^nc^kb^n
+(define AnCkBn
+  (let ([EMPTY (empty-cfexp)]
+        [A (singleton-cfexp "a")]
+        [B (singleton-cfexp "b")]
+        [C (singleton-cfexp "c")]
+        [ASB (box (void))]
+        [Ck (box (void))])
+    (begin
+      (set-box! ASB (union-cfexp (concat-cfexp A ASB B) Ck))
+      (set-box! Ck (union-cfexp (concat-cfexp C Ck) EMPTY))
+      ASB)))
+
+;;w = a^nb^n
+(define ANBN-1
+  (let [(ASB (box (void)))]
+    (begin
+      (set-box! ASB (union-cfexp EMPTY (concat-cfexp A ASB B)))
+      ASB)))
+
 (define AiBjCk
   (construct-cfe ([A (singleton "a")]
                   [B (singleton "b")]
                   [C (singleton "c")]
-                  [AEB (concat A E B)] ;; AEB = A^iB^j, i=j
+                  [AEB #;(union EMPTY #(concat-cfexp A AEB B)) (concat A E B)] ;; AEB = A^iB^j, i=j
                   [CF (concat C F)] ;;c^k
                   [AEBUEMP (union AEB EMPTY)] ;;AEB U EMP
                   [CFUEMP (union CF EMPTY)] ;;CF U EMP
