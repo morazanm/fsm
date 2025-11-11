@@ -7,14 +7,15 @@
          "cfexp-contracts.rkt"
          "cfexp-structs.rkt"
          "cfexp-helpers.rkt"
-         ;"construct-cfe-macro.rkt"
+         #;"construct-cfe-macro.rkt"
          racket/contract
          racket/vector
          racket/list
          racket/string
          racket/set
          (for-syntax racket/base
-                     syntax/parse))
+                     syntax/parse
+                     racket/syntax))
 
 (provide null-cfexp
          empty-cfexp
@@ -26,16 +27,16 @@
          gen-cfexp-word
          var-cfexp 
          cfg->cfe
-         cfe->cfg
+         #;cfe->cfg
          pda->cfe
-         cfe->pda
+         #;cfe->pda
          printable-cfexp
-         construct-cfe
+         #;construct-cfe
          )
 
 (define MAX-KLEENESTAR-LIMIT 50)
 
-(define EMPTY-CHANCE .01)
+(define EMPTY-CHANCE .25)
 
 ;;a context-free expression is either:
 ;; 1. null (base case)
@@ -74,16 +75,16 @@
 
 ;; . cfexp -> concat-cfexp/empty-cfexp
 ;;Purpose: A wrapper to create a concat-cfexp unless all the given cfexps are empty-cfexp
-(define/contract (concat-cfexp . cfexps)
-  concat-cfexp/c
+(define (concat-cfexp . cfexps)
+  #;concat-cfexp/c
   (if (all-empty? cfexps)
         (empty-cfexp)
         (mk-concat-cfexp (list->vector cfexps))))
 
 ;; . cfexp -> union-cfexp/empty-cfexp
 ;;Purpose: A wrapper to create a union-cfexp unless all the given cfexps are empty-cfexp
-(define/contract (union-cfexp . cfexps)
-  union-cfexp/c
+(define (union-cfexp . cfexps)
+  #;union-cfexp/c
   (if (all-empty? cfexps)
         (empty-cfexp)
         (mk-union-cfexp (list->vector cfexps))))
@@ -121,8 +122,12 @@
       )))
 
 
-(define-for-syntax circular-binding-message "Bad circular reference with binding identifier")
-(define-syntax (construct-cfe stx)
+#;(define-for-syntax circular-binding-message "Bad circular reference with binding identifier")
+
+#;(define-syntax (construct-cfe stx)
+  (define-syntax-class concat-expr-internal
+     #:attributes ((vals 1))
+    (pattern ((~literal concat) vals:expr ...)))
   (define-syntax-class concat-expr
     #:attributes (id (vals 1))
     (pattern (id:id ((~literal concat) vals:expr ...))))
@@ -135,9 +140,25 @@
     #:attributes (id binding)
     (pattern (id:id ((~literal var) binding:expr))))
 
-  (define-syntax-class union-expr
+  #;(define-syntax-class union-expr
     #:attributes (id (vals 1))
     (pattern (id:id ((~literal union) vals:expr ...))))
+
+  (define-syntax-class union-expr
+    #:attributes (id (empty-expr 1)
+                     (var-expr 1)
+                     (singleton-expr 1)
+                     (concat-expr 1)
+                     (union-expr 1)
+                     (null-expr 1)
+                     (iden 1))
+    (pattern (id:id ((~literal union) (~or* empty-expr:empty-expr
+                                            var-expr:var-expr
+                                            singleton-expr:singleton-expr
+                                            concat-expr:concat-expr-internal
+                                            union-expr:union-expr
+                                            null-expr:null-expr
+                                            iden:id) ...))))
 
   (define-syntax-class empty-expr
     #:attributes (id)
@@ -157,11 +178,19 @@
         res-cfe-id:id)
      
      #:with var-cfe-lst #`(list (~? (syntax->datum #'var-expr.id) #f) ...)
+     #:with union-cfe-lst (syntax-e #'((~? union-expr.id) ...))
+     (define var-cfexp-id-stx (generate-temporary))
      #`(let ()
-         (define symb-lookup
-           (for/hash ([cfe-id (in-list var-cfe-lst)]
+         (define symb-lookup (make-hasheq)
+           #;(for/hash ([cfe-id (in-list var-cfe-lst)]
                       #:when cfe-id)
              (values cfe-id (gensym 'A-))))
+         (for ([cfe-id (in-list var-cfe-lst)]
+                      #:when cfe-id)
+             (hash-set! symb-lookup cfe-id (gensym 'A-)))
+         (define vars-set (mutable-set))
+         #;(for ([a-var-expr (in-list (list (~? var-expr.id) ...))])
+           (set-add! vars-set a-var-expr))
          ;; Empty cfes
          (~? (define empty-expr.id (lambda ()
                                      (set! empty-expr.id (empty-cfexp))
@@ -185,7 +214,7 @@
                                              (singleton-cfexp #,val-stx)))
                                    #,id-stx)))
          ;; Var cfes
-         #,@(for/list ([id-stx (in-list (syntax-e #'((~? var-expr.id) ...)))]
+         #;#,@(for/list ([id-stx (in-list (syntax-e #'((~? var-expr.id) ...)))]
                        [val-stx (in-list (syntax-e #'((~? var-expr.binding) ...)))]
                        [stx (in-list (syntax-e #'((~? var-expr) ...)))])
               (when (and (identifier? val-stx)
@@ -195,23 +224,6 @@
                                    (set! #,id-stx
                                          #,(quasisyntax/loc stx
                                              (var-cfexp (hash-ref symb-lookup '#,(syntax->datum id-stx)))))
-                                   #,id-stx)))
-         ;; Union cfes
-         #,@(for/list ([id-stx (in-list (syntax-e #'((~? union-expr.id) ...)))]
-                       [vals-stx (in-list (syntax-e #'((~? (union-expr.vals ...)) ...)))]
-                       [stx (in-list (syntax-e #'((~? union-expr) ...)))])
-              (define vals-stx-lst (syntax->list vals-stx))
-              (for ([val-stx (in-list vals-stx-lst)])
-                (when (and (identifier? val-stx)
-                         (free-identifier=? id-stx val-stx))
-                (raise-syntax-error 'union-cfexp circular-binding-message stx val-stx '() "")))
-              #`(define #,id-stx (lambda ()
-                                   #,@(for/list ([vals (in-list vals-stx-lst)])
-                                        #`(when (procedure? #,vals)
-                                            (#,vals)))
-                                   (set! #,id-stx
-                                         #,(quasisyntax/loc stx
-                                             (union-cfexp #,@vals-stx-lst)))
                                    #,id-stx)))
          ;; Concat cfes
          #,@(for/list ([id-stx (in-list (syntax-e #'((~? concat-expr.id) ...)))]
@@ -230,9 +242,68 @@
                                          #,(quasisyntax/loc stx
                                              (concat-cfexp #,@vals-stx-lst)))
                                    #,id-stx)))
-         
+         ;; Union cfes
+         #,@(for/list ([id-stx (in-list (syntax-e #'((~? union-expr.id) ...)))]
+                       [vals-stx (in-list (syntax-e #'((~? (union-expr.empty-expr ...
+                                                            union-expr.singleton-expr ...
+                                                            union-expr.concat-expr ...
+                                                            union-expr.union-expr ...
+                                                            union-expr.iden ...)) ...)))]
+                       [stx (in-list (syntax-e #'((~? union-expr) ...)))])
+              (define vals-stx-lst (syntax->list vals-stx))
+              #;(for ([val-stx (in-list vals-stx-lst)])
+                (when (and (identifier? val-stx)
+                         (free-identifier=? id-stx val-stx))
+                (raise-syntax-error 'union-cfexp circular-binding-message stx val-stx '() "")))
+              #;(define var-cfexp-id-stx (generate-temporary))
+              #;(define union-cfexp-new-id-stx (generate-temporary))
+             #; (define id-stx (make-rename-transformer var-cfexp-id-stx))
+              #`(begin
+                  #;(hash-set! symb-lookup '#,(syntax->datum var-cfexp-id-stx) (gensym 'A-))
+                  #;(set-add! vars-set (list var-cfexp-id-stx union-cfexp-new-id-stx))
+                  #;(define #,var-cfexp-id-stx
+                    (lambda ()
+                      (set! #,var-cfexp-id-stx
+                            #,(quasisyntax/loc stx
+                                (var-cfexp (hash-ref symb-lookup '#,(syntax->datum var-cfexp-id-stx)))))
+                      #,var-cfexp-id-stx)
+                    #;#,(quasisyntax/loc vals-stx
+                          (var-cfexp (hash-ref symb-lookup '#,(syntax->datum var-cfexp-id-stx)))))
+                  
+                  (define #,id-stx
+                    (box (void))
+                    #;(lambda ()
+                      #,@(for/list ([vals (in-list vals-stx-lst)])
+                           #`(when (procedure? #,vals)
+                               (#,vals)))
+                      (set! #,id-stx
+                            #,(quasisyntax/loc stx
+                                (union-cfexp #,@vals-stx-lst)))
+                      #,id-stx))
+                  ))
+         (when (procedure? singleton-expr.id)
+           (singleton-expr.id))
+         ...
+         (when (procedure? concat-expr.id)
+           (concat-expr.id))
+         ...
+         (when (procedure? null-expr.id)
+           (null-expr.id))
+         ...
+         (when (procedure? empty-expr.id)
+           (empty-expr.id))
+         ...
+         #,@(for/list ([id-stx (in-list (syntax-e #'((~? union-expr.id) ...)))]
+                       [vals-stx (in-list (syntax-e #'((~? (union-expr.empty-expr ...
+                                                            union-expr.singleton-expr ...
+                                                            union-expr.concat-expr ...
+                                                            union-expr.union-expr ...
+                                                            union-expr.iden ...)) ...)))]
+                       [stx (in-list (syntax-e #'((~? union-expr) ...)))])
+              #'(set-box! #,id-stx (union-cfexp #,@vals-stx-lst))
+           )
          ;; Update bindings for var cfes
-         #,@(for/list ([id-stx (in-list (syntax-e #'((~? var-expr.id) ...)))]
+         #;#,@(for/list ([id-stx (in-list (syntax-e #'((~? var-expr.id) ...)))]
                        [binding-stx (in-list (syntax-e #'((~? var-expr.binding) ...)))]
                        [stx (in-list (syntax-e #'((~? var-expr) ...)))])
               #`(begin
@@ -244,6 +315,7 @@
                       (update-binding! #,id-stx
                                        (hash-ref symb-lookup '#,(syntax->datum id-stx))
                                        #,binding-stx))))
+         
          (if (procedure? res-cfe-id)
              (res-cfe-id)
              res-cfe-id))]))
@@ -309,8 +381,8 @@
 
 ;; cfe [natnum] -> word
 ;; Purpose: Generates a word using 
-(define/contract (gen-cfexp-word cfe . reps)
-  gen-cfexp-word/c
+(define (gen-cfexp-word cfe . reps)
+  #;gen-cfexp-word/c
   (define MAX-KLEENESTAR-REPS (if (empty? reps) MAX-KLEENESTAR-LIMIT (first reps)))
   (cond [(mk-null-cfexp? cfe) (error "A word cannot be generated using the null-regexp.")]
         [(mk-empty-cfexp? cfe) EMP]
@@ -329,6 +401,7 @@
         [(mk-var-cfexp? cfe) (substitute-var cfe reps)]
         [(mk-concat-cfexp? cfe) (gen-concat-word cfe gen-cfexp-word-helper reps)]
         [(mk-union-cfexp? cfe) (gen-cfexp-word-helper (pick-cfexp (mk-union-cfexp-locfe cfe)) reps)]
+        [(box? cfe) #;(displayln cfe) (gen-cfexp-word-helper (unbox cfe) reps)]
         [else (gen-cfe-kleene-word cfe reps gen-cfexp-word-helper)]))
 
 ;;context-free grammar -> cfe
@@ -423,7 +496,7 @@
 
 ;;cfe -> cfg
 ;;Purpose: Converts the given cfe into its corresponding cfg
-(define/contract (cfe->cfg cfe)
+#;(define/contract (cfe->cfg cfe)
   cfe->cfg/c
   ;;vars    | the accumulated variables found from traversing the given cfe  | (listof var-cfexp)
   ;;singles | the accumulated singletons found from traversing the given cfe | (listof singleton-cfexp)
@@ -717,6 +790,6 @@
 
 ;;cfe -> pda
 ;;Purpose: Converts the given cfe into a pda
-(define/contract (cfe->pda cfe)
+#;(define/contract (cfe->pda cfe)
   cfe->pda/c
   (cfg->pda (cfe->cfg cfe)))
