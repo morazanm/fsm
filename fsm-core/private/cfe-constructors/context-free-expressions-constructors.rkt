@@ -323,8 +323,7 @@
 
 ;;singleton-cfe -> word
 ;;Purpose: Extracts the singleton 
-(define (convert-singleton singleton-cfexp)
- (symbol->string (mk-singleton-cfexp-char singleton-cfexp)))
+(define (convert-singleton singleton-cfexp) (mk-singleton-cfexp-char singleton-cfexp))
 
 
 (define (contains-empty? Vocfe)
@@ -449,7 +448,8 @@
                                                                 (symbol->fsmlos (third rule))))
                                                          (cfg-get-rules G))))]
          [start (cfg-get-start G)]
-         [singletons (make-hash-table (cfg-get-alphabet G) singleton-cfexp)]
+         [singletons (make-hash-table (cfg-get-alphabet G) (λ (sig)
+                                                             (singleton-cfexp (symbol->string sig))))]
          [variables (make-hash-table nts var-cfexp)]
          [rules->cfexp (make-cfexps-frm-rules rules singletons variables)]
          [updated-bindings (hash-map/copy rules->cfexp (λ (key value)
@@ -483,7 +483,7 @@
   (define EMPTY-REGEXP-STRING (symbol->string EMP))
   (cond [(mk-null-cfexp? cfe) NULL-REGEXP-STRING]
         [(mk-empty-cfexp? cfe) EMPTY-REGEXP-STRING]
-        [(mk-singleton-cfexp? cfe) (symbol->string (mk-singleton-cfexp-char cfe))]
+        [(mk-singleton-cfexp? cfe) (mk-singleton-cfexp-char cfe)]
         [(mk-var-cfexp? cfe) (printable-var cfe (if (set-empty? seen)
                                                     (set)
                                                     seen))]
@@ -588,7 +588,7 @@
                                                                           (string-append
                                                                            (symbol->string
                                                                             (if (mk-singleton-cfexp? cfe)
-                                                                                (mk-singleton-cfexp-char cfe)
+                                                                                (string->symbol (mk-singleton-cfexp-char cfe))
                                                                                 (hash-ref new-nts (mk-var-cfexp-cfe cfe))))
                                                                            acc))
                                                                         ""
@@ -618,7 +618,8 @@
                                      (gen-nt (append (hash-values acc) var-symbols))))
                          (hash)
                          var-symbols)]
-         [singletons (map mk-singleton-cfexp-char (extraction-results-singles extracted-components))]
+         [singletons (map (compose1 string->symbol mk-singleton-cfexp-char)
+                          (extraction-results-singles extracted-components))]
          [alphabet (remove-duplicates singletons)]
          [rules (variables->rules variables new-nts '())]
          [nts (hash-values new-nts)]

@@ -30,18 +30,18 @@
   #;(empty-cfexp))
 
 
-(define A (construct-cfe [(A (singleton 'a))]
+(define A (construct-cfe [(A (singleton "a"))]
                  A)
   #;(singleton-cfexp 'a))
 
 #;(construct-cfe [(A (singleton 'a))]
                  A)
 
-(define B (construct-cfe [(B (singleton 'b))]
+(define B (construct-cfe [(B (singleton "b"))]
                  B)
   #;(singleton-cfexp 'b))
 
-(define C (construct-cfe [(C (singleton 'c))]
+(define C (construct-cfe [(C (singleton "c"))]
                  C)
   #;(singleton-cfexp 'c))
 
@@ -118,9 +118,9 @@
 ;;C -> 'c
 
 (define AiBjCk
-  (construct-cfe ([A (singleton 'a)]
-                  [B (singleton 'b)]
-                  [C (singleton 'c)]
+  (construct-cfe ([A (singleton "a")]
+                  [B (singleton "b")]
+                  [C (singleton "c")]
                   [AEB (concat A E B)] ;; AEB = A^iB^j, i=j
                   [CF (concat C F)] ;;c^k
                   [AEBUEMP (union AEB EMPTY)] ;;AEB U EMP
@@ -140,9 +140,9 @@
                  AiBjCk))
 
 (define AiBjCk2
-  (construct-cfe ([A (singleton 'a)]
-                  [B (singleton 'b)]
-                  [C (singleton 'c)]
+  (construct-cfe ([A (singleton "a")]
+                  [B (singleton "b")]
+                  [C (singleton "c")]
                   [AEB (concat A E B)] ;; AEB = A^iB^j, i=j
                   [CF (concat C F)] ;;c^k
                   [AEBUEMP (union AEB EMPTY)] ;;AEB U EMP
