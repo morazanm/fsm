@@ -13,7 +13,7 @@
                       syntax/parse/experimental/template
                       racket/contract/combinator
                       )
-          ;"construct-cfe-macro.rkt"
+          "construct-cfe-macro.rkt"
           )
 
 (provide (all-defined-out))
@@ -24,40 +24,39 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;CFEXP;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define EMPTY (construct-cfe [(EMPTY (empty))]
+(define EMPTY (make-cfe [(EMPTY (empty))]
                  EMPTY
                  #;(empty))
   #;(empty-cfexp))
 
 
-(define A (construct-cfe [(A (singleton "a"))]
+(define A (make-cfe [(A (singleton "a"))]
                  A)
   #;(singleton-cfexp 'a))
 
-#;(construct-cfe [(A (singleton 'a))]
+#;(make-cfe [(A (singleton 'a))]
                  A)
 
-(define B (construct-cfe [(B (singleton "b"))]
+(define B (make-cfe [(B (singleton "b"))]
                  B)
   #;(singleton-cfexp 'b))
 
-(define C (construct-cfe [(C (singleton "c"))]
+(define C (make-cfe [(C (singleton "c"))]
                  C)
   #;(singleton-cfexp 'c))
 
 ;; w = ww^r
 (define WWR
-  (construct-cfe [(WWR (var EUAHAUBHB))
-                  (AHA (concat A WWR A))
-                  (BHB (concat B WWR B))
-                  (EUAHAUBHB (union EMPTY AHA BHB))]
-                 WWR)
+  (make-cfe [(WWr (union EMPTY
+                         (concat A WWr A)
+                         (concat B WWr B)))]
+            WWr)
   #;(let* [(WWR (var-cfexp 'S))
-         (AHA (concat-cfexp A WWR A))
-         (BHB (concat-cfexp B WWR B))]
-    (begin
-      (update-binding! WWR 'S (union-cfexp EMPTY AHA BHB))
-      WWR)))
+           (AHA (concat-cfexp A WWR A))
+           (BHB (concat-cfexp B WWR B))]
+      (begin
+        (update-binding! WWR 'S (union-cfexp EMPTY AHA BHB))
+        WWR)))
 
 ;;w = a^nb^n
 (define ANBN
@@ -88,10 +87,12 @@
       AiBj)))
 
 (define AiBj-new
-  (construct-cfe [(AiBj (var EUAIBUAIBB))
-                  (EUAIBUAIBB (union EMPTY AIB AIBB))
-                  (AIB (concat A AiBj B))
-                  (AIBB (concat A AiBj B B))]
+  (make-cfe ([AiBj (union EMPTY
+                          (concat A AiBj B)
+                          (concat A AiBj B B))
+                  #;(EUAIBUAIBB (union EMPTY AIB AIBB))
+                  #;(AIB (concat A AiBj B))
+                  #;(AIBB (concat A AiBj B B))])
                  AiBj))
 
 ;AiBj-new
@@ -153,30 +154,55 @@
       (set-box! ASB (union-cfexp EMPTY (concat-cfexp A ASB B)))
       ASB)))
 
-(define AiBjCk
-  (construct-cfe ([A (singleton "a")]
-                  [B (singleton "b")]
-                  [C (singleton "c")]
-                  [AEB #;(union EMPTY #(concat-cfexp A AEB B)) (concat A E B)] ;; AEB = A^iB^j, i=j
-                  [CF (concat C F)] ;;c^k
-                  [AEBUEMP (union AEB EMPTY)] ;;AEB U EMP
-                  [CFUEMP (union CF EMPTY)] ;;CF U EMP
-                  [E (var AEBUEMP)]
-                  [F (var CFUEMP)]
-                  [EF (concat E F)] ;;a^ib^jc^k, i=j
-                  [BWC (concat B W C)] ;;BWC = B^jC^k, j=k
-                  [AZ (concat A Z)] ;;a^i
-                  [BWCUEMP (union BWC EMPTY)]
-                  [AZUEMP (union AZ EMPTY)]
-                  [W (var BWCUEMP)]
-                  [Z (var AZUEMP)]
-                  [ZW (concat Z W)] ;;a^ib^jc^k, j=k
-                  [EFUWZ (union EF ZW)]
-                  [AiBjCk (var EFUWZ)])
-                 AiBjCk))
+(define ANBN-2
+  (make-cfe ([ASB (union EMPTY (concat A ASB B))])
+            ASB)
+  #;(let [(ASB (box (void)))]
+    (begin
+      (set-box! ASB (union-cfexp EMPTY (concat-cfexp A ASB B)))
+      ASB)))
+
+#;(define AiBjCk
+  (make-cfe ([A (singleton "a")]
+             [B (singleton "b")]
+             [C (singleton "c")]
+             [AEB (union EMPTY (concat A AEB B))]
+             [CF (union (concat C CF) EMPTY)]
+             [BWC (union (concat B BWC C) EMPTY)]
+             [AZ (union (concat A AZ) EMPTY)])
+            (union (concat AEB CF) (concat AZ BWC)))
+  #;(make-cfe ([A (singleton "a")]
+               [B (singleton "b")]
+               [C (singleton "c")]
+               [AEB #;(union EMPTY #(concat-cfexp A AEB B)) (concat A E B)] ;; AEB = A^iB^j, i=j
+               [CF (concat C F)] ;;c^k
+               [AEBUEMP (union AEB EMPTY)] ;;AEB U EMP
+               [CFUEMP (union CF EMPTY)] ;;CF U EMP
+               [E (var AEBUEMP)]
+               [F (var CFUEMP)]
+               [EF (concat E F)] ;;a^ib^jc^k, i=j
+               [BWC (concat B W C)] ;;BWC = B^jC^k, j=k
+               [AZ (concat A Z)] ;;a^i
+               [BWCUEMP (union BWC EMPTY)]
+               [AZUEMP (union AZ EMPTY)]
+               [W (var BWCUEMP)]
+               [Z (var AZUEMP)]
+               [ZW (concat Z W)] ;;a^ib^jc^k, j=k
+               [EFUWZ (union EF ZW)]
+               [AiBjCk (var EFUWZ)])
+              AiBjCk))
 
 (define AiBjCk2
-  (construct-cfe ([A (singleton "a")]
+  (make-cfe ([A (singleton "a")]
+             [B (singleton "b")]
+             [C (singleton "c")]
+             [AEB (union EMPTY (concat A AEB B))]
+             [CF (union (concat C CF) EMPTY)]
+             [BWC (union (concat B BWC C) EMPTY)]
+             [AZ (union (concat A AZ) EMPTY)]
+             [AiBjCk (union (concat AEB CF) (concat AZ BWC))])
+            AiBjCk)
+  #;(make-cfe ([A (singleton "a")]
                   [B (singleton "b")]
                   [C (singleton "c")]
                   [AEB (concat A E B)] ;; AEB = A^iB^j, i=j
@@ -196,7 +222,7 @@
                   [AiBjCk (union EF ZW)])
                  AiBjCk))
 
-(define G (cfe->cfg AiBjCk))
+
 (define G2 (cfe->cfg AiBjCk2))
 
 ;;We do NOT need kleene because the variable binding is functionally equivalent.
@@ -217,7 +243,7 @@
                                      'S))
 
 ;;w = a^nb^n
-(define transformed-anbn (cfg->cfe ANBN-cfg))
+;(define transformed-anbn (cfg->cfe ANBN-cfg))
 
 ;;w = a*
 (define thesis-cfg (make-unchecked-cfg '(S T U)
@@ -228,7 +254,7 @@
                                        'S))
 
 ;;w = a*
-(define transformed-thesis (cfg->cfe thesis-cfg))
+;(define transformed-thesis (cfg->cfe thesis-cfg))
 
 
 ;;cfe->cfg
@@ -248,7 +274,10 @@
                                  'X))
 ;;w = (abc)^na^n
 (define thesis-cfe
-  (let* [(X (var-cfexp 'X))
+  (make-cfe ([ABY (union EMPTY (concat A B CXA))]
+             [CXA (concat C ABY A)])
+            ABY)
+  #;(let* [(X (var-cfexp 'X))
          (Y (var-cfexp 'Y))
          (ABY (concat-cfexp A B Y))
          (CXA (concat-cfexp C X A))]
@@ -279,7 +308,7 @@
 ;;CFE->CFG
 
 ;;w = (abc)^na^n
-(define thesis-cfg-converted (cfg->cfe thesis-cfg1))
+;(define thesis-cfg-converted (cfg->cfe thesis-cfg1))
 
 ;;w = (abc)^na^n
 (define thesis-cfe-converted (cfe->cfg thesis-cfe))
@@ -396,7 +425,7 @@
                                 ((F c (a)) (F ,EMP)))))
 
 ;;w = a*
-
+#|
 (define A*-cfe (pda->cfe A*))
 
 (define Gina-aˆnbˆn-cfe (pda->cfe Gina-aˆnbˆn))
@@ -416,3 +445,4 @@
 
 ;;w = a^nb^n
 (define converted-ANBN (pda->cfe (cfe->pda ANBN)))
+|#
