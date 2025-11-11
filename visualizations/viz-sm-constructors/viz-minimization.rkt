@@ -765,13 +765,13 @@ ismg "finished machine"
     (let ([merged-state (phase-5-attributes-merged-states phase-attribute)]
           [remaining-states (phase-5-attributes-remaining-states phase-attribute)])
       ;(displayln merged-state)
+      ;(displayln remaining-states)
+       ;          (displayln merged-state)
       (above (text "Rebuilding the machine" FONT-SIZE BLACK)
              (if (or (empty? merged-state)
-                        (< (set-count (merged-state-old-symbols merged-state)) 2))
-                 (displayln remaining-states)
-                 (displayln merged-state)
+                        (< (set-count (merged-state-old-symbols merged-state)) 2))                 
                     (text (format "States remaining to be used for building the minimized machine: ~a"
-                                  (if (or (empty? merged-state) (empty? remaining-states))
+                                  (if (empty? remaining-states)
                                       "none"
                                       (convert-to-string symbol->string remaining-states)))
                           FONT-SIZE BLACK)
@@ -1061,7 +1061,20 @@ ismg "finished machine"
                                              (ormap (λ (state) (set-member? (merged-state-old-symbols ms) state)) (dfa-states rebuild-M))))
                                        loMS)]
                  [found-merged-state? (not (empty? merged-state))]
-                 [remaining-states (if found-merged-state?
+                 [remaining-states ;(begin
+                                    ; (displayln (first loRM))
+                                     ;(displayln states)
+                                     #;(displayln (filter-not (λ (st)
+                                                   (or (set-member? (if found-merged-state? (merged-state-old-symbols (first merged-state))
+                                                                        merged-state) st)
+                                                       (member st (dfa-states rebuild-M))))
+                                                 states))
+                                     (filter-not (λ (st)
+                                                   (or (set-member? (if found-merged-state? (merged-state-old-symbols (first merged-state))
+                                                                        merged-state) st)
+                                                       (member st (dfa-states rebuild-M))))
+                                                 states)
+                                   #;(if found-merged-state?
                                        (filter-not (λ (state)
                                                  (set-member? (merged-state-old-symbols (first merged-state)) state))
                                                  states)
