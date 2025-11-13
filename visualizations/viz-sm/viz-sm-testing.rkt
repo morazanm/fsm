@@ -215,6 +215,29 @@
              '(C E)
              `((S ,EMP A) (S ,EMP D) (A a B) (A ,EMP C)
                           (B b A) (C b C) (D a E) (E b E))))
+
+
+;; Let Σ = {a b}
+;; L = {w | w does contains aabab 
+
+;; State Documentation
+;; S: none of the pattern detected, starting state
+;; A: a detected and no other prefix detected 
+;; B: aa detected and no other prefix detected 
+;; C: aab detected and no other prefix detected 
+;; D: aaba detected and no other prefix detected 
+;; E: pattern detected, final state
+(define CONTAINS-aabab (make-dfa '(S A B C D E)
+                                 '(a b)
+                                 'S
+                                 '(E)
+                                 `((S a A) (S b S) (A a B) (A b S)
+                                           (B a B) (B b C) (C a D) (C b S)
+                                           (D a A) (D b E) (E a E) (E b E))
+                                 'no-dead))
+
+
+
 ;;L = 0 U 1(0 U 1)*
 (define PROP-BI (make-dfa '(S M N)
                           '(0 1)
@@ -488,6 +511,7 @@
   (let ([num-g (length (filter (λ (w) (equal? w 'g)) a-word))]
         [num-c (length (filter (λ (w) (equal? w 'c)) a-word))])
     (= num-g num-c)))
+
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
