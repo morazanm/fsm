@@ -7,7 +7,7 @@
          "cfexp-contracts.rkt"
          "cfexp-structs.rkt"
          "cfexp-helpers.rkt"
-         #;"construct-cfe-macro.rkt"
+         ;"construct-cfe-macro.rkt"
          racket/contract
          racket/vector
          racket/list
@@ -27,9 +27,9 @@
          gen-cfexp-word
          var-cfexp 
          cfg->cfe
-         #;cfe->cfg
+         cfe->cfg
          pda->cfe
-         #;cfe->pda
+         cfe->pda
          printable-cfexp
          #;construct-cfe
          )
@@ -75,7 +75,7 @@
 
 ;; . cfexp -> concat-cfexp/empty-cfexp
 ;;Purpose: A wrapper to create a concat-cfexp unless all the given cfexps are empty-cfexp
-(define (concat-cfexp . cfexps)
+(define #;define/contract (concat-cfexp . cfexps)
   #;concat-cfexp/c
   (if (all-empty? cfexps)
         (empty-cfexp)
@@ -83,7 +83,7 @@
 
 ;; . cfexp -> union-cfexp/empty-cfexp
 ;;Purpose: A wrapper to create a union-cfexp unless all the given cfexps are empty-cfexp
-(define (union-cfexp . cfexps)
+(define #;define/contract (union-cfexp . cfexps)
   #;union-cfexp/c
   (if (all-empty? cfexps)
         (empty-cfexp)
@@ -91,8 +91,8 @@
 
 ;;cfexp -> Kleene-cfexp/empty-cfexpmessage
 ;;Purpose: A wrapper to create a Kleene-cfexp
-(define/contract (kleene-cfexp cfe)
-  kleene-cfexp/c
+(define #;define/contract (kleene-cfexp cfe)
+  #;kleene-cfexp/c
   (if (mk-empty-cfexp? cfe)
       cfe
       (mk-kleene-cfexp cfe)))
@@ -380,12 +380,14 @@
 
 ;; cfe [natnum] -> word
 ;; Purpose: Generates a word using 
-(define (gen-cfexp-word cfe . reps)
+
+(define #;define/contract (gen-cfexp-word cfe . reps)
   #;gen-cfexp-word/c
   (define MAX-KLEENESTAR-REPS (if (empty? reps) MAX-KLEENESTAR-LIMIT (first reps)))
   (cond [(mk-null-cfexp? cfe) (error "A word cannot be generated using the null-regexp.")]
         [(mk-empty-cfexp? cfe) EMP]
         [(mk-singleton-cfexp? cfe) (list (mk-singleton-cfexp-char cfe))]
+        [(box? cfe) (gen-cfexp-word (unbox cfe) reps)]
         [else (let ([res (gen-cfexp-word-helper cfe MAX-KLEENESTAR-REPS)])
                 (if (string-empty? res)
                     EMP
@@ -400,13 +402,13 @@
         [(mk-var-cfexp? cfe) (substitute-var cfe reps)]
         [(mk-concat-cfexp? cfe) (gen-concat-word cfe gen-cfexp-word-helper reps)]
         [(mk-union-cfexp? cfe) (gen-cfexp-word-helper (pick-cfexp (mk-union-cfexp-locfe cfe)) reps)]
-        [(box? cfe) #;(displayln cfe) (gen-cfexp-word-helper (unbox cfe) reps)]
+        [(box? cfe) (gen-cfexp-word-helper (unbox cfe) reps)]
         [else (gen-cfe-kleene-word cfe reps gen-cfexp-word-helper)]))
 
 ;;context-free grammar -> cfe
 ;;Purpose: Converts the given cfg its equivalent cfe
-(define/contract (cfg->cfe G)
- cfg->cfe/c
+(define #;define/contract (cfg->cfe G)
+ #;cfg->cfe/c
   ;;(listof X) (X -> Y) -> (hash X . Y)
   ;;Purpose: Creates a hash table using the given (listof x) and function where x is a key and (f x) is the value
   (define (make-hash-table lox f)
@@ -496,8 +498,8 @@
 
 ;;cfe -> cfg
 ;;Purpose: Converts the given cfe into its corresponding cfg
-#;(define/contract (cfe->cfg cfe)
-  cfe->cfg/c
+(define #;define/contract (cfe->cfg cfe)
+  #;cfe->cfg/c
   ;;vars    | the accumulated variables found from traversing the given cfe  | (listof var-cfexp)
   ;;singles | the accumulated singletons found from traversing the given cfe | (listof singleton-cfexp)
   (struct extraction-results (vars singles) #:transparent)
@@ -519,10 +521,19 @@
     (let ([x (if (list? x) x (list x))])
       (append qox x)))
 
-  (define (update-cfe cfe)
-    (if (mk-var-cfexp? cfe)
+  #;(define (update-cfe cfe)
+    (if (box? cfe)
         cfe
-        (construct-cfe ([S (var cfe)]) S)))
+        (let ([S (box (void))])
+          (begin
+            (set-box! S cfe)
+            S))))
+
+
+  (define (gen-nts num)
+    (for/fold ([nts '()])
+              ([x (in-range num)])
+      (cons (gen-nt nts) nts)))
 
   ;;cfe -> extraction-results
   ;;Purpose: Extracts all var-cfexp and singleton-cfexp from the given cfe
@@ -538,7 +549,7 @@
   ;;cfe extraction-results -> extraction-results
   ;;Purpose: Updates the given extraction-results to add the given cfe if it is a singleton or variable
   (define (update-extraction-results cfe extract-res)
-    (cond [(mk-var-cfexp? cfe) (struct-copy extraction-results
+    (cond [(box? cfe) (struct-copy extraction-results
                                             extract-res
                                             [vars (cons cfe (extraction-results-vars extract-res))])]
           [(mk-singleton-cfexp? cfe) (struct-copy extraction-results
@@ -565,10 +576,7 @@
     (cond [(mk-concat-cfexp? cfe) (vector->list (mk-concat-cfexp-locfe cfe))]
           [(mk-union-cfexp? cfe) (vector->list (mk-union-cfexp-locfe cfe))]
           [(mk-kleene-cfexp? cfe) (list (mk-kleene-cfexp-cfe cfe))]
-          [(mk-var-cfexp? cfe) (foldl (λ (env acc)
-                                        (enqueue acc env))
-                                      e-queue
-                                      (map vector->list (hash-values (mk-var-cfexp-env cfe))))]
+          [(box? cfe) (list (unbox cfe))]
           [else '()]))
 
   ;;(listof var-cfexp) (hash old-nt . new-nt) (listof rule) -> (listof rule)
@@ -583,13 +591,12 @@
         ;;if union found in concat split union and make concat using every branch
         (let ([RHS (cond [(mk-empty-cfexp? cfe) EMP]
                          [(mk-singleton-cfexp? cfe) (mk-singleton-cfexp-char cfe)]
-                         [(mk-var-cfexp? cfe) (hash-ref new-nts (mk-var-cfexp-cfe cfe))]
+                         [(box? cfe) (unbox cfe)]
                          [(mk-concat-cfexp? cfe) (string->symbol (foldr (λ (cfe acc)
                                                                           (string-append
-                                                                           (symbol->string
-                                                                            (if (mk-singleton-cfexp? cfe)
-                                                                                (string->symbol (mk-singleton-cfexp-char cfe))
-                                                                                (hash-ref new-nts (mk-var-cfexp-cfe cfe))))
+                                                                           (if (mk-singleton-cfexp? cfe)
+                                                                               (mk-singleton-cfexp-char cfe)
+                                                                               (symbol->string (hash-ref new-nts cfe)))
                                                                            acc))
                                                                         ""
                                                                         (vector->list (mk-concat-cfexp-locfe cfe))))]
@@ -602,31 +609,28 @@
                 (remake-rules nt (enqueue (dequeue rules-to-convert) (vector->list (mk-union-cfexp-locfe cfe))) finished-rules)
                 (remake-rules nt (dequeue rules-to-convert) (cons (cfe->rule nt cfe) finished-rules))))))
     (foldl (λ (vcfe res)
-             (append (remake-rules (hash-ref new-nts (mk-var-cfexp-cfe vcfe))
-                                   (vector->list (first (hash-values (mk-var-cfexp-env vcfe))))
+             (append (remake-rules (hash-ref new-nts vcfe)
+                                   (list (unbox vcfe))
                                    '())
                      res))
            '()
            lovcfe))
-  (let* ([cfe (update-cfe cfe)]
+  (let* (#;[cfe (update-cfe cfe)]
          [extracted-components (extract-var-and-singles-cfe cfe)]
          [variables (extraction-results-vars extracted-components)]
-         [var-symbols (map mk-var-cfexp-cfe variables)]
-         [new-nts (foldl (λ (var acc)
-                           (hash-set acc
-                                     var
-                                     (gen-nt (append (hash-values acc) var-symbols))))
+         [new-nts (foldl (λ (nt b acc)
+                           (hash-set acc b nt))
                          (hash)
-                         var-symbols)]
-         [singletons (map (compose1 string->symbol mk-singleton-cfexp-char)
-                          (extraction-results-singles extracted-components))]
-         [alphabet (remove-duplicates singletons)]
+                         (gen-nts (length variables))
+                         variables)]
+         [singletons (foldl (λ (single acc)
+                              (set-add acc ((compose1 string->symbol mk-singleton-cfexp-char) single)))
+                            (set)
+                            (extraction-results-singles extracted-components))]
+         [alphabet (set->list singletons)]
          [rules (variables->rules variables new-nts '())]
          [nts (hash-values new-nts)]
-         [starting-nt (hash-ref new-nts (mk-var-cfexp-cfe cfe))
-                      #;(cond [(mk-var-cfexp? cfe) (hash-ref new-nts (mk-var-cfexp-cfe cfe))]
-                            [(= (length nts) 1) (first nts)]
-                            [else (gen-nt nts)])])
+         [starting-nt (hash-ref new-nts cfe)])
     (make-unchecked-cfg nts alphabet rules starting-nt)))
 
 ;; pda -> cfe
@@ -791,6 +795,6 @@
 
 ;;cfe -> pda
 ;;Purpose: Converts the given cfe into a pda
-#;(define/contract (cfe->pda cfe)
+(define/contract (cfe->pda cfe)
   cfe->pda/c
   (cfg->pda (cfe->cfg cfe)))
