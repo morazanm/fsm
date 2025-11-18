@@ -60,17 +60,25 @@
 
 ;;w = a^nb^n
 (define ANBN
-  (let* [(ANBN (var-cfexp 'S))
+  (make-cfe ([ASB (union EMPTY (concat A ASB B))])
+            ASB)
+  #;(let* [(ANBN (var-cfexp 'S))
          (ASB (concat-cfexp A ANBN B))]
     (begin
       (update-binding! ANBN 'S (union-cfexp EMPTY ASB))
       ANBN)))
 
-(define WWRUANBN (union-cfexp WWR ANBN))
+(define WWRUANBN (make-cfe ([WWrUAnBn (union WWR ANBN)])
+                           WWrUAnBn))
+
+(define AUB (make-cfe ([AUB (union A B)])
+                      AUB))
 
 ;;w = a^2ib^i
 (define A2iBi
-  (let* [(A2iBi (var-cfexp 'S))
+  (make-cfe ([A2iBi (union EMPTY (concat A A A2iBi B))])
+            A2iBi)
+            #;(let* [(A2iBi (var-cfexp 'S))
          (EUAAKB (union-cfexp EMPTY (concat-cfexp A A A2iBi B)))]
     (begin
       (update-binding! A2iBi 'S EUAAKB)
@@ -78,7 +86,11 @@
 
 ;;w = A^iB^j | i <= j <= 2i
 (define AiBj
-  (let* [(AiBj (var-cfexp 'A))
+  (make-cfe ([AiBj (union EMPTY
+                          (concat A AiBj B)
+                          (concat A AiBj B B))])
+            AiBj)
+            #;(let* [(AiBj (var-cfexp 'A))
          (AIB (concat-cfexp A AiBj B))
          (AIBB (concat-cfexp A AiBj B B))
          (EUAIBUAIBB (union-cfexp EMPTY AIB AIBB))]
@@ -99,7 +111,9 @@
 
 ;;w = b^na^n
 (define BNAN
-  (let* [(BNAN (var-cfexp 'S))
+  (make-cfe ([BNAN (union EMPTY (concat B BNAN A))])
+            BNAN)
+  #;(let* [(BNAN (var-cfexp 'S))
          (BSA (concat-cfexp B BNAN A))]
     (begin
       (update-binding! BNAN 'S (union-cfexp EMPTY BSA))
@@ -237,6 +251,12 @@
                  AiBjCk))
 
 
+;;L = wcw^r
+(define WcWr (make-cfe ([WcWr (union (concat A WcWr A)
+                                     (concat B WcWr B)
+                                     C)])
+                       WcWr))
+
 (define G2 (cfe->cfg AiBjCk2))
 
 ;;We do NOT need kleene because the variable binding is functionally equivalent.
@@ -257,7 +277,7 @@
                                      'S))
 
 ;;w = a^nb^n
-;(define transformed-anbn (cfg->cfe ANBN-cfg))
+(define transformed-anbn (cfg->cfe ANBN-cfg))
 
 ;;w = a*
 (define thesis-cfg (make-unchecked-cfg '(S T U)
@@ -275,7 +295,9 @@
 
 ;;w = (ab)*c
 (define AB^NC
-  (let* [(AB^NC (var-cfexp 'S))
+  (make-cfe ([ABnC (union (concat A B ABnC) C)])
+            ABnC)
+  #;(let* [(AB^NC (var-cfexp 'S))
          (ABX (concat-cfexp A B AB^NC))]
     (begin
       (update-binding! AB^NC 'S (union-cfexp C ABX))
@@ -288,7 +310,32 @@
                                  'X))
 ;;w = (abc)^na^n
 (define thesis-cfe
-  (make-cfe ([ABY (union EMPTY (concat A B CXA))]
+  #;(let ([ABY (box (void))]
+        [CXA (box (void))])
+    (begin
+      (set-box! ABY (union-cfexp (concat-cfexp A B CXA) EMPTY))
+      (set-box! CXA (concat-cfexp C ABY A))
+      ABY))
+  (make-cfe ([ABY (union (concat A B CXA) EMPTY)]
+             [CXA (concat C ABY A)])
+            ABY)
+  #;(let* [(X (var-cfexp 'X))
+         (Y (var-cfexp 'Y))
+         (ABY (concat-cfexp A B Y))
+         (CXA (concat-cfexp C X A))]
+    (begin
+      (update-binding! X 'X (union-cfexp EMPTY ABY))
+      (update-binding! Y 'Y CXA)
+      X)))
+
+(define thesis-cfe21
+  (let ([ABY (box (void))]
+        [CXA (box (void))])
+    (begin
+      (set-box! ABY (union-cfexp (concat-cfexp A B CXA) EMPTY))
+      (set-box! CXA (concat-cfexp C ABY A))
+      ABY))
+    #;(make-cfe ([ABY (union (concat A B CXA) EMPTY)]
              [CXA (concat C ABY A)])
             ABY)
   #;(let* [(X (var-cfexp 'X))
@@ -325,7 +372,7 @@
 (define thesis-cfg-converted (cfg->cfe thesis-cfg1))
 
 ;;w = (abc)^na^n
-;(define thesis-cfe-converted (cfe->cfg thesis-cfe))
+(define thesis-cfe-converted (cfe->cfg thesis-cfe))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;PDA->CFE & CFE->PDA Transformations;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

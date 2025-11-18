@@ -12,6 +12,7 @@
          racket/vector
          racket/list
          racket/string
+         racket/treelist
          racket/hash
          racket/set
          (for-syntax racket/base
@@ -37,7 +38,7 @@
 
 (define MAX-KLEENESTAR-LIMIT 10)
 
-(define EMPTY-CHANCE .5)
+(define EMPTY-CHANCE .25)
 
 ;;a context-free expression is either:
 ;; 1. null (base case)
@@ -259,25 +260,35 @@
              (hash-set h x (f x)))
            (hash)
            lox))
+
+  ;;A lang-box is either:
+  ;;1. (box (void))
+  ;;2. (box cfe)
   
-  ;;(hash nts . (listof symbol)) (hash symbol . singleton-cfe)) (hash nts . variable-cfe)) -> (hash nts . cfe))
+  ;;SYM is either EMP U (grammar-sigma G) U (grammar-nts G)
+  
+  ;;A CFG-RHS is either:
+  ;;1. (list SYM) 
+  ;;2. non-empty (listof SYM)
+  
+  ;;(hash nts . CFG-RHS) (hash symbol . singleton-cfe)) (hash nts . lang-box) -> (hash nts . cfe))
   ;;Purpose: Converts the RHS of cfg rules into cfes
-  (define (make-cfexps-frm-rules rules singletons variables)
-    ;;symbol -> cfe
+  (define (make-cfexps-frm-rules rules singletons lang-boxes)
+    ;;SYM -> cfe
     ;;Purpose: Matches the given symbol with the corresponding cfe
-    (define (convert-to-expression RHS-of-rule)
-      (cond [(eq? RHS-of-rule EMP) (empty-cfexp)]
-            [(hash-has-key? singletons RHS-of-rule) (hash-ref singletons RHS-of-rule)]
-            [(hash-has-key? variables RHS-of-rule)
-             (let* ([future-var-binding (hash-ref rules RHS-of-rule)]
+    (define (convert-to-expression portion-of-RHS)
+      (cond [(eq? portion-of-RHS EMP) (empty-cfexp)]
+            [(hash-has-key? singletons portion-of-RHS) (hash-ref singletons portion-of-RHS)]
+            [(hash-has-key? lang-boxes portion-of-RHS) (hash-ref lang-boxes portion-of-RHS)
+             #;(let* ([future-var-binding (hash-ref rules RHS-of-rule)]
                     [only-empty? (and (= (length future-var-binding) 1)
                                       (equal? (first future-var-binding) (list EMP)))])
                (if only-empty?
                    (empty-cfexp)
                    (hash-ref variables RHS-of-rule)))]
-            [else (error (format "unreadable RHS: ~a" RHS-of-rule))]))
-    ;;(listof symbol) -> cfe
-    ;;Purpose: Translates the given (listof symbol) into its corresponding cfe
+            [else (error (format "unreadable RHS: ~a" portion-of-RHS))]))
+    ;;CFG-RHS -> cfe
+    ;;Purpose: Translates the given CFG-RHS into its corresponding cfe
     (define (rule->expression RHS-of-rule)
       (if (= (length RHS-of-rule) 1)
           (convert-to-expression (first RHS-of-rule))
@@ -295,12 +306,12 @@
          [start (cfg-get-start G)]
          [singletons (make-hash-table (cfg-get-alphabet G) (λ (sig)
                                                              (singleton-cfexp (symbol->string sig))))]
-         [variables (make-hash-table nts (λ (x) (box (void))))]
-         [rules->cfexp (make-cfexps-frm-rules rules singletons variables)]
+         [lang-boxes (make-hash-table nts (λ (x) (box (void))))]
+         [rules->cfexp (make-cfexps-frm-rules rules singletons lang-boxes)]
          [updated-bindings (hash-map/copy rules->cfexp (λ (key value)
                                                          (begin
-                                                           (set-box! (hash-ref variables key) value)
-                                                           (values key (hash-ref variables key)))))])
+                                                           (set-box! (hash-ref lang-boxes key) value)
+                                                           (values key (hash-ref lang-boxes key)))))])
      (hash-ref updated-bindings start)))
 
 ;;cfe -> cfg
@@ -309,56 +320,59 @@
   #;cfe->cfg/c
   ;;vars    | the accumulated variables found from traversing the given cfe  | (listof var-cfexp)
   ;;singles | the accumulated singletons found from traversing the given cfe | (listof singleton-cfexp)
-  (struct extraction-results (vars singles) #:transparent)
+  (struct extraction-results (lang-boxes singles) #:transparent)
 
-  (define e-queue '())
+  (define qempty? treelist-empty?)
 
-  (define qfirst first)
+  (define E-QUEUE empty-treelist) 
 
-  (define qempty? empty?)
+  ;; (qof X) → X throws error
+  ;; Purpose: Return first X of the given queue
+  (define (qfirst a-qox)
+    (if (qempty? a-qox)
+        (error "qfirst applied to an empty queue")
+        (treelist-first a-qox)))
 
-  ;;(queueof X) -> (queueof X)
-  ;;Purpose: Removes the first element from the queue
-  (define (dequeue qox)
-    (rest qox))
+  ;; (tllistof X) (qof X) → (qof X)
+  ;; Purpose: Add the given list of X to the given queue of X
+  (define (enqueue a-lox a-qox) (treelist-append a-qox a-lox))
 
-  ;;(queueof X) X -> (queueof X)
-  ;;Purpose: Adds the given X to the back of the queue
-  (define (enqueue qox x)
-    (let ([x (if (list? x) x (list x))])
-      (append qox x)))
-
-  #;(define (update-cfe cfe)
-    (if (box? cfe)
-        cfe
-        (let ([S (box (void))])
-          (begin
-            (set-box! S cfe)
-            S))))
-
-
+  ;; (qof X) → (qof X) throws error
+  ;; Purpose: Return the rest of the given queue
+  (define (dequeue a-qox)
+    (if (qempty? a-qox)
+        (error "dequeue applied to an empty queue")
+        (treelist-rest a-qox)))
+  ;;natnum -> (listof nt)
+  ;;Purpose: Generates natnum amount of nts
   (define (gen-nts num)
     (for/fold ([nts '()])
               ([x (in-range num)])
       (cons (gen-nt nts) nts)))
 
+  (define (tl-foldl f acc tl)
+    (if (treelist-empty? tl)
+        acc
+        (tl-foldl f (f (treelist-first tl) acc) (treelist-rest tl))))
+
+  
   ;;cfe -> extraction-results
   ;;Purpose: Extracts all var-cfexp and singleton-cfexp from the given cfe
   (define (extract-var-and-singles-cfe cfe)
-    (let ([init-queue (foldl (λ (env acc)
-                               (enqueue acc env))
-                             e-queue
+    (let ([init-queue (tl-foldl (λ (env acc)
+                               (enqueue acc (treelist env)))
+                             E-QUEUE
                              (extract-cfe-data cfe))])
       (extract-var-and-singles init-queue
                                (update-extraction-results cfe (extraction-results '() '()))
-                               (list cfe))))
+                               (set cfe))))
 
   ;;cfe extraction-results -> extraction-results
   ;;Purpose: Updates the given extraction-results to add the given cfe if it is a singleton or variable
   (define (update-extraction-results cfe extract-res)
     (cond [(box? cfe) (struct-copy extraction-results
                                             extract-res
-                                            [vars (cons cfe (extraction-results-vars extract-res))])]
+                                            [lang-boxes (cons cfe (extraction-results-lang-boxes extract-res))])]
           [(mk-singleton-cfexp? cfe) (struct-copy extraction-results
                                                   extract-res
                                                   [singles (cons cfe (extraction-results-singles extract-res))])]
@@ -372,73 +386,97 @@
         (let* ([cfe (qfirst qocfe)]
                [cfes-to-add (extract-cfe-data cfe)]
                [new-queue (enqueue (dequeue qocfe)
-                                   (filter (λ (cfe) (not (member cfe visited))) cfes-to-add))]
+                                   (treelist-filter (λ (cfe) (not (set-member? visited cfe))) cfes-to-add))]
                [new-acc (update-extraction-results cfe extract-res)]
-               [new-visited (cons cfe visited)])
+               [new-visited (set-add visited cfe)])
           (extract-var-and-singles new-queue new-acc new-visited))))
 
   ;;cfe -> (listof cfe)
   ;;Purpose: Extracts the sub-expressions from the given cfe
   (define (extract-cfe-data cfe)
-    (cond [(mk-concat-cfexp? cfe) (vector->list (mk-concat-cfexp-locfe cfe))]
-          [(mk-union-cfexp? cfe) (vector->list (mk-union-cfexp-locfe cfe))]
-          [(mk-kleene-cfexp? cfe) (list (mk-kleene-cfexp-cfe cfe))]
-          [(box? cfe) (list (unbox cfe))]
-          [else '()]))
+    (cond [(mk-concat-cfexp? cfe) (vector->treelist (mk-concat-cfexp-locfe cfe))]
+          [(mk-union-cfexp? cfe) (vector->treelist (mk-union-cfexp-locfe cfe))]
+          [(mk-kleene-cfexp? cfe) (treelist (mk-kleene-cfexp-cfe cfe))]
+          [(box? cfe) (treelist (unbox cfe))]
+          [else empty-treelist]))
 
-  ;;(listof var-cfexp) (hash old-nt . new-nt) (listof rule) -> (listof rule)
+  ;;(listof lang-boxes) (hash old-nt . new-nt) (listof rule) -> (listof rule)
   ;;Purpose: Converts every var-cfexp into the corresponding grammar rule
-  (define (variables->rules lovcfe new-nts results)
+  (define (lang-boxes->rules loLabox new-nts results)
     ;;nonterminal (queueof cfe) (listof rule) -> (listof rule)
     ;;Purpose: Converts each cf in the (queueof cfe) into the proper grammar rules
     (define (remake-rules nt rules-to-convert finished-rules)
       ;;non-terminal cfe -> rule
       ;;Purpose: Converts the cfe into a grammar rule using the given non-terminal
       (define (cfe->rule nt cfe)
-        ;;if union found in concat split union and make concat using every branch
-        (let ([RHS (cond [(mk-empty-cfexp? cfe) EMP]
+        (define (convert-rhs cfe)
+          (cond [(mk-empty-cfexp? cfe) EMP]
                          [(mk-singleton-cfexp? cfe) (mk-singleton-cfexp-char cfe)]
-                         [(box? cfe) (unbox cfe)]
-                         [(mk-concat-cfexp? cfe) (string->symbol (foldr (λ (cfe acc)
+                         [(box? cfe) (hash-ref new-nts cfe #;(unbox cfe))]
+                         [(mk-concat-cfexp? cfe) (string->symbol #;(construct-RHS cfe)
+                                                                 (tl-foldl (λ (cfe acc)
                                                                           (string-append
                                                                            (if (mk-singleton-cfexp? cfe)
                                                                                (mk-singleton-cfexp-char cfe)
                                                                                (symbol->string (hash-ref new-nts cfe)))
                                                                            acc))
                                                                         ""
-                                                                        (vector->list (mk-concat-cfexp-locfe cfe))))]
+                                                                        (treelist-reverse (vector->treelist (mk-concat-cfexp-locfe cfe)))))]
+                         [else (error (format "unsuitable cfe ~a" cfe))])
+          #;(tl-foldl (λ (cfe acc)
+                    (string-append
+                     (if (mk-singleton-cfexp? cfe)
+                         (mk-singleton-cfexp-char cfe)
+                         (symbol->string (hash-ref new-nts cfe
+                                                   (construct-RHS cfe))))
+                     acc))
+                  ""
+                  (treelist-reverse (vector->treelist (mk-concat-cfexp-locfe cfe)))))
+        ;;if union found in concat split union and make concat using every branch
+        (let ([RHS (cond [(mk-empty-cfexp? cfe) EMP]
+                         [(mk-singleton-cfexp? cfe) (mk-singleton-cfexp-char cfe)]
+                         [(box? cfe) (hash-ref new-nts cfe #;(unbox cfe))]
+                         [(mk-concat-cfexp? cfe) (string->symbol (tl-foldl (λ (cfe acc)
+                                                                          (string-append
+                                                                           (if (mk-singleton-cfexp? cfe)
+                                                                               (mk-singleton-cfexp-char cfe)
+                                                                               (symbol->string (hash-ref new-nts cfe (convert-rhs cfe))))
+                                                                           acc))
+                                                                        ""
+                                                                        (treelist-reverse (vector->treelist (mk-concat-cfexp-locfe cfe)))))]
                          [else (error (format "unsuitable cfe ~a" cfe))])])
           (list nt ARROW RHS)))
       (if (qempty? rules-to-convert)
           finished-rules
           (let ([cfe (qfirst rules-to-convert)])
             (if (mk-union-cfexp? cfe)
-                (remake-rules nt (enqueue (dequeue rules-to-convert) (vector->list (mk-union-cfexp-locfe cfe))) finished-rules)
+                (remake-rules nt (enqueue (dequeue rules-to-convert) (vector->treelist (mk-union-cfexp-locfe cfe))) finished-rules)
                 (remake-rules nt (dequeue rules-to-convert) (cons (cfe->rule nt cfe) finished-rules))))))
-    (foldl (λ (vcfe res)
-             (append (remake-rules (hash-ref new-nts vcfe)
-                                   (list (unbox vcfe))
+    (foldl (λ (lang-box res)
+             (append (remake-rules (hash-ref new-nts lang-box)
+                                   (treelist (unbox lang-box))
                                    '())
                      res))
            '()
-           lovcfe))
+           loLabox))
   (let* (#;[cfe (update-cfe cfe)]
          [extracted-components (extract-var-and-singles-cfe cfe)]
-         [variables (extraction-results-vars extracted-components)]
-         [new-nts (foldl (λ (nt b acc)
-                           (hash-set acc b nt))
+         [lang-boxes (extraction-results-lang-boxes extracted-components)]
+         [new-nts (foldl (λ (nt lang-box acc)
+                           (hash-set acc lang-box nt))
                          (hash)
-                         (gen-nts (length variables))
-                         variables)]
+                         (gen-nts (length lang-boxes))
+                         lang-boxes)]
          [singletons (foldl (λ (single acc)
                               (set-add acc ((compose1 string->symbol mk-singleton-cfexp-char) single)))
                             (set)
                             (extraction-results-singles extracted-components))]
          [alphabet (set->list singletons)]
-         [rules (variables->rules variables new-nts '())]
+         [rules (lang-boxes->rules lang-boxes new-nts '())]
          [nts (hash-values new-nts)]
          [starting-nt (hash-ref new-nts cfe)])
-    (make-unchecked-cfg nts alphabet rules starting-nt)))
+    (make-unchecked-cfg nts alphabet rules starting-nt)
+    #;(values lang-boxes new-nts)))
 
 ;; pda -> cfe
 ;;Purpose: Converts the given pda into a cfe
