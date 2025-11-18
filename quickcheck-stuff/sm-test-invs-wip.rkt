@@ -8,7 +8,8 @@
          racket/set
          data/queue)
 
-(define REPETITION-LIMIT 2)
+(define REPETITION-LIMIT 1)
+
 
 ;                                                                                                     
 ;                                                                                                     
@@ -122,18 +123,19 @@
 
 
 
+
 ;; machine (listof (list state (word -> boolean))) -> (listof (listof state (listof word)))
 ;; Purpose: To return a list of all posible words that can be at each state in a machine 
 (define (sm-all-possible-words a-machine)
-  ;; the given machine without the states and rules of states that cannot reach a final state
-  (define new-machine #;(remove-states-that-cannot-reach-finals a-machine)
-                       a-machine
-    )
-  ;; list of invariants that are reachable from the starting configuration
-  #;(define reachable-inv (filter (λ (x) (member? (car x) (sm-states new-machine))) a-loi))
-  ;; all paths of new-machine
-  (define all-paths-new-machine (find-paths new-machine REPETITION-LIMIT))
 
+  (define machine-paths (find-paths a-machine REPETITION-LIMIT))
+  (define paths-to-finals (get-paths-to-finals machine-paths (sm-finals a-machine)))
+  (define new-rules (extract-rule-set paths-to-finals))
+
+  (define new-states (extract-state-set new-rules))
+  (define all-paths-new-machine (filter-paths machine-paths new-states))  ;<- refactored
+  #;(define all-paths-new-machine machine-paths) ;<- not refact
+  
   ;; (listof (listof rule)) (listof (listof symbol)) -> (listof (listof symbol))
   ;; Purpose:  To return a list of all posible words that can be at each state in a machine 
   ;; Accumulator Invarient: accum = list of lists of words with the states that the can possibly be at
@@ -143,6 +145,8 @@
         (sm-all-possible-words-helper (cdr all-paths)
                                       (cons (list (word-of-path (car all-paths))
                                                   (caddr (car (car all-paths)))) accum))))
+
+  
 
   ;; (listof symbol) -> (listof (symbol (listof word)))
   ;; Purpose: To generate a list of lists of a state and an empty list for each given states
@@ -155,8 +159,9 @@
           (build-list-of-states-&-empty-low-helper (cdr states) (cons (list (car states) '()) accum))))
     (build-list-of-states-&-empty-low-helper states '()))
           
-  (define states-&-empty-low (build-list-of-states-&-empty-low (sm-states new-machine)))
-
+  #;(define states-&-empty-low (build-list-of-states-&-empty-low (sm-states new-machine)))
+  (define states-&-empty-low (build-list-of-states-&-empty-low new-states))
+  
   ;; (listof (listof word state)) -> (listof (listof state (listof word)))
   ;; Purpose: To sort the words to be a list of the state and the words that can possibly reach that state
   (define (sort-words listof-all-words-&-states)

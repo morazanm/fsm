@@ -2287,7 +2287,7 @@
                                                         (list 'B B-INV-EX-NDFA)
                                                         (list 'C C-INV-EX-NDFA))))
                     ))
-(define res
+#;(define res
   (for/list ([test (in-list tests)])
     (displayln (test-case-name test))
     (let ([result (for/vector #:length (test-case-num-tests test)
@@ -2300,7 +2300,7 @@
       (println result)
       (list (test-case-name test)
             result))))
-(println res)
+;(println res)
 
 
 

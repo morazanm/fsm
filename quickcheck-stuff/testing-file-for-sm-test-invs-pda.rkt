@@ -167,7 +167,8 @@
 ;; Purpose: Determine if the given ci is the reverse of
 ;; the given stack AND c is not in ci
 (define (P-INV-wcwˆr ci s)
-  (and (equal? ci (reverse s)) (not (member 'c ci))))
+  (and (equal? ci (reverse s))
+       (not (member 'c ci))))
 
 ;; Tests for P-INV-wcwˆr
 (check-equal? (P-INV-wcwˆr '(a c a) '(a c a)) #f)
