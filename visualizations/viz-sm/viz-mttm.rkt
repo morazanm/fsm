@@ -151,11 +151,11 @@ destination -> the rest of a mttm rule | half-rule
   (define (make-computations QoC path)
 
     (define (update-computation a-comp)
-      (struct-copy computation a-comp
-               [LoC (treelist-drop (computation-LoC a-comp) #;0 head-pos)]
-               [LoR (treelist-drop (computation-LoR a-comp) #;0 head-pos)]
-               #;[visited (set-add (computation-visited a-comp) (treelist-last (computation-LoC a-comp)))]
-               #;[length (add1 (computation-length a-comp))]))
+      (if (> head-pos 1)
+          (struct-copy computation a-comp
+               [LoC (treelist-drop (computation-LoC a-comp) head-pos)]
+               [LoR (treelist-drop (computation-LoR a-comp) head-pos)])
+          a-comp))
     
     (if (qempty? QoC)
         path
