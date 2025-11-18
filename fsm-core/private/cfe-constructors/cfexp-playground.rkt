@@ -162,6 +162,20 @@
       (set-box! ASB (union-cfexp EMPTY (concat-cfexp A ASB B)))
       ASB)))
 
+(define ANBN* (kleene-cfexp ANBN-2))
+
+(define A-STAR
+  #;(let ([EMPTY (empty-cfexp)]
+        [A (singleton-cfexp "a")]
+        [A* (box (void))])
+    (begin
+      (set-box! A* (union-cfexp EMPTY (concat-cfexp A A*)))
+      A*))
+  (make-cfe ([EMPTY (empty)]
+             [A (singleton "a")]
+             [A* (union EMPTY (concat A A*))])
+             A*))
+
 #;(define AiBjCk
   (make-cfe ([A (singleton "a")]
              [B (singleton "b")]
@@ -254,7 +268,7 @@
                                        'S))
 
 ;;w = a*
-;(define transformed-thesis (cfg->cfe thesis-cfg))
+(define transformed-thesis (cfg->cfe thesis-cfg))
 
 
 ;;cfe->cfg
@@ -308,10 +322,10 @@
 ;;CFE->CFG
 
 ;;w = (abc)^na^n
-;(define thesis-cfg-converted (cfg->cfe thesis-cfg1))
+(define thesis-cfg-converted (cfg->cfe thesis-cfg1))
 
 ;;w = (abc)^na^n
-(define thesis-cfe-converted (cfe->cfg thesis-cfe))
+;(define thesis-cfe-converted (cfe->cfg thesis-cfe))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;PDA->CFE & CFE->PDA Transformations;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

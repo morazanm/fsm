@@ -12,6 +12,7 @@
          racket/vector
          racket/list
          racket/string
+         racket/hash
          racket/set
          (for-syntax racket/base
                      syntax/parse
@@ -34,9 +35,9 @@
          #;construct-cfe
          )
 
-(define MAX-KLEENESTAR-LIMIT 50)
+(define MAX-KLEENESTAR-LIMIT 10)
 
-(define EMPTY-CHANCE .25)
+(define EMPTY-CHANCE .5)
 
 ;;a context-free expression is either:
 ;; 1. null (base case)
@@ -77,17 +78,17 @@
 ;;Purpose: A wrapper to create a concat-cfexp unless all the given cfexps are empty-cfexp
 (define #;define/contract (concat-cfexp . cfexps)
   #;concat-cfexp/c
-  (if (all-empty? cfexps)
-        (empty-cfexp)
-        (mk-concat-cfexp (list->vector cfexps))))
+  (cond [(empty? cfexps) (null-cfexp)]
+        [(all-empty? cfexps) (empty-cfexp)]
+        [else (mk-concat-cfexp (list->vector cfexps))]))
 
 ;; . cfexp -> union-cfexp/empty-cfexp
 ;;Purpose: A wrapper to create a union-cfexp unless all the given cfexps are empty-cfexp
 (define #;define/contract (union-cfexp . cfexps)
   #;union-cfexp/c
-  (if (all-empty? cfexps)
-        (empty-cfexp)
-        (mk-union-cfexp (list->vector cfexps))))
+  (cond [(empty? cfexps) (null-cfexp)]
+        [(all-empty? cfexps) (empty-cfexp)]
+        [else (mk-union-cfexp (list->vector cfexps))]))
 
 ;;cfexp -> Kleene-cfexp/empty-cfexpmessage
 ;;Purpose: A wrapper to create a Kleene-cfexp
@@ -122,213 +123,14 @@
       )))
 
 
-#;(define-for-syntax circular-binding-message "Bad circular reference with binding identifier")
-
-#;(define-syntax (construct-cfe stx)
-  (define-syntax-class concat-expr-internal
-     #:attributes ((vals 1))
-    (pattern ((~literal concat) vals:expr ...)))
-  (define-syntax-class concat-expr
-    #:attributes (id (vals 1))
-    (pattern (id:id ((~literal concat) vals:expr ...))))
-
-  (define-syntax-class singleton-expr
-    #:attributes (id val)
-    (pattern (id:id ((~literal singleton) val:expr))))
-
-  (define-syntax-class var-expr
-    #:attributes (id binding)
-    (pattern (id:id ((~literal var) binding:expr))))
-
-  #;(define-syntax-class union-expr
-    #:attributes (id (vals 1))
-    (pattern (id:id ((~literal union) vals:expr ...))))
-
-  (define-syntax-class union-expr
-    #:attributes (id (empty-expr 1)
-                     (var-expr 1)
-                     (singleton-expr 1)
-                     (concat-expr 1)
-                     (union-expr 1)
-                     (null-expr 1)
-                     (iden 1))
-    (pattern (id:id ((~literal union) (~or* empty-expr:empty-expr
-                                            var-expr:var-expr
-                                            singleton-expr:singleton-expr
-                                            concat-expr:concat-expr-internal
-                                            union-expr:union-expr
-                                            null-expr:null-expr
-                                            iden:id) ...))))
-
-  (define-syntax-class empty-expr
-    #:attributes (id)
-    (pattern (id:id ((~datum empty)))))
-
-  (define-syntax-class null-expr
-    #:attributes (id)
-    (pattern (id:id ((~datum null)))))
-
-  (syntax-parse stx
-    [(_ [(~or* empty-expr:empty-expr
-               var-expr:var-expr
-               singleton-expr:singleton-expr
-               concat-expr:concat-expr
-               union-expr:union-expr
-               null-expr:null-expr) ...]
-        res-cfe-id:id)
-     
-     #:with var-cfe-lst #`(list (~? (syntax->datum #'var-expr.id) #f) ...)
-     #:with union-cfe-lst (syntax-e #'((~? union-expr.id) ...))
-     (define var-cfexp-id-stx (generate-temporary))
-     #`(let ()
-         (define symb-lookup (make-hasheq)
-           #;(for/hash ([cfe-id (in-list var-cfe-lst)]
-                      #:when cfe-id)
-             (values cfe-id (gensym 'A-))))
-         (for ([cfe-id (in-list var-cfe-lst)]
-                      #:when cfe-id)
-             (hash-set! symb-lookup cfe-id (gensym 'A-)))
-         (define vars-set (mutable-set))
-         #;(for ([a-var-expr (in-list (list (~? var-expr.id) ...))])
-           (set-add! vars-set a-var-expr))
-         ;; Empty cfes
-         (~? (define empty-expr.id (lambda ()
-                                     (set! empty-expr.id (empty-cfexp))
-                                     empty-expr.id)))
-         ...
-         ;; Null cfes
-         (~? (define null-expr.id (lambda ()
-                                    (set! null-expr.id (null-cfexp))
-                                    null-expr.id)))
-         ...
-         ;; Singleton cfes
-         #,@(for/list ([id-stx (in-list (syntax-e #'((~? singleton-expr.id) ...)))]
-                       [val-stx (in-list (syntax-e #'((~? singleton-expr.val) ...)))]
-                       [stx (in-list (syntax-e #'((~? singleton-expr) ...)))])
-              (when (and (identifier? val-stx)
-                         (free-identifier=? id-stx val-stx))
-                (raise-syntax-error 'singleton-cfexp circular-binding-message stx val-stx '() ""))
-              #`(define #,id-stx (lambda ()
-                                   (set! #,id-stx
-                                         #,(quasisyntax/loc stx
-                                             (singleton-cfexp #,val-stx)))
-                                   #,id-stx)))
-         ;; Var cfes
-         #;#,@(for/list ([id-stx (in-list (syntax-e #'((~? var-expr.id) ...)))]
-                       [val-stx (in-list (syntax-e #'((~? var-expr.binding) ...)))]
-                       [stx (in-list (syntax-e #'((~? var-expr) ...)))])
-              (when (and (identifier? val-stx)
-                         (free-identifier=? id-stx val-stx))
-                (raise-syntax-error 'var-cfexp circular-binding-message stx val-stx '() ""))
-              #`(define #,id-stx (lambda ()
-                                   (set! #,id-stx
-                                         #,(quasisyntax/loc stx
-                                             (var-cfexp (hash-ref symb-lookup '#,(syntax->datum id-stx)))))
-                                   #,id-stx)))
-         ;; Concat cfes
-         #,@(for/list ([id-stx (in-list (syntax-e #'((~? concat-expr.id) ...)))]
-                       [vals-stx (in-list (syntax-e #'((~? (concat-expr.vals ...)) ...)))]
-                       [stx (in-list (syntax-e #'((~? concat-expr) ...)))])
-              (define vals-stx-lst (syntax->list vals-stx))
-              (for ([val-stx (in-list vals-stx-lst)])
-                (when (and (identifier? val-stx)
-                         (free-identifier=? id-stx val-stx))
-                (raise-syntax-error 'concat-cfexp circular-binding-message stx val-stx '() "")))
-              #`(define #,id-stx (lambda ()
-                                   #,@(for/list ([vals vals-stx-lst])
-                                        #`(when (procedure? #,vals)
-                                            (#,vals)))
-                                   (set! #,id-stx
-                                         #,(quasisyntax/loc stx
-                                             (concat-cfexp #,@vals-stx-lst)))
-                                   #,id-stx)))
-         ;; Union cfes
-         #,@(for/list ([id-stx (in-list (syntax-e #'((~? union-expr.id) ...)))]
-                       [vals-stx (in-list (syntax-e #'((~? (union-expr.empty-expr ...
-                                                            union-expr.singleton-expr ...
-                                                            union-expr.concat-expr ...
-                                                            union-expr.union-expr ...
-                                                            union-expr.iden ...)) ...)))]
-                       [stx (in-list (syntax-e #'((~? union-expr) ...)))])
-              (define vals-stx-lst (syntax->list vals-stx))
-              #;(for ([val-stx (in-list vals-stx-lst)])
-                (when (and (identifier? val-stx)
-                         (free-identifier=? id-stx val-stx))
-                (raise-syntax-error 'union-cfexp circular-binding-message stx val-stx '() "")))
-              #;(define var-cfexp-id-stx (generate-temporary))
-              #;(define union-cfexp-new-id-stx (generate-temporary))
-             #; (define id-stx (make-rename-transformer var-cfexp-id-stx))
-              #`(begin
-                  #;(hash-set! symb-lookup '#,(syntax->datum var-cfexp-id-stx) (gensym 'A-))
-                  #;(set-add! vars-set (list var-cfexp-id-stx union-cfexp-new-id-stx))
-                  #;(define #,var-cfexp-id-stx
-                    (lambda ()
-                      (set! #,var-cfexp-id-stx
-                            #,(quasisyntax/loc stx
-                                (var-cfexp (hash-ref symb-lookup '#,(syntax->datum var-cfexp-id-stx)))))
-                      #,var-cfexp-id-stx)
-                    #;#,(quasisyntax/loc vals-stx
-                          (var-cfexp (hash-ref symb-lookup '#,(syntax->datum var-cfexp-id-stx)))))
-                  
-                  (define #,id-stx
-                    (box (void))
-                    #;(lambda ()
-                      #,@(for/list ([vals (in-list vals-stx-lst)])
-                           #`(when (procedure? #,vals)
-                               (#,vals)))
-                      (set! #,id-stx
-                            #,(quasisyntax/loc stx
-                                (union-cfexp #,@vals-stx-lst)))
-                      #,id-stx))
-                  ))
-         (when (procedure? singleton-expr.id)
-           (singleton-expr.id))
-         ...
-         (when (procedure? concat-expr.id)
-           (concat-expr.id))
-         ...
-         (when (procedure? null-expr.id)
-           (null-expr.id))
-         ...
-         (when (procedure? empty-expr.id)
-           (empty-expr.id))
-         ...
-         #,@(for/list ([id-stx (in-list (syntax-e #'((~? union-expr.id) ...)))]
-                       [vals-stx (in-list (syntax-e #'((~? (union-expr.empty-expr ...
-                                                            union-expr.singleton-expr ...
-                                                            union-expr.concat-expr ...
-                                                            union-expr.union-expr ...
-                                                            union-expr.iden ...)) ...)))]
-                       [stx (in-list (syntax-e #'((~? union-expr) ...)))])
-              #'(set-box! #,id-stx (union-cfexp #,@vals-stx-lst))
-           )
-         ;; Update bindings for var cfes
-         #;#,@(for/list ([id-stx (in-list (syntax-e #'((~? var-expr.id) ...)))]
-                       [binding-stx (in-list (syntax-e #'((~? var-expr.binding) ...)))]
-                       [stx (in-list (syntax-e #'((~? var-expr) ...)))])
-              #`(begin
-                  (when (procedure? #,binding-stx)
-                    (#,binding-stx))
-                  (when (procedure? #,id-stx)
-                    (#,id-stx))
-                  #,(quasisyntax/loc stx
-                      (update-binding! #,id-stx
-                                       (hash-ref symb-lookup '#,(syntax->datum id-stx))
-                                       #,binding-stx))))
-         
-         (if (procedure? res-cfe-id)
-             (res-cfe-id)
-             res-cfe-id))]))
-
-
 ;;singleton-cfe -> word
 ;;Purpose: Extracts the singleton 
 (define (convert-singleton singleton-cfexp) (mk-singleton-cfexp-char singleton-cfexp))
 
-
 (define (contains-empty? Vocfe)
   (for/or ([cfe (in-vector Vocfe)])
-    (or (mk-empty-cfexp? cfe)
+    (mk-empty-cfexp? cfe)
+    #;(or (mk-empty-cfexp? cfe)
         (and (mk-var-cfexp? cfe)
              (mk-var-cfexp-only-empty? cfe)))))
 
@@ -345,7 +147,7 @@
 
 ;;var-cfexp --> word
 ;;Purpose: Substitutes the given var-cfexp with it's environment bindings 
-(define (substitute-var var-cfexp reps)
+#;(define (substitute-var var-cfexp reps)
   (let* ([bindings (hash-ref (mk-var-cfexp-env var-cfexp) (mk-var-cfexp-cfe var-cfexp))])
     (gen-cfexp-word-helper (pick-cfexp bindings) reps)))
 
@@ -366,17 +168,19 @@
                      (build-list
                       (random (add1 reps))
                       (λ (i) (gen-function (mk-kleene-cfexp-cfe kleene-cfexp) reps))))))]
-    (if (empty? lst-words) EMP lst-words)))
+    (if (empty? lst-words) EMP (append-map append lst-words))))
 
 (define (string-empty? str)
   (not (non-empty-string? str)))
 
 (define (string->word str)
-  (define (string->word-helper idx end-idx acc)
-    (if (= idx end-idx)
-        (reverse acc)
-        (string->word-helper (add1 idx) end-idx (cons (string->symbol (substring str idx (add1 idx))) acc))))
-  (string->word-helper 0 (string-length str) '()))
+  (let ([end-idx (string-length str)])
+    (define (string->word-helper idx acc)
+      (if (= idx end-idx)
+          (reverse acc)
+          (string->word-helper (add1 idx)
+                               (cons (string->symbol (substring str idx (add1 idx))) acc))))
+    (string->word-helper 0 '())))
 
 ;; cfe [natnum] -> word
 ;; Purpose: Generates a word using 
@@ -388,7 +192,9 @@
         [(mk-empty-cfexp? cfe) EMP]
         [(mk-singleton-cfexp? cfe) (list (mk-singleton-cfexp-char cfe))]
         [(box? cfe) (gen-cfexp-word (unbox cfe) reps)]
+        ;[(mk-kleene-cfexp? cfe) )]
         [else (let ([res (gen-cfexp-word-helper cfe MAX-KLEENESTAR-REPS)])
+                #;(displayln res)
                 (if (string-empty? res)
                     EMP
                     (string->word res)))]))
@@ -399,11 +205,48 @@
   (cond [(mk-null-cfexp? cfe) (error "A word cannot be generated using the null-regexp.")]
         [(mk-empty-cfexp? cfe) ""]
         [(mk-singleton-cfexp? cfe) (convert-singleton cfe)]
-        [(mk-var-cfexp? cfe) (substitute-var cfe reps)]
+        #;[(mk-var-cfexp? cfe) (substitute-var cfe reps)]
         [(mk-concat-cfexp? cfe) (gen-concat-word cfe gen-cfexp-word-helper reps)]
         [(mk-union-cfexp? cfe) (gen-cfexp-word-helper (pick-cfexp (mk-union-cfexp-locfe cfe)) reps)]
         [(box? cfe) (gen-cfexp-word-helper (unbox cfe) reps)]
         [else (gen-cfe-kleene-word cfe reps gen-cfexp-word-helper)]))
+      
+;;cfexp [(setof cfe)] -> string
+;;Purpose: Converts the given cfe into a string to make it readable
+(define (printable-cfexp cfe #:seen[seen (set)]) 
+  ;;(listof cfe) string (setof cfe) -> string
+  ;;Purpose: Converts and appends all of the cfes in the given (listof cfe) 
+  (define (printable-helper locfe connector seen)
+    (cond [(= (length locfe) 1) (printable-cfexp (first locfe) #:seen seen)]
+          [else (let ([new-seen (set-add seen (first locfe))])
+                  (string-append (printable-cfexp (first locfe) #:seen new-seen)
+                               connector
+                               (printable-helper (rest locfe) connector new-seen)))]))
+
+  ;;var-cfexp (setof cfe) -> string
+  ;;Purpose: Prints the variable 
+  (define (printable-var var-cfe seen)
+    (if (set-member? seen var-cfe)
+        (symbol->string (mk-var-cfexp-cfe cfe))
+        (string-append (symbol->string (mk-var-cfexp-cfe cfe))
+                       " -> "
+                       (printable-helper (vector->list (first (hash-values (mk-var-cfexp-env cfe))))
+                                         "|"
+                                         (set cfe)))))
+  (define NULL-REGEXP-STRING "∅")
+  (define EMPTY-REGEXP-STRING (symbol->string EMP))
+  (cond [(mk-null-cfexp? cfe) NULL-REGEXP-STRING]
+        [(mk-empty-cfexp? cfe) EMPTY-REGEXP-STRING]
+        [(mk-singleton-cfexp? cfe) (mk-singleton-cfexp-char cfe)]
+        [(mk-var-cfexp? cfe) (printable-var cfe (if (set-empty? seen)
+                                                    (set)
+                                                    seen))]
+        [(mk-concat-cfexp? cfe) (printable-helper (vector->list (mk-concat-cfexp-locfe cfe)) "" seen)
+                                #;(string-append "(" (printable-helper (vector->list (mk-concat-cfexp-locfe cfe)) "" seen) ")")]
+        [(mk-union-cfexp? cfe) (printable-helper (vector->list (mk-union-cfexp-locfe cfe)) " | "#;" ∪ " seen)
+                               #;(string-append "(" (printable-helper (vector->list (mk-union-cfexp-locfe cfe)) " | "#;" ∪ " seen) ")")]
+        [else (string-append (printable-cfexp (mk-kleene-cfexp cfe)) "*")]))
+  
 
 ;;context-free grammar -> cfe
 ;;Purpose: Converts the given cfg its equivalent cfe
@@ -452,49 +295,13 @@
          [start (cfg-get-start G)]
          [singletons (make-hash-table (cfg-get-alphabet G) (λ (sig)
                                                              (singleton-cfexp (symbol->string sig))))]
-         [variables (make-hash-table nts var-cfexp)]
+         [variables (make-hash-table nts (λ (x) (box (void))))]
          [rules->cfexp (make-cfexps-frm-rules rules singletons variables)]
          [updated-bindings (hash-map/copy rules->cfexp (λ (key value)
-                                                         (begin (update-binding! (hash-ref variables key) key value)
-                                                                (values key (hash-ref variables key)))))])
+                                                         (begin
+                                                           (set-box! (hash-ref variables key) value)
+                                                           (values key (hash-ref variables key)))))])
      (hash-ref updated-bindings start)))
-      
-;;cfexp [(setof cfe)] -> string
-;;Purpose: Converts the given cfe into a string to make it readable
-(define (printable-cfexp cfe #:seen[seen (set)]) 
-  ;;(listof cfe) string (setof cfe) -> string
-  ;;Purpose: Converts and appends all of the cfes in the given (listof cfe) 
-  (define (printable-helper locfe connector seen)
-    (cond [(= (length locfe) 1) (printable-cfexp (first locfe) #:seen seen)]
-          [else (let ([new-seen (set-add seen (first locfe))])
-                  (string-append (printable-cfexp (first locfe) #:seen new-seen)
-                               connector
-                               (printable-helper (rest locfe) connector new-seen)))]))
-
-  ;;var-cfexp (setof cfe) -> string
-  ;;Purpose: Prints the variable 
-  (define (printable-var var-cfe seen)
-    (if (set-member? seen var-cfe)
-        (symbol->string (mk-var-cfexp-cfe cfe))
-        (string-append (symbol->string (mk-var-cfexp-cfe cfe))
-                       " -> "
-                       (printable-helper (vector->list (first (hash-values (mk-var-cfexp-env cfe))))
-                                         "|"
-                                         (set cfe)))))
-  (define NULL-REGEXP-STRING "∅")
-  (define EMPTY-REGEXP-STRING (symbol->string EMP))
-  (cond [(mk-null-cfexp? cfe) NULL-REGEXP-STRING]
-        [(mk-empty-cfexp? cfe) EMPTY-REGEXP-STRING]
-        [(mk-singleton-cfexp? cfe) (mk-singleton-cfexp-char cfe)]
-        [(mk-var-cfexp? cfe) (printable-var cfe (if (set-empty? seen)
-                                                    (set)
-                                                    seen))]
-        [(mk-concat-cfexp? cfe) (printable-helper (vector->list (mk-concat-cfexp-locfe cfe)) "" seen)
-                                #;(string-append "(" (printable-helper (vector->list (mk-concat-cfexp-locfe cfe)) "" seen) ")")]
-        [(mk-union-cfexp? cfe) (printable-helper (vector->list (mk-union-cfexp-locfe cfe)) " | "#;" ∪ " seen)
-                               #;(string-append "(" (printable-helper (vector->list (mk-union-cfexp-locfe cfe)) " | "#;" ∪ " seen) ")")]
-        [else (string-append (printable-cfexp (mk-kleene-cfexp cfe)) "*")]))
-  
 
 ;;cfe -> cfg
 ;;Purpose: Converts the given cfe into its corresponding cfg
@@ -635,8 +442,8 @@
 
 ;; pda -> cfe
 ;;Purpose: Converts the given pda into a cfe
-(define/contract (pda->cfe pda)
-  pda->cfe/c
+(define #;define/contract (pda->cfe pda)
+  #;pda->cfe/c
 
   ;;nts   | the non-terminals for the given CFG     | (listof non-terminal)
   ;;sigma | the alphabet for the given CFG          | (listof symbol)
@@ -786,15 +593,96 @@
           (let ([new-cfg (clean-up-cfg-rules-and-nts cfg)])
             (clean-up-cfg new-cfg (cons new-cfg acc)))))
     (clean-up-cfg G '()))
+
+  ;;(listof X) (X -> Y) -> (hash X . Y)
+  ;;Purpose: Creates a hash table using the given (listof x) and function where x is a key and (f x) is the value
+  (define (make-hash-table lox f)
+    (foldl (λ (x h)
+             (hash-set h x (f x)))
+           (hash)
+           lox))
+
+  (define (simplify-rules curr-rules acc-rules)
+    (if (and (>= (length acc-rules) 2)
+             (equal? (first acc-rules) (second acc-rules)))
+        (hash-filter (first acc-rules)
+                     (λ (k v)
+                       (andmap (λ (r) (not (or (empty? r)
+                                          (equal? (list EMP) r)))) v)))
+        (let* ([only-empty-rules
+                (hash-filter curr-rules (λ (k v)
+                                     (andmap (λ (r) (or (empty? r)
+                                                        (equal? (list EMP) r))) v)))]
+               [e-nts (hash-keys only-empty-rules)]
+               [new-rules (hash-map/copy curr-rules (λ (k v)
+                                       (if (ormap (λ (rule)
+                                                    (ormap (λ (r)
+                                                             (hash-has-key? only-empty-rules r)) rule)) v)
+                                           (values k (map (λ (val) (filter-not (λ (r) (member r e-nts)) val)) v))
+                                           (values k v))))])
+          (simplify-rules new-rules (cons new-rules acc-rules)))))
   
   (let* ([G (unchecked->cfg (pda2cfg pda))]
          [renamed-nts-mapping (rename-nts G)]
          [renamed-cfg (unchecked->cfg (rebuild-cfg G renamed-nts-mapping))]
-         [proper-cfg  (minimize-cfg renamed-cfg)])
-    (cfg->cfe proper-cfg)))
+         [proper-cfg  (minimize-cfg renamed-cfg)]
+         [new-rules (make-hash-table (cfg-get-v proper-cfg) (λ (nt) (filter-map (λ (rule)
+                                                           (and (eq? (first rule) nt)
+                                                                (symbol->fsmlos (third rule))))
+                                                         (cfg-get-rules proper-cfg))))]
+         [only-empty-rules (hash-filter new-rules (λ (k v)
+                                     (or (empty? v)
+                                         (andmap (λ (r) (equal? (list EMP) r)) v))))]
+         [e-nts (hash-keys only-empty-rules)]
+         [simp-rules (simplify-rules new-rules '())]
+         [sub-only-rules (hash-filter simp-rules (λ (k v)
+                                      (andmap (λ (r)
+                                                (and (= (length r) 1)
+                                                     (ormap (λ (el)
+                                                            (member el (hash-keys simp-rules))) r))) v)))]
+         [sub-nts (hash-keys sub-only-rules)]
+         [simp-rules2 (hash-map/copy simp-rules (λ (k v)
+                                       (if (ormap (λ (rule)
+                                                    (ormap (λ (r)
+                                                             (hash-has-key? sub-only-rules r)) rule)) v)
+                                           (values k (map (λ (val) (map (λ (r)
+                                                                          (if (hash-has-key? sub-only-rules r)
+                                                                       (first (flatten (hash-ref sub-only-rules r)))
+                                                                       r)) val)) v))
+                                           (values k v))))]
+         [startt (first (filter (λ (x) (eq? x (cfg-get-start proper-cfg))) (hash-keys simp-rules2)))]
+         [final-rules (hash-filter simp-rules2 (λ (k v)
+                                      (or (eq? k startt)
+                                           (not (member k sub-nts)))))]
+         [usable-rules (append-map (λ (lhs)
+                          (map (λ (rhs)
+                                 (cfg-rule lhs rhs))
+                               (hash-ref final-rules lhs)))
+                        (hash-keys final-rules))])
+    #;(values ;proper-cfg
+            new-rules
+            only-empty-rules
+            simp-rules
+            sub-only-rules
+            simp-rules2
+            final-rules
+            (append-map (λ (lhs)
+                          (map (λ (rhs)
+                                 (cfg-rule lhs rhs))
+                               (hash-ref final-rules lhs)))
+                        (hash-keys final-rules)))
+            
+            #;(cfg (CFG-nts G) (CFG-sigma G) (append-map (λ (lhs)
+                                                         (map (λ (rh)
+                                                                (cfg-rule lhs rh))
+                                                              (hash-ref lrhs))
+                                                       (hash-keys final-rules)
+                                                       (hash-values final-rules)) (CFG-start G)))
+       final-rules #;(cfg->cfe (cfg (hash-keys final-rules) (cfg-get-alphabet proper-cfg) usable-rules startt))                            
+    #;(cfg->cfe proper-cfg)))
 
 ;;cfe -> pda
 ;;Purpose: Converts the given cfe into a pda
-(define/contract (cfe->pda cfe)
-  cfe->pda/c
+(define #;define/contract (cfe->pda cfe)
+ #;cfe->pda/c
   (cfg->pda (cfe->cfg cfe)))

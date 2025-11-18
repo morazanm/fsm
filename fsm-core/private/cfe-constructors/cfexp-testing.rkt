@@ -1,9 +1,9 @@
 #lang racket
 
 (require "./cfexp-playground.rkt"
-         "../fsm-core/private/pda.rkt"
-         "../fsm-core/private/cfg.rkt"
-         "../fsm-core/private/constants.rkt"
+         "../pda.rkt"
+         "../cfg.rkt"
+         "../constants.rkt"
          "./context-free-expressions-constructors.rkt"
          rackunit
          )
@@ -88,6 +88,17 @@
              (<= (length as) (length bs) (* 2 (length as)))))))
 
 ;;word -> boolean
+;;Purpose: Determines if the given word is a valid word for A^iB^jC^k | i = j V j = k
+(define (valid-aibjck-word? w)
+  (or (eq? w EMP)
+      (let ([as (filter (λ (s) (eq? s 'a)) w)]
+            [bs (filter (λ (s) (eq? s 'b)) w)]
+            [cs (filter (λ (s) (eq? s 'c)) w)])
+        (and (equal? w (append as bs cs))
+             (or (= (length as) (length bs))
+                 (= (length bs) (length cs)))))))
+
+;;word -> boolean
 ;;Purpose: Determines if the given word is a valid word for w = a*
 (define (valid-A*-word? a-word)
   (or (eq? a-word EMP)
@@ -141,7 +152,7 @@
              (= 0 (- (length As) (length Bs)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;LANGUAGE BANK;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
+#|
 (define WWR-WORDS (gen-cfe-words WWR WORD-AMOUNT))
 
 (define ANBN-WORDS (gen-cfe-words ANBN WORD-AMOUNT))
@@ -294,3 +305,4 @@
 (check-true (grammar-checker (cfe->cfg WWR) TRANSFORMED-WWR-WORDS))
 
 (define test (union-cfexp ANBN BNAN))
+|#
