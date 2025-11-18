@@ -21,14 +21,12 @@
        (singleton-cfexp a-singleton-expr.val))]
     [(_ a-concat-expr:concat-expr-internal)
      (quasisyntax/loc #'a-concat-expr
-       (concat-cfexp #,@(for/list ([val (in-list (syntax-e #'(a-concat-expr.vals ...)))])
-                          (quasisyntax/loc val
-                            (process-cfe-syntax #,val)))))]
+       (concat-cfexp (process-cfe-syntax a-concat-expr.vals)
+                     ...))]
     [(_ a-union-expr:union-expr-internal)
-     (quasisyntax/loc #'a-union-expr
-       (union-cfexp #,@(for/list ([val (in-list (syntax-e #'(a-union-expr.vals ...)))])
-                         (quasisyntax/loc val
-                           (process-cfe-syntax #,val)))))]
+     (syntax/loc #'a-union-expr
+       (union-cfexp (process-cfe-syntax a-union-expr.vals)
+                    ...))]
     [(_ a-null-expr:null-expr-internal)
      #'(null-cfexp)]
     [(_ iden:id)
@@ -51,7 +49,14 @@
     (lambda (a-struct)
       (match a-struct
         [(exn:fail:bad-circular-ref msg marks (list a-srcloc ...))
-         a-srcloc]))))
+         a-srcloc])))
+  
+  (define (check-for-bad-circular-ref id-stx-obj val-stx-obj)
+    (when (and (identifier? val-stx-obj)
+               (free-identifier=? id-stx-obj val-stx-obj))
+      (raise (exn:fail:bad-circular-ref circular-binding-message
+                                        (current-continuation-marks)
+                                        (list (syntax-srcloc id-stx-obj) (syntax-srcloc val-stx-obj)))))))
 
 (define-syntax (process-nr-cfe-syntax stx)
   (syntax-parse stx
@@ -59,31 +64,21 @@
      #'(empty-cfexp)]
            
     [(_ iden:id a-singleton-expr:singleton-expr-internal)
-     (when (and (identifier? #'a-singleton-expr.val)
-                (free-identifier=? #'iden #'a-singleton-expr.val))
-       (raise (exn:fail:bad-circular-ref circular-binding-message
-                                         (current-continuation-marks)
-                                         (list (syntax-srcloc #'iden) (syntax-srcloc #'a-singleton-expr.val)))))
+     (check-for-bad-circular-ref #'iden #'a-singleton-expr.val)
      (syntax/loc #'a-singleton-expr
        (singleton-cfexp a-singleton-expr.val))]
            
     [(_ iden:id a-concat-expr:concat-expr-internal)
      (for ([val-stx (in-list (syntax-e #'(a-concat-expr.vals ...)))])
-       (when (and (identifier? val-stx)
-                  (free-identifier=? #'iden val-stx))
-         (raise (exn:fail:bad-circular-ref circular-binding-message
-                                           (current-continuation-marks)
-                                           (list (syntax-srcloc #'iden) (syntax-srcloc val-stx))))))
-     (quasisyntax/loc #'a-concat-expr
+       (check-for-bad-circular-ref #'iden val-stx))
+     (syntax/loc #'a-concat-expr
        (concat-cfexp (process-nr-cfe-syntax iden a-concat-expr.vals)
                      ...))]
            
     [(_ iden:id a-union-expr:union-expr-internal)
      (for ([val-stx (in-list (syntax-e #'(a-union-expr.vals ...)))])
-       (when (and (identifier? val-stx)
-                  (free-identifier=? #'iden val-stx))
-         (raise-syntax-error 'union-cfexp circular-binding-message stx val-stx '() "")))
-     (quasisyntax/loc #'a-union-expr
+       (check-for-bad-circular-ref #'iden val-stx))
+     (syntax/loc #'a-union-expr
        (union-cfexp (process-nr-cfe-syntax iden a-union-expr.vals)
                     ...))]
            
@@ -91,24 +86,20 @@
      #'(null-cfexp)]
            
     [(_ iden:id iden-expr:id)
-     (when (and (identifier? #'iden-expr)
-                (free-identifier=? #'iden #'iden-expr))
-       (raise (exn:fail:bad-circular-ref circular-binding-message
-                                         (current-continuation-marks)
-                                         (list (syntax-srcloc #'iden) (syntax-srcloc #'iden-expr))))
-       #;(raise-syntax-error 'cfexp circular-binding-message stx #'iden-expr '() ""))
-     #`(if (procedure? iden)
+     (check-for-bad-circular-ref #'iden #'iden-expr)
+     #`(if (procedure? iden-expr)
            #,(syntax/loc #'iden
-               (iden))
-           iden)]
+               (iden-expr))
+           iden-expr)]
              
     [(_ iden:id express:expr)
      (define temp-id (generate-temporary))
-     #`(let ([#,temp-id (syntax/loc #'express (express))])
+     (quasisyntax/loc #'express
+       (let ([#,temp-id (syntax/loc #'express (express))])
          (if (procedure? #,temp-id)
              #,(quasisyntax/loc #'express
                  (#,temp-id))
-             #,temp-id))]))
+             #,temp-id)))]))
 
 (define-syntax (define-singleton-cfe stx)
   (syntax-parse stx
@@ -128,17 +119,19 @@
      #`(define id-stx
          (lambda ()
            (set! id-stx
-                 #,(quasisyntax/loc #'whole-expr
-                     (concat-cfexp #,@(for/list ([val (in-list (syntax-e #'(vals ...)))])
-                                        (quasisyntax/loc val
-                                          (process-nr-cfe-syntax id-stx #,val))))))))]))
+                 #,(syntax/loc #'whole-expr
+                     (concat-cfexp (process-nr-cfe-syntax id-stx vals)
+                                   ...
+                                   )))))]))
 
 (define-syntax (union-cfe-set-box stx)
   (syntax-parse stx
     [(_ id-stx whole-expr vals ...)
      #`(set-box! id-stx
-                 #,(quasisyntax/loc #'whole-expr
-                     (union-cfexp #,@(for/list ([val (in-list (syntax-e #'(vals ...)))])
+                 #,(syntax/loc #'whole-expr
+                     (union-cfexp (process-cfe-syntax vals)
+                                  ...
+                                  #;#,@(for/list ([val (in-list (syntax-e #'(vals ...)))])
                                        (quasisyntax/loc val
                                          (process-cfe-syntax #,val))))))]))
 
