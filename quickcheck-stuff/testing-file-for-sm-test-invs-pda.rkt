@@ -702,7 +702,8 @@ this means that w ≠ aibj, where i <= j <= 2i. Thus, w∈/L.
   (let* [(As (takef ci (λ (x) (eq? x 'a))))
          (Bs (takef (drop ci (length As)) (λ (x) (eq? x 'b))))]
     (and (equal? As stack)
-         (equal? (append As Bs) ci))))
+         (equal?
+          (append As Bs) ci))))
 
 ;; tests for A-INV-A^nB^mA^n
 (check-equal? (A-INV-A^nB^mA^n '(b) '()) #t)
@@ -1366,4 +1367,33 @@ empty stack having consumed w. Given that the state invariants always hold,
 this means that w ≠ a^mb^nc^p, where m,n,p≥0 ∧ (m = n ∨ n = p). Thus, w∈/L.
 
 |#
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+;;Let Σ = {a b}. Design and implement a pda for L = {w | w has 3
+;; times as many as than b} 
+
+
+
+
+
+
+
+
+
+
+
 
