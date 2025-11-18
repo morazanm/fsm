@@ -51,6 +51,9 @@
 
 (define DUMMY-RULE (list (list BLANK BLANK) (list BLANK BLANK)))
 
+(define INIT-HEAD-POS 0)
+(define INIT-COMPUTATION-LENGTH 1)
+(define INIT-TAPE-CONFIG-INDEX 0)
 
 ;;word (listof rule) symbol number -> (listof computation)
 ;;Purpose: Returns all possible computations using the given word, (listof rule) and start symbol
@@ -142,6 +145,14 @@
   ;;Purpose: Makes all the computations based around the (queueof computation) and (listof rule)
   ;;     that are within the bounds of the max computation limit
   (define (make-computations QoC path)
+
+    (define (update-computation a-comp)
+      (struct-copy computation a-comp
+               [LoC (treelist-drop (computation-LoC a-comp) head-pos)]
+               [LoR (treelist-drop (computation-LoR a-comp) head-pos)]
+               #;[visited (set-add (computation-visited a-comp) (treelist-last (computation-LoC a-comp)))]
+               #;[length (add1 (computation-length a-comp))]))
+    
     (if (qempty? QoC)
         path
         (let* ([current-config (treelist-last (computation-LoC (qfirst QoC)))]
@@ -156,7 +167,7 @@
                 (make-computations (dequeue QoC)
                                    (if (eq? current-state accepting-final)
                                        (struct-copy paths path
-                                                    [accepting (treelist-add (paths-accepting path) (qfirst QoC))]
+                                                    [accepting (treelist-add (paths-accepting path) (update-computation (qfirst QoC)))]
                                                     [reached-final? (cond [(paths-reached-final? path) (paths-reached-final? path)]
                                                                           [member-of-finals? #t]
                                                                           [else (paths-reached-final? path)])]
@@ -164,7 +175,7 @@
                                                                     [reached-threshold? #t]
                                                                     [else (paths-cut-off? path)])])
                                        (struct-copy paths path
-                                                    [rejecting (treelist-add (paths-rejecting path) (qfirst QoC))]
+                                                    [rejecting (treelist-add (paths-rejecting path) (update-computation (qfirst QoC)))]
                                                     [reached-final? (cond [(paths-reached-final? path) (paths-reached-final? path)]
                                                                           [member-of-finals? #t]
                                                                           [else (paths-reached-final? path)])]
@@ -186,14 +197,15 @@
                   ;(update-hash current-config current-tape)
                   (if (treelist-empty? new-configs)
                       (make-computations (dequeue QoC)
-                                         (struct-copy paths path [rejecting (treelist-add (paths-rejecting path) (qfirst QoC))]))
+                                         (struct-copy paths path
+                                                      [rejecting (treelist-add (paths-rejecting path) (update-computation (qfirst QoC)))]))
                       (make-computations (enqueue new-configs (dequeue QoC)) path))))))))
   (let (;;computation
         ;;Purpose: The starting computation
-        [starting-computation (computation (treelist (tm-config start head-pos a-word 0))
+        [starting-computation (computation (treelist (tm-config start INIT-HEAD-POS #;head-pos a-word INIT-TAPE-CONFIG-INDEX))
                                            empty-treelist
                                            (set)
-                                           1)])
+                                           INIT-COMPUTATION-LENGTH)])
     (make-computations (enqueue (treelist starting-computation) E-QUEUE) (paths empty-treelist empty-treelist #f #f))))
 
 
@@ -950,9 +962,11 @@
                                    (text "Accept not traced" 20 (color-palette-legend-other-accept-color color-scheme))
                                    spacer
                                    (text "Reject not traced" 20 (color-palette-legend-other-reject-color color-scheme)))))])
-    ;all-paths
+    #;
+    all-paths
     
-   (run-viz graphs
+   ;#;
+    (run-viz graphs
             (list->vector (map (λ (x) (λ (grph) grph)) graphs))
              #;(lambda () (list (graph->bitmap (first graphs))))
              (posn (/ E-SCENE-WIDTH 2) (/ TM-E-SCENE-HEIGHT 2))

@@ -75,7 +75,7 @@ destination -> the rest of a mttm rule | half-rule
   ;; -> (listof tape-configs)
   ;;Purpose: Makes the initial tape configurations
   (define (make-init-tape-config)
-    (cons (tape-config head-pos a-word)
+    (cons (tape-config #;head-pos 1 a-word)
           (make-list (sub1 tape-amount) init-aux-tape)))
 
   ;;(listof tm-action) (listof tape-config) -> boolean
@@ -149,6 +149,14 @@ destination -> the rest of a mttm rule | half-rule
   ;;Purpose: Makes all the computations based around the (queueof computation) and (listof rule)
   ;;     that are within the bounds of the max computation limit
   (define (make-computations QoC path)
+
+    (define (update-computation a-comp)
+      (struct-copy computation a-comp
+               [LoC (treelist-drop (computation-LoC a-comp) #;0 head-pos)]
+               [LoR (treelist-drop (computation-LoR a-comp) #;0 head-pos)]
+               #;[visited (set-add (computation-visited a-comp) (treelist-last (computation-LoC a-comp)))]
+               #;[length (add1 (computation-length a-comp))]))
+    
     (if (qempty? QoC)
         path
         (let* ([current-config (treelist-last (computation-LoC (qfirst QoC)))]
@@ -159,7 +167,7 @@ destination -> the rest of a mttm rule | half-rule
           (if (or reached-threshold? member-of-finals?)
               (make-computations (dequeue QoC) (if (eq? current-state accepting-final)
                                                    (struct-copy paths path
-                                                                [accepting (treelist-add (paths-accepting path) (qfirst QoC))]
+                                                                [accepting (treelist-add (paths-accepting path) (update-computation (qfirst QoC)))]
                                                                 [reached-final? (cond [(paths-reached-final? path) (paths-reached-final? path)]
                                                                                       [member-of-finals? #t]
                                                                                       [else (paths-reached-final? path)])]
@@ -167,7 +175,7 @@ destination -> the rest of a mttm rule | half-rule
                                                                                 [reached-threshold? #t]
                                                                                 [else (paths-cut-off? path)])])
                                                    (struct-copy paths path
-                                                                [rejecting (treelist-add (paths-rejecting path) (qfirst QoC))]
+                                                                [rejecting (treelist-add (paths-rejecting path) (update-computation (qfirst QoC)))]
                                                                 [reached-final? (cond [(paths-reached-final? path) (paths-reached-final? path)]
                                                                                       [member-of-finals? #t]
                                                                                       [else (paths-reached-final? path)])]
@@ -186,7 +194,7 @@ destination -> the rest of a mttm rule | half-rule
                                                    (treelist-map connected-read-rules (λ (rule) (apply-rule (qfirst QoC) rule))))])
                 ;new-configs
                 (if (treelist-empty? new-configs)
-                    (make-computations (dequeue QoC) (struct-copy paths path [rejecting (treelist-add (paths-rejecting path) (qfirst QoC))]))
+                    (make-computations (dequeue QoC) (struct-copy paths path [rejecting (treelist-add (paths-rejecting path) (update-computation (qfirst QoC)))]))
                     (make-computations (enqueue new-configs (dequeue QoC)) path)))))))
   (let (;;computation
         ;;Purpose: The starting computation
@@ -1021,7 +1029,7 @@ destination -> the rest of a mttm rule | half-rule
                                       (mttm-finals M)
                                       (mttm-accepting-final M)
                                       cut-off
-                                      head-pos)]
+                                      (if (zero? head-pos) (add1 head-pos) head-pos))]
         ;;color-pallete ;;The corresponding color scheme to used in the viz
          [color-scheme (cond [(eq? palette 'prot) protanopia-color-scheme] ;;red color blind
                              [(eq? palette 'deut) deuteranopia-color-scheme] ;;green color blind 
@@ -1131,6 +1139,9 @@ destination -> the rest of a mttm rule | half-rule
                                    (text "Accept not traced" 20 (color-palette-legend-other-accept-color color-scheme))
                                    spacer
                                    (text "Reject not traced" 20 (color-palette-legend-other-reject-color color-scheme)))))])
+    #;
+    all-paths
+    ;#;
     (run-viz graphs
              (list->vector (map (λ (x) (λ (grph) grph)) graphs))
              #;(lambda () (list (graph->bitmap (first graphs))))
