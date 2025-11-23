@@ -5,44 +5,71 @@
                      syntax/parse
                      racket/match
                      racket/syntax-srcloc
-                     "cfe-macro-syntax-classes.rkt"
                      racket/syntax))
 
 (provide make-cfe)
 
 (define-for-syntax circular-binding-message "Bad circular reference with binding identifier")
 
-(define-syntax (process-cfe-syntax stx)
-  (syntax-parse stx
-    [(_ a-empty-expr:empty-expr-internal)
-     #'(empty-cfexp)]
-    [(_ a-singleton-expr:singleton-expr-internal)
-     (syntax/loc #'a-singleton-expr
-       (singleton-cfexp a-singleton-expr.val))]
-    [(_ a-concat-expr:concat-expr-internal)
-     (quasisyntax/loc #'a-concat-expr
-       (concat-cfexp (process-cfe-syntax a-concat-expr.vals)
-                     ...))]
-    [(_ a-union-expr:union-expr-internal)
-     (syntax/loc #'a-union-expr
-       (union-cfexp (process-cfe-syntax a-union-expr.vals)
-                    ...))]
-    [(_ a-null-expr:null-expr-internal)
-     #'(null-cfexp)]
-    [(_ iden:id)
-     #`(if (procedure? iden)
-           #,(syntax/loc #'iden
-               (iden))
-           iden)]
-    [(_ express:expr)
-     (define temp-id (generate-temporary))
-     #`(let ([#,temp-id (syntax/loc #'express (express))])
-         (if (procedure? #,temp-id)
-             #,(quasisyntax/loc #'express
-                 (#,temp-id))
-             #,temp-id))]))
-
 (begin-for-syntax
+  (define-syntax-class concat-cfexp-expr
+    #:attributes ((vals 1))
+    #:description "concat cfexp"
+    (pattern ((~datum concat) vals:expr ...)))
+
+  (define-syntax-class concat-cfexp-binding
+    #:attributes (id (expr.vals 1))
+    #:description "concat cfexp"
+    (pattern (id:id expr:concat-cfexp-expr)))
+
+  (define-syntax-class singleton-cfexp-expr
+    #:attributes (val)
+    #:description "singleton cfexp"
+    (pattern ((~datum singleton) val:expr)))
+    
+  (define-syntax-class singleton-cfexp-binding
+    #:attributes (id expr.val)
+    #:description "singleton cfexp"
+    (pattern (id:id expr:singleton-cfexp-expr)))
+
+  (define-syntax-class union-cfexp-expr
+    #:attributes ((vals 1))
+    #:description "union cfexp"
+    (pattern ((~datum union) vals:expr ...)))
+  
+  (define-syntax-class union-cfexp-binding
+    #:attributes (id (expr.vals 1))
+    #:description "union cfexp"
+    (pattern (id:id expr:union-cfexp-expr)))
+
+  (define-syntax-class kleene-cfexp-expr
+    #:attributes (val)
+    #:description "kleene cfexp"
+    (pattern ((~datum kleene) val:expr)))
+  
+  (define-syntax-class kleene-cfexp-binding
+    #:attributes (id expr.val)
+    #:description "kleene cfexp"
+    (pattern (id:id expr:kleene-cfexp-expr)))
+
+  (define-syntax-class empty-cfexp-expr
+    #:description "empty cfexp"
+    (pattern ((~datum empty))))
+  
+  (define-syntax-class empty-cfexp-binding
+    #:attributes (id)
+    #:description "empty cfexp"
+    (pattern (id:id expr:empty-cfexp-expr)))
+
+  (define-syntax-class null-cfexp-expr
+    #:description "null cfexp"
+    (pattern ((~datum null))))
+
+  (define-syntax-class null-cfexp-binding
+    #:attributes (id)
+    #:description "null cfexp"
+    (pattern (id:id expr:null-cfexp-expr)))
+  
   (struct exn:fail:bad-circular-ref exn:fail
     (a-srcloc)
     #:property prop:exn:srclocs
@@ -58,92 +85,104 @@
                                         (current-continuation-marks)
                                         (list (syntax-srcloc id-stx-obj) (syntax-srcloc val-stx-obj)))))))
 
-(define-syntax (process-nr-cfe-syntax stx)
+(define-syntax (process-cfe-syntax stx)
   (syntax-parse stx
-    [(_ iden:id empty-expr:empty-expr-internal)
+    [(_ a-null-expr:null-cfexp-expr)
+     #'(null-cfexp)]
+    
+    [(_ a-empty-expr:empty-cfexp-expr)
      #'(empty-cfexp)]
-           
-    [(_ iden:id a-singleton-expr:singleton-expr-internal)
-     (check-for-bad-circular-ref #'iden #'a-singleton-expr.val)
+    
+    [(_ a-singleton-expr:singleton-cfexp-expr (~optional iden #:defaults ([iden #'#f])))
+     (when (syntax-e #'iden)
+       (check-for-bad-circular-ref #'iden #'a-singleton-expr.val))
      (syntax/loc #'a-singleton-expr
        (singleton-cfexp a-singleton-expr.val))]
-           
-    [(_ iden:id a-concat-expr:concat-expr-internal)
-     (for ([val-stx (in-list (syntax-e #'(a-concat-expr.vals ...)))])
-       (check-for-bad-circular-ref #'iden val-stx))
+
+    [(_ a-kleene-expr:kleene-cfexp-expr (~optional iden #:defaults ([iden #'#f])))
+     (when (syntax-e #'iden)
+       (check-for-bad-circular-ref #'iden #'a-kleene-expr.val))
+     (syntax/loc #'a-kleene-expr
+       (kleene-cfexp a-kleene-expr.val))]
+    
+    [(_ a-concat-expr:concat-cfexp-expr (~optional iden #:defaults ([iden #'#f])))
+     (when (syntax-e #'iden)
+       (for ([val-stx (in-list (syntax-e #'(a-concat-expr.vals ...)))])
+         (check-for-bad-circular-ref #'iden val-stx)))
      (syntax/loc #'a-concat-expr
-       (concat-cfexp (process-nr-cfe-syntax iden a-concat-expr.vals)
+       (concat-cfexp (process-cfe-syntax a-concat-expr.vals iden)
                      ...))]
-           
-    [(_ iden:id a-union-expr:union-expr-internal)
-     (for ([val-stx (in-list (syntax-e #'(a-union-expr.vals ...)))])
-       (check-for-bad-circular-ref #'iden val-stx))
+    
+    [(_ a-union-expr:union-cfexp-expr (~optional iden #:defaults ([iden #'#f])))
+     (when (syntax-e #'iden)
+       (for ([val-stx (in-list (syntax-e #'(a-union-expr.vals ...)))])
+         (check-for-bad-circular-ref #'iden val-stx)))
      (syntax/loc #'a-union-expr
-       (union-cfexp (process-nr-cfe-syntax iden a-union-expr.vals)
+       (union-cfexp (process-cfe-syntax a-union-expr.vals iden)
                     ...))]
-           
-    [(_ iden:id a-null-expr:null-expr-internal)
-     #'(null-cfexp)]
-           
-    [(_ iden:id iden-expr:id)
-     (check-for-bad-circular-ref #'iden #'iden-expr)
+    
+    [(_ iden-expr:id (~optional iden #:defaults ([iden #'#f])))
+     (when (syntax-e #'iden)
+       (check-for-bad-circular-ref #'iden #'iden-expr))
      #`(if (procedure? iden-expr)
-           #,(syntax/loc #'iden
+           #,(syntax/loc #'iden-expr
                (iden-expr))
            iden-expr)]
-             
-    [(_ iden:id express:expr)
+    
+    [(_ express:expr)
      (define temp-id (generate-temporary))
-     (quasisyntax/loc #'express
-       (let ([#,temp-id (syntax/loc #'express (express))])
+     #`(let ([#,temp-id #,(syntax/loc #'express (express))])
          (if (procedure? #,temp-id)
              #,(quasisyntax/loc #'express
                  (#,temp-id))
-             #,temp-id)))]))
+             #,temp-id))]))
 
 (define-syntax (define-singleton-cfe stx)
   (syntax-parse stx
-    [(_ id-stx whole-expr val-stx)
-     (when (and (identifier? #'val-stx)
-                (free-identifier=? #'id-stx #'val-stx))
-                (raise-syntax-error 'singleton-cfexp circular-binding-message #'whole-expr #'val-stx '() ""))
-     #`(define id-stx (lambda ()
-                          (set! id-stx
-                                #,(quasisyntax/loc #'whole-expr
-                                    (singleton-cfexp val-stx)))
-                          id-stx))]))
+    [(_ a-singleton-clause:singleton-cfexp-binding)
+     (when (and (identifier? #'a-singleton-clause.expr.val)
+                (free-identifier=? #'a-singleton-clause.id #'a-singleton-clause.expr.val))
+       (raise-syntax-error 'singleton-cfexp circular-binding-message #'a-singleton-clause #'a-singleton-clause.expr.val '() ""))
+     #`(define a-singleton-clause.id #,(syntax/loc #'a-singleton-clause
+                                         (singleton-cfexp a-singleton-clause.expr.val)))]))
 
 (define-syntax (define-concat-cfe stx)
   (syntax-parse stx
-    [(_ id-stx whole-expr vals ...)
-     #`(define id-stx
+    [(_ a-concat-clause:concat-cfexp-binding)
+     #`(define a-concat-clause.id
          (lambda ()
-           (set! id-stx
-                 #,(syntax/loc #'whole-expr
-                     (concat-cfexp (process-nr-cfe-syntax id-stx vals)
-                                   ...
-                                   )))))]))
+           (set! a-concat-clause.id
+                 #,(syntax/loc #'a-concat-clause
+                     (concat-cfexp (process-cfe-syntax a-concat-clause.expr.vals a-concat-clause.id)
+                                   ...)))))]))
+
+(define-syntax (define-kleene-cfe stx)
+  (syntax-parse stx
+    [(_ a-kleene-clause:kleene-cfexp-binding)
+     #`(define a-kleene-clause.id
+         (lambda ()
+           (set! a-kleene-clause.id
+                 #,(syntax/loc #'a-kleene-clause
+                     (kleene-cfexp (process-cfe-syntax a-kleene-clause.expr.val a-kleene-clause.id))))))]))
 
 (define-syntax (union-cfe-set-box stx)
   (syntax-parse stx
-    [(_ id-stx whole-expr vals ...)
-     #`(set-box! id-stx
-                 #,(syntax/loc #'whole-expr
-                     (union-cfexp (process-cfe-syntax vals)
-                                  ...
-                                  #;#,@(for/list ([val (in-list (syntax-e #'(vals ...)))])
-                                       (quasisyntax/loc val
-                                         (process-cfe-syntax #,val))))))]))
+    [(_ a-union-clause:union-cfexp-binding)
+     #`(set-box! a-union-clause.id
+                 #,(syntax/loc #'a-union-clause
+                     (union-cfexp (process-cfe-syntax a-union-clause.expr.vals)
+                                  ...)))]))
 
 (define-syntax (make-cfe stx)
   (syntax-parse stx
     [(_ [(~describe #:role "auxiliary cfexps"
                     "cfexp-clause"
-                    (~or* a-empty-expr:empty-expr
-                          a-singleton-expr:singleton-expr
-                          a-concat-expr:concat-expr
-                          a-union-expr:union-expr
-                          a-null-expr:null-expr)) ...]
+                    (~or* a-empty-expr:empty-cfexp-binding
+                          a-singleton-expr:singleton-cfexp-binding
+                          a-concat-expr:concat-cfexp-binding
+                          a-union-expr:union-cfexp-binding
+                          a-kleene-clause:kleene-cfexp-binding
+                          a-null-expr:null-cfexp-binding)) ...]
         result-expr)
      
      #`(let ()
@@ -154,20 +193,20 @@
          (~? (define a-null-expr.id (null-cfexp)))
          ...
          ;; Singleton cfes
-         (~? (define-singleton-cfe a-singleton-expr.id a-singleton-expr a-singleton-expr.val))
+         (~? (define-singleton-cfe a-singleton-expr)) ;;a-singleton-expr.id a-singleton-expr a-singleton-expr.expr.val))
          ...
          ;; Concat cfes
-         (~? (define-concat-cfe a-concat-expr.id a-concat-expr a-concat-expr.vals ...))
+         (~? (define-concat-cfe a-concat-expr)) ;a-concat-expr.id a-concat-expr a-concat-expr.expr.vals ...))
+         ...
+         (~? (define-kleene-cfe a-kleene-clause))
          ...
          ;; Union cfes
          (~? (define a-union-expr.id (box (void))))
          ...
-         (~? (when (procedure? a-singleton-expr.id)
-               (a-singleton-expr.id)))
+         (~? (a-concat-expr.id))
          ...
-         (~? (when (procedure? a-concat-expr.id)
-               (a-concat-expr.id)))
+         (~? (a-kleene-clause.id))
          ...
-         (~? (union-cfe-set-box a-union-expr.id a-union-expr a-union-expr.vals ...))
+         (~? (union-cfe-set-box a-union-expr.id)) ;; a-union-expr.id a-union-expr a-union-expr.vals ...))
          ...
          (process-cfe-syntax result-expr))]))
