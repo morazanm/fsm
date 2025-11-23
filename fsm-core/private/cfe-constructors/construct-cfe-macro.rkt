@@ -9,7 +9,7 @@
 
 (provide make-cfe)
 
-(define-for-syntax circular-binding-message "Bad circular reference with binding identifier")
+
 
 (begin-for-syntax
   (define-syntax-class concat-cfexp-expr
@@ -77,11 +77,22 @@
       (match a-struct
         [(exn:fail:bad-circular-ref msg marks (list a-srcloc ...))
          a-srcloc])))
+
+  (define circular-binding-message "Bad circular reference with binding identifier in")
   
-  (define (check-for-bad-circular-ref id-stx-obj val-stx-obj)
+  (define (check-for-bad-circular-ref id-stx-obj val-stx-obj cfexp-type)
     (when (and (identifier? val-stx-obj)
                (free-identifier=? id-stx-obj val-stx-obj))
-      (raise (exn:fail:bad-circular-ref circular-binding-message
+      (raise (exn:fail:bad-circular-ref (if cfexp-type
+                                            (format "~a: ~a: ~a: ~a"
+                                                    (srcloc->string (syntax-srcloc val-stx-obj))
+                                                    cfexp-type
+                                                    circular-binding-message
+                                                    (syntax->datum val-stx-obj))
+                                            (format "~s: ~a: ~a"
+                                                    (srcloc->string (syntax-srcloc val-stx-obj))
+                                                    circular-binding-message
+                                                    (syntax->datum val-stx-obj)))
                                         (current-continuation-marks)
                                         (list (syntax-srcloc id-stx-obj) (syntax-srcloc val-stx-obj)))))))
 
@@ -95,20 +106,20 @@
     
     [(_ a-singleton-expr:singleton-cfexp-expr (~optional iden #:defaults ([iden #'#f])))
      (when (syntax-e #'iden)
-       (check-for-bad-circular-ref #'iden #'a-singleton-expr.val))
+       (check-for-bad-circular-ref #'iden #'a-singleton-expr.val 'singleton-cfexp))
      (syntax/loc #'a-singleton-expr
        (singleton-cfexp a-singleton-expr.val))]
 
     [(_ a-kleene-expr:kleene-cfexp-expr (~optional iden #:defaults ([iden #'#f])))
      (when (syntax-e #'iden)
-       (check-for-bad-circular-ref #'iden #'a-kleene-expr.val))
+       (check-for-bad-circular-ref #'iden #'a-kleene-expr.val 'kleene-cfexp))
      (syntax/loc #'a-kleene-expr
        (kleene-cfexp a-kleene-expr.val))]
     
     [(_ a-concat-expr:concat-cfexp-expr (~optional iden #:defaults ([iden #'#f])))
      (when (syntax-e #'iden)
        (for ([val-stx (in-list (syntax-e #'(a-concat-expr.vals ...)))])
-         (check-for-bad-circular-ref #'iden val-stx)))
+         (check-for-bad-circular-ref #'iden val-stx 'concat-cfexp)))
      (syntax/loc #'a-concat-expr
        (concat-cfexp (process-cfe-syntax a-concat-expr.vals iden)
                      ...))]
@@ -116,14 +127,14 @@
     [(_ a-union-expr:union-cfexp-expr (~optional iden #:defaults ([iden #'#f])))
      (when (syntax-e #'iden)
        (for ([val-stx (in-list (syntax-e #'(a-union-expr.vals ...)))])
-         (check-for-bad-circular-ref #'iden val-stx)))
+         (check-for-bad-circular-ref #'iden val-stx 'union-cfexp)))
      (syntax/loc #'a-union-expr
        (union-cfexp (process-cfe-syntax a-union-expr.vals iden)
                     ...))]
     
     [(_ iden-expr:id (~optional iden #:defaults ([iden #'#f])))
      (when (syntax-e #'iden)
-       (check-for-bad-circular-ref #'iden #'iden-expr))
+       (check-for-bad-circular-ref #'iden #'iden-expr #f))
      #`(if (procedure? iden-expr)
            #,(syntax/loc #'iden-expr
                (iden-expr))
@@ -140,9 +151,7 @@
 (define-syntax (define-singleton-cfe stx)
   (syntax-parse stx
     [(_ a-singleton-clause:singleton-cfexp-binding)
-     (when (and (identifier? #'a-singleton-clause.expr.val)
-                (free-identifier=? #'a-singleton-clause.id #'a-singleton-clause.expr.val))
-       (raise-syntax-error 'singleton-cfexp circular-binding-message #'a-singleton-clause #'a-singleton-clause.expr.val '() ""))
+     (check-for-bad-circular-ref #'a-singleton-clause.id #'a-singleton-clause.expr.val 'singleton-cfexp)
      #`(define a-singleton-clause.id #,(syntax/loc #'a-singleton-clause
                                          (singleton-cfexp a-singleton-clause.expr.val)))]))
 
@@ -207,6 +216,6 @@
          ...
          (~? (a-kleene-clause.id))
          ...
-         (~? (union-cfe-set-box a-union-expr.id)) ;; a-union-expr.id a-union-expr a-union-expr.vals ...))
+         (~? (union-cfe-set-box a-union-expr)) ;; a-union-expr.id a-union-expr a-union-expr.vals ...))
          ...
          (process-cfe-syntax result-expr))]))
