@@ -80,30 +80,26 @@
 ;;Purpose: A wrapper to create a concat-cfexp unless all the given cfexps are empty-cfexp
 (define #;define/contract (concat-cfexp . cfexps)
   #;concat-cfexp/c
+  ;;cfe -> cfe 
+  ;;Purpose: If the given cfe is a union then it is put into a box otherwise nothing happens
   (define (unnest-unions cfe)
   (if (mk-union-cfexp? cfe)
       (box cfe)
       cfe))
-  (cond [(empty? cfexps) (null-cfexp)]
-        [(all-empty? cfexps) (empty-cfexp)]
-        [(= (length cfexps) 1) (identity (first cfexps))]
-        [else (mk-concat-cfexp (list->vector (map unnest-unions cfexps)))]))
+  (cond [(empty? cfexps) (null-cfexp)] ;; no input cfes -> null
+        [(all-empty? cfexps) (empty-cfexp)] ;; only empty cfes -> empty
+        [(= (length cfexps) 1) (identity (first cfexps))] ;;only one cfe -> cfe
+        [else (mk-concat-cfexp (list->vector (map unnest-unions cfexps)))])) ;;otherwise box unboxed-union cfes -> concat
 
-
-(define (unnest-unions cfe)
-  (if (mk-union-cfexp? cfe)
-      (box cfe)
-      cfe))
 
 ;; . cfexp -> union-cfexp/empty-cfexp
 ;;Purpose: A wrapper to create a union-cfexp unless all the given cfexps are empty-cfexp
 (define #;define/contract (union-cfexp . cfexps)
   #;union-cfexp/c
-  ;(displayln cfexps)
-  (cond [(empty? cfexps) (null-cfexp)]
-        [(all-empty? cfexps) (empty-cfexp)]
-        [(= (length cfexps) 1) (identity (first cfexps))]
-        [else (mk-union-cfexp (vector-append (list->vector (filter-not mk-union-cfexp? cfexps))
+  (cond [(empty? cfexps) (null-cfexp)] ;; no input cfes -> null
+        [(all-empty? cfexps) (empty-cfexp)] ;; only empty cfes -> empty
+        [(= (length cfexps) 1) (identity (first cfexps))] ;;only one cfe -> cfe
+        [else (mk-union-cfexp (vector-append (list->vector (filter-not mk-union-cfexp? cfexps)) ;;otherwise lift nested unions -> union
                                              (foldl (λ (u-cfe acc)
                                                       (vector-append acc (mk-union-cfexp-locfe u-cfe)))
                                                     (vector)
@@ -376,7 +372,7 @@
   ;;cfe -> cfe
   ;;Purpose: Updates the cfe to be bound to a box if it is not already a box
   (define (update-cfe cfe)
-    (if (box? cfe)
+    (if (or (mk-kleene-cfexp? cfe) (box? cfe))
         cfe
         (let ([S (box (void))])
           (begin
@@ -398,7 +394,8 @@
   ;;cfe extraction-results -> extraction-results
   ;;Purpose: Updates the given extraction-results to add the given cfe if it is a singleton or variable
   (define (update-extraction-results cfe extract-res)
-    (cond [(box? cfe) (struct-copy extraction-results
+    (cond [(or (mk-kleene-cfexp? cfe)
+               (box? cfe)) (struct-copy extraction-results
                                             extract-res
                                             [lang-boxes (cons cfe (extraction-results-lang-boxes extract-res))])]
           [(mk-singleton-cfexp? cfe) (struct-copy extraction-results
@@ -431,12 +428,10 @@
   ;;(listof lang-boxes) (hash old-nt . new-nt) (listof rule) -> (listof rule)
   ;;Purpose: Converts every var-cfexp into the corresponding grammar rule
   (define (lang-boxes->rules loLabox new-nts)
-    (define reverse-look-up-hash (hash-map/copy new-nts
-                                          (λ (v k)
-                                            (values k v))))
     ;;nonterminal (queueof cfe) (listof rule) -> (listof rule)
     ;;Purpose: Converts each cf in the (queueof cfe) into the proper grammar rules
     (define (remake-rules nt rules-to-convert finished-rules)
+      
       ;;non-terminal cfe -> rule
       ;;Purpose: Converts the cfe into a grammar rule using the given non-terminal
       (define (cfe->rule nt cfe)
@@ -467,22 +462,34 @@
                           (string->symbol (tl-foldl (λ (cfe acc)
                                                       (string-append
                                                        (cond [(mk-singleton-cfexp? cfe) (mk-singleton-cfexp-char cfe)]
-                                                             [(box? cfe) (symbol->string (hash-ref new-nts cfe))] ;;sub with NT
+                                                             [(or (mk-kleene-cfexp? cfe)
+                                                                  (box? cfe))
+                                                              (symbol->string (hash-ref new-nts cfe))] ;;sub with NT
                                                              [else (symbol->string (convert-rhs cfe))]) 
                                                        acc))
                                                     ""
                                                     (treelist-reverse (vector->treelist (mk-concat-cfexp-locfe cfe)))))]
+                         [(mk-kleene-cfexp? cfe) (string->symbol (string-append
+                                                                  (let [(cfe (mk-kleene-cfexp-cfe cfe))]
+                                                                    (cond [(mk-singleton-cfexp? cfe) (mk-singleton-cfexp-char cfe)]
+                                                                          [(or (mk-kleene-cfexp? cfe)
+                                                                               (box? cfe))
+                                                                           (symbol->string (hash-ref new-nts cfe))] ;;sub with NT
+                                                                          [else (symbol->string (convert-rhs cfe))])) 
+                                                                  (symbol->string (hash-ref new-nts cfe))))]
                          [else (error (format "unsuitable cfe ~a" cfe))])])
           (list nt ARROW RHS)))
       (if (qempty? rules-to-convert)
           finished-rules
           (let ([cfe (qfirst rules-to-convert)])
-            (if (mk-union-cfexp? cfe)
-                (remake-rules nt (enqueue (dequeue rules-to-convert) (vector->treelist (mk-union-cfexp-locfe cfe))) finished-rules)
-                (remake-rules nt (dequeue rules-to-convert) (cons (cfe->rule nt cfe) finished-rules))))))
+            (cond [(mk-union-cfexp? cfe)
+                   (remake-rules nt (enqueue (dequeue rules-to-convert) (vector->treelist (mk-union-cfexp-locfe cfe))) finished-rules)]
+                  [(mk-kleene-cfexp? cfe)
+                   (remake-rules nt (dequeue rules-to-convert) (cons (list nt ARROW EMP) (cons (cfe->rule nt cfe) finished-rules)))]
+                  [else (remake-rules nt (dequeue rules-to-convert) (cons (cfe->rule nt cfe) finished-rules))]))))
     (foldl (λ (lang-box res)
              (append (remake-rules (hash-ref new-nts lang-box)
-                                   (treelist (unbox lang-box))
+                                   (treelist (if (box? lang-box) (unbox lang-box) lang-box))
                                    '())
                      res))
            '()

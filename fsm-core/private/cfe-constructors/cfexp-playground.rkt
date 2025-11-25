@@ -45,6 +45,9 @@
                  C)
   #;(singleton-cfexp 'c))
 
+(define D (make-cfe [(D (singleton "d"))]
+                 D))
+
 ;; w = ww^r
 (define WWR
   (make-cfe [(WWr (union EMPTY
@@ -82,6 +85,10 @@
 
 (define CUAUB (make-cfe ([CUAUB (union C (union A B))]) ;;now lifts nested unions
                       CUAUB))
+
+(define CUAUBUD (make-cfe ([CUAUBUD (union C (union A (union D B)))]) ;;now lifts nested unions
+                      CUAUBUD))
+
 
 ;;w = a^2ib^i
 (define A2iBi
@@ -258,6 +265,17 @@
                   [ZW (concat Z W)] ;;a^ib^jc^k, j=k
                   [AiBjCk (union EF ZW)])
                  AiBjCk))
+
+(define AiBjCk4
+  (make-cfe ([A (singleton "a")]
+             [B (singleton "b")]
+             [C (singleton "c")]
+             [AEB (union EMPTY (concat A AEB B))]
+             [CF (kleene C)]
+             [BWC (union (concat B BWC C) EMPTY)]
+             [AZ (kleene A)]
+             [AiBjCk (union (concat AEB CF) (concat AZ BWC))])
+            AiBjCk))
 
 
 ;;L = wcw^r
