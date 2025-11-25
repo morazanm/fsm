@@ -73,6 +73,15 @@
 
 (define AUB (make-cfe ([AUB (union A B)])
                       AUB))
+(define cAUB (make-cfe ([AUB (union A B)]
+                        [aAUB (concat C AUB)])
+                      aAUB))
+
+(define cAUB2 (make-cfe ([aAUB (concat C (union A B))]) ;; now boxes the union 
+                      aAUB))
+
+(define CUAUB (make-cfe ([CUAUB (union C (union A B))]) ;;now lifts nested unions
+                      CUAUB))
 
 ;;w = a^2ib^i
 (define A2iBi
