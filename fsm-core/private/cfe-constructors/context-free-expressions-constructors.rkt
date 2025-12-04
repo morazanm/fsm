@@ -99,7 +99,7 @@
   (cond [(empty? cfexps) (null-cfexp)] ;; no input cfes -> null
         [(all-empty? cfexps) (empty-cfexp)] ;; only empty cfes -> empty
         [(= (length cfexps) 1) (identity (first cfexps))] ;;only one cfe -> cfe
-        [else (mk-union-cfexp (vector-append (list->vector (filter-not mk-union-cfexp? cfexps)) ;;otherwise lift nested unions -> union
+        [else (mk-union-cfexp (vector-append (list->vector (filter-not mk-union-cfexp? cfexps)) ;;otherwise flatten nested unions -> union
                                              (foldl (λ (u-cfe acc)
                                                       (vector-append acc (mk-union-cfexp-locfe u-cfe)))
                                                     (vector)
