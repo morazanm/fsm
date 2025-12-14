@@ -266,6 +266,10 @@ ismg "finished machine"
       ;;state-pair (listof state-pair) transition-table alphabet -> boolean
       ;;Purpose: Determines if the given state-pair needs to be marked.
       (define (update-mark? unmarked-pair)
+        #;(displayln (format "unmarked pairs:~v \n\n unmarked destin pairs:~v \n\n marked pairs: ~v \n\n"
+                           (list (state-pair-s1 unmarked-pair) (state-pair-s2 unmarked-pair))
+                           (state-pair-destination-pairs unmarked-pair)
+                           (map (λ (x) (list (state-pair-s1 x) (state-pair-s2 x))) marked-pairs)))  
         (ormap (λ (sp) (list? (member sp marked-pairs (λ (sp1 sp2) (or (and (eq? (state-pair-s1 sp1) (state-pair-s1 sp2))
                                                                             (eq? (state-pair-s2 sp1) (state-pair-s2 sp2)))
                                                                        (and (eq? (state-pair-s1 sp1) (state-pair-s2 sp2))
@@ -764,9 +768,6 @@ ismg "finished machine"
   (define (make-phase5-imsg phase-attribute)
     (let ([merged-state (phase-5-attributes-merged-states phase-attribute)]
           [remaining-states (phase-5-attributes-remaining-states phase-attribute)])
-      ;(displayln merged-state)
-      ;(displayln remaining-states)
-       ;          (displayln merged-state)
       (above (text "Rebuilding the machine" FONT-SIZE BLACK)
              (if (or (empty? merged-state)
                         (< (set-count (merged-state-old-symbols merged-state)) 2))                 
@@ -1068,24 +1069,11 @@ ismg "finished machine"
                                              (ormap (λ (state) (set-member? (merged-state-old-symbols ms) state)) (dfa-states rebuild-M))))
                                        loMS)]
                  [found-merged-state? (not (empty? merged-state))]
-                 [remaining-states ;(begin
-                                    ; (displayln (first loRM))
-                                     ;(displayln states)
-                                     #;(displayln (filter-not (λ (st)
+                 [remaining-states (filter-not (λ (st)
                                                    (or (set-member? (if found-merged-state? (merged-state-old-symbols (first merged-state))
                                                                         merged-state) st)
                                                        (member st (dfa-states rebuild-M))))
-                                                 states))
-                                     (filter-not (λ (st)
-                                                   (or (set-member? (if found-merged-state? (merged-state-old-symbols (first merged-state))
-                                                                        merged-state) st)
-                                                       (member st (dfa-states rebuild-M))))
-                                                 states)
-                                   #;(if found-merged-state?
-                                       (filter-not (λ (state)
-                                                 (set-member? (merged-state-old-symbols (first merged-state)) state))
-                                                 states)
-                                       states)]
+                                                 states)]
                  [new-phase (phase 5 unminimized-M state-pairing-table (phase-5-attributes
                                                                         (first loRM)
                                                                         (if found-merged-state? (first merged-state) merged-state)
@@ -1147,6 +1135,17 @@ ismg "finished machine"
          [graphs (make-main-graphic all-phases state-table-mappings)])
     ;(void)
     ;phase-5
+    ;phase-4
+    #;(values (minimization-results-loSP results-from-minimization) all-loSP)
+    #;(values 4
+                                       phase-4-attributes
+                                       no-unreachables-M
+                                       table-with-initial-markings
+                                       rest-loSP
+                                       state-table-mappings
+                                       (list->set (map (compose1 phase-3-attributes-initial-pairings phase-attributes)
+                                            (phase-results-loPhase phase3+new-table)))
+                                       (set))
     ;#;
     (run-viz (map first graphs)
              (list->vector (map (λ (x table)
