@@ -114,7 +114,7 @@ viz phases
 0 -> only show input machine
 imsg "Original machine"
 
-.5 -> coonvert to dfa
+.5 -> convert to dfa
 ismg Converting Machine into a dfa
 
 1 -> if applicable, remove unreachable states
@@ -823,12 +823,20 @@ ismg "finished machine"
   ;; Purpose: To make a node graph
   (define (make-node-graph graph los start finals)
     (foldl (λ (state result)
-             (let ([member-of-finals? (member state finals)])
+             (let ([member-of-finals? (member state finals)]
+                   [found-state-from-state-pair?
+                    (and (not (list? state-pair))
+                         (or (eq? state (state-pair-s1 state-pair))
+                             (eq? state (state-pair-s2 state-pair))))])
                (add-node result
                          state
-                         #:atb (hash 'color (if (eq? state start) 'darkgreen BLACK)
+                         #:atb (hash 'color (cond [(eq? state start) 'darkgreen]
+                                                  [found-state-from-state-pair? 'red]
+                                                  [else BLACK])
                                      'shape (if member-of-finals? 'doublecircle 'circle)
-                                     'style (if member-of-finals? 'filled 'solid)
+                                     'style (cond [found-state-from-state-pair? 'bold]
+                                                  [member-of-finals? 'filled]
+                                                  [else 'solid])
                                      'fillcolor 'orange
                                      'label state
                                      'fontcolor BLACK
@@ -838,7 +846,7 @@ ismg "finished machine"
 
   ;; graph dfa (listof state-pair) -> graph
   ;; Purpose: To make an edge graph
-  (define (make-edge-graph graph state-pair merge-states)
+  (define (make-edge-graph graph merge-states)
     (foldl (λ (rule result)
              (let* ([source-state (first rule)]
                     [found-state-from-state-pair?
@@ -865,8 +873,7 @@ ismg "finished machine"
                                                   #:atb (hash 'rankdir "LR" 'font "Sans"))
                                     (dfa-states M)
                                     (dfa-start M)
-                                    (dfa-finals M))                  
-                   state-pair
+                                    (dfa-finals M))     
                    (if (empty? merge-states)
                        merge-states
                        (merged-state-old-symbols merge-states))))
