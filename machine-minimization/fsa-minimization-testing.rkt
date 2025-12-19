@@ -4,7 +4,8 @@
          "../fsm-core/private/fsa.rkt"
          "fsa-minimization.rkt"
          "../sm-graph.rkt"
-         "../visualizations/viz-sm-constructors/viz-minimization.rkt")
+         "../visualizations/viz-sm-constructors/viz-minimization.rkt"
+         "../visualizations/viz-sm-constructors/viz-minimization-new.rkt")
 
 #;(define (remove-states-that-cannot-reach-finals a-ndfa))
   
@@ -450,3 +451,5 @@
 
 
 "bug is in losp the order, isnt fixed so things are being shown out of order, probably show rewrite file."
+
+"highlight box of destination pair"

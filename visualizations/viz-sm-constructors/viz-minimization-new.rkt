@@ -13,7 +13,7 @@
          "../viz-lib/bounding-limits.rkt"
          "../viz-lib/zipper.rkt")
 
-(provide minimization-viz test-colors)
+(provide minimization-viz2)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;CONSTANTS;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -58,8 +58,8 @@
 ;;destination-pairs | The state pairs that s1 and s2 transition to | (listof state-pair)
 (struct state-pair (s1 s2 marked? destination-pairs) #:transparent)
 
-;;all-pairs | all of the state-pairs after each iteration of filling the table | (listof state-pair) 
-(struct state-pairings (all-pairs) #:transparent)
+;;marked-pairs | all of the marked state-pairs after each iteration of filling the table | (listof state-pair) 
+(struct state-pairings (marked-pairs unmarked-pairs) #:transparent)
 
 ;;new-symbol | the new state symbol that represents all of the states that got merged | symbol
 ;;old-symbols | all of the symbols that merged into one state | (listof state)
@@ -149,6 +149,22 @@ ismg "finished machine"
        (M null 'is-deterministic?)
        'no-dead))
 
+;; dfa -> (vectorof (vectorof marking))
+;; Purpose: Creates the representation of the state pairing table
+(define (make-table-alg M)
+  ;; (listof state) natnum -> (vectorof (vectorof marking))
+  ;; Purpose: Makes the state pairing table using given states 
+  (define (make-table-helper states num-rows)
+    (build-vector num-rows
+                  (λ (row-num)
+                    (build-vector num-rows
+                                  (λ (col-num)
+                                    (let ([blank-tile-count (- (length states) (- num-rows row-num))])
+                                      (cond [(= row-num 0) (if (= col-num 0) BLACK (list-ref states (sub1 col-num)))]
+                                            [(= col-num 0) (list-ref states (sub1 row-num))]
+                                            [(<= col-num blank-tile-count) #f]
+                                            [else BLACK])))))))
+  (make-table-helper (dfa-states M) (add1 (length (dfa-states M)))))
 
 ;;(queueof X) (queue X) -> (queueof X)
 ;;Purpose: Adds the X to the back of the given (queueof X) 
@@ -275,35 +291,33 @@ ismg "finished machine"
                                                                        (and (eq? (state-pair-s1 sp1) (state-pair-s2 sp2))
                                                                             (eq? (state-pair-s2 sp1) (state-pair-s1 sp2))))))))
                (state-pair-destination-pairs unmarked-pair)))
-      (cond [(empty? unmarked-pairs) (state-pairings (append marked-pairs remaining-unmarked-pairs))]
+      (cond [(empty? unmarked-pairs) (state-pairings (identity marked-pairs) (identity
+                                                                              remaining-unmarked-pairs))]
             [(update-mark? (first unmarked-pairs))
-             (update-pairs (cons (struct-copy state-pair (first unmarked-pairs) [marked? #t]) marked-pairs)
+             (update-pairs (enqueue marked-pairs (list (struct-copy state-pair (first unmarked-pairs) [marked? #t])))
                            (rest unmarked-pairs)
                            remaining-unmarked-pairs)]
             [else (update-pairs marked-pairs
                                 (rest unmarked-pairs)
-                                (cons (first unmarked-pairs) remaining-unmarked-pairs))]))
-    ;;(listof state-pairings) (listof state-pairings) -> boolean
+                                (enqueue remaining-unmarked-pairs (list (first unmarked-pairs))))]))
+    ;;(listof state-pairings) (listof state-pairings) (listof state-pairings) (listof state-pairings) -> boolean
     ;; Purpose: Determines if the two given state-pairings are the same
-    (define (same-markings? loSP1 loSP2)
-      (let ([unmarked-SP1 (filter (λ (sp) (not (state-pair-marked? sp))) loSP1)]
-            [unmarked-SP2 (filter (λ (sp) (not (state-pair-marked? sp))) loSP2)]
-            [marked-SP1 (filter (λ (sp) (state-pair-marked? sp)) loSP1)]
-            [marked-SP2 (filter (λ (sp) (state-pair-marked? sp)) loSP2)])
-        (and (andmap (λ (sp) (list? (member sp unmarked-SP2))) unmarked-SP1)
-             (andmap (λ (sp) (list? (member sp marked-SP2))) marked-SP1))))
+    (define (same-markings? marked-SP1 unmarked-SP1 marked-SP2 unmarked-SP2)
+      (and (andmap (λ (sp) (list? (member sp unmarked-SP2))) unmarked-SP1)
+           (andmap (λ (sp) (list? (member sp marked-SP2))) marked-SP1)))
     (if (and (>= (length loSP) 2)
-             (same-markings? (state-pairings-all-pairs (first loSP)) (state-pairings-all-pairs (second loSP))))
+             (same-markings? (state-pairings-marked-pairs (first loSP))  (state-pairings-unmarked-pairs (first loSP))
+                             (state-pairings-marked-pairs (second loSP)) (state-pairings-unmarked-pairs (second loSP))))
         loSP
-        (let ([marked-pairs (filter (λ (sp) (state-pair-marked? sp)) (state-pairings-all-pairs (first loSP)))]
-              [unmarked-pairs (filter (λ (sp) (not (state-pair-marked? sp))) (state-pairings-all-pairs (first loSP)))])
-          (make-matches (cons (update-pairs marked-pairs unmarked-pairs '()) loSP)
+        (make-matches (cons (update-pairs (state-pairings-marked-pairs (first loSP)) (state-pairings-unmarked-pairs (first loSP))
+                                            '() #;(state-pairings '() '()))
+                                            loSP)
                         transition-table
-                        alphabet))))
+                        alphabet)))
   
   ;; (listof state-pairings) dfa transtition-table -> dfa
   ;;Purpose: Converts the (listof state-pairings), dfa, and transition table into an equivalent minimized (if possible) dfa.
-  (define (table->dfa loSP old-dfa transition-table)
+  (define (table->dfa marked-pairs unmarked-pairs old-dfa transition-table)
     ;;state (listof merged-state) -> state
     ;; Purpose: Searches for the merged-state that contains the given state
     (define (search-for-merged-state old-state merged-states)
@@ -373,8 +387,8 @@ ismg "finished machine"
             [(accumulate-unmarked-pairs (rest unmarked-pairs) (cons (make-merged-state (first unmarked-pairs)) acc))]))
     (let* ([states (fsa-getstates old-dfa)]
            [finals (fsa-getfinals old-dfa)]
-           [marked-pairs (filter (λ (sp) (state-pair-marked? sp)) loSP)]
-           [unmarked-pairs (filter (λ (sp) (not (state-pair-marked? sp))) loSP)]
+           #;[marked-pairs (filter (λ (sp) (state-pair-marked? sp)) loSP)]
+           #;[unmarked-pairs (filter (λ (sp) (not (state-pair-marked? sp))) loSP)]
            [merged-unmarked-pairs (accumulate-unmarked-pairs unmarked-pairs '())]
            [states-that-were-merged (set->list (foldl (λ (mp acc) (set-remove (set-union acc (merged-state-old-symbols mp))
                                                                               (merged-state-new-symbol mp)))
@@ -404,8 +418,15 @@ ismg "finished machine"
          [finals (fsa-getfinals dfa)]
          [init-states-table (make-states-table dfa transition-table)]
          [states-table (map (λ (sp) (mark-states-table sp finals)) init-states-table)]
-         [filled-table (make-matches (list (state-pairings states-table)) transition-table (fsa-getalphabet dfa))]
-         [new-M (table->dfa (state-pairings-all-pairs (first filled-table)) dfa transition-table)])
+         [num-pairings (length init-states-table)]
+         [marked-pairs (filter (λ (sp) (state-pair-marked? sp)) states-table)]
+         [unmarked-pairs (filter-not (λ (sp) (state-pair-marked? sp)) states-table)]
+         [state-table-mappings (for/hash ([state (fsa-getstates dfa)]
+                                          [num (in-naturals)])
+                                 (values state (add1 num)))]
+         #;[no-unreachables-M-state-pairing-table (make-table dfa)]
+         [filled-table (make-matches (list (state-pairings marked-pairs unmarked-pairs)) transition-table (fsa-getalphabet dfa))]
+         [new-M (table->dfa (state-pairings-marked-pairs (first filled-table)) (state-pairings-unmarked-pairs (first filled-table)) dfa transition-table)])
     (minimization-results M (first new-M) dfa filled-table (second new-M))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;VIZ-SCENE-STUFF;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -865,8 +886,8 @@ ismg "finished machine"
                                      'style (if (or found-state-from-state-pair? found-state-from-merge-state?)
                                                 'bold
                                                 'solid)
-                                     'color BLACK #;(if (or found-state-from-state-pair? found-state-from-merge-state?)
-                                                (hash-ref sigma-color-pairings (second rule))
+                                     'color (if (or found-state-from-state-pair? found-state-from-merge-state?)
+                                                'red #;(hash-ref sigma-color-pairings (second rule))
                                                 BLACK)))))
            graph
            (dfa-rules M)))
@@ -925,7 +946,7 @@ ismg "finished machine"
 
 ;; fsa -> void
 ;; Purpose: Displays the process of minimizing a dfa
-(define (minimization-viz M)
+(define (minimization-viz2 M)
   ;;dfa dfa -> boolean
   ;;Purpose: Determines if the two dfa have any changes
   (define (machine-changed? old-M new-M)
@@ -1085,8 +1106,8 @@ ismg "finished machine"
          [original-M (unchecked->dfa (minimization-results-original-M results-from-minimization))]
          [no-unreachables-M (minimization-results-unreachables-removed-M results-from-minimization)]
          [all-loSP (reverse (minimization-results-loSP results-from-minimization))]
-         [final-non-final-pairings (filter state-pair-marked? (state-pairings-all-pairs (first all-loSP)))]
-         [rest-loSP (append-map state-pairings-all-pairs (rest all-loSP))]
+         [final-non-final-pairings (state-pairings-marked-pairs (first all-loSP))]
+         [rest-loSP (append-map (λ (sp) (append (state-pairings-unmarked-pairs sp) (state-pairings-marked-pairs sp))) (rest all-loSP))]
          [unreachable-states (filter (λ (s) (not (member s (fsa-getstates no-unreachables-M)))) (fsa-getstates unchecked-M))]
          [M (ndfa->dfa M)]
          [minimized-M (minimization-results-new-machine results-from-minimization)]
@@ -1099,6 +1120,7 @@ ismg "finished machine"
                                  (values state (add1 num)))]
          [no-unreachables-M-state-pairing-table (make-table no-unreachables-M)]
          [minimized-M (unchecked->dfa minimized-M)]
+         ;#|
          [phase--1 (list (phase -1 original-M no-unreachables-M-state-pairing-table (phase-0-attributes)))]
          [phase-0 (if (not (dfa-deterministic? original-M))
                        (list (phase 0 M  no-unreachables-M-state-pairing-table (phase-0-attributes)))
@@ -1132,12 +1154,14 @@ ismg "finished machine"
                       '())]
          [phase-6 (list (phase 6 (last rebuilding-machines) filled-table (phase-6-attributes can-be-minimized?)))]
          [all-phases (append phase--1 phase-0 phase-1 phase-2 phase-3 phase-4 phase-5 phase-6)]
-         [graphs (make-main-graphic all-phases state-table-mappings)])
+         [graphs (make-main-graphic all-phases state-table-mappings)]
+;|#
+)
     ;(void)
     ;phase-5
     ;phase-4
-    #;
-    (values (minimization-results-loSP results-from-minimization) 99 all-loSP)
+    ;#;
+    ;(values rest-loSP #;(minimization-results-loSP results-from-minimization) 99 all-loSP)
     #;
     (values 4
                                        phase-4-attributes
