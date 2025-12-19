@@ -665,6 +665,7 @@ ismg "finished machine"
             (define (draw-square sym)
               (let* ([base-square-img (overlay (square 40 'solid 'white) (square 45 'solid 'gray))]
                      [select-square-img (overlay (square 40 'solid 'white) (square 45 'solid 'red))]
+                     [destin-select-square-img (overlay (square 40 'solid 'white) (square 45 'solid 'blue))]
                      [final-state-square-img (overlay (square 40 'solid 'orange) (square 45 'solid 'gray))]
                      [current-pair? (or (and (not (list? state-pair))
                                              (= (hash-ref state-table-mappings (state-pair-s1 state-pair)) row-idx)
@@ -673,11 +674,23 @@ ismg "finished machine"
                                              (ormap (λ (sp)
                                                  (and (= (hash-ref state-table-mappings (state-pair-s1 sp)) row-idx)
                                                       (= (hash-ref state-table-mappings (state-pair-s2 sp)) column-idx)))
-                                               state-pair)))])
-                (cond [(eq? sym BLANK-SPACE) (if current-pair? select-square-img base-square-img)]
+                                               state-pair)))]
+                     [destin-pairs (if (list? state-pair)
+                                       state-pair
+                                       (state-pair-destination-pairs state-pair))]
+                     [destin-pairs? (ormap (λ (sp)
+                                             (and (= (hash-ref state-table-mappings (state-pair-s1 sp)) row-idx)
+                                                  (= (hash-ref state-table-mappings (state-pair-s2 sp)) column-idx)))
+                                           destin-pairs)])
+                (cond [(eq? sym BLANK-SPACE) (cond [current-pair? select-square-img]
+                                                   [destin-pairs? destin-select-square-img]
+                                                   [else base-square-img])]
                       [(eq? sym BLACK) (overlay (square 40 'solid BLACK) (square 45 'solid 'gray))]
                       [(eq? sym MARK) (overlay (text "X" 38 BLACK) base-square-img)]
-                      [(eq? sym NEW-MARK) (overlay (text "X" 38 'red) (if current-pair? select-square-img base-square-img))]
+                      [(eq? sym NEW-MARK) (overlay (text "X" 38 'red)
+                                                   (cond [current-pair? select-square-img]
+                                                         [destin-pairs? destin-select-square-img]
+                                                         [else base-square-img]))]
                       [else (overlay (text (symbol->string sym) 38 BLACK)
                                      (if (member sym finals)
                                          final-state-square-img

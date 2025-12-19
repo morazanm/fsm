@@ -449,7 +449,3 @@
 
 ;(time (minimization-viz EX3-vid))
 
-
-"bug is in losp the order, isnt fixed so things are being shown out of order, probably show rewrite file."
-
-"highlight box of destination pair"
