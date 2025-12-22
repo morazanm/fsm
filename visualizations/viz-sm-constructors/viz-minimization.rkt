@@ -1082,6 +1082,7 @@ ismg "finished machine"
     (make-phase-5-helper loRM loMS states '()))
   (let* ([unchecked-M M]
          [results-from-minimization (minimize-dfa unchecked-M)]
+
          [original-M (unchecked->dfa (minimization-results-original-M results-from-minimization))]
          [no-unreachables-M (minimization-results-unreachables-removed-M results-from-minimization)]
          [all-loSP (reverse (minimization-results-loSP results-from-minimization))]
@@ -1099,6 +1100,8 @@ ismg "finished machine"
                                  (values state (add1 num)))]
          [no-unreachables-M-state-pairing-table (make-table no-unreachables-M)]
          [minimized-M (unchecked->dfa minimized-M)]
+
+         #|
          [phase--1 (list (phase -1 original-M no-unreachables-M-state-pairing-table (phase-0-attributes)))]
          [phase-0 (if (not (dfa-deterministic? original-M))
                        (list (phase 0 M  no-unreachables-M-state-pairing-table (phase-0-attributes)))
@@ -1132,7 +1135,8 @@ ismg "finished machine"
                       '())]
          [phase-6 (list (phase 6 (last rebuilding-machines) filled-table (phase-6-attributes can-be-minimized?)))]
          [all-phases (append phase--1 phase-0 phase-1 phase-2 phase-3 phase-4 phase-5 phase-6)]
-         [graphs (make-main-graphic all-phases state-table-mappings)])
+         [graphs (make-main-graphic all-phases state-table-mappings)]
+|#)
     (void)
     ;phase-5
     ;phase-4

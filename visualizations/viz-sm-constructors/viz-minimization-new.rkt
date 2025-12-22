@@ -11,7 +11,8 @@
          "../viz-lib/default-viz-function-generators.rkt"
          "../viz-lib/viz.rkt"
          "../viz-lib/bounding-limits.rkt"
-         "../viz-lib/zipper.rkt")
+         "../viz-lib/zipper.rkt"
+         racket/treelist)
 
 (provide minimization-viz2)
 
@@ -25,11 +26,11 @@
 
 (define MARK 'mark)
 
-(define e-queue '())
+(define e-queue empty-treelist)
 
-(define qfirst first)
+(define qfirst treelist-first)
 
-(define qempty? empty?)
+(define qempty? treelist-empty?)
 
 (define FONT-SIZE 20)
 
@@ -129,28 +130,61 @@ imsg "building the new machine"
 ismg "finished machine"
 |#
 
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;Treelist-helpers;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define (treelist-second tl)
+  (treelist-ref tl 1))
+
+(define (treelist-third tl)
+  (treelist-ref tl 2))
+
+(define (treelist-filter-map pred f tl)
+  (for/treelist ([first (in-treelist tl)]
+    #:when (pred first))
+    (f first)))
+
+(define (treelist-append-map f tl)
+  (for/fold ([acc empty-treelist])
+            ([first (in-treelist tl)])
+    (treelist-add acc (f first))))
+
+(define (treelist-ormap f tl)
+  (for/or ([first (in-treelist tl)])
+    (f first)))
+
+(define (treelist-andmap f tl)
+  (for/and ([first (in-treelist tl)])
+    (f first)))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;MINIMIZATION ALGORITHM;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;;unchecked-dfa -> dfa-struct
 ;;Purpose: Converts the given unchecked-dfa to a dfa struct
 (define (unchecked->dfa M)
-  (dfa (fsa-getstates M)
-       (fsa-getalphabet M)
+  (dfa (list->treelist (fsa-getstates M))
+       (list->treelist (fsa-getalphabet M))
        (fsa-getstart M)
-       (fsa-getfinals M)
-       (fsa-getrules M)
+       (list->set (fsa-getfinals M))
+       (list->treelist (fsa-getrules M))
        (M null 'is-deterministic?)
        'no-dead))
 
 ;;(queueof X) (queue X) -> (queueof X)
 ;;Purpose: Adds the X to the back of the given (queueof X) 
 (define (enqueue queue x)
-  (append queue x))
+  ;(displayln x)
+  (treelist-append queue x))
 
 ;;(queueof X) -> (queueof X)
 ;;Purpose: Removes the first element of the given (queueof X) 
 (define (dequeue queue)
-  (rest queue))
+  (treelist-rest queue))
+
+#|
+A Path is a (treelistof dfa-rule)
+
+|#
 
 ;;dfa -> dfa
 ;;Purpose: If possible minimizes the given dfa, by merging equivalent states and removing unreachable states
@@ -164,35 +198,45 @@ ismg "finished machine"
       ;; path -> boolean
       ;; Purpose: Determines if the given path has reached the destination state
       (define (reached-destination? path)
-        (eq? (third (first path)) destination))
+        ;(displayln path)
+        (eq? (third (treelist-first path)) destination))
       ;;start destination path -> path
       ;; Purpose: Updates the path to the destination state
       (define (reachable-from-start-helper path)
-        (let* ([last-rules-used (first path)]
-               [usable-rules (filter (λ (rule) (and (eq? (third last-rules-used) (first rule))
-                                                    (not (member rule path))))
+        (let* ([last-rules-used (treelist-first path)]
+               [usable-rules (treelist-filter (λ (rule) (and (eq? (third last-rules-used) (first rule))
+                                                             (not (treelist-member? path rule))))
                                      rules)])
-          (for/list ([last-rule last-rules-used]
-                     [connected-rules usable-rules])
-            (cons connected-rules path))))
-      (cond [(ormap reached-destination? paths) #t]
+          
+          (for/treelist ([last-rule last-rules-used]
+                         [connected-rules (in-treelist usable-rules)])
+            (treelist-cons path connected-rules))))
+      ;(displayln rules)
+      ;(displayln paths #;(dequeue paths) #;(enqueue (dequeue paths) (reachable-from-start-helper (qfirst paths))))
+      (and (not (qempty? paths))
+           (or (treelist-ormap reached-destination? paths)
+               (reachable-from-start? destination
+                                      rules
+                                      (enqueue (dequeue paths) (reachable-from-start-helper (qfirst paths))))))
+      #;(cond [(treelist-ormap reached-destination? paths) #t]
             [(qempty? paths) #f]
             [else (reachable-from-start? destination
                                          rules
                                          (enqueue (dequeue paths) (reachable-from-start-helper (qfirst paths))))]))
-    (let* ([states (fsa-getstates M)]
+    (let* ([states (list->treelist (fsa-getstates M))]
            [start (fsa-getstart M)]
-           [rules (fsa-getrules M)]
-           [starter-rules (filter-map (λ (rule) (and (eq? (first rule) start)
-                                                     (list rule))) rules)]
-           [reachable-states (filter (λ (state) (or (eq? state start)
-                                                    (reachable-from-start? state rules starter-rules))) states)]
-           [usable-rules (filter (λ (r) (ormap (λ (s) (eq? (first r) s)) reachable-states)) rules)])
+           [rules (list->treelist (fsa-getrules M))]
+           [starter-rules (treelist-filter-map (λ (rule) (eq? (first rule) start))
+                                               (λ (rule) (treelist rule))
+                                               rules)]
+           [reachable-states (treelist->list (treelist-filter (λ (state) (or (eq? state start)
+                                                             (reachable-from-start? state rules starter-rules))) states))]
+           [usable-rules (treelist-filter (λ (r) (ormap (λ (s) (eq? (first r) s)) reachable-states)) rules)])
       (make-unchecked-dfa reachable-states
                           (fsa-getalphabet M)
                           (fsa-getstart M)
                           (filter (λ (final) (member final reachable-states)) (fsa-getfinals M))
-                          usable-rules
+                          (treelist->list usable-rules)
                           'no-dead)))
   ;;dfa -> (hash state rules)
   ;;Purpose: Makes a transition table with the states and its applicable rules
@@ -212,11 +256,11 @@ ismg "finished machine"
     ;;(listof state-pair) (listof state-pair) -> (listof state-pair)
     ;;Purpose: Makes half of the state-pairing table
     (define (make-half-table loSP new-table)
-      (cond [(empty? loSP) new-table]
-            [(boolean? (member (first loSP) new-table (λ (sp1 sp2) (and (eq? (state-pair-s1 sp1) (state-pair-s2 sp2))
+      (cond [(treelist-empty? loSP) new-table]
+            [(not (treelist-member? new-table (treelist-first loSP) (λ (sp1 sp2) (and (eq? (state-pair-s1 sp1) (state-pair-s2 sp2))
                                                                         (eq? (state-pair-s2 sp1) (state-pair-s1 sp2))))))
-             (make-half-table (rest loSP) (cons (first loSP) new-table))]
-            [else (make-half-table (rest loSP) new-table)]))
+             (make-half-table (treelist-rest loSP) (treelist-cons new-table (treelist-first loSP)))]
+            [else (make-half-table (treelist-rest loSP) new-table)]))
     ;;state-pair -> state-pair
     ;;Purpose: Creates the destination state-pairs using the given state-pair and destination state-pairs to the orignal-state-pair
     (define (make-destination-pairs sp)
@@ -228,12 +272,12 @@ ismg "finished machine"
                                                 (fsa-getalphabet dfa))])
         (struct-copy state-pair sp [destination-pairs state-pairs-from-transitions])))
     (let* ([states (fsa-getstates dfa)]
-           [init-states-pairing (for*/list ([s1 states]
-                                            [s2 states]
-                                            #:unless (eq? s1 s2))
+           [init-states-pairing (for*/treelist ([s1 states]
+                                                [s2 states]
+                                                #:unless (eq? s1 s2))
                                   (make-destination-pairs (state-pair s1 s2 #f 'none)))]
-           [other-half-of-table (make-half-table init-states-pairing '())])
-      (filter (λ (sp) (not (member sp other-half-of-table))) init-states-pairing)))
+           [other-half-of-table (make-half-table init-states-pairing empty-treelist)])
+      (treelist-filter (λ (sp) (not (treelist-member? other-half-of-table sp)))  init-states-pairing)))
   ;; merged-state state-pair -> boolean
   ;; Purpose: Determines if given state-pair shares at least one state with the given merged-state
   (define (at-least-one-state-matches? merged-state unmarked-pair)
@@ -257,39 +301,39 @@ ismg "finished machine"
       ;;state-pair (listof state-pair) transition-table alphabet -> boolean
       ;;Purpose: Determines if the given state-pair needs to be marked.
       (define (update-mark? unmarked-pair)   
-        (ormap (λ (sp) (list? (member sp marked-pairs (λ (sp1 sp2)
+        (ormap (λ (sp)  (treelist-member? marked-pairs sp (λ (sp1 sp2)
                                                         (or (and (eq? (state-pair-s1 sp1) (state-pair-s1 sp2))
                                                                  (eq? (state-pair-s2 sp1) (state-pair-s2 sp2)))
                                                             (and (eq? (state-pair-s1 sp1) (state-pair-s2 sp2))
-                                                                 (eq? (state-pair-s2 sp1) (state-pair-s1 sp2))))))))
+                                                                 (eq? (state-pair-s2 sp1) (state-pair-s1 sp2)))))))
                (state-pair-destination-pairs unmarked-pair)))
-      (cond [(empty? unmarked-pairs) (state-pairings marked-pairs remaining-unmarked-pairs)]
-            [(update-mark? (first unmarked-pairs))
-             (update-pairs (enqueue marked-pairs (list (struct-copy state-pair (first unmarked-pairs) [marked? #t])))
-                           (rest unmarked-pairs)
+      (cond [(treelist-empty? unmarked-pairs) (state-pairings marked-pairs remaining-unmarked-pairs)]
+            [(update-mark? (treelist-first unmarked-pairs))
+             (update-pairs (treelist-add marked-pairs (struct-copy state-pair (treelist-first unmarked-pairs) [marked? #t]))
+                           (treelist-rest unmarked-pairs)
                            remaining-unmarked-pairs)]
             [else (update-pairs marked-pairs
-                                (rest unmarked-pairs)
-                                (enqueue remaining-unmarked-pairs (list (first unmarked-pairs))))]))
+                                (treelist-rest unmarked-pairs)
+                                (treelist-add remaining-unmarked-pairs (treelist-first unmarked-pairs)))]))
     ;;(listof state-pairings) (listof state-pairings) (listof state-pairings) (listof state-pairings) -> boolean
     ;; Purpose: Determines if the two given state-pairings are the same
     (define (same-markings? marked-SP1 unmarked-SP1 marked-SP2 unmarked-SP2)
-      (and (andmap (λ (sp) (list? (member sp unmarked-SP2))) unmarked-SP1)
-           (andmap (λ (sp) (list? (member sp marked-SP2))) marked-SP1)))
-    (if (and (>= (length loSP) 2)
-             (same-markings? (state-pairings-marked-pairs (first loSP))  (state-pairings-unmarked-pairs (first loSP))
-                             (state-pairings-marked-pairs (second loSP)) (state-pairings-unmarked-pairs (second loSP))))
+      (and (treelist-andmap (λ (sp) (treelist-member? unmarked-SP2 sp)) unmarked-SP1)
+           (treelist-andmap (λ (sp) (treelist-member? marked-SP2 sp)) marked-SP1)))
+    (if (and (>= (treelist-length loSP) 2)
+             (same-markings? (state-pairings-marked-pairs (treelist-first loSP))  (state-pairings-unmarked-pairs (treelist-first loSP))
+                             (state-pairings-marked-pairs (treelist-second loSP)) (state-pairings-unmarked-pairs (treelist-second loSP))))
         loSP
-        (make-matches (cons (update-pairs (state-pairings-marked-pairs (first loSP))
-                                          (state-pairings-unmarked-pairs (first loSP))
-                                            '())
-                                            loSP)
+        (make-matches (treelist-cons loSP
+                                     (update-pairs (state-pairings-marked-pairs (treelist-first loSP))
+                                                   (state-pairings-unmarked-pairs (treelist-first loSP))
+                                                   empty-treelist))
                         transition-table
                         alphabet)))
   
   ;; (listof state-pairings) dfa transtition-table -> dfa
   ;;Purpose: Converts the (listof state-pairings), dfa, and transition table into an equivalent minimized (if possible) dfa.
-  (define (table->dfa marked-pairs unmarked-pairs old-dfa transition-table)
+  (define (table->dfa unmarked-pairs old-dfa transition-table)
     ;;state (listof merged-state) -> state
     ;; Purpose: Searches for the merged-state that contains the given state
     (define (search-for-merged-state old-state merged-states)
@@ -353,10 +397,10 @@ ismg "finished machine"
                 [else (merged-state ump-s1
                                     (set (state-pair-s1 unmarked-pair) ump-s2)
                                     (list unmarked-pair))])))
-      (cond [(empty? unmarked-pairs) acc]
-            [(overlap? (first unmarked-pairs) acc)
-             (accumulate-unmarked-pairs (rest unmarked-pairs) (merge-pairs (first unmarked-pairs) acc))]
-            [(accumulate-unmarked-pairs (rest unmarked-pairs) (cons (make-merged-state (first unmarked-pairs)) acc))]))
+      (cond [(treelist-empty? unmarked-pairs) acc]
+            [(overlap? (treelist-first unmarked-pairs) acc)
+             (accumulate-unmarked-pairs (treelist-rest unmarked-pairs) (merge-pairs (treelist-first unmarked-pairs) acc))]
+            [(accumulate-unmarked-pairs (treelist-rest unmarked-pairs) (cons (make-merged-state (treelist-first unmarked-pairs)) acc))]))
     (let* ([states (fsa-getstates old-dfa)]
            [finals (fsa-getfinals old-dfa)]
            [merged-unmarked-pairs (accumulate-unmarked-pairs unmarked-pairs '())]
@@ -387,11 +431,13 @@ ismg "finished machine"
          [transition-table (make-transition-table dfa)]
          [finals (list->set (fsa-getfinals dfa))]
          [init-states-table (make-states-table dfa transition-table)]
-         [states-table (map (λ (sp) (mark-states-table sp finals)) init-states-table)]
-         [marked-pairs (filter (λ (sp) (state-pair-marked? sp)) states-table)]
-         [unmarked-pairs (filter-not (λ (sp) (state-pair-marked? sp)) states-table)]
-         [filled-table (make-matches (list (state-pairings marked-pairs unmarked-pairs)) transition-table (fsa-getalphabet dfa))]
-         [new-M (table->dfa (state-pairings-marked-pairs (first filled-table)) (state-pairings-unmarked-pairs (first filled-table)) dfa transition-table)])
+         [states-table (treelist-map init-states-table (λ (sp) (mark-states-table sp finals)))]
+         [marked-pairs (treelist-filter (λ (sp) (state-pair-marked? sp)) states-table)]
+         [unmarked-pairs (treelist-filter (λ (sp) (not (state-pair-marked? sp))) states-table)]
+         [filled-table (make-matches (treelist (state-pairings marked-pairs unmarked-pairs)) transition-table (fsa-getalphabet dfa))]
+         [new-M (table->dfa (state-pairings-unmarked-pairs (treelist-first filled-table))
+                            dfa
+                            transition-table)])
     (minimization-results M (first new-M) dfa filled-table (second new-M))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;VIZ-SCENE-STUFF;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -907,7 +953,7 @@ ismg "finished machine"
                                               [(= col-num 0) (vector-ref states (sub1 row-num))]
                                               [(<= col-num blank-tile-count) BLANK-SPACE]
                                               [else BLACK])))))))
-    (make-table-helper (list->vector (dfa-states M)) (add1 (length (dfa-states M)))))
+    (make-table-helper (treelist->vector (dfa-states M)) (add1 (treelist-length (dfa-states M)))))
 
   ;; dfa -> (listof dfa)
   ;; Purpose: Incrementally rebuilds the given machine
@@ -1042,11 +1088,12 @@ ismg "finished machine"
     (make-phase-5-helper loRM loMS states '()))
   (let* ([unchecked-M M]
          [results-from-minimization (minimize-dfa unchecked-M)]
+
          [original-M (unchecked->dfa (minimization-results-original-M results-from-minimization))]
          [no-unreachables-M (minimization-results-unreachables-removed-M results-from-minimization)]
-         [all-loSP (reverse (minimization-results-loSP results-from-minimization))]
-         [final-non-final-pairings (state-pairings-marked-pairs (first all-loSP))]
-         [rest-loSP (append-map (λ (sp) (append (state-pairings-unmarked-pairs sp) (state-pairings-marked-pairs sp))) (rest all-loSP))]
+         [all-loSP (treelist-reverse (minimization-results-loSP results-from-minimization))]
+         [final-non-final-pairings (state-pairings-marked-pairs (treelist-first all-loSP))]
+         [rest-loSP (treelist-append-map (λ (sp) (treelist-append (state-pairings-unmarked-pairs sp) (state-pairings-marked-pairs sp))) (treelist-rest all-loSP))]
          [unreachable-states (filter (λ (s) (not (member s (fsa-getstates no-unreachables-M)))) (fsa-getstates unchecked-M))]
          [M (ndfa->dfa M)]
          [minimized-M (minimization-results-new-machine results-from-minimization)]
@@ -1054,12 +1101,12 @@ ismg "finished machine"
          [can-be-minimized? (machine-changed? M minimized-M)]
          [M (unchecked->dfa M)]
          [no-unreachables-M (unchecked->dfa no-unreachables-M)]
-         [state-table-mappings (for/hash ([state (dfa-states no-unreachables-M)]
+         [state-table-mappings (for/hash ([state (in-treelist (dfa-states no-unreachables-M))]
                                           [num (in-naturals)])
                                  (values state (add1 num)))]
          [no-unreachables-M-state-pairing-table (make-table no-unreachables-M)]
          [minimized-M (unchecked->dfa minimized-M)]
-         ;#|
+  #|      
          [phase--1 (list (phase -1 original-M no-unreachables-M-state-pairing-table (phase-0-attributes)))]
          [phase-0 (if (not (dfa-deterministic? original-M))
                        (list (phase 0 M  no-unreachables-M-state-pairing-table (phase-0-attributes)))
@@ -1094,7 +1141,7 @@ ismg "finished machine"
          [phase-6 (list (phase 6 (last rebuilding-machines) filled-table (phase-6-attributes can-be-minimized?)))]
          [all-phases (append phase--1 phase-0 phase-1 phase-2 phase-3 phase-4 phase-5 phase-6)]
          [graphs (make-main-graphic all-phases state-table-mappings)]
-;|#
+|#
 )
     ;#;
     (void)
