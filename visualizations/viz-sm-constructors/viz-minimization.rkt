@@ -1101,7 +1101,7 @@ ismg "finished machine"
          [no-unreachables-M-state-pairing-table (make-table no-unreachables-M)]
          [minimized-M (unchecked->dfa minimized-M)]
 
-         #|
+         
          [phase--1 (list (phase -1 original-M no-unreachables-M-state-pairing-table (phase-0-attributes)))]
          [phase-0 (if (not (dfa-deterministic? original-M))
                        (list (phase 0 M  no-unreachables-M-state-pairing-table (phase-0-attributes)))
@@ -1136,7 +1136,7 @@ ismg "finished machine"
          [phase-6 (list (phase 6 (last rebuilding-machines) filled-table (phase-6-attributes can-be-minimized?)))]
          [all-phases (append phase--1 phase-0 phase-1 phase-2 phase-3 phase-4 phase-5 phase-6)]
          [graphs (make-main-graphic all-phases state-table-mappings)]
-|#)
+)
     (void)
     ;phase-5
     ;phase-4

@@ -147,7 +147,7 @@ ismg "finished machine"
 (define (treelist-append-map f tl)
   (for/fold ([acc empty-treelist])
             ([first (in-treelist tl)])
-    (treelist-add acc (f first))))
+    (treelist-append acc (f first))))
 
 (define (treelist-ormap f tl)
   (for/or ([first (in-treelist tl)])
@@ -162,11 +162,11 @@ ismg "finished machine"
 ;;unchecked-dfa -> dfa-struct
 ;;Purpose: Converts the given unchecked-dfa to a dfa struct
 (define (unchecked->dfa M)
-  (dfa (list->treelist (fsa-getstates M))
-       (list->treelist (fsa-getalphabet M))
+  (dfa (fsa-getstates M)
+       (fsa-getalphabet M)
        (fsa-getstart M)
        (list->set (fsa-getfinals M))
-       (list->treelist (fsa-getrules M))
+       (fsa-getrules M)
        (M null 'is-deterministic?)
        'no-dead))
 
@@ -703,7 +703,7 @@ A Path is a (treelistof dfa-rule)
                                                          [destin-pairs? destin-select-square-img]
                                                          [else base-square-img]))]
                       [else (overlay (text (symbol->string sym) 38 BLACK)
-                                     (if (member sym finals)
+                                     (if (set-member? finals sym)
                                          final-state-square-img
                                          base-square-img))])))
             (if (= (sub1 (vector-length row)) column-idx)
@@ -870,7 +870,7 @@ A Path is a (treelistof dfa-rule)
   ;; Purpose: To make a node graph
   (define (make-node-graph graph los start finals)
     (foldl (λ (state result)
-             (let ([member-of-finals? (member state finals)]
+             (let ([member-of-finals? (set-member? finals state)]
                    [found-state-from-state-pair?
                     (and (not (list? state-pair))
                          (or (eq? state (state-pair-s1 state-pair))
@@ -953,7 +953,7 @@ A Path is a (treelistof dfa-rule)
                                               [(= col-num 0) (vector-ref states (sub1 row-num))]
                                               [(<= col-num blank-tile-count) BLANK-SPACE]
                                               [else BLACK])))))))
-    (make-table-helper (treelist->vector (dfa-states M)) (add1 (treelist-length (dfa-states M)))))
+    (make-table-helper (list->vector (dfa-states M)) (add1 (length (dfa-states M)))))
 
   ;; dfa -> (listof dfa)
   ;; Purpose: Incrementally rebuilds the given machine
@@ -961,6 +961,21 @@ A Path is a (treelistof dfa-rule)
     ;;dfa (queueof state) dfa (listof dfa) -> (listof dfa)
     ;;Purpose: Builds the next step to the given dfa using the first state in the (queueof state)
     (define (machine-rebuilder qoS rebuild-M acc)
+
+      (define qfirst first)
+
+      (define qempty? empty?)
+      ;;(queueof X) (queue X) -> (queueof X)
+      ;;Purpose: Adds the X to the back of the given (queueof X) 
+      (define (enqueue queue x)
+        ;(displayln x)
+        (append queue x))
+
+      ;;(queueof X) -> (queueof X)
+      ;;Purpose: Removes the first element of the given (queueof X) 
+      (define (dequeue queue)
+        (rest queue))
+      
       (if (qempty? qoS)
           (reverse acc)
           (let* ([next-state-to-add (qfirst qoS)]
@@ -985,7 +1000,7 @@ A Path is a (treelistof dfa-rule)
                  [new-rebuild-M (struct-copy dfa rebuild-M
                                              [states (cons next-state-to-add (dfa-states rebuild-M))]
                                              [rules (append connecting-state-rules (dfa-rules rebuild-M))]
-                                             [finals (if (or (member next-state-to-add (dfa-finals minimized-M))
+                                             [finals (if (or (set-member? (dfa-finals minimized-M) next-state-to-add)
                                                              (ormap (λ (ms)
                                                                       (set-member? (merged-state-old-symbols ms) next-state-to-add))
                                                                     merged-states))
@@ -995,7 +1010,7 @@ A Path is a (treelistof dfa-rule)
                                new-rebuild-M
                                (cons new-rebuild-M acc)))))  
     (let* ([start (dfa-start minimized-M)]
-           [states-connected-to-start (remove-duplicates (filter-map (λ (rule)
+           [states-connected-to-start  (remove-duplicates (filter-map (λ (rule)
                                                                        (and (and (eq? (first rule) start)
                                                                                  (not (eq? (third rule) start)))
                                                                             (third rule)))
@@ -1006,8 +1021,8 @@ A Path is a (treelistof dfa-rule)
                                   (dfa-rules minimized-M))]
            [rebuild-M (dfa (list start)
                            (dfa-alphabet minimized-M)
-                           start
-                           (if (member start (dfa-finals minimized-M)) (list start) '())
+                           start 
+                           (if (set-member? (dfa-finals minimized-M) start) (list start) '())
                            looping-rules
                            #t
                            'no-dead)])
@@ -1041,24 +1056,25 @@ A Path is a (treelistof dfa-rule)
           (vector-set/copy state-pairing-table
                            row-id
                            (update-row current-row column-id))))
-      (if (empty? loSP)
+      (if (treelist-empty? loSP)
           (phase-results (reverse acc) state-pairing-table)
-          (let ([state-pairing (first loSP)])
+          (let ([state-pairing (treelist-first loSP)])
             (if (or (set-member? seen-markings state-pairing)
                     (set-member? seen-unmarkings state-pairing))
                 (if (set-member? seen-markings state-pairing)
-                    (make-phase-helper state-pairing-table (rest loSP) acc seen-markings seen-unmarkings)
+                    (make-phase-helper state-pairing-table (treelist-rest loSP) acc seen-markings seen-unmarkings)
                     (make-phase-helper state-pairing-table loSP
                                        (cons (phase phase-id no-unreachables-M state-pairing-table (attribute-struct-id 'next-pass)) acc)
                                        seen-markings
                                        (set)))
-                (let* ([new-table (if (state-pair-marked? state-pairing)
+                (let* ([state-pairing (treelist-first loSP)]
+                       [new-table (if (state-pair-marked? state-pairing)
                                       (make-mark-on-table state-pairing)
                                       state-pairing-table)]
                        [new-phase (phase phase-id no-unreachables-M new-table (attribute-struct-id state-pairing))]
                        [updated-seen (if (state-pair-marked? state-pairing) (set-add seen-markings state-pairing) seen-markings)]
                        [updated-unseen (if (not (state-pair-marked? state-pairing)) (set-add seen-unmarkings state-pairing) seen-unmarkings)])
-                  (make-phase-helper new-table (rest loSP) (cons new-phase acc) updated-seen updated-unseen))))))
+                  (make-phase-helper new-table (treelist-rest loSP) (cons new-phase acc) updated-seen updated-unseen))))))
     (make-phase-helper state-pairing-table loSP '() seen-markings seen-unmarkings))
 
   ;; (listof dfa) (listof merged-state) (vectorof (vectorof marking)) -> (listof phase)
@@ -1093,7 +1109,8 @@ A Path is a (treelistof dfa-rule)
          [no-unreachables-M (minimization-results-unreachables-removed-M results-from-minimization)]
          [all-loSP (treelist-reverse (minimization-results-loSP results-from-minimization))]
          [final-non-final-pairings (state-pairings-marked-pairs (treelist-first all-loSP))]
-         [rest-loSP (treelist-append-map (λ (sp) (treelist-append (state-pairings-unmarked-pairs sp) (state-pairings-marked-pairs sp))) (treelist-rest all-loSP))]
+         [rest-loSP (treelist-append-map (λ (sp) (treelist-append (state-pairings-unmarked-pairs sp) (state-pairings-marked-pairs sp)))
+                                         (treelist-rest all-loSP))]
          [unreachable-states (filter (λ (s) (not (member s (fsa-getstates no-unreachables-M)))) (fsa-getstates unchecked-M))]
          [M (ndfa->dfa M)]
          [minimized-M (minimization-results-new-machine results-from-minimization)]
@@ -1101,12 +1118,12 @@ A Path is a (treelistof dfa-rule)
          [can-be-minimized? (machine-changed? M minimized-M)]
          [M (unchecked->dfa M)]
          [no-unreachables-M (unchecked->dfa no-unreachables-M)]
-         [state-table-mappings (for/hash ([state (in-treelist (dfa-states no-unreachables-M))]
+         [state-table-mappings (for/hash ([state (in-list (dfa-states no-unreachables-M))]
                                           [num (in-naturals)])
                                  (values state (add1 num)))]
          [no-unreachables-M-state-pairing-table (make-table no-unreachables-M)]
          [minimized-M (unchecked->dfa minimized-M)]
-  #|      
+        
          [phase--1 (list (phase -1 original-M no-unreachables-M-state-pairing-table (phase-0-attributes)))]
          [phase-0 (if (not (dfa-deterministic? original-M))
                        (list (phase 0 M  no-unreachables-M-state-pairing-table (phase-0-attributes)))
@@ -1115,13 +1132,20 @@ A Path is a (treelistof dfa-rule)
                       (list (phase 1 no-unreachables-M no-unreachables-M-state-pairing-table (phase-1-attributes unreachable-states)))
                       '())]
          [phase-2 (list (phase 2 no-unreachables-M no-unreachables-M-state-pairing-table (phase-2-attributes)))]
-         [phase3+new-table (make-phase 3 phase-3-attributes no-unreachables-M no-unreachables-M-state-pairing-table
-                                      final-non-final-pairings state-table-mappings (set) (set))]
+         [phase3+new-table (make-phase 3
+                                       phase-3-attributes
+                                       no-unreachables-M
+                                       no-unreachables-M-state-pairing-table
+                                      final-non-final-pairings
+                                      state-table-mappings
+                                      (set)
+                                      (set))]
          [phase-3-lo-phase (phase-results-loPhase phase3+new-table)]
          [phase-3 (if (empty? phase-3-lo-phase)
                       phase-3-lo-phase
                       (list (last phase-3-lo-phase)))]
          [table-with-initial-markings (phase-results-new-table phase3+new-table)]
+         
          [phase4+new-table (make-phase 4
                                        phase-4-attributes
                                        no-unreachables-M
@@ -1132,6 +1156,7 @@ A Path is a (treelistof dfa-rule)
                                             (phase-results-loPhase phase3+new-table)))
                                        (set))]
          [phase-4 (phase-results-loPhase phase4+new-table)]
+   
          [filled-table (phase-results-new-table phase4+new-table)]
          [merged-states (minimization-results-merged-states results-from-minimization)]
          [rebuilding-machines (reconstruct-machine minimized-M merged-states)]
@@ -1141,8 +1166,9 @@ A Path is a (treelistof dfa-rule)
          [phase-6 (list (phase 6 (last rebuilding-machines) filled-table (phase-6-attributes can-be-minimized?)))]
          [all-phases (append phase--1 phase-0 phase-1 phase-2 phase-3 phase-4 phase-5 phase-6)]
          [graphs (make-main-graphic all-phases state-table-mappings)]
-|#
+
 )
+    
     ;#;
     (void)
     ;phase-5
