@@ -1137,7 +1137,7 @@ ismg "finished machine"
          [all-phases (append phase--1 phase-0 phase-1 phase-2 phase-3 phase-4 phase-5 phase-6)]
          [graphs (make-main-graphic all-phases state-table-mappings)]
 )
-    (void)
+    ;(void)
     ;phase-5
     ;phase-4
     #;
@@ -1152,7 +1152,7 @@ ismg "finished machine"
                                        (list->set (map (compose1 phase-3-attributes-initial-pairings phase-attributes)
                                             (phase-results-loPhase phase3+new-table)))
                                        (set))
-    #;
+    ;#;
     (run-viz (map first graphs)
              (list->vector (map (λ (x table)
                                   (if (list? (first x))
