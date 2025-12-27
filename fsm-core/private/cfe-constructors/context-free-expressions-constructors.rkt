@@ -76,6 +76,9 @@
 (define (all-empty? locfe)
   (andmap mk-empty-cfexp? locfe))
 
+(define (contains-null? locfe)
+  (ormap mk-null-cfexp? locfe))
+
 ;; . cfexp -> concat-cfexp/empty-cfexp
 ;;Purpose: A wrapper to create a concat-cfexp unless all the given cfexps are empty-cfexp
 (define #;define/contract (concat-cfexp . cfexps)
@@ -86,7 +89,7 @@
   (if (mk-union-cfexp? cfe)
       (box cfe)
       cfe))
-  (cond [(empty? cfexps) (null-cfexp)] ;; no input cfes -> null
+  (cond [(or (empty? cfexps) (contains-null? cfexps)) (null-cfexp)] ;; no input cfes -> null
         [(all-empty? cfexps) (empty-cfexp)] ;; only empty cfes -> empty
         [(= (length cfexps) 1) (identity (first cfexps))] ;;only one cfe -> cfe
         [else (mk-concat-cfexp (list->vector (map unnest-unions cfexps)))])) ;;otherwise box unboxed-union cfes -> concat
