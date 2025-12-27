@@ -112,7 +112,8 @@
 ;;Purpose: A wrapper to create a Kleene-cfexp
 (define #;define/contract (kleene-cfexp cfe)
   #;kleene-cfexp/c
-  (if (mk-empty-cfexp? cfe)
+  (if (or (mk-null-cfexp? cfe)
+          (mk-empty-cfexp? cfe))
       cfe
       (mk-kleene-cfexp cfe)))
 
