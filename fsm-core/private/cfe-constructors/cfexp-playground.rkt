@@ -29,6 +29,9 @@
                  #;(empty))
   #;(empty-cfexp))
 
+(define NULL (make-cfe [(NULL (null))]
+                 NULL))
+
 
 (define A (make-cfe [(A (singleton "a"))]
                  A)

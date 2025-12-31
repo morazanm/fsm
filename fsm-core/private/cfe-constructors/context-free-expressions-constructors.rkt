@@ -498,7 +498,9 @@
                      res))
            '()
            loLabox))
-  (let* ([cfe (update-cfe cfe)]
+  (if (mk-null-cfexp? cfe)
+      (make-unchecked-cfg '(S) '() '() 'S)
+      (let* ([cfe (update-cfe cfe)]
          [extracted-components (extract-var-and-singles-cfe cfe)]
          [lang-boxes (extraction-results-lang-boxes extracted-components)]
          [new-nts (foldl (λ (nt lang-box acc)
@@ -516,7 +518,7 @@
          [starting-nt (hash-ref new-nts cfe)])
     (make-unchecked-cfg nts alphabet rules starting-nt)
     #;(values lang-boxes "newline" new-nts
-            "newline" (hash-keys new-nts))))
+            "newline" (hash-keys new-nts)))))
 
 ;; pda -> cfe
 ;;Purpose: Converts the given pda into a cfe
