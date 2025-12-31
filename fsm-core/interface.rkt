@@ -94,7 +94,7 @@
  cfg->chomsky cfg->greibach
 
  ; cfexp
- construct-cfe cfg->cfe cfe->cfg pda->cfe cfe->pda printable-cfexp
+ make-cfe cfg->cfe cfe->cfg pda->cfe cfe->pda #;printable-cfexp
  
  ; regexp constructors
  empty-regexp singleton-regexp union-regexp concat-regexp kleenestar-regexp null-regexp

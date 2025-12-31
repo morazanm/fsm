@@ -203,105 +203,130 @@
 
 (define converted-AiBj-WORDS (gen-cfe-words (pda->cfe (cfe->pda AiBj))))
 
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;TESTING;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(check-pred (λ (low) (andmap valid-A*-word? low)) A*-WORDS)
+(test-case
+ "pda->cfe word generation test"
+ (check-pred (λ (low) (andmap valid-A*-word? low)) A*-WORDS)
 
-(check-pred (λ (low) (andmap valid-anbn-word? low)) converted-ANBN-WORDS)
+ (check-pred (λ (low) (andmap valid-anbn-word? low)) converted-ANBN-WORDS)
 
-(check-pred (λ (low) (andmap valid-bnan-word? low)) converted-BNAN-WORDS)
+ (check-pred (λ (low) (andmap valid-bnan-word? low)) converted-BNAN-WORDS)
 
-(check-pred (λ (low) (andmap valid-wwr-word? low)) converted-WWR-WORDS)
+ (check-pred (λ (low) (andmap valid-wwr-word? low)) converted-WWR-WORDS)
 
-(check-pred (λ (low) (andmap valid-a2ibi-word? low)) converted-A2iBi-WORDS)
+ (check-pred (λ (low) (andmap valid-a2ibi-word? low)) converted-A2iBi-WORDS)
 
-(check-pred (λ (low) (andmap valid-aibj-word? low)) converted-AiBj-WORDS)
+ (check-pred (λ (low) (andmap valid-aibj-word? low)) converted-AiBj-WORDS)
 
-(check-pred (λ (low) (andmap valid-Gina-aˆnbˆn-word? low)) Gina-aˆnbˆn-WORDS) 
+ (check-pred (λ (low) (andmap valid-Gina-aˆnbˆn-word? low)) Gina-aˆnbˆn-WORDS) 
 
-(check-pred (λ (low) (andmap valid-Gina-wcwˆr-word? low)) Gina-wcwˆr-WORDS)
+ (check-pred (λ (low) (andmap valid-Gina-wcwˆr-word? low)) Gina-wcwˆr-WORDS)
 
-(check-pred (λ (low) (andmap valid-Gina-palindrome-pda-word? low)) Gina-palindrome-pda-WORDS)
+ (check-pred (λ (low) (andmap valid-Gina-palindrome-pda-word? low)) Gina-palindrome-pda-WORDS)
 
-(check-pred (λ (low) (andmap valid-Gina-AiBj-word? low)) Gina-AiBj-WORDS)
+ (check-pred (λ (low) (andmap valid-Gina-AiBj-word? low)) Gina-AiBj-WORDS)
 
-(check-pred (λ (low) (andmap valid-Gina-A^nB^mA^n-word? low)) Gina-A^nB^mA^n-WORDS)
+ (check-pred (λ (low) (andmap valid-Gina-A^nB^mA^n-word? low)) Gina-A^nB^mA^n-WORDS)
 
-(check-pred (λ (low) (andmap valid-Gina-a^mb^nc^pd^q-word? low)) Gina-a^mb^nc^pd^q-WORDS)
+ (check-pred (λ (low) (andmap valid-Gina-a^mb^nc^pd^q-word? low)) Gina-a^mb^nc^pd^q-WORDS)
 
-(check-pred (λ (low) (andmap valid-Gina-a^mb^nc^p-word? low)) Gina-a^mb^nc^p-WORDS)
+ (check-pred (λ (low) (andmap valid-Gina-a^mb^nc^p-word? low)) Gina-a^mb^nc^p-WORDS)
+ )
 
-(check-true (pda-checker (cfe->pda ANBN) converted-ANBN-WORDS))
+(test-case "CFE->PDA word membership tests"
 
-(check-true (pda-checker (cfe->pda BNAN) converted-BNAN-WORDS))
+           (check-true (pda-checker (cfe->pda ANBN) converted-ANBN-WORDS))
 
-(check-true (pda-checker (cfe->pda AiBj) converted-AiBj-WORDS))
+           (check-true (pda-checker (cfe->pda BNAN) converted-BNAN-WORDS))
 
-(check-true (pda-checker (cfe->pda A2iBi) converted-A2iBi-WORDS))
+           (check-true (pda-checker (cfe->pda AiBj) converted-AiBj-WORDS))
 
-(check-true (pda-checker (cfe->pda WWR) converted-WWR-WORDS))
+           (check-true (pda-checker (cfe->pda A2iBi) converted-A2iBi-WORDS))
 
-(check-true (pda-checker Gina-aˆnbˆn Gina-aˆnbˆn-WORDS))
+           (check-true (pda-checker (cfe->pda WWR) converted-WWR-WORDS))
+           )
 
-(check-true (pda-checker Gina-wcwˆr Gina-wcwˆr-WORDS))
+(test-case
+ "PDA->CFE word membership tests" 
 
-(check-true (pda-checker Gina-palindrome-pda Gina-palindrome-pda-WORDS))
+ (check-true (pda-checker Gina-aˆnbˆn Gina-aˆnbˆn-WORDS))
 
-(check-true (pda-checker Gina-AiBj Gina-AiBj-WORDS))
+ (check-true (pda-checker Gina-wcwˆr Gina-wcwˆr-WORDS))
 
-(check-true (pda-checker Gina-A^nB^mA^n Gina-A^nB^mA^n-WORDS))
+ (check-true (pda-checker Gina-palindrome-pda Gina-palindrome-pda-WORDS))
 
-(check-true (pda-checker Gina-a^mb^nc^pd^q Gina-a^mb^nc^pd^q-WORDS))
+ (check-true (pda-checker Gina-AiBj Gina-AiBj-WORDS))
 
-(check-true (pda-checker Gina-a^mb^nc^p Gina-a^mb^nc^p-WORDS))
+ (check-true (pda-checker Gina-A^nB^mA^n Gina-A^nB^mA^n-WORDS))
 
-(check-true (pda-checker (cfe->pda Gina-aˆnbˆn-cfe) Gina-aˆnbˆn-WORDS))
+ (check-true (pda-checker Gina-a^mb^nc^pd^q Gina-a^mb^nc^pd^q-WORDS))
 
-(check-true (pda-checker (cfe->pda Gina-wcwˆr-cfe) Gina-wcwˆr-WORDS))
+ (check-true (pda-checker Gina-a^mb^nc^p Gina-a^mb^nc^p-WORDS))
 
-(check-true (pda-checker (cfe->pda Gina-palindrome-pda-cfe) Gina-palindrome-pda-WORDS))
+ (check-true (pda-checker (cfe->pda Gina-aˆnbˆn-cfe) Gina-aˆnbˆn-WORDS))
 
-(check-true (pda-checker (cfe->pda Gina-AiBj-cfe) Gina-AiBj-WORDS))
+ (check-true (pda-checker (cfe->pda Gina-wcwˆr-cfe) Gina-wcwˆr-WORDS))
 
-(check-true (pda-checker (cfe->pda Gina-A^nB^mA^n-cfe) Gina-A^nB^mA^n-WORDS))
+ (check-true (pda-checker (cfe->pda Gina-palindrome-pda-cfe) Gina-palindrome-pda-WORDS))
 
-(check-true (pda-checker (cfe->pda Gina-a^mb^nc^pd^q-cfe) Gina-a^mb^nc^pd^q-WORDS))
+ (check-true (pda-checker (cfe->pda Gina-AiBj-cfe) Gina-AiBj-WORDS))
 
-(check-true (pda-checker (cfe->pda Gina-a^mb^nc^p-cfe) Gina-a^mb^nc^p-WORDS))
+ (check-true (pda-checker (cfe->pda Gina-A^nB^mA^n-cfe) Gina-A^nB^mA^n-WORDS))
+
+ (check-true (pda-checker (cfe->pda Gina-a^mb^nc^pd^q-cfe) Gina-a^mb^nc^pd^q-WORDS))
+
+ (check-true (pda-checker (cfe->pda Gina-a^mb^nc^p-cfe) Gina-a^mb^nc^p-WORDS))
+ )
 |#
 
-(check-pred (λ (low) (andmap valid-wwr-word? low)) WWR-WORDS)
+(test-case
+ "CFE word generation tests"
 
-(check-pred (λ (low) (andmap valid-anbn-word? low)) ANBN-WORDS)
+ (check-pred (λ (low) (andmap valid-wwr-word? low)) WWR-WORDS)
 
-(check-pred (λ (low) (andmap valid-bnan-word? low)) BNAN-WORDS)
+ (check-pred (λ (low) (andmap valid-anbn-word? low)) ANBN-WORDS)
 
-(check-pred (λ (low) (andmap valid-a2ibi-word? low)) A2iBi-WORDS)
+ (check-pred (λ (low) (andmap valid-bnan-word? low)) BNAN-WORDS)
 
-(check-pred (λ (low) (andmap valid-aibj-word? low)) AiBj-WORDS)
+ (check-pred (λ (low) (andmap valid-a2ibi-word? low)) A2iBi-WORDS)
 
-(check-pred (λ (low) (andmap valid-anbn-word? low)) TRANSFORMED-ANBN-WORDS)
+ (check-pred (λ (low) (andmap valid-aibj-word? low)) AiBj-WORDS)
+ )
 
-(check-pred (λ (low) (andmap valid-bnan-word? low)) TRANSFORMED-BNAN-WORDS)
 
-(check-pred (λ (low) (andmap valid-wwr-word? low)) TRANSFORMED-WWR-WORDS)
 
-(check-pred (λ (low) (andmap valid-a2ibi-word? low)) TRANSFORMED-A2iBi-WORDS)
+(test-case
+ "CFG->CFE word membership tests"
 
-(check-pred (λ (low) (andmap valid-aibj-word? low)) TRANSFORMED-AiBj-WORDS)
+ (check-pred (λ (low) (andmap valid-anbn-word? low)) TRANSFORMED-ANBN-WORDS)
 
-(check-true (grammar-checker thesis-cfg1 thesis-cfg-converted-WORDS))
+ (check-pred (λ (low) (andmap valid-bnan-word? low)) TRANSFORMED-BNAN-WORDS)
 
-(check-true (grammar-checker thesis-cfe-converted thesis-cfe-WORDS))
+ (check-pred (λ (low) (andmap valid-wwr-word? low)) TRANSFORMED-WWR-WORDS)
 
-(check-true (grammar-checker (cfe->cfg ANBN) TRANSFORMED-ANBN-WORDS))
+ (check-pred (λ (low) (andmap valid-a2ibi-word? low)) TRANSFORMED-A2iBi-WORDS)
 
-(check-true (grammar-checker (cfe->cfg BNAN) TRANSFORMED-BNAN-WORDS))
+ (check-pred (λ (low) (andmap valid-aibj-word? low)) TRANSFORMED-AiBj-WORDS)
+ )
 
-(check-true (grammar-checker (cfe->cfg AiBj) TRANSFORMED-AiBj-WORDS))
+(test-case
+ "CFE->CFG word membership tests" 
 
-(check-true (grammar-checker (cfe->cfg A2iBi) TRANSFORMED-A2iBi-WORDS))
+ (check-true (grammar-checker thesis-cfg1 thesis-cfg-converted-WORDS))
 
-(check-true (grammar-checker (cfe->cfg WWR) TRANSFORMED-WWR-WORDS))
+ (check-true (grammar-checker thesis-cfe-converted thesis-cfe-WORDS))
+
+ (check-true (grammar-checker (cfe->cfg ANBN) TRANSFORMED-ANBN-WORDS))
+
+ (check-true (grammar-checker (cfe->cfg BNAN) TRANSFORMED-BNAN-WORDS))
+
+ (check-true (grammar-checker (cfe->cfg AiBj) TRANSFORMED-AiBj-WORDS))
+
+ (check-true (grammar-checker (cfe->cfg A2iBi) TRANSFORMED-A2iBi-WORDS))
+
+ (check-true (grammar-checker (cfe->cfg WWR) TRANSFORMED-WWR-WORDS))
+ )
 
 (define test (union-cfexp ANBN BNAN))

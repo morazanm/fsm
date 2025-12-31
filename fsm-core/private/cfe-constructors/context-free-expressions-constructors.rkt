@@ -7,18 +7,13 @@
          "cfexp-contracts.rkt"
          "cfexp-structs.rkt"
          "cfexp-helpers.rkt"
-         ;"construct-cfe-macro.rkt"
          racket/contract
          racket/vector
          racket/list
          racket/string
          racket/treelist
-         racket/function
          racket/hash
-         racket/set
-         (for-syntax racket/base
-                     syntax/parse
-                     racket/syntax))
+         racket/set)
 
 (provide null-cfexp
          empty-cfexp
@@ -26,15 +21,12 @@
          concat-cfexp
          union-cfexp
          kleene-cfexp
-         update-binding!
-         gen-cfexp-word
-         var-cfexp 
+         gen-cfexp-word          
          cfg->cfe
          cfe->cfg
          pda->cfe
          cfe->pda
-         printable-cfexp
-         #;construct-cfe
+         ;printable-cfexp
          )
 
 (define MAX-KLEENESTAR-LIMIT 10)
@@ -45,7 +37,7 @@
 ;; 1. null (base case)
 ;; 2. empty (base case)
 ;; 3. singleton (base case)
-;; 4. variable
+;; 4. box
 ;; 5. concat 
 ;; 6. union
 ;; 7. kleene
@@ -66,23 +58,25 @@
   singleton-cfexp/c 
   (mk-singleton-cfexp a-char))
 
-;;symbol -> variable-cfexp
-;;Purpose: A wrapper to create a variable-cfexp
-(define/contract (var-cfexp symbol)
-  var-cfexp/c 
-  (mk-var-cfexp (empty-cfexp-env) symbol #f))
+;;(listof X) -> boolean
+;;Purpose: Determines if the (listof X) is of length 1
+(define (is-length-one? lox)
+  (= (length lox) 1))
 
-
+;;(listof cfexp) -> boolean
+;;Purpose: Determines if every element in the given (listof cfexp) is the empty-cfexp
 (define (all-empty? locfe)
   (andmap mk-empty-cfexp? locfe))
 
+;;(listof cfexp) -> boolean
+;;Purpose: Determines if the given (listof cfexp) contains the null-cfexp
 (define (contains-null? locfe)
   (ormap mk-null-cfexp? locfe))
 
-;; . cfexp -> concat-cfexp/empty-cfexp
+;; . cfexp -> concat-cfexp/null-cfexp/empty-cfexp/singleton-cfexp
 ;;Purpose: A wrapper to create a concat-cfexp unless all the given cfexps are empty-cfexp
-(define #;define/contract (concat-cfexp . cfexps)
-  #;concat-cfexp/c
+(define/contract (concat-cfexp . cfexps)
+ concat-cfexp/c
   ;;cfe -> cfe 
   ;;Purpose: If the given cfe is a union then it is put into a box otherwise nothing happens
   (define (unnest-unions cfe)
@@ -91,69 +85,43 @@
       cfe))
   (cond [(or (empty? cfexps) (contains-null? cfexps)) (null-cfexp)] ;; no input cfes -> null
         [(all-empty? cfexps) (empty-cfexp)] ;; only empty cfes -> empty
-        [(= (length cfexps) 1) (identity (first cfexps))] ;;only one cfe -> cfe
+        [(is-length-one? cfexps) (first cfexps)] ;;only one cfe -> cfe
         [else (mk-concat-cfexp (list->vector (map unnest-unions cfexps)))])) ;;otherwise box unboxed-union cfes -> concat
 
 
-;; . cfexp -> union-cfexp/empty-cfexp
+;; . cfexp -> union-cfexp/null-cfexp/empty-cfexp/singleton-cfexp
 ;;Purpose: A wrapper to create a union-cfexp unless all the given cfexps are empty-cfexp
-(define #;define/contract (union-cfexp . cfexps)
-  #;union-cfexp/c
-  (cond [(empty? cfexps) (null-cfexp)] ;; no input cfes -> null
+(define/contract (union-cfexp . cfexps)
+  union-cfexp/c
+  (cond [(or (empty? cfexps) (contains-null? cfexps)) (null-cfexp)] ;; no input cfes -> null
         [(all-empty? cfexps) (empty-cfexp)] ;; only empty cfes -> empty
-        [(= (length cfexps) 1) (identity (first cfexps))] ;;only one cfe -> cfe
+        [(is-length-one? cfexps) (first cfexps)] ;;only one cfe -> cfe
         [else (mk-union-cfexp (vector-append (list->vector (filter-not mk-union-cfexp? cfexps)) ;;otherwise flatten nested unions -> union
                                              (foldl (λ (u-cfe acc)
                                                       (vector-append acc (mk-union-cfexp-locfe u-cfe)))
                                                     (vector)
                                                     (filter mk-union-cfexp? cfexps))))]))
 
-;;cfexp -> Kleene-cfexp/empty-cfexpmessage
+;;cfexp -> Kleene-cfexp/empty-cfexp/null-cfexp
 ;;Purpose: A wrapper to create a Kleene-cfexp
-(define #;define/contract (kleene-cfexp cfe)
-  #;kleene-cfexp/c
+(define/contract (kleene-cfexp cfe)
+  kleene-cfexp/c
   (if (or (mk-null-cfexp? cfe)
           (mk-empty-cfexp? cfe))
       cfe
       (mk-kleene-cfexp cfe)))
 
-;;cfe-id cfe -> env
-;;Purpose: Creates an environment where the given cfe-id is the key and cfe is the value
-(define (env-cfexp cfe-id binding)
-  (let ([binding (if (vector? binding) binding (vector binding))])
-    (hash cfe-id binding)))
-
-;;var-cfexp symbol cfe -> void
-;;Purpose: Creates a binding where the cfe is bound to the given var-cfexp's environment unless the binding is an empty-cfexp
-(define/contract (update-binding! cfe bindee-id binding)
-  update-binding!/c
-  (let ([env (mk-var-cfexp-env cfe)])
-    (begin
-      (set! env (env-cfexp bindee-id (if (hash-has-key? env bindee-id)
-                                         (vector-extend (hash-ref env bindee-id)
-                                                        (add1 (vector-length (hash-ref env bindee-id)))
-                                                        binding)
-                                         binding)))
-      (set-mk-var-cfexp-only-empty?! cfe (and (= (vector-length (hash-ref env bindee-id)) 1)
-                                              (mk-empty-cfexp? (vector-ref (hash-ref env bindee-id) 0))))
-      (set-mk-var-cfexp-env! cfe env)
-      ;(set! cfe (mk-var-cfexp env bindee-id)) ;;may reinstate later, need to discuss whether a variable should overwrite
-      ;; for instance (update-binding! (var-cfexp 'S) 'K (union-cfexp A S A))<---- shouldnt be allowed!
-      )))
-
-
 ;;singleton-cfe -> word
 ;;Purpose: Extracts the singleton 
 (define (convert-singleton singleton-cfexp) (mk-singleton-cfexp-char singleton-cfexp))
 
+;;(vectorof cfexp) -> boolean
+;;Purpose: Determines if the given (vectorof cfexp) contains an empty-cfexp
 (define (contains-empty? Vocfe)
   (for/or ([cfe (in-vector Vocfe)])
-    (mk-empty-cfexp? cfe)
-    #;(or (mk-empty-cfexp? cfe)
-        (and (mk-var-cfexp? cfe)
-             (mk-var-cfexp-only-empty? cfe)))))
+    (mk-empty-cfexp? cfe)))
 
-;; Vocfexp --> cfexp
+;; (vectorof cfexp) --> cfexp
 ;; Purpose: Return a randomly chosen sub-cfexp from the given union-cfexp weigthed towards a non-empty-cfexp
 (define (pick-cfexp cfexps)
   (if (contains-empty? cfexps)
@@ -163,12 +131,6 @@
             (empty-cfexp)
             (vector-ref filtered-empties (random (vector-length filtered-empties)))))
         (vector-ref cfexps (random (vector-length cfexps)))))
-
-;;var-cfexp --> word
-;;Purpose: Substitutes the given var-cfexp with it's environment bindings 
-#;(define (substitute-var var-cfexp reps)
-  (let* ([bindings (hash-ref (mk-var-cfexp-env var-cfexp) (mk-var-cfexp-cfe var-cfexp))])
-    (gen-cfexp-word-helper (pick-cfexp bindings) reps)))
 
 ;;concat-cfexp --> word
 ;;Purpose: Returns the concatenation of the sub context-free expressions 
@@ -204,16 +166,14 @@
 ;; cfe [natnum] -> word
 ;; Purpose: Generates a word using 
 
-(define #;define/contract (gen-cfexp-word cfe . reps)
-  #;gen-cfexp-word/c
+(define/contract (gen-cfexp-word cfe . reps)
+  gen-cfexp-word/c
   (define MAX-KLEENESTAR-REPS (if (empty? reps) MAX-KLEENESTAR-LIMIT (first reps)))
   (cond [(mk-null-cfexp? cfe) (error "A word cannot be generated using the null-regexp.")]
         [(mk-empty-cfexp? cfe) EMP]
-        [(mk-singleton-cfexp? cfe) (list (mk-singleton-cfexp-char cfe))]
+        [(mk-singleton-cfexp? cfe) (list (string->symbol (mk-singleton-cfexp-char cfe)))]
         [(box? cfe) (gen-cfexp-word (unbox cfe) reps)]
-        ;[(mk-kleene-cfexp? cfe) )]
         [else (let ([res (gen-cfexp-word-helper cfe MAX-KLEENESTAR-REPS)])
-                #;(displayln res)
                 (if (string-empty? res)
                     EMP
                     (string->word res)))]))
@@ -224,7 +184,6 @@
   (cond [(mk-null-cfexp? cfe) (error "A word cannot be generated using the null-regexp.")]
         [(mk-empty-cfexp? cfe) ""]
         [(mk-singleton-cfexp? cfe) (convert-singleton cfe)]
-        #;[(mk-var-cfexp? cfe) (substitute-var cfe reps)]
         [(mk-concat-cfexp? cfe) (gen-concat-word cfe gen-cfexp-word-helper reps)]
         [(mk-union-cfexp? cfe) (gen-cfexp-word-helper (pick-cfexp (mk-union-cfexp-locfe cfe)) reps)]
         [(box? cfe) (gen-cfexp-word-helper (unbox cfe) reps)]
@@ -245,19 +204,13 @@
   ;;var-cfexp (setof cfe) -> string
   ;;Purpose: Prints the variable 
   (define (printable-var var-cfe seen)
-    (if (set-member? seen var-cfe)
-        (symbol->string (mk-var-cfexp-cfe cfe))
-        (string-append (symbol->string (mk-var-cfexp-cfe cfe))
-                       " -> "
-                       (printable-helper (vector->list (first (hash-values (mk-var-cfexp-env cfe))))
-                                         "|"
-                                         (set cfe)))))
+    seen)
   (define NULL-REGEXP-STRING "∅")
   (define EMPTY-REGEXP-STRING (symbol->string EMP))
   (cond [(mk-null-cfexp? cfe) NULL-REGEXP-STRING]
         [(mk-empty-cfexp? cfe) EMPTY-REGEXP-STRING]
         [(mk-singleton-cfexp? cfe) (mk-singleton-cfexp-char cfe)]
-        [(mk-var-cfexp? cfe) (printable-var cfe (if (set-empty? seen)
+        [(box? cfe) (printable-var cfe (if (set-empty? seen)
                                                     (set)
                                                     seen))]
         [(mk-concat-cfexp? cfe) (printable-helper (vector->list (mk-concat-cfexp-locfe cfe)) "" seen)
@@ -269,8 +222,8 @@
 
 ;;context-free grammar -> cfe
 ;;Purpose: Converts the given cfg its equivalent cfe
-(define #;define/contract (cfg->cfe G)
- #;cfg->cfe/c
+(define/contract (cfg->cfe G)
+ cfg->cfe/c
   ;;(listof X) (X -> Y) -> (hash X . Y)
   ;;Purpose: Creates a hash table using the given (listof x) and function where x is a key and (f x) is the value
   (define (make-hash-table lox f)
@@ -297,13 +250,7 @@
     (define (convert-to-expression portion-of-RHS)
       (cond [(eq? portion-of-RHS EMP) (empty-cfexp)]
             [(hash-has-key? singletons portion-of-RHS) (hash-ref singletons portion-of-RHS)]
-            [(hash-has-key? lang-boxes portion-of-RHS) (hash-ref lang-boxes portion-of-RHS)
-             #;(let* ([future-var-binding (hash-ref rules RHS-of-rule)]
-                    [only-empty? (and (= (length future-var-binding) 1)
-                                      (equal? (first future-var-binding) (list EMP)))])
-               (if only-empty?
-                   (empty-cfexp)
-                   (hash-ref variables RHS-of-rule)))]
+            [(hash-has-key? lang-boxes portion-of-RHS) (hash-ref lang-boxes portion-of-RHS)]
             [else (error (format "unreadable RHS: ~a" portion-of-RHS))]))
     ;;CFG-RHS -> cfe
     ;;Purpose: Translates the given CFG-RHS into its corresponding cfe
@@ -334,8 +281,8 @@
 
 ;;cfe -> cfg
 ;;Purpose: Converts the given cfe into its corresponding cfg
-(define #;define/contract (cfe->cfg cfe)
-  #;cfe->cfg/c
+(define/contract (cfe->cfg cfe)
+  cfe->cfg/c
   ;;vars    | the accumulated variables found from traversing the given cfe  | (listof var-cfexp)
   ;;singles | the accumulated singletons found from traversing the given cfe | (listof singleton-cfexp)
   (struct extraction-results (lang-boxes singles) #:transparent)
@@ -445,9 +392,8 @@
         (define (convert-rhs cfe)
           (cond [(mk-empty-cfexp? cfe) EMP]
                 [(mk-singleton-cfexp? cfe) (string->symbol (mk-singleton-cfexp-char cfe))]
-                [(box? cfe) (hash-ref new-nts cfe #;(unbox cfe))]
-                [(mk-concat-cfexp? cfe) (string->symbol #;(construct-RHS cfe)
-                                                        (tl-foldl (λ (cfe acc)
+                [(box? cfe) (hash-ref new-nts cfe)]
+                [(mk-concat-cfexp? cfe) (string->symbol (tl-foldl (λ (cfe acc)
                                                                     (string-append
                                                                      (if (mk-singleton-cfexp? cfe)
                                                                          (mk-singleton-cfexp-char cfe)
@@ -455,13 +401,11 @@
                                                                      acc))
                                                                   ""
                                                                   (treelist-reverse (vector->treelist (mk-concat-cfexp-locfe cfe)))))]
-                [(mk-union-cfexp? cfe)
-                 ]
                 [else (error (format "unsuitable cfe ~a" cfe))]))
         ;;if union found in concat split union and make concat using every branch
         (let ([RHS (cond [(mk-empty-cfexp? cfe) EMP]
                          [(mk-singleton-cfexp? cfe) (string->symbol (mk-singleton-cfexp-char cfe))]
-                         [(box? cfe) (hash-ref new-nts cfe #;(unbox cfe))]
+                         [(box? cfe) (hash-ref new-nts cfe)]
                          [(mk-concat-cfexp? cfe)
                           (string->symbol (tl-foldl (λ (cfe acc)
                                                       (string-append
@@ -516,9 +460,7 @@
          [rules (lang-boxes->rules lang-boxes new-nts)]
          [nts (hash-values new-nts)]
          [starting-nt (hash-ref new-nts cfe)])
-    (make-unchecked-cfg nts alphabet rules starting-nt)
-    #;(values lang-boxes "newline" new-nts
-            "newline" (hash-keys new-nts)))))
+    (make-unchecked-cfg nts alphabet rules starting-nt))))
 
 ;; pda -> cfe
 ;;Purpose: Converts the given pda into a cfe

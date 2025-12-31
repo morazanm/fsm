@@ -5,14 +5,7 @@
           "../cfg-struct.rkt"
           "../pda.rkt"
           ;"../visualizations/viz-grammar-constructors/cfg-derive-leftmost.rkt"
-          "../../../sm-graph.rkt"
-          racket/syntax-srcloc
-          (for-syntax racket/base
-                      syntax/parse
-                      racket/set
-                      syntax/parse/experimental/template
-                      racket/contract/combinator
-                      )
+          "../../../sm-graph.rkt"          
           "construct-cfe-macro.rkt"
           )
 
@@ -32,6 +25,10 @@
 (define NULL (make-cfe [(NULL (null))]
                  NULL))
 
+(define ONEorTWO (make-cfe ([one (singleton "1")]
+                             [two (singleton "2")])
+                      (union one two)))
+
 
 (define A (make-cfe [(A (singleton "a"))]
                  A)
@@ -50,6 +47,12 @@
 
 (define D (make-cfe [(D (singleton "d"))]
                  D))
+
+#;(singleton-cfexp 'a)
+(define G (make-cfe [(B (singleton "g"))
+                     (test (kleene B))]
+                 test))
+
 
 ;; w = ww^r
 (define WWR
@@ -378,7 +381,7 @@
       X)))
 
 ;;w = (abc)^na^n
-(define thesis-cfe2
+#;(define thesis-cfe2
   (let* [(X (var-cfexp 'X))
          (Y (var-cfexp 'Y))
          (ABY (concat-cfexp A B Y))
@@ -514,6 +517,7 @@
                                 ((E b ,EMP) (E (a)))
                                 ((E ,EMP ,EMP) (F ,EMP))
                                 ((F c (a)) (F ,EMP)))))
+
 
 ;;w = a*
 #|
