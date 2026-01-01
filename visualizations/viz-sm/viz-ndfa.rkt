@@ -1,4 +1,4 @@
-#lang racket
+#lang racket/base
 
 (require "../../fsm-gviz/private/lib.rkt"
          "../2htdp/image.rkt"
@@ -10,14 +10,17 @@
          "../viz-lib/viz-macros.rkt"
          (except-in "../viz-lib/viz-constants.rkt" INS-TOOLS-BUFFER)
          "../viz-lib/viz-imgs/keyboard_bitmaps.rkt"
-         "david-imsg-state.rkt"
+         "sm-viz-helpers/david-imsg-state.rkt"
          racket/treelist
-         (except-in "david-imsg-dimensions.rkt" FONT-SIZE)
-         "david-viz-constants.rkt"
+         racket/list
+         racket/set
+         racket/function
+         (except-in "sm-viz-helpers/david-imsg-dimensions.rkt" FONT-SIZE)
+         "sm-viz-helpers/david-viz-constants.rkt"
          "../../fsm-core/private/constants.rkt"
          "../../fsm-core/private/fsa.rkt"
          "../../fsm-core/private/misc.rkt"
-         "default-informative-messages.rkt")
+         "sm-viz-helpers/default-informative-messages.rkt")
 
 (provide ndfa-viz)
 
@@ -728,33 +731,35 @@ type -> the type of the ndfa (ndfa/dfa) | symbol
 ;;Purpose: Produces an equivalent machine with the addition of the dead state and rules to the dead state
 (define (make-new-M M)
   (cond [(eq? (M 'whatami) 'ndfa)
-         (local [;;symbol
+         (let* [;;symbol
                  ;;Purpose: If ds is already used as a state in M, then generates a random seed symbol,
                  ;;         otherwise uses DEAD
-                 (define dead (if (member? DEAD (fsa-getstates M) eq?) (gen-state (fsa-getstates M)) DEAD))
+                 (dead (if (member? DEAD (fsa-getstates M) eq?) (gen-state (fsa-getstates M)) DEAD))
                  ;;(listof symbols)
                  ;;Purpose: Makes partial rules for every combination of states in M and symbols in sigma of M
-                 (define new-rules
+                 (new-rules
                    (for*/list ([states (fsa-getstates M)]
                                [sigma (fsa-getalphabet M)])
                      (list states sigma)))
                  ;;(listof rules)
                  ;;Purpose: Makes rules for every dead state transition to itself using the symbols in sigma of M
-                 (define dead-rules
+                 (dead-rules
                    (for*/list ([ds (list dead)]
                                [sigma (fsa-getalphabet M)])
                      (list ds sigma ds)))
+
+                 (partial-rules (map (λ (rule)
+                                       (append (list (first rule)) (list (second rule))))
+                                     (fsa-getrules M)))
                  ;;(listof rules)
                  ;;Purpose: Gets rules that are not currently in the original rules of M
-                 (define get-rules-not-in-M  (local [(define partial-rules (map (λ (rule)
-                                                                                  (append (list (first rule)) (list (second rule))))
-                                                                                (fsa-getrules M)))]
-                                               (filter (λ (rule)
-                                                         (not (member? rule partial-rules equal?)))
-                                                       new-rules)))
+                 (get-rules-not-in-M
+                  (filter (λ (rule)
+                            (not (member? rule partial-rules equal?)))
+                          new-rules))
                  ;;(listof rules)
                  ;;Purpose: Maps the dead state as a destination for all rules that are not currently in the original rules of M
-                 (define rules-to-dead
+                 (rules-to-dead
                    (map (λ (rule) (append rule (list dead)))
                         get-rules-not-in-M))]
            (make-unchecked-ndfa (cons dead (fsa-getstates M))

@@ -1,12 +1,12 @@
+#lang racket/base
 
-#lang racket
-
-(require "../2htdp/image.rkt"
-         "../viz-lib/zipper.rkt"
-         "../viz-lib/viz-constants.rkt"
+(require "../../2htdp/image.rkt"
+         "../../viz-lib/zipper.rkt"
+         "../../viz-lib/viz-constants.rkt"
          "david-imsg-state.rkt"
          "david-viz-constants.rkt"
-         "../../fsm-core/private/constants.rkt")
+         "../../../fsm-core/private/constants.rkt"
+         racket/list)
 
 (provide ndfa-create-draw-informative-message
          pda-create-draw-informative-message

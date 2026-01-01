@@ -1,16 +1,16 @@
-#lang racket
+#lang racket/base
 
-(require "../2htdp/image.rkt"
-         "../viz-lib/bounding-limits.rkt"
-         "../viz-lib/bounding-limits-macro.rkt"
-         "../viz-lib/viz-imgs/keyboard_bitmaps.rkt"
-         "../viz-lib/default-viz-function-generators.rkt"
-         "../../fsm-core/private/constants.rkt"
+(require "../../2htdp/image.rkt"
+         "../../viz-lib/bounding-limits.rkt"
+         "../../viz-lib/bounding-limits-macro.rkt"
+         "../../viz-lib/viz-imgs/keyboard_bitmaps.rkt"
+         "../../viz-lib/default-viz-function-generators.rkt"
+         "../../../fsm-core/private/constants.rkt"
          "default-informative-messages.rkt"
-         "../viz-lib/zipper.rkt"
+         "../../viz-lib/zipper.rkt"
          "david-imsg-state.rkt"
          "david-viz-constants.rkt"
-         "../viz-lib/viz-constants.rkt")
+         "../../viz-lib/viz-constants.rkt")
 
 (define FONT-SIZE 18)
 (provide (all-defined-out))

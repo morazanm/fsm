@@ -1,10 +1,13 @@
-#lang racket
+#lang racket/base
 
 (require "../../fsm-gviz/private/lib.rkt"
          "../2htdp/image.rkt"
          "../viz-lib/viz.rkt"
          "../viz-lib/zipper.rkt"
          racket/treelist
+         racket/list
+         racket/set
+         racket/function
          "../viz-lib/bounding-limits.rkt"
          "../viz-lib/viz-state.rkt"
          "../viz-lib/viz-macros.rkt"
@@ -14,11 +17,12 @@
          "../viz-lib/viz-imgs/keyboard_bitmaps.rkt"
          "../../fsm-core/private/constants.rkt"
          "../../fsm-core/private/tm.rkt"
-         "david-imsg-state.rkt"
-         "david-viz-constants.rkt"
-         (except-in "david-imsg-dimensions.rkt"
+         "sm-viz-helpers/david-imsg-state.rkt"
+         "sm-viz-helpers/david-viz-constants.rkt"
+         (except-in "sm-viz-helpers/david-imsg-dimensions.rkt"
                     FONT-SIZE)
-         "default-informative-messages.rkt")
+         "sm-viz-helpers/default-informative-messages.rkt"
+         racket/set)
 
 
 (provide tm-viz)

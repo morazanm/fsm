@@ -1,9 +1,12 @@
-#lang racket
+#lang racket/base
 
 (require "../../fsm-gviz/private/lib.rkt"
          "../2htdp/image.rkt"
          "../viz-lib/viz.rkt"
          racket/treelist
+         racket/list
+         racket/set
+         racket/function
          "../viz-lib/zipper.rkt"
          "../viz-lib/bounding-limits.rkt"
          "../viz-lib/viz-state.rkt"
@@ -13,12 +16,12 @@
          "../../fsm-core/private/constants.rkt"
          "../../fsm-core/private/pda.rkt"
          "../../fsm-core/private/misc.rkt"
-         "default-informative-messages.rkt"
-         "david-viz-constants.rkt"
+         "sm-viz-helpers/default-informative-messages.rkt"
+         "sm-viz-helpers/david-viz-constants.rkt"
          (except-in "../viz-lib/viz-constants.rkt"
                     INS-TOOLS-BUFFER)
-         "david-imsg-state.rkt"
-         (except-in "david-imsg-dimensions.rkt"
+         "sm-viz-helpers/david-imsg-state.rkt"
+         (except-in "sm-viz-helpers/david-imsg-dimensions.rkt"
                     FONT-SIZE))
 
 (provide pda-viz)
@@ -827,41 +830,42 @@ farthest-consumed-input | is the portion the ci that the machine consumed the mo
 ;;machine -> machine
 ;;Purpose: Produces an equivalent machine with the addition of the dead state and rules to the dead state
 (define (make-new-M M)
-  (local [;;symbol
+  (let* [;;symbol
           ;;Purpose: If ds is already used as a state in M, then generates a random seed symbol,
           ;;         otherwise uses DEAD
-          (define dead (if (member? DEAD (pda-getstates M) eq?) (gen-state (pda-getstates M)) DEAD))
+          (dead (if (member? DEAD (pda-getstates M) eq?) (gen-state (pda-getstates M)) DEAD))
           ;;(listof symbols)
           ;;Purpose: Makes partial rules for every combination of states in M and symbols in sigma of M
-          (define new-read-rules
+          (new-read-rules
             (for*/list ([states (pda-getstates M)]
                         [sigma (pda-getalphabet M)])
               (list states sigma)))
 
           ;;(listof rules)
           ;;Purpose: Makes rules for that empty the stack and transition to the ds
-          (define dead-pop-rules
+          (dead-pop-rules
             (for*/list ([ds (list dead)]
                         [gamma (pda-getgamma M)])
               (list (list ds EMP (list gamma)) (list ds EMP))))
 
           ;;(listof rules)
           ;;Purpose: Makes rules for every dead state transition to itself using the symbols in sigma of M
-          (define dead-read-rules
+          (dead-read-rules
             (for*/list ([ds (list dead)]
                         [sigma (pda-getalphabet M)])
               (list (list ds sigma EMP) (list ds EMP))))
+
+          (partial-rules (map (λ (rule)
+                                       (list (first (first rule)) (second (first rule))))
+                                     (pda-getrules M)))
           ;;(listof rules)
           ;;Purpose: Gets rules that are not currently in the original rules of M
-          (define get-rules-not-in-M  (local [(define partial-rules (map (λ (rule)
-                                                                           (list (first (first rule)) (second (first rule))))
-                                                                         (pda-getrules M)))]
-                                        (filter (λ (rule)
+          (get-rules-not-in-M  (filter (λ (rule)
                                                   (not (member? rule partial-rules equal?)))
-                                                new-read-rules)))
+                                                new-read-rules))
           ;;(listof rules)
           ;;Purpose: Maps the dead state as a destination for all rules that are not currently in the original rules of M
-          (define rules-to-dead
+          (rules-to-dead
             (map (λ (rule) (cons (append rule (list EMP)) (list (list dead EMP))))
                  get-rules-not-in-M))]
     (pda (cons dead (pda-getstates M))

@@ -1,17 +1,18 @@
-#lang racket
+#lang racket/base
 
-(require "../2htdp/image.rkt"
-         "../viz-lib/zipper.rkt"
-         "../viz-lib/viz-imgs/keyboard_bitmaps.rkt"
-         "../viz-lib/default-viz-function-generators.rkt"
-         "../../fsm-core/private/constants.rkt"
-         "../viz-lib/zipper.rkt"
+(require "../../2htdp/image.rkt"
+         "../../viz-lib/zipper.rkt"
+         "../../viz-lib/viz-imgs/keyboard_bitmaps.rkt"
+         "../../viz-lib/default-viz-function-generators.rkt"
+         "../../../fsm-core/private/constants.rkt"
+         "../../viz-lib/zipper.rkt"
          racket/treelist
-         "../viz-lib/viz-constants.rkt"
-         "../../fsm-core/private/fsa.rkt"
-         "../../fsm-core/private/pda.rkt"
-         "../../fsm-core/private/tm.rkt"
-         "../../fsm-core/private/mtape-tm.rkt")
+         racket/list
+         "../../viz-lib/viz-constants.rkt"
+         "../../../fsm-core/private/fsa.rkt"
+         "../../../fsm-core/private/pda.rkt"
+         "../../../fsm-core/private/tm.rkt"
+         "../../../fsm-core/private/mtape-tm.rkt")
 
 (provide (all-defined-out))
 

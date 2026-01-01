@@ -1,9 +1,9 @@
 #lang racket/base
 
 (require racket/contract
-         "../../fsm-core/private/macros/shared/shared-predicates.rkt"
-         "../../fsm-core/private/macros/error-formatting.rkt"
-         "../../fsm-core/private/constants.rkt")
+         "../../../fsm-core/private/macros/shared/shared-predicates.rkt"
+         "../../../fsm-core/private/macros/error-formatting.rkt"
+         "../../../fsm-core/private/constants.rkt")
 
 ;;;;;;;;;;;;;;;;;;;;;PREDICATES
 
@@ -33,14 +33,15 @@
 (define is-machine/c
   (make-flat-contract
    #:name 'is-machine?
-   #:first-order machine?
    #:projection (λ (blame)
                   (λ (x)
-                    (current-blame-format format-error)
-                    (raise-blame-error
-                     blame
-                     x
-                     "sm-viz expects a finite state machine as input, given")))))
+                    (or (machine? x)
+                        ((λ ()
+                           (current-blame-format format-error)
+                           (raise-blame-error
+                            blame
+                            x
+                            "sm-viz expects a finite state machine as input, given"))))))))
 
 (define is-valid-machine/c
   (and/c procedure? is-machine/c))
@@ -49,14 +50,16 @@
 (define is-word/c
   (make-flat-contract
    #:name 'is-word?
-   #:first-order valid-fsm-word?
+   ;#:first-order valid-fsm-word?
    #:projection (λ (blame)
                   (λ (x)
-                    (current-blame-format format-error)
+                    (or (valid-fsm-word? x)
+                        ((λ ()
+                           (current-blame-format format-error)
                     (raise-blame-error
                      blame
                      x
-                     "sm-viz expects a list of fsm symbols as input, given")))))
+                     "sm-viz expects a list of fsm symbols as input, given"))))))))
 
 (define is-valid-word/c
   (and/c list? is-word/c))
