@@ -114,8 +114,7 @@
 ;; string -> flat-contract
 ;;Purpose: Creates a flat contract that determines if the input is a cfg
 (define (is-ndpda? message)
-  (and/c procedure? 
-         (make-flat-contract
+  (make-flat-contract
           #:name 'is-ndpda?
           #:projection (λ (blame)
                          (λ (val)
@@ -125,13 +124,12 @@
                                   (raise-blame-error
                                    blame
                                    val
-                                   message)))))))))
+                                   message))))))))
 
 ;; string -> flat-contract
 ;;Purpose: Creates a flat contract that determines if the input is a pda
 (define (is-cfg? message)
-  (and/c struct?
-         (make-flat-contract
+  (make-flat-contract
           #:name 'is-cfg?
           #:projection (λ (blame)
                          (λ (val)
@@ -141,7 +139,7 @@
                            (raise-blame-error
                             blame
                             val
-                            message)))))))))
+                            message))))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;COMBINATOR CONTRACTS;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -1,4 +1,4 @@
-#lang racket
+#lang racket/base
 
 (require "./cfexp-playground.rkt"
          "../pda.rkt"
@@ -6,9 +6,11 @@
          "../constants.rkt"
          "./context-free-expressions-constructors.rkt"
          rackunit
+         racket/set
+         racket/list
          )
 
-(define WORD-AMOUNT 50)
+(define WORD-AMOUNT 5)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;Generating Words;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
