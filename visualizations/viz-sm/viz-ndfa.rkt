@@ -4,23 +4,26 @@
          "../2htdp/image.rkt"
          "../viz-lib/viz.rkt"
          "../viz-lib/zipper.rkt"
-         "../viz-lib/vector-zipper.rkt"
-         "../viz-lib/bounding-limits.rkt"
-         "../viz-lib/viz-state.rkt"
          "../viz-lib/viz-macros.rkt"
-         (except-in "../viz-lib/viz-constants.rkt" INS-TOOLS-BUFFER)
          "../viz-lib/viz-imgs/keyboard_bitmaps.rkt"
+         "../viz-lib/bounding-limits.rkt"
+         "../viz-lib/vector-zipper.rkt"
+         "../viz-lib/viz-state.rkt"
+         (except-in "../viz-lib/viz-constants.rkt" INS-TOOLS-BUFFER)
          "sm-viz-helpers/david-imsg-state.rkt"
+          (except-in "sm-viz-helpers/david-imsg-dimensions.rkt"
+                    FONT-SIZE)
          racket/treelist
          racket/list
          racket/set
          racket/function
-         (except-in "sm-viz-helpers/david-imsg-dimensions.rkt" FONT-SIZE)
+         racket/contract
          "sm-viz-helpers/david-viz-constants.rkt"
+         "sm-viz-helpers/default-informative-messages.rkt"
          "../../fsm-core/private/constants.rkt"
          "../../fsm-core/private/fsa.rkt"
          "../../fsm-core/private/misc.rkt"
-         "sm-viz-helpers/default-informative-messages.rkt")
+         "sm-viz-contracts/sm-viz-contracts.rkt")
 
 (provide ndfa-viz)
 
@@ -775,7 +778,8 @@ type -> the type of the ndfa (ndfa/dfa) | symbol
 ;;ndfa word [boolean] [symbol] . (listof (list state (w -> boolean))) -> (void)
 ;;Purpose: Visualizes the given ndfa processing the given word
 ;;Assumption: The given machine is a ndfa or dfa
-(define (ndfa-viz M a-word #:add-dead [add-dead #f] #:palette [palette 'default] invs)
+(define/contract (ndfa-viz M a-word invs #:add-dead [add-dead #f] #:palette [palette 'default])
+  ndfa-viz/c
   (let* (;;M ;;Purpose: A new machine with the dead state if add-dead is true
          [new-M (remake-machine (if add-dead (make-new-M M) M))]
          ;;color-pallete ;;The corresponding color scheme to used in the viz
@@ -871,8 +875,10 @@ type -> the type of the ndfa (ndfa/dfa) | symbol
                                    (text "Reject not traced" 20 (color-palette-legend-other-reject-color color-scheme)))))])
     
     
+    #;
     (void)
-    #;(run-viz graphs
+    ;#;
+    (run-viz graphs
              (list->vector (map (λ (x) (λ (grph) grph)) graphs))
              (posn (/ E-SCENE-WIDTH 2) (/ NDFA-E-SCENE-HEIGHT 2))
               E-SCENE-WIDTH NDFA-E-SCENE-HEIGHT PERCENT-BORDER-GAP

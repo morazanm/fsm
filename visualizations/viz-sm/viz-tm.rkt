@@ -8,6 +8,8 @@
          racket/list
          racket/set
          racket/function
+         racket/contract
+         "sm-viz-contracts/sm-viz-contracts.rkt"
          "../viz-lib/bounding-limits.rkt"
          "../viz-lib/viz-state.rkt"
          "../viz-lib/viz-macros.rkt"
@@ -57,7 +59,8 @@
 (define INIT-HEAD-POS 0)
 (define INIT-COMPUTATION-LENGTH 1)
 (define INIT-TAPE-CONFIG-INDEX 0)
-
+(define INIT-REACHED-FINAL #f)
+(define INIT-REACHED-CUTOFF #f)
 ;;word (listof rule) symbol number -> (listof computation)
 ;;Purpose: Returns all possible computations using the given word, (listof rule) and start symbol
 ;;   that are within the bounds of the max computation limit
@@ -150,7 +153,7 @@
   (define (make-computations QoC path)
 
     (define (update-computation a-comp)
-      (if (> head-pos 1)
+      (if (> head-pos INIT-COMPUTATION-LENGTH)
           (struct-copy computation a-comp
                [LoC (treelist-drop (computation-LoC a-comp) head-pos)]
                [LoR (treelist-drop (computation-LoR a-comp) head-pos)])
@@ -205,11 +208,12 @@
                       (make-computations (enqueue new-configs (dequeue QoC)) path))))))))
   (let (;;computation
         ;;Purpose: The starting computation
-        [starting-computation (computation (treelist (tm-config start INIT-HEAD-POS #;head-pos a-word INIT-TAPE-CONFIG-INDEX))
+        [starting-computation (computation (treelist (tm-config start INIT-HEAD-POS a-word INIT-TAPE-CONFIG-INDEX))
                                            empty-treelist
                                            (set)
                                            INIT-COMPUTATION-LENGTH)])
-    (make-computations (enqueue (treelist starting-computation) E-QUEUE) (paths empty-treelist empty-treelist #f #f))))
+    (make-computations (enqueue (treelist starting-computation) E-QUEUE)
+                       (paths empty-treelist empty-treelist INIT-REACHED-FINAL INIT-REACHED-CUTOFF))))
 
 
 ;;(listof configurations) (listof rules) (listof configurations) -> (listof configurations)
@@ -871,7 +875,8 @@
 ;;tm tape natnum [natnum] [symbol] . (listof (list state (t i -> boolean))) -> (void) 
 ;;Purpose: Visualizes the given tm processing the given word
 ;;Assumption: The given machine is tm
-(define (tm-viz M a-word head-pos #:cut-off [cut-off 100] #:palette [palette 'default] invs) ;;GET RID OF . FOR TESTING
+(define/contract (tm-viz M a-word head-pos #:cut-off [cut-off 100] #:palette [palette 'default] invs) ;;GET RID OF . FOR TESTING
+  tm-viz/c
   (let* (;;tm-struct
          [M (remake-tm M)]
          ;;color-pallete ;;The corresponding color scheme to used in the viz
@@ -966,9 +971,10 @@
                                    spacer
                                    (text "Reject not traced" 20 (color-palette-legend-other-reject-color color-scheme)))))])
    
+    #;
     (void)
     
-   #;
+   ;#;
     (run-viz graphs
             (list->vector (map (λ (x) (λ (grph) grph)) graphs))
              (posn (/ E-SCENE-WIDTH 2) (/ TM-E-SCENE-HEIGHT 2))

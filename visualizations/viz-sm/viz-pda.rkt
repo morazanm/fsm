@@ -7,22 +7,24 @@
          racket/list
          racket/set
          racket/function
-         "../viz-lib/zipper.rkt"
+         racket/contract
+         "sm-viz-contracts/sm-viz-contracts.rkt"
          "../viz-lib/bounding-limits.rkt"
+         "../viz-lib/zipper.rkt"
          "../viz-lib/viz-state.rkt"
          "../viz-lib/viz-macros.rkt"
          "../viz-lib/vector-zipper.rkt"
-         "../viz-lib/viz-imgs/keyboard_bitmaps.rkt"
          "../../fsm-core/private/constants.rkt"
+         "../viz-lib/viz-imgs/keyboard_bitmaps.rkt"
          "../../fsm-core/private/pda.rkt"
          "../../fsm-core/private/misc.rkt"
-         "sm-viz-helpers/default-informative-messages.rkt"
          "sm-viz-helpers/david-viz-constants.rkt"
          (except-in "../viz-lib/viz-constants.rkt"
                     INS-TOOLS-BUFFER)
-         "sm-viz-helpers/david-imsg-state.rkt"
          (except-in "sm-viz-helpers/david-imsg-dimensions.rkt"
-                    FONT-SIZE))
+                    FONT-SIZE)
+         "sm-viz-helpers/david-imsg-state.rkt"
+         "sm-viz-helpers/default-informative-messages.rkt")
 
 (provide pda-viz)
 
@@ -877,7 +879,8 @@ farthest-consumed-input | is the portion the ci that the machine consumed the mo
 
 ;;pda word [boolean] [natnum] [symbol] . (listof (list state (w s -> boolean))) -> (void)
 ;;Purpose: Visualizes the given pda processing the given word
-(define (pda-viz M a-word #:add-dead [add-dead #f] #:cut-off [cut-off 100] #:palette [palette 'default] invs)
+(define/contract (pda-viz M a-word #:add-dead [add-dead #f] #:cut-off [cut-off 100] #:palette [palette 'default] invs)
+  pda-viz/c
   ;;(listof configuration) (listof rules) (listof configurations) -> (listof configurations)
   ;;Purpose: Returns a propers trace for the given (listof configurations) that accurately
   ;;         tracks each transition
@@ -1124,8 +1127,10 @@ farthest-consumed-input | is the portion the ci that the machine consumed the mo
                                    (text "Accept not traced" 20 (color-palette-legend-other-accept-color color-scheme))
                                    spacer
                                    (text "Reject not traced" 20 (color-palette-legend-other-reject-color color-scheme)))))])
+    #;
     (void)
-    #;(run-viz graphs
+    ;#;
+    (run-viz graphs
              (list->vector (map (λ (x) (λ (grph) grph)) graphs))
              (posn (/ E-SCENE-WIDTH 2) (/ PDA-E-SCENE-HEIGHT 2))
               E-SCENE-WIDTH PDA-E-SCENE-HEIGHT PERCENT-BORDER-GAP

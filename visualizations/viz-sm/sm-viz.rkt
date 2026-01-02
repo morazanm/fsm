@@ -16,7 +16,7 @@
                                  (λ (e) (M 'whatami 0 'whatami))])
                   (M 'whatami))])
     (cond [(or (eq? m-type 'ndfa) (eq? m-type 'dfa))
-           (ndfa-viz M a-word #:add-dead add-dead #:palette palette invs)]
+           (ndfa-viz M a-word invs #:add-dead add-dead #:palette palette)]
           [(eq? m-type 'pda)
            (pda-viz M a-word #:add-dead add-dead #:cut-off cut-off #:palette palette invs)]
           [(or (eq? m-type 'tm) (eq? m-type 'tm-language-recognizer))

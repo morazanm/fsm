@@ -9,7 +9,8 @@
   "../../fsm-core/private/mtape-tm.rkt"
   "../../fsm-core/private/sm-getters.rkt"
   "../../fsm-core/private/cfg-struct.rkt"
-  "sm-viz.rkt")
+  "sm-viz.rkt"
+  "viz-ndfa.rkt")
 
 (define (ndfa->pda M)
   (let [(states (sm-states M))
@@ -1793,9 +1794,9 @@
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
+#|
 (sm-viz EVEN-AS-&-BS '(@ a b a b) #:head-pos 0)
-(sm-viz minimal-tm '(@ _ a a))
+(sm-viz minimal-tm '(@ _ _ _))
 (sm-viz more-a-than-b '(a a a a a b b))
 (sm-viz DNA-SEQUENCE '(c g c g a t a t g c t a g c a t))
 (sm-viz anbncn `(,LM ,BLANK a b c) #:head-pos 1 #:cut-off 15)
@@ -1811,11 +1812,18 @@
           (list 'B tm-B-INV)
           (list 'C tm-C-INV)
           (list 'Y Y-INV)
-          (list 'N N-INV))
+          #;(list 'N N-INV))
 (sm-viz pd-numb>numa '(a b) #:cut-off 1)
 (sm-viz EQABC-ND `(,LM ,BLANK a a b b c c) #:head-pos 0)
-
-
+(sm-viz ww `(,LM ,BLANK a a)  (list 'K k-inv) 
+        (list 'H h-inv)
+        (list 'T t-inv)
+        (list 'F f-inv)
+        (list 'E e-inv)
+        (list 'B b-inv)
+        (list 'W w-inv)
+        (list 'D d-inv)
+        (list 'M m-inv))
 ;(parameterize ([testing? #t])
   
     (sm-viz pd-numb>numa '(a b) #:cut-off 5)
@@ -1907,3 +1915,13 @@
 ;)
 
 
+|#
+
+
+#;(sm-viz AT-LEAST-ONE-MISSING '(a b c z)
+            (list 'Z AB*B*UAB*-S-INV)
+            (list 'A (λ (x) x))
+            (list 'B ALON-B-INV)
+            (list 'C ALON-C-INV))
+
+#;(sm-viz P2 '(a a a b b) (list 'z P-S-INV) (list 'H (λ (w s) s) #;P-H-INV))
