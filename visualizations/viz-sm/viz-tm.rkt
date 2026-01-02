@@ -16,7 +16,6 @@
                     INS-TOOLS-BUFFER)
          "../viz-lib/viz-imgs/keyboard_bitmaps.rkt"
          "../../fsm-core/private/constants.rkt"
-         "../../fsm-core/private/tm.rkt"
          "sm-viz-helpers/david-imsg-state.rkt"
          "sm-viz-helpers/david-viz-constants.rkt"
          (except-in "sm-viz-helpers/david-imsg-dimensions.rkt"
@@ -966,13 +965,12 @@
                                    (text "Accept not traced" 20 (color-palette-legend-other-accept-color color-scheme))
                                    spacer
                                    (text "Reject not traced" 20 (color-palette-legend-other-reject-color color-scheme)))))])
-    #;
-    all-paths
+   
+    (void)
     
-   ;#;
+   #;
     (run-viz graphs
             (list->vector (map (λ (x) (λ (grph) grph)) graphs))
-             #;(lambda () (list (graph->bitmap (first graphs))))
              (posn (/ E-SCENE-WIDTH 2) (/ TM-E-SCENE-HEIGHT 2))
              E-SCENE-WIDTH TM-E-SCENE-HEIGHT PERCENT-BORDER-GAP
              DEFAULT-ZOOM
