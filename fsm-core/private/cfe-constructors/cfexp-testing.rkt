@@ -1,6 +1,7 @@
 #lang racket/base
 
 (require "./cfexp-playground.rkt"
+         "./cfexp-structs.rkt"
          "../pda.rkt"
          "../cfg.rkt"
          "../constants.rkt"
@@ -11,6 +12,50 @@
          )
 
 (define WORD-AMOUNT 5)
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;Unit Tests;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(test-case
+ "concat constructor makes correct cfe"
+ (check-equal? (concat-cfexp) (mk-null-cfexp))
+ (check-equal? (concat-cfexp NULL) (mk-null-cfexp))
+ (check-equal? (concat-cfexp NULL NULL NULL NULL NULL) (mk-null-cfexp))
+ (check-equal? (concat-cfexp NULL EMPTY A) (mk-null-cfexp))
+ (check-equal? (concat-cfexp EMPTY) (mk-empty-cfexp))
+ (check-equal? (concat-cfexp EMPTY EMPTY EMPTY EMPTY EMPTY) (mk-empty-cfexp))
+ (check-equal? (concat-cfexp A) (mk-singleton-cfexp "a"))
+ (check-equal? (concat-cfexp A A) (mk-concat-cfexp (vector (mk-singleton-cfexp "a") (mk-singleton-cfexp "a"))))
+ (check-equal? (concat-cfexp A (union-cfexp B D) C) (mk-concat-cfexp (vector (mk-singleton-cfexp "a")
+                                                                             (box (mk-union-cfexp (vector (mk-singleton-cfexp "b")
+                                                                                                          (mk-singleton-cfexp "d"))))
+                                                                             (mk-singleton-cfexp "c"))))
+ )
+
+(test-case
+ "union constructor makes correct cfe"
+ (check-equal? (union-cfexp) (mk-null-cfexp))
+ (check-equal? (union-cfexp NULL EMPTY) (mk-union-cfexp (vector (mk-null-cfexp) (mk-empty-cfexp))))
+ (check-equal? (union-cfexp EMPTY EMPTY EMPTY EMPTY) (mk-empty-cfexp))
+ (check-equal? (union-cfexp B) (mk-singleton-cfexp "b"))
+ (check-equal? (union-cfexp B D) (mk-union-cfexp (vector (mk-singleton-cfexp "b") (mk-singleton-cfexp "d"))))
+ (check-equal? (union-cfexp C (union-cfexp A B) D) (mk-union-cfexp (vector (mk-singleton-cfexp "c")
+                                                                           (mk-singleton-cfexp "d")
+                                                                           (mk-singleton-cfexp "a")
+                                                                           (mk-singleton-cfexp "b"))))
+
+  )
+
+(test-case
+ "kleene constructor makes correct cfe"
+ (check-equal? (kleene-cfexp A) (mk-kleene-cfexp (mk-singleton-cfexp "a")))
+ (check-equal? (kleene-cfexp EMPTY) EMPTY)
+ (check-equal? (kleene-cfexp NULL) NULL)
+ )
+
+
+
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;Generating Words;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -330,5 +375,3 @@
 
  (check-true (grammar-checker (cfe->cfg WWR) TRANSFORMED-WWR-WORDS))
  )
-
-(define test (union-cfexp ANBN BNAN))

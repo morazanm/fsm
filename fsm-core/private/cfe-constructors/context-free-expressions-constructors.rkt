@@ -65,8 +65,8 @@
 
 ;;(listof cfexp) -> boolean
 ;;Purpose: Determines if every element in the given (listof cfexp) is the empty-cfexp
-(define (all-empty? locfe)
-  (andmap mk-empty-cfexp? locfe))
+(define (all-X-cfexp? cfexp-pred locfe)
+  (andmap cfexp-pred locfe))
 
 ;;(listof cfexp) -> boolean
 ;;Purpose: Determines if the given (listof cfexp) contains the null-cfexp
@@ -84,7 +84,7 @@
       (box cfe)
       cfe))
   (cond [(or (empty? cfexps) (contains-null? cfexps)) (null-cfexp)] ;; no input cfes -> null
-        [(all-empty? cfexps) (empty-cfexp)] ;; only empty cfes -> empty
+        [(all-X-cfexp? mk-empty-cfexp? cfexps) (empty-cfexp)] ;; only empty cfes -> empty
         [(is-length-one? cfexps) (first cfexps)] ;;only one cfe -> cfe
         [else (mk-concat-cfexp (list->vector (map unnest-unions cfexps)))])) ;;otherwise box unboxed-union cfes -> concat
 
@@ -93,8 +93,8 @@
 ;;Purpose: A wrapper to create a union-cfexp unless all the given cfexps are empty-cfexp
 (define/contract (union-cfexp . cfexps)
   union-cfexp/c
-  (cond [(or (empty? cfexps) (contains-null? cfexps)) (null-cfexp)] ;; no input cfes -> null
-        [(all-empty? cfexps) (empty-cfexp)] ;; only empty cfes -> empty
+  (cond [(or (empty? cfexps) (all-X-cfexp? mk-null-cfexp? cfexps)) (null-cfexp)] ;; no input cfes -> null
+        [(all-X-cfexp? mk-empty-cfexp? cfexps) (empty-cfexp)] ;; only empty cfes -> empty
         [(is-length-one? cfexps) (first cfexps)] ;;only one cfe -> cfe
         [else (mk-union-cfexp (vector-append (list->vector (filter-not mk-union-cfexp? cfexps)) ;;otherwise flatten nested unions -> union
                                              (foldl (λ (u-cfe acc)
