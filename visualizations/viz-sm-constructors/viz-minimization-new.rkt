@@ -1,4 +1,4 @@
-#lang racket
+#lang racket/base
 (require "../../fsm-gviz/private/lib.rkt"
          "../2htdp/image.rkt"
          "../../fsm-core/private/fsa.rkt"
@@ -12,7 +12,12 @@
          "../viz-lib/viz.rkt"
          "../viz-lib/bounding-limits.rkt"
          "../viz-lib/zipper.rkt"
-         racket/treelist)
+         racket/treelist
+         racket/list
+         racket/set
+         racket/match
+         racket/vector
+         racket/function)
 
 (provide minimization-viz2)
 
@@ -1059,22 +1064,39 @@ A Path is a (treelistof dfa-rule)
       (if (treelist-empty? loSP)
           (phase-results (reverse acc) state-pairing-table)
           (let ([state-pairing (treelist-first loSP)])
-            (if (or (set-member? seen-markings state-pairing)
-                    (set-member? seen-unmarkings state-pairing))
-                (if (set-member? seen-markings state-pairing)
-                    (make-phase-helper state-pairing-table (treelist-rest loSP) acc seen-markings seen-unmarkings)
-                    (make-phase-helper state-pairing-table loSP
-                                       (cons (phase phase-id no-unreachables-M state-pairing-table (attribute-struct-id 'next-pass)) acc)
-                                       seen-markings
-                                       (set)))
-                (let* ([state-pairing (treelist-first loSP)]
-                       [new-table (if (state-pair-marked? state-pairing)
-                                      (make-mark-on-table state-pairing)
-                                      state-pairing-table)]
-                       [new-phase (phase phase-id no-unreachables-M new-table (attribute-struct-id state-pairing))]
-                       [updated-seen (if (state-pair-marked? state-pairing) (set-add seen-markings state-pairing) seen-markings)]
-                       [updated-unseen (if (not (state-pair-marked? state-pairing)) (set-add seen-unmarkings state-pairing) seen-unmarkings)])
-                  (make-phase-helper new-table (treelist-rest loSP) (cons new-phase acc) updated-seen updated-unseen))))))
+            (cond [(set-member? seen-markings state-pairing)
+                   (make-phase-helper state-pairing-table (treelist-rest loSP) acc seen-markings seen-unmarkings)]
+                  [(set-member? seen-unmarkings state-pairing)
+                   (make-phase-helper state-pairing-table (treelist-rest loSP) acc seen-markings seen-unmarkings)]
+                  [else (let* ([state-pairing (treelist-first loSP)]
+                               [new-table (if (state-pair-marked? state-pairing)
+                                              (make-mark-on-table state-pairing)
+                                              state-pairing-table)]
+                               [new-phase (phase phase-id no-unreachables-M new-table (attribute-struct-id state-pairing))]
+                               [updated-seen (if (state-pair-marked? state-pairing)
+                                                 (set-add seen-markings state-pairing)
+                                                 seen-markings)]
+                               [updated-unseen (if (not (state-pair-marked? state-pairing))
+                                                   (set-add seen-unmarkings state-pairing)
+                                                   seen-unmarkings)])
+                          (make-phase-helper new-table (treelist-rest loSP) (cons new-phase acc) updated-seen updated-unseen))])
+            
+                  #;(if (or (set-member? seen-markings state-pairing)
+                            (set-member? seen-unmarkings state-pairing))
+                        (if (set-member? seen-markings state-pairing)
+                            (make-phase-helper state-pairing-table (treelist-rest loSP) acc seen-markings seen-unmarkings)
+                            (make-phase-helper state-pairing-table loSP
+                                               (cons (phase phase-id no-unreachables-M state-pairing-table (attribute-struct-id 'next-pass)) acc)
+                                               seen-markings
+                                               (set)))
+                        (let* ([state-pairing (treelist-first loSP)]
+                               [new-table (if (state-pair-marked? state-pairing)
+                                              (make-mark-on-table state-pairing)
+                                              state-pairing-table)]
+                               [new-phase (phase phase-id no-unreachables-M new-table (attribute-struct-id state-pairing))]
+                               [updated-seen (if (state-pair-marked? state-pairing) (set-add seen-markings state-pairing) seen-markings)]
+                               [updated-unseen (if (not (state-pair-marked? state-pairing)) (set-add seen-unmarkings state-pairing) seen-unmarkings)])
+                          (make-phase-helper new-table (treelist-rest loSP) (cons new-phase acc) updated-seen updated-unseen))))))
     (make-phase-helper state-pairing-table loSP '() seen-markings seen-unmarkings))
 
   ;; (listof dfa) (listof merged-state) (vectorof (vectorof marking)) -> (listof phase)
