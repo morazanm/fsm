@@ -17,7 +17,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;Unit Tests;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (test-case
- "concat constructor makes correct cfe"
+ "Concat Constructor Makes Correct CFE"
  (check-equal? (concat-cfexp) (mk-null-cfexp))
  (check-equal? (concat-cfexp NULL) (mk-null-cfexp))
  (check-equal? (concat-cfexp NULL NULL NULL NULL NULL) (mk-null-cfexp))
@@ -33,7 +33,7 @@
  )
 
 (test-case
- "union constructor makes correct cfe"
+ "Union Constructor Makes Correct CFE"
  (check-equal? (union-cfexp) (mk-null-cfexp))
  (check-equal? (union-cfexp NULL EMPTY) (mk-union-cfexp (vector (mk-null-cfexp) (mk-empty-cfexp))))
  (check-equal? (union-cfexp EMPTY EMPTY EMPTY EMPTY) (mk-empty-cfexp))
@@ -47,12 +47,51 @@
   )
 
 (test-case
- "kleene constructor makes correct cfe"
+ "Kleene Constructor Makes Correct CFE"
  (check-equal? (kleene-cfexp A) (mk-kleene-cfexp (mk-singleton-cfexp "a")))
  (check-equal? (kleene-cfexp EMPTY) EMPTY)
  (check-equal? (kleene-cfexp NULL) NULL)
  )
 
+
+(test-case
+ "CFE Predicates"
+ (check-true (null-cfexp? NULL))
+ (check-false (null-cfexp? EMPTY))
+ (check-true (null-cfexp? (union-cfexp NULL NULL NULL)))
+ (check-true (null-cfexp? (concat-cfexp A NULL NULL B NULL)))
+ 
+ (check-true (empty-cfexp? EMPTY))
+ (check-false (empty-cfexp? NULL))
+ (check-true (empty-cfexp? (concat-cfexp EMPTY EMPTY EMPTY EMPTY)))
+ (check-true (empty-cfexp? (union-cfexp EMPTY EMPTY EMPTY EMPTY)))
+ 
+ (check-true (singleton-cfexp? C))
+ (check-false (singleton-cfexp? (concat-cfexp A C)))
+ (check-true (singleton-cfexp? (concat-cfexp A)))
+ (check-true (singleton-cfexp? (union-cfexp D)))
+ 
+ (check-true (concat-cfexp? (concat-cfexp D C)))
+ (check-false (concat-cfexp? (concat-cfexp EMPTY)))
+ (check-false (concat-cfexp? (concat-cfexp EMPTY EMPTY EMPTY EMPTY)))
+ (check-true (concat-cfexp? (concat-cfexp EMPTY A EMPTY EMPTY EMPTY)))
+ (check-false (concat-cfexp? (concat-cfexp NULL)))
+ (check-false (concat-cfexp? (concat-cfexp NULL NULL NULL)))
+ (check-false (concat-cfexp? (concat-cfexp A NULL NULL B NULL)))
+ (check-false (concat-cfexp? (concat-cfexp A)))
+ 
+ (check-true (union-cfexp? (union-cfexp B A)))
+ (check-false (union-cfexp? (union-cfexp EMPTY)))
+ (check-false (union-cfexp? (union-cfexp NULL)))
+ (check-true (union-cfexp? (union-cfexp A NULL NULL C NULL)))
+ (check-true (union-cfexp? (union-cfexp D NULL NULL B NULL)))
+ (check-false (union-cfexp? (union-cfexp EMPTY EMPTY EMPTY EMPTY)))
+ (check-false (union-cfexp? (union-cfexp NULL NULL NULL)))
+
+ (check-true (kleene-cfexp? (kleene-cfexp A)))
+ (check-false (kleene-cfexp? (kleene-cfexp EMPTY)))
+ (check-false (kleene-cfexp? (kleene-cfexp NULL)))
+ )
 
 
 
@@ -151,6 +190,8 @@
   (or (eq? a-word EMP)
       (andmap (λ (w) (eq? w 'a)) a-word)))
 
+;;word -> boolean
+;;Purpose: Determines if the given word is a valid word for w = aˆnbˆn
 (define (valid-Gina-aˆnbˆn-word? ci)
   (let* [(as (takef ci (λ (s) (eq? s 'a))))
          (bs (takef (drop ci (length as))
@@ -158,20 +199,29 @@
     (and (equal? (append as bs) ci)
          (= (length as) (length bs)))))
 
+;;word -> boolean
+;;Purpose: Determines if the given word is a valid word for w = wcwˆr
 (define (valid-Gina-wcwˆr-word? ci)
   (let* [(w (takef ci (λ (s) (not (eq? s 'c)))))]
     (equal? ci (append w (list 'c) (reverse w)))))
 
+
+;;word -> boolean
+;;Purpose: Determines if the given word is a valid word for w is a palindrome
 (define (valid-Gina-palindrome-pda-word? ci)
   (or (empty? ci)
       (equal? ci (reverse ci))))
 
+;;word -> boolean
+;;Purpose: Determines if the given word is a valid word for w = AiBj where i<= j <= 2i
 (define (valid-Gina-AiBj-word? ci)
   (let* [(As (takef ci (λ (x) (eq? x 'a))))
          (Bs (takef (drop ci (length As)) (λ (x) (eq? x 'b))))]
     (and (<= (length As) (length Bs) (* 2 (length As)))
          (equal? ci (append As Bs)))))
 
+;;word -> boolean
+;;Purpose: Determines if the given word is a valid word for w = A^nB^mA^n
 (define (valid-Gina-A^nB^mA^n-word? ci)
   (let* [(As (takef ci (λ (x) (eq? x 'a))))
          (Bs (takef (drop ci (length As)) (λ (x) (eq? x 'b))))
@@ -180,6 +230,7 @@
              (even? (length As))) 
         (and (= (- (length As) (length As-after-Bs)) 0) 
              (equal? (append As Bs As-after-Bs) ci)))))
+
 
 (define (valid-Gina-a^mb^nc^pd^q-word? ci stack)
   (let* [(As (takef ci (λ (x) (eq? x 'a))))
@@ -190,6 +241,8 @@
          (andmap (λ (x) (eq? x 'a)) stack)
          (= 0 (- (+ (length As) (length Bs)) (length Cs) (length Ds))))))
 
+;;word -> boolean
+;;Purpose: Determines if the given word is a valid word for w = a^mb^nc^p
 (define (valid-Gina-a^mb^nc^p-word? ci)
   (let* [(As (takef ci (λ (x) (eq? x 'a))))
          (Bs (takef (drop ci (length As)) (λ (x) (eq? 'b x))))
@@ -254,7 +307,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;TESTING;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (test-case
- "pda->cfe word generation test"
+ "PDA->CFE Word Generation"
  (check-pred (λ (low) (andmap valid-A*-word? low)) A*-WORDS)
 
  (check-pred (λ (low) (andmap valid-anbn-word? low)) converted-ANBN-WORDS)
@@ -282,7 +335,7 @@
  (check-pred (λ (low) (andmap valid-Gina-a^mb^nc^p-word? low)) Gina-a^mb^nc^p-WORDS)
  )
 
-(test-case "CFE->PDA word membership tests"
+(test-case "CFE->PDA Word Membership"
 
            (check-true (pda-checker (cfe->pda ANBN) converted-ANBN-WORDS))
 
@@ -296,7 +349,7 @@
            )
 
 (test-case
- "PDA->CFE word membership tests" 
+ "PDA->CFE Word Membership" 
 
  (check-true (pda-checker Gina-aˆnbˆn Gina-aˆnbˆn-WORDS))
 
@@ -329,7 +382,7 @@
 |#
 
 (test-case
- "CFE word generation tests"
+ "CFE Word Generation"
 
  (check-pred (λ (low) (andmap valid-wwr-word? low)) WWR-WORDS)
 
@@ -345,7 +398,7 @@
 
 
 (test-case
- "CFG->CFE word membership tests"
+ "CFG->CFE Word Membership"
 
  (check-pred (λ (low) (andmap valid-anbn-word? low)) TRANSFORMED-ANBN-WORDS)
 
@@ -359,7 +412,7 @@
  )
 
 (test-case
- "CFE->CFG word membership tests" 
+ "CFE->CFG Word Membership" 
 
  (check-true (grammar-checker thesis-cfg1 thesis-cfg-converted-WORDS))
 

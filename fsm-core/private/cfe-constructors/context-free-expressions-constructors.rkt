@@ -16,11 +16,17 @@
          racket/set)
 
 (provide null-cfexp
+         null-cfexp?
          empty-cfexp
+         empty-cfexp?
          singleton-cfexp
+         singleton-cfexp?
          concat-cfexp
+         concat-cfexp?
          union-cfexp
+         union-cfexp?
          kleene-cfexp
+         kleene-cfexp?
          gen-cfexp-word          
          cfg->cfe
          cfe->cfg
@@ -47,16 +53,31 @@
 (define (null-cfexp)
   (mk-null-cfexp))
 
+;; X -> Boolean
+;;Purpose: Determines if the X is a null-cfexp
+(define (null-cfexp? x)
+  (mk-null-cfexp? x))
+
 ;; -> empty-cfexp
 ;;Purpose: A wrapper to create a empty-cfexp
 (define (empty-cfexp)
   (mk-empty-cfexp))
+
+;; X -> Boolean
+;;Purpose: Determines if the X is a empty-cfexp
+(define (empty-cfexp? x)
+  (mk-empty-cfexp? x))
 
 ;; symbol -> singleton-cfexp
 ;;Purpose: A wrapper to create a singleton-cfexp
 (define/contract (singleton-cfexp a-char)
   singleton-cfexp/c 
   (mk-singleton-cfexp a-char))
+
+;; X -> Boolean
+;;Purpose: Determines if the X is a singleton-cfexp
+(define (singleton-cfexp? x)
+  (mk-singleton-cfexp? x))
 
 ;;(listof X) -> boolean
 ;;Purpose: Determines if the (listof X) is of length 1
@@ -76,18 +97,23 @@
 ;; . cfexp -> concat-cfexp/null-cfexp/empty-cfexp/singleton-cfexp
 ;;Purpose: A wrapper to create a concat-cfexp unless all the given cfexps are empty-cfexp
 (define/contract (concat-cfexp . cfexps)
- concat-cfexp/c
+  concat-cfexp/c
   ;;cfe -> cfe 
   ;;Purpose: If the given cfe is a union then it is put into a box otherwise nothing happens
   (define (unnest-unions cfe)
-  (if (mk-union-cfexp? cfe)
-      (box cfe)
-      cfe))
+    (if (mk-union-cfexp? cfe)
+        (box cfe)
+        cfe))
   (cond [(or (empty? cfexps) (contains-null? cfexps)) (null-cfexp)] ;; no input cfes -> null
         [(all-X-cfexp? mk-empty-cfexp? cfexps) (empty-cfexp)] ;; only empty cfes -> empty
         [(is-length-one? cfexps) (first cfexps)] ;;only one cfe -> cfe
         [else (mk-concat-cfexp (list->vector (map unnest-unions cfexps)))])) ;;otherwise box unboxed-union cfes -> concat
 
+
+;; X -> Boolean
+;;Purpose: Determines if the X is a concat-cfexp
+(define (concat-cfexp? x)
+  (mk-concat-cfexp? x))
 
 ;; . cfexp -> union-cfexp/null-cfexp/empty-cfexp/singleton-cfexp
 ;;Purpose: A wrapper to create a union-cfexp unless all the given cfexps are empty-cfexp
@@ -102,6 +128,11 @@
                                                     (vector)
                                                     (filter mk-union-cfexp? cfexps))))]))
 
+;; X -> Boolean
+;;Purpose: Determines if the X is a union-cfexp
+(define (union-cfexp? x)
+  (mk-union-cfexp? x))
+
 ;;cfexp -> Kleene-cfexp/empty-cfexp/null-cfexp
 ;;Purpose: A wrapper to create a Kleene-cfexp
 (define/contract (kleene-cfexp cfe)
@@ -110,6 +141,11 @@
           (mk-empty-cfexp? cfe))
       cfe
       (mk-kleene-cfexp cfe)))
+
+;; X -> Boolean
+;;Purpose: Determines if the X is a union-cfexp
+(define (kleene-cfexp? x)
+  (mk-kleene-cfexp? x))
 
 ;;singleton-cfe -> word
 ;;Purpose: Extracts the singleton 
@@ -125,12 +161,12 @@
 ;; Purpose: Return a randomly chosen sub-cfexp from the given union-cfexp weigthed towards a non-empty-cfexp
 (define (pick-cfexp cfexps)
   (if (contains-empty? cfexps)
-        (let ([filtered-empties (vector-filter-not mk-empty-cfexp? cfexps)])
-          (if (or (vector-empty? filtered-empties)
-                  (< (random) EMPTY-CHANCE))
+      (let ([filtered-empties (vector-filter-not mk-empty-cfexp? cfexps)])
+        (if (or (vector-empty? filtered-empties)
+                (< (random) EMPTY-CHANCE))
             (empty-cfexp)
             (vector-ref filtered-empties (random (vector-length filtered-empties)))))
-        (vector-ref cfexps (random (vector-length cfexps)))))
+      (vector-ref cfexps (random (vector-length cfexps)))))
 
 ;;concat-cfexp --> word
 ;;Purpose: Returns the concatenation of the sub context-free expressions 
@@ -151,11 +187,17 @@
                       (λ (i) (gen-function (mk-kleene-cfexp-cfe kleene-cfexp) reps))))))]
     (if (empty? lst-words) EMP (append-map append lst-words))))
 
+;;string -> Boolean
+;;Purpose: Determines if the given string is empty
 (define (string-empty? str)
   (not (non-empty-string? str)))
 
+;;string -> (listof symbol)
+;;Purpose: Converts the given string into a fsm word
 (define (string->word str)
   (let ([end-idx (string-length str)])
+    ;;natnum (listof symbol) -> (listof symbol)
+    ;;Purpose: Converts the string into a fsm word
     (define (string->word-helper idx acc)
       (if (= idx end-idx)
           (reverse acc)
@@ -165,7 +207,6 @@
 
 ;; cfe [natnum] -> word
 ;; Purpose: Generates a word using 
-
 (define/contract (gen-cfexp-word cfe . reps)
   gen-cfexp-word/c
   (define MAX-KLEENESTAR-REPS (if (empty? reps) MAX-KLEENESTAR-LIMIT (first reps)))
@@ -198,8 +239,8 @@
     (cond [(= (length locfe) 1) (printable-cfexp (first locfe) #:seen seen)]
           [else (let ([new-seen (set-add seen (first locfe))])
                   (string-append (printable-cfexp (first locfe) #:seen new-seen)
-                               connector
-                               (printable-helper (rest locfe) connector new-seen)))]))
+                                 connector
+                                 (printable-helper (rest locfe) connector new-seen)))]))
 
   ;;var-cfexp (setof cfe) -> string
   ;;Purpose: Prints the variable 
@@ -211,8 +252,8 @@
         [(mk-empty-cfexp? cfe) EMPTY-REGEXP-STRING]
         [(mk-singleton-cfexp? cfe) (mk-singleton-cfexp-char cfe)]
         [(box? cfe) (printable-var cfe (if (set-empty? seen)
-                                                    (set)
-                                                    seen))]
+                                           (set)
+                                           seen))]
         [(mk-concat-cfexp? cfe) (printable-helper (vector->list (mk-concat-cfexp-locfe cfe)) "" seen)
                                 #;(string-append "(" (printable-helper (vector->list (mk-concat-cfexp-locfe cfe)) "" seen) ")")]
         [(mk-union-cfexp? cfe) (printable-helper (vector->list (mk-union-cfexp-locfe cfe)) " | "#;" ∪ " seen)
@@ -223,7 +264,7 @@
 ;;context-free grammar -> cfe
 ;;Purpose: Converts the given cfg its equivalent cfe
 (define/contract (cfg->cfe G)
- cfg->cfe/c
+  cfg->cfe/c
   ;;(listof X) (X -> Y) -> (hash X . Y)
   ;;Purpose: Creates a hash table using the given (listof x) and function where x is a key and (f x) is the value
   (define (make-hash-table lox f)
@@ -277,7 +318,7 @@
                                                          (begin
                                                            (set-box! (hash-ref lang-boxes key) value)
                                                            (values key (hash-ref lang-boxes key)))))])
-     (hash-ref updated-bindings start)))
+    (hash-ref updated-bindings start)))
 
 ;;cfe -> cfg
 ;;Purpose: Converts the given cfe into its corresponding cfg
@@ -315,6 +356,7 @@
               ([x (in-range num)])
       (cons (gen-nt nts) nts)))
 
+  ;;(X -> Y) Z (treelistof X) -> Z
   (define (tl-foldl f acc tl)
     (if (treelist-empty? tl)
         acc
@@ -335,9 +377,9 @@
   ;;Purpose: Extracts all var-cfexp and singleton-cfexp from the given cfe
   (define (extract-var-and-singles-cfe cfe)
     (let ([init-queue (tl-foldl (λ (env acc)
-                               (enqueue acc (treelist env)))
-                             E-QUEUE
-                             (extract-cfe-data cfe))])
+                                  (enqueue acc (treelist env)))
+                                E-QUEUE
+                                (extract-cfe-data cfe))])
       (extract-var-and-singles init-queue
                                (update-extraction-results cfe (extraction-results '() '()))
                                (set cfe))))
@@ -347,8 +389,8 @@
   (define (update-extraction-results cfe extract-res)
     (cond [(or (mk-kleene-cfexp? cfe)
                (box? cfe)) (struct-copy extraction-results
-                                            extract-res
-                                            [lang-boxes (cons cfe (extraction-results-lang-boxes extract-res))])]
+                                        extract-res
+                                        [lang-boxes (cons cfe (extraction-results-lang-boxes extract-res))])]
           [(mk-singleton-cfexp? cfe) (struct-copy extraction-results
                                                   extract-res
                                                   [singles (cons cfe (extraction-results-singles extract-res))])]
@@ -445,22 +487,22 @@
   (if (mk-null-cfexp? cfe)
       (make-unchecked-cfg '(S) '() '() 'S)
       (let* ([cfe (update-cfe cfe)]
-         [extracted-components (extract-var-and-singles-cfe cfe)]
-         [lang-boxes (extraction-results-lang-boxes extracted-components)]
-         [new-nts (foldl (λ (nt lang-box acc)
-                           (hash-set acc lang-box nt))
-                         (hash)
-                         (gen-nts (length lang-boxes))
-                         lang-boxes)]
-         [singletons (foldl (λ (single acc)
-                              (set-add acc ((compose1 string->symbol mk-singleton-cfexp-char) single)))
-                            (set)
-                            (extraction-results-singles extracted-components))]
-         [alphabet (set->list singletons)]
-         [rules (lang-boxes->rules lang-boxes new-nts)]
-         [nts (hash-values new-nts)]
-         [starting-nt (hash-ref new-nts cfe)])
-    (make-unchecked-cfg nts alphabet rules starting-nt))))
+             [extracted-components (extract-var-and-singles-cfe cfe)]
+             [lang-boxes (extraction-results-lang-boxes extracted-components)]
+             [new-nts (foldl (λ (nt lang-box acc)
+                               (hash-set acc lang-box nt))
+                             (hash)
+                             (gen-nts (length lang-boxes))
+                             lang-boxes)]
+             [singletons (foldl (λ (single acc)
+                                  (set-add acc ((compose1 string->symbol mk-singleton-cfexp-char) single)))
+                                (set)
+                                (extraction-results-singles extracted-components))]
+             [alphabet (set->list singletons)]
+             [rules (lang-boxes->rules lang-boxes new-nts)]
+             [nts (hash-values new-nts)]
+             [starting-nt (hash-ref new-nts cfe)])
+        (make-unchecked-cfg nts alphabet rules starting-nt))))
 
 ;; pda -> cfe
 ;;Purpose: Converts the given pda into a cfe
@@ -630,18 +672,18 @@
         (hash-filter (first acc-rules)
                      (λ (k v)
                        (andmap (λ (r) (not (or (empty? r)
-                                          (equal? (list EMP) r)))) v)))
+                                               (equal? (list EMP) r)))) v)))
         (let* ([only-empty-rules
                 (hash-filter curr-rules (λ (k v)
-                                     (andmap (λ (r) (or (empty? r)
-                                                        (equal? (list EMP) r))) v)))]
+                                          (andmap (λ (r) (or (empty? r)
+                                                             (equal? (list EMP) r))) v)))]
                [e-nts (hash-keys only-empty-rules)]
                [new-rules (hash-map/copy curr-rules (λ (k v)
-                                       (if (ormap (λ (rule)
-                                                    (ormap (λ (r)
-                                                             (hash-has-key? only-empty-rules r)) rule)) v)
-                                           (values k (map (λ (val) (filter-not (λ (r) (member r e-nts)) val)) v))
-                                           (values k v))))])
+                                                      (if (ormap (λ (rule)
+                                                                   (ormap (λ (r)
+                                                                            (hash-has-key? only-empty-rules r)) rule)) v)
+                                                          (values k (map (λ (val) (filter-not (λ (r) (member r e-nts)) val)) v))
+                                                          (values k v))))])
           (simplify-rules new-rules (cons new-rules acc-rules)))))
   
   (let* ([G (unchecked->cfg (pda2cfg pda))]
@@ -649,62 +691,62 @@
          [renamed-cfg (unchecked->cfg (rebuild-cfg G renamed-nts-mapping))]
          [proper-cfg  (minimize-cfg renamed-cfg)]
          [new-rules (make-hash-table (cfg-get-v proper-cfg) (λ (nt) (filter-map (λ (rule)
-                                                           (and (eq? (first rule) nt)
-                                                                (symbol->fsmlos (third rule))))
-                                                         (cfg-get-rules proper-cfg))))]
+                                                                                  (and (eq? (first rule) nt)
+                                                                                       (symbol->fsmlos (third rule))))
+                                                                                (cfg-get-rules proper-cfg))))]
          [only-empty-rules (hash-filter new-rules (λ (k v)
-                                     (or (empty? v)
-                                         (andmap (λ (r) (equal? (list EMP) r)) v))))]
+                                                    (or (empty? v)
+                                                        (andmap (λ (r) (equal? (list EMP) r)) v))))]
          [e-nts (hash-keys only-empty-rules)]
          [simp-rules (simplify-rules new-rules '())]
          [sub-only-rules (hash-filter simp-rules (λ (k v)
-                                      (andmap (λ (r)
-                                                (and (= (length r) 1)
-                                                     (ormap (λ (el)
-                                                            (member el (hash-keys simp-rules))) r))) v)))]
+                                                   (andmap (λ (r)
+                                                             (and (= (length r) 1)
+                                                                  (ormap (λ (el)
+                                                                           (member el (hash-keys simp-rules))) r))) v)))]
          [sub-nts (hash-keys sub-only-rules)]
          [simp-rules2 (hash-map/copy simp-rules (λ (k v)
-                                       (if (ormap (λ (rule)
-                                                    (ormap (λ (r)
-                                                             (hash-has-key? sub-only-rules r)) rule)) v)
-                                           (values k (map (λ (val) (map (λ (r)
-                                                                          (if (hash-has-key? sub-only-rules r)
-                                                                       (first (flatten (hash-ref sub-only-rules r)))
-                                                                       r)) val)) v))
-                                           (values k v))))]
+                                                  (if (ormap (λ (rule)
+                                                               (ormap (λ (r)
+                                                                        (hash-has-key? sub-only-rules r)) rule)) v)
+                                                      (values k (map (λ (val) (map (λ (r)
+                                                                                     (if (hash-has-key? sub-only-rules r)
+                                                                                         (first (flatten (hash-ref sub-only-rules r)))
+                                                                                         r)) val)) v))
+                                                      (values k v))))]
          [startt (first (filter (λ (x) (eq? x (cfg-get-start proper-cfg))) (hash-keys simp-rules2)))]
          [final-rules (hash-filter simp-rules2 (λ (k v)
-                                      (or (eq? k startt)
-                                           (not (member k sub-nts)))))]
+                                                 (or (eq? k startt)
+                                                     (not (member k sub-nts)))))]
          [usable-rules (append-map (λ (lhs)
-                          (map (λ (rhs)
-                                 (cfg-rule lhs rhs))
-                               (hash-ref final-rules lhs)))
-                        (hash-keys final-rules))])
+                                     (map (λ (rhs)
+                                            (cfg-rule lhs rhs))
+                                          (hash-ref final-rules lhs)))
+                                   (hash-keys final-rules))])
     #;(values ;proper-cfg
-            new-rules
-            only-empty-rules
-            simp-rules
-            sub-only-rules
-            simp-rules2
-            final-rules
-            (append-map (λ (lhs)
-                          (map (λ (rhs)
-                                 (cfg-rule lhs rhs))
-                               (hash-ref final-rules lhs)))
-                        (hash-keys final-rules)))
+       new-rules
+       only-empty-rules
+       simp-rules
+       sub-only-rules
+       simp-rules2
+       final-rules
+       (append-map (λ (lhs)
+                     (map (λ (rhs)
+                            (cfg-rule lhs rhs))
+                          (hash-ref final-rules lhs)))
+                   (hash-keys final-rules)))
             
-            #;(cfg (CFG-nts G) (CFG-sigma G) (append-map (λ (lhs)
-                                                         (map (λ (rh)
-                                                                (cfg-rule lhs rh))
-                                                              (hash-ref lrhs))
-                                                       (hash-keys final-rules)
-                                                       (hash-values final-rules)) (CFG-start G)))
-       final-rules #;(cfg->cfe (cfg (hash-keys final-rules) (cfg-get-alphabet proper-cfg) usable-rules startt))                            
+    #;(cfg (CFG-nts G) (CFG-sigma G) (append-map (λ (lhs)
+                                                   (map (λ (rh)
+                                                          (cfg-rule lhs rh))
+                                                        (hash-ref lrhs))
+                                                   (hash-keys final-rules)
+                                                   (hash-values final-rules)) (CFG-start G)))
+    final-rules #;(cfg->cfe (cfg (hash-keys final-rules) (cfg-get-alphabet proper-cfg) usable-rules startt))                            
     #;(cfg->cfe proper-cfg)))
 
 ;;cfe -> pda
 ;;Purpose: Converts the given cfe into a pda
 (define #;define/contract (cfe->pda cfe)
- #;cfe->pda/c
+  #;cfe->pda/c
   (cfg->pda (cfe->cfg cfe)))
