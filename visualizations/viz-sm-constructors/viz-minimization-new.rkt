@@ -773,7 +773,7 @@ A Path is a (treelistof dfa-rule)
                   (convert-to-string symbol->string (phase-1-attributes-unreachable-state phase-attribute)))
           FONT-SIZE BLACK))
   
-  (define PHASE2-IMSG (text "State Pairing Table" FONT-SIZE BLACK))
+  (define PHASE2-IMSG (text "Making State Pairing Table" FONT-SIZE BLACK))
 
   ;;state-pair -> string
   ;;Purpose: Makes the state pair readable
@@ -806,7 +806,7 @@ A Path is a (treelistof dfa-rule)
                          (text (pretty-print-state-pair phase-4-state-pair) FONT-SIZE 'red)
                          (text (if (state-pair-marked? phase-4-state-pair)
                                    " is marked because one of it's destination state pairing:"
-                                   " remains unmarked because both of it's destination state pairings:")
+                                   " remains unmarked because all of it's destination state pairings:")
                            FONT-SIZE BLACK)
                      (apply beside (map pretty-print-destination-state-pair (state-pair-destination-pairs phase-4-state-pair)))
                      (text (if (state-pair-marked? phase-4-state-pair)
@@ -883,7 +883,7 @@ A Path is a (treelistof dfa-rule)
                (add-node result
                          state
                          #:atb (hash 'color (cond [(eq? state start) 'darkgreen]
-                                                  [found-state-from-state-pair? 'red]
+                                                  [found-state-from-state-pair? 'blue]
                                                   [else BLACK])
                                      'shape (if member-of-finals? 'doublecircle 'circle)
                                      'style (cond [found-state-from-state-pair? 'bold]
@@ -917,7 +917,7 @@ A Path is a (treelistof dfa-rule)
                                                 'bold
                                                 'solid)
                                      'color (if (or found-state-from-state-pair? found-state-from-merge-state?)
-                                                'red #;(hash-ref sigma-color-pairings (second rule))
+                                                'blue #;(hash-ref sigma-color-pairings (second rule))
                                                 BLACK)))))
            graph
            (dfa-rules M)))
