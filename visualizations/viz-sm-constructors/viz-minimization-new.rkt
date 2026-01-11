@@ -1238,7 +1238,7 @@ A Path is a (treelistof dfa-rule)
 
          )
     
-    ;#;
+    #;
     (void)
     ;phase-5
     ;(values phase-3 all-loSP phase-4)
@@ -1254,7 +1254,7 @@ A Path is a (treelistof dfa-rule)
             (list->set (map (compose1 phase-3-attributes-initial-pairings phase-attributes)
                             (phase-results-loPhase phase3+new-table)))
             (set))
-    #;
+    ;#;
     (run-viz (map first graphs)
              (list->vector (map (λ (x table)
                                   (if (list? (first x))
