@@ -392,6 +392,13 @@
                                          (F a ,DEAD) (F b F))
                                'no-dead))
 
+(define a* (make-unchecked-dfa '(S A C)
+                               '(a b)
+                               'S
+                               '(S)
+                               '((S a S) (S b A) (A a A) (A b A) (S b C) (C a A) (C b A))
+                               'no-dead))
+
 
 (define for-david (make-unchecked-ndfa
                    '(S A B C D E F G H I J K L M N O P Q R S-0 T U V W X Y Z A-0 B-0 C-0 D-0 E-0 F-0 G-0 H-0 I-0 J-0)
@@ -421,7 +428,7 @@
 
 (define listofmachines
   (list EX1 EX2-trans EX3-vid EX4-vid EX5 EX5-vid EX6-vid ODDL M L aa*Uab* AT-LEAST-ONE-MISSING p2-ndfa AB*B*UAB* AB*B*UAB*2 aa-ab ends-with-two-bs
-        nd n nk ab*-U-ab*b*-ndfa PROP-BI DNA-SEQUENCE ND ND2 ND3 ND4 ND5 ENDS-WITH-TWO-Bs nd-a* missing-exactly-one EVEN-NUM-Bs M2))
+        nd n nk ab*-U-ab*b*-ndfa PROP-BI DNA-SEQUENCE ND ND2 ND3 ND4 ND5 ENDS-WITH-TWO-Bs nd-a* missing-exactly-one EVEN-NUM-Bs M2 a*))
 #|
 
 ;;to use the old viz, the incantation is (minimization-viz <FSA>) 
@@ -444,6 +451,8 @@
 #;(map (λ (M)
          (time (minimization-viz2 M)))
        listofmachines)
+
+;(map minimization-viz2 listofmachines)
 
 ;(minimization-viz2 EX3-vid)
 ;(minimization-viz2 AB*B*UAB*2)
