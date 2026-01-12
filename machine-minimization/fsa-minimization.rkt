@@ -1,10 +1,13 @@
-#lang racket
+#lang racket/base
 
-(require "../fsm-core/private/fsa.rkt")
+(require "../fsm-core/private/fsa.rkt"
+         racket/list
+         racket/set
+         racket/function)
 
-(provide unchecked->dfa
-         minimize-dfa
-         dfa)
+(provide minimize-dfa)
+
+(define MIN-AMOUNT-TO-COMPARE 2)
 
 ;;s1      | the first of the state in the state pair  | state
 ;;s2      | the second of the state in the state pair | state
@@ -37,7 +40,7 @@
        (fsa-getrules M)
        'no-dead))
 
-(define e-queue '())
+(define e-queue empty)
 
 (define qfirst first)
 
@@ -76,11 +79,11 @@
           (for/list ([last-rule last-rules-used]
                      [connected-rules usable-rules])
             (cons connected-rules path))))
-      (cond [(ormap reached-destination? paths) #t]
-            [(qempty? paths) #f]
-            [else (reachable-from-start? destination
-                                         rules
-                                         (enqueue (dequeue paths) (reachable-from-start-helper (qfirst paths))))]))
+      (and (not (qempty? paths))
+           (or (ormap reached-destination? paths)
+               (reachable-from-start? destination
+                                      rules
+                                      (enqueue (dequeue paths) (reachable-from-start-helper (qfirst paths)))))))
     (let* ([states (fsa-getstates M)]
            [start (fsa-getstart M)]
            [rules (fsa-getrules M)]
@@ -133,7 +136,7 @@
                                             [s2 states]
                                             #:unless (eq? s1 s2))
                                   (make-destination-pairs (state-pair s1 s2 #f 'none)))]
-           [other-half-of-table (make-half-table init-states-pairing '())])
+           [other-half-of-table (make-half-table init-states-pairing empty)])
       (filter (λ (sp) (not (member sp other-half-of-table))) init-states-pairing)))
   ;; merged-state state-pair -> boolean
   ;; Purpose: Determines if given state-pair shares at least one state with the given merged-state
@@ -181,12 +184,12 @@
             [marked-SP2 (filter (λ (sp) (state-pair-marked? sp)) loSP2)])
         (and (andmap (λ (sp) (list? (member sp unmarked-SP2))) unmarked-SP1)
              (andmap (λ (sp) (list? (member sp marked-SP2))) marked-SP1))))
-    (if (and (>= (length loSP) 2)
+    (if (and (>= (length loSP) MIN-AMOUNT-TO-COMPARE)
              (same-markings? (state-pairings-all-pairs (first loSP)) (state-pairings-all-pairs (second loSP))))
         (first loSP)
         (let ([marked-pairs (filter (λ (sp) (state-pair-marked? sp)) (state-pairings-all-pairs (first loSP)))]
               [unmarked-pairs (filter (λ (sp) (not (state-pair-marked? sp))) (state-pairings-all-pairs (first loSP)))])
-          (make-matches (cons (update-pairs marked-pairs unmarked-pairs '()) loSP)
+          (make-matches (cons (update-pairs marked-pairs unmarked-pairs empty) loSP)
                         transition-table
                         alphabet))))
   
@@ -203,11 +206,13 @@
     ;;Purpose: Accumulates the conversion of state-pairs into merged-states
     (define (accumulate-unmarked-pairs unmarked-pairs acc)
       ;; state-pair (listof merged-state) -> boolean
-      ;; Purpose: Determines if given state-pair has any overlap (at least one same state) with any state-pair in the given (listof state-pairings)
+      ;; Purpose: Determines if given state-pair has any overlap (at least one same state)
+      ;;          with any state-pair in the given (listof state-pairings)
       (define (overlap? unmarked-pair loSP)
         (ormap (λ (sp) (at-least-one-state-matches? sp unmarked-pair)) loSP))
       ;;dfa state-pair (listof merged-state) -> (listof merged-state)
-      ;;Purpose: Merges the state-pair into its overlapping pair and updates the given (listof merged-state) to contain the new merged-state
+      ;;Purpose: Merges the state-pair into its overlapping pair and updates the given
+      ;;        (listof merged-state) to contain the new merged-state
       (define (merge-pairs unmarked-pair loSP)
         ;;dfa state-pair merged-state -> merged-state
         ;;Purpose: Updates the given merged state to contain the states from the given state-pair
@@ -256,7 +261,7 @@
            [finals (fsa-getfinals old-dfa)]
            [marked-pairs (filter (λ (sp) (state-pair-marked? sp)) loSP)]
            [unmarked-pairs (filter (λ (sp) (not (state-pair-marked? sp))) loSP)]
-           [merged-unmarked-pairs (accumulate-unmarked-pairs unmarked-pairs '())]
+           [merged-unmarked-pairs (accumulate-unmarked-pairs unmarked-pairs empty)]
            [states-that-were-merged (set->list (foldl (λ (mp acc) (set-remove (set-union acc (merged-state-old-symbols mp))
                                                                               (merged-state-new-symbol mp)))
                                                       (set) merged-unmarked-pairs))]
@@ -269,14 +274,15 @@
                                                      (map (λ (r)
                                                             (if (list? (member (second r) remaining-states))
                                                                 (cons key r)
-                                                                (list key (first r) (search-for-merged-state (second r) merged-unmarked-pairs))))
+                                                                (list key (first r)
+                                                                      (search-for-merged-state (second r) merged-unmarked-pairs))))
                                                           val)
-                                                     '()))))])
+                                                     empty))))])
       (make-unchecked-dfa remaining-states
                           (fsa-getalphabet old-dfa)
                           (fsa-getstart old-dfa)
                           new-finals
-                          table->rules
+                          (remove-duplicates table->rules)
                           'no-dead)))
   (let* ([dfa (remove-unreachables (ndfa->dfa M))]
          [transition-table (make-transition-table dfa)]

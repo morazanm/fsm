@@ -23,6 +23,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;CONSTANTS;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define MIN-AMOUNT-TO-COMPARE 2)
+
 (define BLANK-SPACE 'blank)
 
 (define BLACK 'black)
@@ -371,9 +373,11 @@ A Path is a (treelistof dfa-rule)
     (define (same-markings? marked-SP1 unmarked-SP1 marked-SP2 unmarked-SP2)
       (and (treelist-andmap (λ (sp) (treelist-member? unmarked-SP2 sp)) unmarked-SP1)
            (treelist-andmap (λ (sp) (treelist-member? marked-SP2 sp)) marked-SP1)))
-    (if (and (>= (treelist-length loSP) 2)
-             (same-markings? (state-pairings-marked-pairs (treelist-first loSP))  (state-pairings-unmarked-pairs (treelist-first loSP))
-                             (state-pairings-marked-pairs (treelist-second loSP)) (state-pairings-unmarked-pairs (treelist-second loSP))))
+    (if (and (>= (treelist-length loSP) MIN-AMOUNT-TO-COMPARE)
+             (same-markings? (state-pairings-marked-pairs (treelist-first loSP))
+                             (state-pairings-unmarked-pairs (treelist-first loSP))
+                             (state-pairings-marked-pairs (treelist-second loSP))
+                             (state-pairings-unmarked-pairs (treelist-second loSP))))
         loSP
         (make-matches (treelist-cons loSP
                                      (update-pairs (state-pairings-marked-pairs (treelist-first loSP))
@@ -395,11 +399,13 @@ A Path is a (treelistof dfa-rule)
     ;;Purpose: Accumulates the conversion of state-pairs into merged-states
     (define (accumulate-unmarked-pairs unmarked-pairs acc)
       ;; state-pair (listof merged-state) -> boolean
-      ;; Purpose: Determines if given state-pair has any overlap (at least one same state) with any state-pair in the given (listof state-pairings)
+      ;; Purpose: Determines if given state-pair has any overlap (at least one same state)
+      ;;          with any state-pair in the given (listof state-pairings)
       (define (overlap? unmarked-pair loSP)
         (ormap (λ (sp) (at-least-one-state-matches? sp unmarked-pair)) loSP))
       ;;dfa state-pair (listof merged-state) -> (listof merged-state)
-      ;;Purpose: Merges the state-pair into its overlapping pair and updates the given (listof merged-state) to contain the new merged-state
+      ;;Purpose: Merges the state-pair into its overlapping pair and updates the given
+      ;;        (listof merged-state) to contain the new merged-state
       (define (merge-pairs unmarked-pair loSP)
         ;;dfa state-pair merged-state -> merged-state
         ;;Purpose: Updates the given merged state to contain the states from the given state-pair
@@ -753,7 +759,10 @@ A Path is a (treelistof dfa-rule)
                                                    [destin-pairs? DESTIN-SELECT-SQUARE-IMG]
                                                    [else BASE-SQUARE-IMG])]
                       [(eq? sym BLACK) (overlay (square BASE-SQUARE-SIZE SOLID BLACK)
-                                                (square OUTLINE-SQUARE-SIZE SOLID (if (and on-diagonal? destin-pairs?) DESTINATION-PAIR-COLOR GRAY)))]
+                                                (square OUTLINE-SQUARE-SIZE SOLID
+                                                        (if (and on-diagonal? destin-pairs?)
+                                                            DESTINATION-PAIR-COLOR
+                                                            GRAY)))]
                       [(eq? sym MARK) (overlay (text "X" X-MARK-SIZE BLACK) BASE-SQUARE-IMG)]
                       [(eq? sym NEW-MARK) (overlay (text "X" X-MARK-SIZE RED)
                                                    (cond [(and current-pair? destin-pairs?) BI-COLOR-SELECT-SQUARE-IMG]

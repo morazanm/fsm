@@ -429,11 +429,11 @@
 (define listofmachines
   (list EX1 EX2-trans EX3-vid EX4-vid EX5 EX5-vid EX6-vid ODDL M L aa*Uab* AT-LEAST-ONE-MISSING p2-ndfa AB*B*UAB* AB*B*UAB*2 aa-ab ends-with-two-bs
         nd n nk ab*-U-ab*b*-ndfa PROP-BI DNA-SEQUENCE ND ND2 ND3 ND4 ND5 ENDS-WITH-TWO-Bs nd-a* missing-exactly-one EVEN-NUM-Bs M2 a*))
-#|
+
 
 ;;to use the old viz, the incantation is (minimization-viz <FSA>) 
 (struct status (M result) #:transparent)
-
+#|
 "minimize 5 - myhill-nerode"
 (define minimize5-test (map (λ (M) (status (M 'whatami) (boolean? (test-equiv-fsa (ndfa->dfa M) (minimize-dfa M))))) listofmachines))
 "all passed?"
@@ -450,6 +450,11 @@
 |#
 #;(map (λ (M)
          (time (minimization-viz2 M)))
+       listofmachines)
+
+#;(map (λ (M)
+         (list (sm-graph M)
+               (sm-graph (minimize-dfa M))))
        listofmachines)
 
 ;(map minimization-viz2 listofmachines)
