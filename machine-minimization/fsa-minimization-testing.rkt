@@ -2,6 +2,8 @@
 
 (require "../fsm-core/private/constants.rkt"
          "../fsm-core/private/fsa.rkt"
+         "../fsm-core/private/pda.rkt"
+         "../fsm-core/private/tm.rkt"
          "fsa-minimization.rkt"
          "../sm-graph.rkt"
          "../visualizations/viz-sm-constructors/viz-minimization.rkt"

@@ -1,9 +1,11 @@
 #lang racket/base
 
 (require "../fsm-core/private/fsa.rkt"
+         "fsa-minimization-contracts.rkt"
          racket/list
          racket/set
-         racket/function)
+         racket/function
+         racket/contract)
 
 (provide minimize-dfa)
 
@@ -58,7 +60,8 @@
 
 ;;ndfa -> dfa
 ;;Purpose: If possible, minimizes the given ndfa
-(define (minimize-dfa M)
+(define/contract (minimize-dfa M)
+  minimization/c
   ;;dfa -> dfa
   ;;Purpose: Removes any unreachable states
   (define (remove-unreachables M)

@@ -1,6 +1,7 @@
 #lang racket/base
 (require "../../fsm-gviz/private/lib.rkt"
          "../2htdp/image.rkt"
+         "../../machine-minimization/fsa-minimization-contracts.rkt"
          "../../fsm-core/private/fsa.rkt"
          "../viz-lib/viz-constants.rkt"
          "../viz-lib/viz-state.rkt"
@@ -17,7 +18,8 @@
          racket/set
          racket/match
          racket/vector
-         racket/function)
+         racket/function
+         racket/contract)
 
 (provide minimization-viz2)
 
@@ -1001,7 +1003,8 @@ A Path is a (treelistof dfa-rule)
 
 ;; fsa -> void
 ;; Purpose: Displays the process of minimizing a dfa
-(define (minimization-viz2 M)
+(define/contract (minimization-viz2 M)
+  minimization-viz/c
   ;;dfa dfa -> boolean
   ;;Purpose: Determines if the two dfa have any changes
   (define (machine-changed? old-M new-M)
@@ -1247,7 +1250,7 @@ A Path is a (treelistof dfa-rule)
 
          )
     
-    #;
+    ;#;
     (void)
     ;phase-5
     ;(values phase-3 all-loSP phase-4)
@@ -1263,7 +1266,7 @@ A Path is a (treelistof dfa-rule)
             (list->set (map (compose1 phase-3-attributes-initial-pairings phase-attributes)
                             (phase-results-loPhase phase3+new-table)))
             (set))
-    ;#;
+    #;
     (run-viz (map first graphs)
              (list->vector (map (λ (x table)
                                   (if (list? (first x))
