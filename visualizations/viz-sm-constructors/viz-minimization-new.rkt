@@ -126,7 +126,7 @@
 ;;unreachables-removed-M | the machine with unreachable states removed | fsa
 ;;loSP | all of the state-pairings that was created and used for the minimization algorithm |(listof state-pairings)
 ;;merged-states | all of merged-state created from the minimization algorithm | (listof merged-state)
-(struct minimization-results (original-M new-machine unreachables-removed-M loSP merged-states) #:transparent)
+(struct minimization-results (original-M new-machine unreachables-removed-M loSP merged-states state-assoc) #:transparent)
 
 ;;states | the states of the dfa | (listof state)
 ;;alphabet | the alphabet that the dfa reads | (list of symbol)
@@ -478,14 +478,26 @@ A Path is a (treelistof dfa-rule)
                                                            (list key (first r)
                                                                  (search-for-merged-state (second r) merged-unmarked-pairs))))
                                                      val)
-                                                empty))))])
-      (list (make-unchecked-dfa remaining-states
-                                (fsa-getalphabet old-dfa)
-                                (fsa-getstart old-dfa)
-                                new-finals
-                                table->rules
-                                'no-dead)
-            merged-unmarked-pairs)))
+                                                empty))))]
+           [new-M (rename-states-fsa states
+                                     (make-unchecked-dfa remaining-states
+                                                         (fsa-getalphabet old-dfa)
+                                                         (fsa-getstart old-dfa)
+                                                         new-finals
+                                                         table->rules
+                                                         'no-dead))]
+           [old-state-assoc (foldl (λ (old-state new-state acc)
+                                     (hash-set acc old-state new-state))
+                                   (hash)
+                                   remaining-states
+                                   (fsa-getstates new-M))])
+      (list new-M
+            (map (λ (ms) (struct-copy merged-state
+                                      ms
+                                      [new-symbol (hash-ref old-state-assoc (merged-state-new-symbol ms))]))
+                 merged-unmarked-pairs)
+            (hash-map/copy old-state-assoc
+                           (λ (k v) (values v k))))))
   (let* ([dfa (remove-unreachables (ndfa->dfa M))]
          [transition-table (make-transition-table dfa)]
          [finals (list->set (fsa-getfinals dfa))]
@@ -497,7 +509,7 @@ A Path is a (treelistof dfa-rule)
          [new-M (table->dfa (state-pairings-unmarked-pairs (treelist-first filled-table))
                             dfa
                             transition-table)])
-    (minimization-results M (first new-M) dfa filled-table (second new-M))))
+    (minimization-results M (first new-M) dfa filled-table (second new-M) (third new-M))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;VIZ-SCENE-STUFF;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -709,7 +721,7 @@ A Path is a (treelistof dfa-rule)
 
 ;;(listof phase) -> (listof graph-thunk)
 ;;Purpose: Creates all of the graphics need for the visualization using the given (listof phase)
-(define (make-main-graphic loPhase state-table-mappings)
+(define (make-main-graphic loPhase state-table-mappings old-state-assoc)
   ;;phase -> graph-thunk
   ;;Purpose: Creates the transition diagram thunk and state pairing table using the given phase
   (define (draw-graphic phase)
@@ -733,17 +745,23 @@ A Path is a (treelistof dfa-rule)
             ;; symbol -> image
             ;;Purpose: Draws a sqaure in the table using the given symbol
             (define (draw-square sym)
-              (let* ([current-pair? (or (and (not (list? state-pair))
+              (let* ([current-pair? (or (and (not (symbol? state-pair))
+                                             (not (list? state-pair))
                                              (= (hash-ref state-table-mappings (state-pair-s1 state-pair)) row-idx)
                                              (= (hash-ref state-table-mappings (state-pair-s2 state-pair)) column-idx))
                                         (and (list? state-pair)
                                              (ormap (λ (sp)
                                                       (and (= (hash-ref state-table-mappings (state-pair-s1 sp)) row-idx)
                                                            (= (hash-ref state-table-mappings (state-pair-s2 sp)) column-idx)))
-                                                    state-pair)))]
-                     [destin-pairs (if (list? state-pair)
-                                       state-pair
-                                       (state-pair-destination-pairs state-pair))]
+                                                    state-pair))
+                                        (and (symbol? state-pair)
+                                             (or (= (hash-ref state-table-mappings (hash-ref old-state-assoc state-pair))
+                                                              row-idx)
+                                                    (= (hash-ref state-table-mappings (hash-ref old-state-assoc state-pair))
+                                                       column-idx))))]
+                     [destin-pairs (cond [(symbol? state-pair) empty]
+                                         [(list? state-pair) state-pair]
+                                         [else (state-pair-destination-pairs state-pair)])]
                      [destin-pairs? (ormap (λ (sp)
                                              (or (and (= (hash-ref state-table-mappings (state-pair-s1 sp)) row-idx)
                                                       (= (hash-ref state-table-mappings (state-pair-s2 sp)) column-idx))
@@ -760,7 +778,9 @@ A Path is a (treelistof dfa-rule)
                                                    [current-pair? SELECT-SQUARE-IMG]
                                                    [destin-pairs? DESTIN-SELECT-SQUARE-IMG]
                                                    [else BASE-SQUARE-IMG])]
-                      [(eq? sym BLACK) (overlay (square BASE-SQUARE-SIZE SOLID BLACK)
+                      [(eq? sym BLACK) (overlay (square BASE-SQUARE-SIZE SOLID (if (and on-diagonal? destin-pairs?)
+                                                                                (hash-ref X11-AS-RACKET-HASH 'mistyrose4)
+                                                                                BLACK))
                                                 (square OUTLINE-SQUARE-SIZE SOLID
                                                         (if (and on-diagonal? destin-pairs?)
                                                             DESTINATION-PAIR-COLOR
@@ -791,12 +811,23 @@ A Path is a (treelistof dfa-rule)
                              (phase-5-attributes-merged-states (phase-attributes phase))
                              empty)])
         (if (= (phase-number phase) PHASE-5)
-            (list (list (create-graph-struct (phase-M phase) #:merge-state merge-state)
-                        (create-graph-struct (phase-5-attributes-rebuild-M (phase-attributes phase)) #:merge-state merge-state))
+            (let* ([rebuild-M (phase-5-attributes-rebuild-M (phase-attributes phase))]
+                   [applicable-rules (filter (λ (rule)
+                                               (or (eq? (first rule) merge-state)
+                                                   (eq? (third rule) merge-state)))
+                                               (dfa-rules rebuild-M))]
+                   [old-rules (map (λ (rule) (list (hash-ref old-state-assoc (first rule) (λ () (first rule)))
+                                                   (second rule)
+                                                   (hash-ref old-state-assoc (third rule) (λ () (third rule)))))
+                                   applicable-rules)])
+                (list (list (create-graph-struct (phase-M phase) #:merge-state (if (symbol? merge-state)
+                                                                               (box (cons (hash-ref old-state-assoc merge-state) old-rules))
+                                                                               merge-state))
+                        (create-graph-struct rebuild-M #:merge-state merge-state))
                   (draw-table (phase-state-pairing-table phase) (dfa-finals (phase-M phase))
-                              (if (empty? merge-state)
+                              (if (symbol? merge-state)
                                   merge-state
-                                  (merged-state-state-pairs merge-state))))
+                                  (merged-state-state-pairs merge-state)))))
             (list (create-graph-struct (phase-M phase)
                                        #:state-pair (if (and (= (phase-number phase) PHASE-4)
                                                              (not (symbol? state-pair)))
@@ -885,7 +916,7 @@ A Path is a (treelistof dfa-rule)
           [IMSG-NONE "none"])
       ;(displayln phase-attribute)
       (above (text "Minimizing the machine" FONT-SIZE BLACK)
-             (if (or (empty? merged-state)
+             (if (or (symbol? merged-state)
                      (< (set-count (merged-state-old-symbols merged-state)) 2))                 
                  (above (text (format "State ~a is distinguishable and does not get merged" (first (dfa-states (phase-5-attributes-rebuild-M phase-attribute))))
                               FONT-SIZE BLACK)
@@ -940,17 +971,18 @@ A Path is a (treelistof dfa-rule)
 (define (create-graph-struct M #:state-pair [state-pair empty] #:merge-state [merge-states empty])
   ;; graph (listof state) start (listof state) -> graph
   ;; Purpose: To make a node graph
-  (define (make-node-graph graph los start finals)
+  (define (make-node-graph graph los start finals merge-states)
     (foldl (λ (state result)
              (let ([member-of-finals? (set-member? finals state)]
                    [found-state-from-state-pair?
-                    (and (not (list? state-pair))
-                         (or (eq? state (state-pair-s1 state-pair))
-                             (eq? state (state-pair-s2 state-pair))))])
+                    (or (eq? state merge-states)
+                        (and (not (list? state-pair))
+                             (or (eq? state (state-pair-s1 state-pair))
+                                 (eq? state (state-pair-s2 state-pair)))))])
                (add-node result
                          state
-                         #:atb (hash 'color (cond [(eq? state start) 'darkgreen]
-                                                  [found-state-from-state-pair? DESTINATION-PAIR-COLOR]
+                         #:atb (hash 'color (cond [found-state-from-state-pair? 'red]
+                                                  [(eq? state start) 'darkgreen]
                                                   [else BLACK])
                                      'shape (if member-of-finals? 'doublecircle 'circle)
                                      'style (cond [found-state-from-state-pair? BOLD]
@@ -958,7 +990,7 @@ A Path is a (treelistof dfa-rule)
                                                   [else SOLID])
                                      'fillcolor FINAL-STATE-COLOR
                                      'label state
-                                     'fontcolor BLACK
+                                     'fontcolor (if found-state-from-state-pair? 'red BLACK)
                                      'font "Sans"))))
            graph
            los))
@@ -973,8 +1005,14 @@ A Path is a (treelistof dfa-rule)
                           (or (eq? source-state (state-pair-s1 state-pair))
                               (eq? source-state (state-pair-s2 state-pair))))]
                     [found-state-from-merge-state?
-                     (and (set? merge-states)
-                          (set-member? merge-states source-state))])
+                     (or (and (list? merge-states)
+                              (ormap (λ (r) (or (and (eq? (first r) (first rule))
+                                                     (eq? (second r) (second rule)))
+                                                (equal? r rule))) merge-states))
+                         (and (symbol? merge-states)
+                              (eq? source-state merge-states))
+                         (and (set? merge-states)
+                              (set-member? merge-states source-state)))])
                (add-edge result
                          (second rule)
                          (first rule)
@@ -992,10 +1030,17 @@ A Path is a (treelistof dfa-rule)
                                                   #:atb (hash 'rankdir "LR" 'font "Sans"))
                                     (dfa-states M)
                                     (dfa-start M)
-                                    (dfa-finals M))     
-                   (if (empty? merge-states)
-                       merge-states
-                       (merged-state-old-symbols merge-states))))
+                                    (dfa-finals M)
+                                    (cond [(box? merge-states) (first (unbox merge-states))]
+                                          [(or (symbol? merge-states)
+                                               (empty? merge-states))
+                                           merge-states]
+                                          [else (merged-state-old-symbols merge-states)]))     
+                   (cond [(box? merge-states) (rest (unbox merge-states))]
+                         [(or (symbol? merge-states)
+                           (empty? merge-states))
+                          merge-states]
+                         [else (merged-state-old-symbols merge-states)])))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;VIZ-PRIMITIVE;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; 
@@ -1171,19 +1216,31 @@ A Path is a (treelistof dfa-rule)
           (let* ([rebuild-M (first loRM)]
                  [merged-state (filter (λ (ms)
                                          (or (member (merged-state-new-symbol ms) (dfa-states rebuild-M))
-                                             (ormap (λ (state) (set-member? (merged-state-old-symbols ms) state)) (dfa-states rebuild-M))))
+                                             (ormap (λ (state) (set-member? (merged-state-old-symbols ms) state))
+                                                    (dfa-states rebuild-M))))
                                        loMS)]
                  [found-merged-state? (not (empty? merged-state))]
                  [remaining-states (filter-not (λ (st)
-                                                 (or (set-member? (if found-merged-state? (merged-state-old-symbols (first merged-state))
+                                                 (or (set-member? (if found-merged-state?
+                                                                      (merged-state-old-symbols (first merged-state))
                                                                       merged-state) st)
                                                      (member st (dfa-states rebuild-M))))
                                                states)]
-                 [new-phase (phase PHASE-5 unminimized-M state-pairing-table (phase-5-attributes
-                                                                        (first loRM)
-                                                                        (if found-merged-state? (first merged-state) merged-state)
-                                                                        remaining-states))])
-            (make-phase-5-helper (rest loRM) (if found-merged-state? (remove (first merged-state) loMS) loMS) remaining-states (cons new-phase acc)))))
+                 [new-phase (phase PHASE-5
+                                   unminimized-M
+                                   state-pairing-table
+                                   (phase-5-attributes
+                                    (first loRM)
+                                    (if found-merged-state?
+                                        (first merged-state)
+                                        (first (dfa-states rebuild-M)))
+                                    remaining-states))])
+            (make-phase-5-helper (rest loRM)
+                                 (if found-merged-state?
+                                     (remove (first merged-state) loMS)
+                                     loMS)
+                                 remaining-states
+                                 (cons new-phase acc)))))
     (make-phase-5-helper loRM loMS states empty))
   (let* ([unchecked-M M]
          [results-from-minimization (minimize-dfa unchecked-M)]
@@ -1242,15 +1299,15 @@ A Path is a (treelistof dfa-rule)
          [merged-states (minimization-results-merged-states results-from-minimization)]
          [rebuilding-machines (reconstruct-machine minimized-M merged-states)]
          [phase-5 (if can-be-minimized?
-                      (make-phase-5 no-unreachables-M rebuilding-machines merged-states filled-table (dfa-states M))
+                      (make-phase-5 no-unreachables-M rebuilding-machines merged-states filled-table (dfa-states minimized-M))
                       empty)]
          [phase-6 (list (phase PHASE-6 (last rebuilding-machines) filled-table (phase-6-attributes can-be-minimized?)))]
          [all-phases (append phase--1 phase-0 phase-1 phase-2 phase-3 phase-4 phase-5 phase-6)]
-         [graphs (make-main-graphic all-phases state-table-mappings)]
+         [graphs (make-main-graphic all-phases state-table-mappings (minimization-results-state-assoc  results-from-minimization))]
 
          )
     
-    ;#;
+    #;
     (void)
     ;phase-5
     ;(values phase-3 all-loSP phase-4)
@@ -1266,7 +1323,7 @@ A Path is a (treelistof dfa-rule)
             (list->set (map (compose1 phase-3-attributes-initial-pairings phase-attributes)
                             (phase-results-loPhase phase3+new-table)))
             (set))
-    #;
+    ;#;
     (run-viz (map first graphs)
              (list->vector (map (λ (x table)
                                   (if (list? (first x))
