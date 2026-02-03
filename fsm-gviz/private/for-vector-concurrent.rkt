@@ -27,7 +27,7 @@
                          (let () post-body ...)))
              promises)))]))
 
-(for/vector/concurrent
+#;(for/vector/concurrent
     #:length 3
   ([sym (in-list '(a b c))])
   sym)

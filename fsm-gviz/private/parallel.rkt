@@ -129,7 +129,7 @@
                                        (vector-ref graphic-formatter-vec idx)
                                        idx)
               (begin
-                (displayln "wtf")
+                ;(displayln "wtf")
                 (compile-single-graph (vector-ref img-vec idx)
                                     (vector-ref graphic-formatter-vec idx)
                                     idx))))

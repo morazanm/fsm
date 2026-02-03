@@ -67,7 +67,7 @@ destination -> the rest of a mttm rule | half-rule
 
 (define DUMMY-RULE (rule (half-rule LM LM) (half-rule LM LM)))
 
-(define INIT-HEAD-POS 1)
+
 (define INIT-COMPUTATION-LENGTH 1)
 (define INIT-TAPE-CONFIG-INDEX 0)
 (define MIN-AUX-TAPE-INDEX 1)
@@ -87,7 +87,7 @@ destination -> the rest of a mttm rule | half-rule
   ;;Purpose: Makes the initial tape configurations
   (define (make-init-tape-config)
     (define init-aux-tape (tape-config INIT-TAPE-CONFIG-INDEX (list BLANK)))
-    (cons (tape-config INIT-HEAD-POS a-word)
+    (cons (tape-config head-pos a-word)
           (make-list (sub1 tape-amount) init-aux-tape)))
 
   ;;(listof tm-action) (listof tape-config) -> boolean
@@ -163,7 +163,7 @@ destination -> the rest of a mttm rule | half-rule
   (define (make-computations QoC path)
 
     (define (update-computation a-comp)
-      (if (> head-pos INIT-COMPUTATION-LENGTH)
+      a-comp #;(if (> head-pos (computation-length a-comp))
           (struct-copy computation a-comp
                [LoC (treelist-drop (computation-LoC a-comp) head-pos)]
                [LoR (treelist-drop (computation-LoR a-comp) head-pos)])
@@ -968,7 +968,8 @@ destination -> the rest of a mttm rule | half-rule
   ;;Purpose: Returns a propers trace for the given (listof configurations) that accurately
   ;;         tracks each transition
   (define (make-trace configs rules acc)
-    (cond [(treelist-empty? rules) (reverse acc)]
+    (cond [(and (empty? acc) (= (treelist-length configs) 1)) (list (trace (treelist-first configs) DUMMY-RULE))]
+          [(treelist-empty? rules) (reverse acc)]
           [(and (empty? acc)
                 (or (not (eq? (first (half-rule-lota (rule-source (treelist-first rules)))) BLANK))
                     (not (eq? (first (half-rule-lota (rule-source (treelist-first rules)))) LM))))
@@ -1044,7 +1045,7 @@ destination -> the rest of a mttm rule | half-rule
                                       (mttm-finals M)
                                       (mttm-accepting-final M)
                                       cut-off
-                                      (if (zero? head-pos) (add1 head-pos) head-pos))]
+                                      head-pos)]
         ;;color-pallete ;;The corresponding color scheme to used in the viz
          [color-scheme (cond [(eq? palette 'prot) protanopia-color-scheme] ;;red color blind
                              [(eq? palette 'deut) deuteranopia-color-scheme] ;;green color blind 
