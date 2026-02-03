@@ -367,7 +367,7 @@
 ;;(listof symbol)  symbol -> contract
 ;;Purpose: Determines if the head-pos is not larger than the input word
 (define (valid-head-pos/c word m-type)
-  (define leq-than-word-length (<=/c (length word)))
+  (define leq-than-word-length (</c (length word)))
   (make-flat-contract
    #:name 'valid-headpos-for-viz
    #:first-order (λ (val) (leq-than-word-length val))
@@ -377,7 +377,7 @@
                     (raise-blame-error
                      blame
                      val
-                     (format "~a-viz expects a head position less than or equal the input word, ~a, given"
+                     (format "~a-viz expects a head position less than the length of the input word, ~a, given"
                              (if (or (eq? 'tm-language-recognizer m-type)
                                      (eq? 'tm m-type))
                                  "tm"

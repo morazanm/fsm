@@ -153,7 +153,7 @@
   (define (make-computations QoC path)
 
     (define (update-computation a-comp)
-      (if (> head-pos INIT-COMPUTATION-LENGTH)
+      a-comp #;(if (> head-pos INIT-COMPUTATION-LENGTH)
           (struct-copy computation a-comp
                [LoC (treelist-drop (computation-LoC a-comp) head-pos)]
                [LoR (treelist-drop (computation-LoR a-comp) head-pos)])
@@ -208,7 +208,7 @@
                       (make-computations (enqueue new-configs (dequeue QoC)) path))))))))
   (let (;;computation
         ;;Purpose: The starting computation
-        [starting-computation (computation (treelist (tm-config start INIT-HEAD-POS a-word INIT-TAPE-CONFIG-INDEX))
+        [starting-computation (computation (treelist (tm-config start head-pos a-word INIT-TAPE-CONFIG-INDEX))
                                            empty-treelist
                                            (set)
                                            INIT-COMPUTATION-LENGTH)])
@@ -220,7 +220,8 @@
 ;;Purpose: Returns a propers trace for the given (listof configurations) that accurately
 ;;         tracks each transition
 (define (make-trace configs rules acc)
-  (cond [(treelist-empty? rules) (reverse acc)]
+  (cond [(and (empty? acc) (= (treelist-length configs) 1)) (list (trace (treelist-first configs) (rule BLANK LM BLANK LM)))]
+        [(treelist-empty? rules) (reverse acc)]
         [(and (empty? acc)
               (or (not (eq? (rule-read (treelist-first rules)) BLANK))
                   (not (eq? (rule-read (treelist-first rules)) LM))))
@@ -885,7 +886,6 @@
                              [(eq? palette 'trit) tritanopia-color-scheme] ;;blue color blind
                              [else standard-color-scheme])]
          ;;(listof computations) ;;Purpose: All computations that the machine can have
-         ;[computations (get-computations a-word (tm-rules M) (tm-start M) (tm-finals M) cut-off head-pos)]
          [all-paths (get-computations a-word (tm-rules M) (tm-start M) (tm-finals M) (tm-accepting-final M) cut-off head-pos)]
          ;;boolean ;;Purpose: Determines if any computation 
          [reached-final? (paths-reached-final? all-paths)]
