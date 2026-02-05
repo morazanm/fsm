@@ -525,7 +525,7 @@
                       '(E)
                       '((S a A) (S b S) (A a B) (A b S)
                                 (B a B) (B b C) (C a D) (C b S)
-                                (D a B) (D b E) (E a E) (E b E))
+                                (D a A) (D b E) (E a E) (E b E))
                       'no-dead))
 
 (check-equal? (sm-apply CONTAINS-aabab  '(a a b a b)) 'accept)
@@ -550,14 +550,14 @@
 
 ;; word -> Boolean
 ;; Purpose: Determine that none of aabab is detected
-#;(define (S2-INV ci)
+(define (S2-INV ci)
   (and (not (end-with? '(a) ci))
        (not (end-with? '(a a) ci))
        (not (end-with? '(a a b) ci))
        (not (end-with? '(a a b a) ci))  ;<- not broken
        (not (contains-aabab? ci))))
 
-(define (S2-INV ci)
+#;(define (S2-INV ci)
   (and (not (end-with? '(a) ci))
        (not (end-with? '(a a) ci))
        (not (end-with? '(a a b) ci))
@@ -567,13 +567,13 @@
 
 ;; word -> Boolean
 ;; Purpose: Determine that only a is detected
-#;(define (A2-INV ci)
+(define (A2-INV ci)
   (and (end-with? '(a) ci)
        (not (end-with? '(a a) ci))
        (not (end-with? '(a a b a) ci)) ;<- not broken
        (not (contains-aabab? ci))))
 
-(define (A2-INV ci)
+#;(define (A2-INV ci)
   (and (end-with? '(a) ci)
        (not (end-with? '(a a) ci))
        (not (end-with? '(a a b a) ci)) ;<- broken
@@ -582,43 +582,43 @@
 
 ;; word -> Boolean
 ;; Purpose: Determine that only aa is detected
-#;(define (B2-INV ci)
+(define (B2-INV ci)
   (and (end-with? '(a a) ci)           ;<-not broken
        (not (contains-aabab? ci))))
 
-(define (B2-INV ci)
+#;(define (B2-INV ci)
   (and (end-with? '(a a) ci)           ;<- broken
        (contains-aabab? ci)))
 
 
 ;; word -> Boolean
 ;; Purpose: Determine that only aab is detected
-#;(define (C2-INV ci)
+(define (C2-INV ci)
   (and (end-with? '(a a b) ci)         ;<- not broken
        (not (contains-aabab? ci))))
 
-(define (C2-INV ci)
+#;(define (C2-INV ci)
   (and (end-with? '(a a b) ci)         ;<- broken
        (contains-aabab? ci)))
 
 
 ;; word -> Boolean
 ;; Purpose: Determine that only aaba is detected
-#;(define (D2-INV ci)
+(define (D2-INV ci)
   (and (end-with? '(a a b a) ci)     ;<- not broken
        (not (contains-aabab? ci))))
 
 
-(define (D2-INV ci)
+#;(define (D2-INV ci)
   (and (end-with? '(a a b a) ci)     ;<- broken
        (contains-aabab? ci)))
 
 
 ;; word -> Boolean
 ;; Purpose: Determine that only aabab is detected
-#;(define E2-INV contains-aabab?)   ;<- not broken
+(define E2-INV contains-aabab?)   ;<- not broken
 
-(define E2-INV (not contains-aabab?))   ;<- broken
+#;(define E2-INV (not contains-aabab?))   ;<- broken
 
 
 
@@ -2407,7 +2407,7 @@
 
                     
                     ))
-(define res
+#;(define res
   (for/list ([test (in-list tests)])
       (displayln (test-case-name test))
       (let ([result (for/vector #:length (test-case-num-tests test)
@@ -2420,4 +2420,4 @@
         (println result)
         (list (test-case-name test)
             result))))
-(println res)
+;(println res)

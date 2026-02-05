@@ -1,6 +1,6 @@
 #lang racket/base
 
-(provide sm-all-possible-words sm-test-invs find-paths)
+(provide sm-all-possible-words sm-test-invs find-paths remove-states-that-cannot-reach-finals)
 (require "../fsm-core/private/sm-getters.rkt"
          "../fsm-core/private/fsa.rkt"
          "../sm-graph.rkt"
@@ -134,7 +134,7 @@
 
   (define new-states (extract-state-set new-rules))
   (define all-paths-new-machine (filter-paths machine-paths new-states))  ;<- refactored
-  #;(define all-paths-new-machine machine-paths) ;<- not refact
+  ;(define all-paths-new-machine machine-paths) ;<- not refact
   
   ;; (listof (listof rule)) (listof (listof symbol)) -> (listof (listof symbol))
   ;; Purpose:  To return a list of all posible words that can be at each state in a machine 
@@ -217,7 +217,7 @@
                        (values (car inv) (cadr inv))))
 
   #;(define machine-paths (find-paths a-machine rep-limit))
-  (define machine-paths (find-paths a-machine REPETITION-LIMIT))
+  (define machine-paths (find-paths a-machine REPETITION-LIMIT)) 
 
   
   (define paths-to-finals (get-paths-to-finals machine-paths (sm-finals a-machine)))

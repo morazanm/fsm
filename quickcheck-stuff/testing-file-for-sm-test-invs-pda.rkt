@@ -1384,6 +1384,587 @@ this means that w ≠ a^mb^nc^p, where m,n,p≥0 ∧ (m = n ∨ n = p). Thus, w�
 
 
 
+
+
+
+
+
+
+
+;; a^mca^mcaba^nba^n, m, n >= 0
+
+;; State Documentaion:
+;; S: ci = empty AND stack = empty, start state
+;; A: ci = a^m AND stack = a^m
+;; B: ci = a^mc AND stack = a^m
+;; C: ci = a^mca^k AND stack = a^m-k
+;; D: ci = a^mca^mc AND stack = empty
+;; E: ci = a^mca^mca AND stack = empty
+;; F: ci = a^mca^mcab AND stack = empty
+;; G: ci = a^mca^mcaba^n AND stack = a^n
+;; H: ci = a^mca^mcaba^nb AND stack = a^n
+;; I: ci = a^mca^mcaba^nba^l AND stack = a^n-l
+;; J: ci = a^mca^mcaba^nba^n AND stack = empty, final state
+
+;; stack is a (listof a)
+(define a^mca^mcaba^nba^n (make-unchecked-ndpda '(S A B C D E F G H I J)
+                                      '(a b c)
+                                      '(a b)
+                                      'S
+                                      '(J)
+                                      `(((S ,EMP ,EMP) (A ,EMP))
+                                        ((A a ,EMP) (A (a)))
+                                        ((A c ,EMP) (B ,EMP))
+                                        ((B ,EMP ,EMP) (C ,EMP))
+                                        ((C a (a)) (C ,EMP))
+                                        ((C c ,EMP) (D ,EMP))
+                                        ((D a ,EMP) (E ,EMP))
+                                        ((E b ,EMP) (F ,EMP))
+                                        ((F ,EMP ,EMP) (G ,EMP))
+                                        ((G a ,EMP) (G (b)))
+                                        ((G b ,EMP) (H ,EMP))
+                                        ((H ,EMP ,EMP) (I ,EMP))
+                                        ((I a (b)) (I ,EMP))
+                                        ((I ,EMP ,EMP) (J ,EMP))
+                                        )))
+
+ 
+;; tests for a^mca^mcaba^nba^n
+;(check-accept? a^mca^mcaba^nba^n '(a c a c a b a b a) '(a a c a a c a b a b a) '(a a a c a a a c a b a b a) '(a a c a a c a b a a a a b a a a a))
+;(check-reject? a^mca^mcaba^nba^n '(c c a b a b a) '(a a c a a c a b b) '(a a a a c a b a b a) '(a a a c a a c a b a a a a b a a a a))
+
+;; invariants for a^mca^mcaba^nba^n
+
+;; invariants for a^nbaba^n
+
+;; word stack -> Boolean
+;; Purpose: Determines if the given word and stack belongs in S
+(define (S-INV-a^mca^mcaba^nba^n ci stack)
+  (and (empty? ci)
+       (empty? stack)))
+
+;; tests for s-inv
+(check-equal? (S-INV-a^mca^mcaba^nba^n '() '()) #t)
+(check-equal? (S-INV-a^mca^mcaba^nba^n '(a c) '(a)) #f)
+(check-equal? (S-INV-a^mca^mcaba^nba^n '(b) '()) #f)
+(check-equal? (S-INV-a^mca^mcaba^nba^n '(a c a c) '(a)) #f)
+(check-equal? (S-INV-a^mca^mcaba^nba^n '(a b a b a) '()) #f)
+(check-equal? (S-INV-a^mca^mcaba^nba^n '(b a b) '()) #f)
+(check-equal? (S-INV-a^mca^mcaba^nba^n '(a a a b a b a a a) '()) #f)
+(check-equal? (S-INV-a^mca^mcaba^nba^n '(a a b a b a) '()) #f)
+
+
+;; word stack -> Boolean
+;; Purpose: Determines if the given word and stack belongs in A
+(define (A-INV-a^mca^mcaba^nba^n ci stack)
+  (or (and (empty? ci)
+           (empty? stack))
+      (let ([As (takef ci (λ (x) (eq? 'a x)))])
+        (and (equal? As stack)
+             (andmap (λ (x) (eq? 'a x)) ci)
+             (andmap (λ (x) (eq? 'a x)) stack)))))
+
+;; tests for a-inv
+(check-equal? (A-INV-a^mca^mcaba^nba^n '() '()) #t)
+(check-equal? (A-INV-a^mca^mcaba^nba^n '(a) '(a)) #t)
+(check-equal? (A-INV-a^mca^mcaba^nba^n '(a a a) '(a a a)) #t)
+(check-equal? (A-INV-a^mca^mcaba^nba^n '(a b) '(a)) #f)
+(check-equal? (A-INV-a^mca^mcaba^nba^n '(a b a) '()) #f)
+(check-equal? (A-INV-a^mca^mcaba^nba^n '(a a a a) '()) #f)
+(check-equal? (A-INV-a^mca^mcaba^nba^n '(a a a b b) '(a a)) #f)
+(check-equal? (A-INV-a^mca^mcaba^nba^n '(a b b b a c a) '()) #f)
+
+;; B: ci = a^mc AND stack = a^m
+
+;; word stack -> Boolean
+;; Purpose: Determines if the given word and stack belongs in B
+(define (B-INV-a^mca^mcaba^nba^n ci stack)
+  (and (not (empty? ci))
+       (let*  ([As (takef ci (λ (x) (eq? 'a x)))]
+               [C (drop ci (length As))])
+         (and (equal? ci (append As C))
+              (equal? As stack)
+              (andmap (λ (x) (eq? 'c x)) C)
+              (andmap (λ (x) (eq? 'a x)) stack)))))
+
+;; tests for b-inv
+(check-equal? (B-INV-a^mca^mcaba^nba^n '(a c) '(a)) #t)
+(check-equal? (B-INV-a^mca^mcaba^nba^n '(a a c) '(a a)) #t)
+(check-equal? (B-INV-a^mca^mcaba^nba^n '(a a a a c) '(a a a a)) #t)
+(check-equal? (B-INV-a^mca^mcaba^nba^n '(a b) '(a)) #f)
+(check-equal? (B-INV-a^mca^mcaba^nba^n '() '()) #f)
+(check-equal? (B-INV-a^mca^mcaba^nba^n '(a b a c) '()) #f)
+(check-equal? (B-INV-a^mca^mcaba^nba^n '(a a a a c c c b) '()) #f)
+(check-equal? (B-INV-a^mca^mcaba^nba^n '(a a a b b) '(a a)) #f)
+(check-equal? (B-INV-a^mca^mcaba^nba^n '(a b b b a c a) '()) #f)
+
+
+;; C: ci = a^mca^k AND stack = a^m-k
+
+;; word stack -> Boolean
+;; Purpose: Determines if the given word and stack belongs in C
+(define (C-INV-a^mca^mcaba^nba^n ci stack)
+  (and (not (empty? ci))
+       (let*  ([As (takef ci (λ (x) (eq? 'a x)))]
+               [C (if (empty? (drop ci (length As)))
+                      '()
+                      (take (drop ci (length As)) 1))]
+               [As-second (takef (drop ci (+ (length As) (length C))) (λ (x) (eq? 'a x)))])
+         (and (equal? ci (append As C As-second))
+              (= (length stack) (- (length As) (length As-second)))
+              (equal? C '(c))
+              (andmap (λ (x) (eq? 'c x)) C)
+              (andmap (λ (x) (eq? 'a x)) stack)))))
+
+;; tests for c-inv
+(check-equal? (C-INV-a^mca^mcaba^nba^n '(a c a) '()) #t)
+(check-equal? (C-INV-a^mca^mcaba^nba^n '(a a c a) '(a)) #t)
+(check-equal? (C-INV-a^mca^mcaba^nba^n '(a a a a c a a) '(a a)) #t)
+(check-equal? (C-INV-a^mca^mcaba^nba^n '(a b) '(a)) #f)
+(check-equal? (C-INV-a^mca^mcaba^nba^n '() '()) #f)
+(check-equal? (C-INV-a^mca^mcaba^nba^n '(a a c a a) '(a)) #f)
+(check-equal? (C-INV-a^mca^mcaba^nba^n '(a b a c) '()) #f)
+(check-equal? (C-INV-a^mca^mcaba^nba^n '(a a a a c c c b) '()) #f)
+(check-equal? (C-INV-a^mca^mcaba^nba^n '(a a a b b) '(a a)) #f)
+(check-equal? (C-INV-a^mca^mcaba^nba^n '(a b b b a c a) '()) #f)
+
+
+
+;; word stack -> Boolean
+;; Purpose: Determines if the given word and stack belongs in D
+(define (D-INV-a^mca^mcaba^nba^n ci stack)
+  (and (not (empty? ci))
+       (let*  ([As (takef ci (λ (x) (eq? 'a x)))]
+               [C (if (empty? (drop ci (length As)))
+                      '()
+                      (take (drop ci (length As)) 1))]
+               [As-second (takef (drop ci (+ (length As) (length C))) (λ (x) (eq? 'a x)))]
+               [C-second (if (empty? (drop ci (+ (length As) (length C) (length As-second))))
+                             '()
+                             (take (drop ci (+ (length As) (length C) (length As-second))) 1))])
+         (and (equal? ci (append As C As-second C-second))
+              (empty? stack)
+              (equal? As As-second)
+              (equal? C '(c))
+              (equal? C-second '(c))
+              (andmap (λ (x) (eq? 'a x)) stack)))))
+
+
+;; tests for d-inv
+(check-equal? (D-INV-a^mca^mcaba^nba^n '(a c a c) '()) #t)
+(check-equal? (D-INV-a^mca^mcaba^nba^n '(a a c a a c) '()) #t)
+(check-equal? (D-INV-a^mca^mcaba^nba^n '(a a a a c a a a a c) '()) #t)
+(check-equal? (D-INV-a^mca^mcaba^nba^n '(a b) '(a)) #f)
+(check-equal? (D-INV-a^mca^mcaba^nba^n '() '()) #f)
+(check-equal? (D-INV-a^mca^mcaba^nba^n '(a a c a a) '(a)) #f)
+(check-equal? (D-INV-a^mca^mcaba^nba^n '(a b a c) '()) #f)
+(check-equal? (D-INV-a^mca^mcaba^nba^n '(a a a a c c c b) '()) #f)
+(check-equal? (D-INV-a^mca^mcaba^nba^n '(a a a b b) '(a a)) #f)
+(check-equal? (D-INV-a^mca^mcaba^nba^n '(a b b b a c a) '()) #f)
+
+
+;; word stack -> Boolean
+;; Purpose: Determines if the given word and stack belongs in E
+(define (E-INV-a^mca^mcaba^nba^n ci stack)
+  (and (not (empty? ci))
+       (let*  ([As (takef ci (λ (x) (eq? 'a x)))]
+               [C (if (empty? (drop ci (length As)))
+                      '()
+                      (take (drop ci (length As)) 1))]
+               [As-second (takef (drop ci (+ (length As) (length C))) (λ (x) (eq? 'a x)))]
+               [C-second (if (empty? (drop ci (+ (length As) (length C) (length As-second))))
+                             '()
+                             (take (drop ci (+ (length As) (length C) (length As-second))) 1))]
+               [A (if (empty? (drop ci (+ (length As) (length C) (length As-second) (length C-second))))
+                      '()                      
+                      (take (drop ci (+ (length As) (length C) (length As-second) (length C-second))) 1))])
+         (and (equal? ci (append As C As-second C-second A))
+              (empty? stack)
+              (equal? As As-second)
+              (equal? C '(c))
+              (equal? C-second '(c))
+              (equal? A '(a))
+              (andmap (λ (x) (eq? 'a x)) A)
+              (andmap (λ (x) (eq? 'a x)) stack)))))
+
+;; tests for e-inv
+(check-equal? (E-INV-a^mca^mcaba^nba^n '(a c a c a) '()) #t)
+(check-equal? (E-INV-a^mca^mcaba^nba^n '(a a c a a c a) '()) #t)
+(check-equal? (E-INV-a^mca^mcaba^nba^n '(a a a a c a a a a c a) '()) #t)
+(check-equal? (E-INV-a^mca^mcaba^nba^n '(a b) '(a)) #f)
+(check-equal? (E-INV-a^mca^mcaba^nba^n '() '()) #f)
+(check-equal? (E-INV-a^mca^mcaba^nba^n '(a a c a a) '(a)) #f)
+(check-equal? (E-INV-a^mca^mcaba^nba^n '(a b a c) '()) #f)
+(check-equal? (E-INV-a^mca^mcaba^nba^n '(a a a a c c c b) '()) #f)
+(check-equal? (E-INV-a^mca^mcaba^nba^n '(a a a b b) '(a a)) #f)
+(check-equal? (E-INV-a^mca^mcaba^nba^n '(a b b b a c a) '()) #f)
+
+
+;; F: ci = a^mca^mcab AND stack = empty
+
+;; word stack -> Boolean
+;; Purpose: Determines if the given word and stack belongs in F
+(define (F-INV-a^mca^mcaba^nba^n ci stack)
+  (and (not (empty? ci))
+       (let*  ([As (takef ci (λ (x) (eq? 'a x)))]
+               [C (if (empty? (drop ci (length As)))
+                      '()
+                      (take (drop ci (length As)) 1))]
+               [As-second (takef (drop ci (+ (length As) (length C))) (λ (x) (eq? 'a x)))]
+               [C-second (if (empty? (drop ci (+ (length As) (length C) (length As-second))))
+                             '()
+                             (take (drop ci (+ (length As) (length C) (length As-second))) 1))]
+               [A (if (empty? (drop ci (+ (length As) (length C) (length As-second) (length C-second))))
+                      '()                      
+                      (take (drop ci (+ (length As) (length C) (length As-second) (length C-second))) 1))]
+               [B (takef (drop ci (+ (length As) (length C) (length As-second) (length C-second) (length A))) (λ (x) (eq? 'b x)))])
+         (and (equal? ci (append As C As-second C-second A B))
+              (empty? stack)
+              (equal? As As-second)
+              (equal? C '(c))
+              (equal? C-second '(c))
+              (equal? A '(a))
+              (equal? B '(b))
+              (andmap (λ (x) (eq? 'b x)) B)
+              (andmap (λ (x) (eq? 'a x)) stack)))))
+
+;; tests for f-inv
+(check-equal? (F-INV-a^mca^mcaba^nba^n '(a c a c a b) '()) #t)
+(check-equal? (F-INV-a^mca^mcaba^nba^n '(a a c a a c a b) '()) #t)
+(check-equal? (F-INV-a^mca^mcaba^nba^n '(a a a a c a a a a c a b) '()) #t)
+(check-equal? (F-INV-a^mca^mcaba^nba^n '(a b) '(a)) #f)
+(check-equal? (F-INV-a^mca^mcaba^nba^n '() '()) #f)
+(check-equal? (F-INV-a^mca^mcaba^nba^n '(a a c c a a c c ) '()) #f)
+(check-equal? (F-INV-a^mca^mcaba^nba^n '(a b a c a) '()) #f)
+(check-equal? (F-INV-a^mca^mcaba^nba^n '(a a a a c c c b) '()) #f)
+(check-equal? (F-INV-a^mca^mcaba^nba^n '(a a a b b) '(a a)) #f)
+(check-equal? (F-INV-a^mca^mcaba^nba^n '(a b b b a c a) '()) #f)
+(check-equal? (F-INV-a^mca^mcaba^nba^n '(a c a c c b) '()) #f)
+
+
+;; word stack -> Boolean
+;; Purpose: Determines if the given word and stack belongs in G
+(define (G-INV-a^mca^mcaba^nba^n ci stack)
+  (and (not (empty? ci))
+       (let*  ([As (takef ci (λ (x) (eq? 'a x)))]
+               [C (if (empty? (drop ci (length As)))
+                      '()
+                      (take (drop ci (length As)) 1))]
+               [As-second (takef (drop ci (+ (length As) (length C))) (λ (x) (eq? 'a x)))]
+               [C-second (if (empty? (drop ci (+ (length As) (length C) (length As-second))))
+                             '()
+                             (take (drop ci (+ (length As) (length C) (length As-second))) 1))]
+               [A (if (empty? (drop ci (+ (length As) (length C) (length As-second) (length C-second))))
+                      '()                      
+                      (take (drop ci (+ (length As) (length C) (length As-second) (length C-second))) 1))]
+               [B (if (empty? (drop ci (+ (length As) (length C) (length As-second) (length C-second) (length A))))
+                      '()                      
+                      (take (drop ci (+ (length As) (length C) (length As-second) (length C-second) (length A))) 1))]
+               [As-third (takef (drop ci (+ (length As) (length C) (length As-second) (length C-second) (length A) (length B))) (λ (x) (eq? 'a x)))])
+         (and (equal? ci (append As C As-second C-second A B As-third))
+              (= (length stack)(length  As-third))
+              (equal? C '(c))
+              (equal? C-second '(c))
+              (equal? A '(a))
+              (equal? B '(b))
+              (andmap (λ (x) (eq? 'b x)) B)
+              (andmap (λ (x) (eq? 'b x)) stack)))))
+
+;; tests for g-inv
+(check-equal? (G-INV-a^mca^mcaba^nba^n '(a c a c a b) '()) #t)
+(check-equal? (G-INV-a^mca^mcaba^nba^n '(a a c a a c a b a) '(b)) #t)
+(check-equal? (G-INV-a^mca^mcaba^nba^n '(a a a a c a a a a c a b a a) '(b b)) #t)
+(check-equal? (G-INV-a^mca^mcaba^nba^n '(a b) '(a a)) #f)
+(check-equal? (G-INV-a^mca^mcaba^nba^n '() '()) #f)
+(check-equal? (G-INV-a^mca^mcaba^nba^n '(a a c a a c c b a) '(a)) #f)
+(check-equal? (G-INV-a^mca^mcaba^nba^n '(a b a c a) '()) #f)
+(check-equal? (G-INV-a^mca^mcaba^nba^n '(a a a a c c c b) '()) #f)
+(check-equal? (G-INV-a^mca^mcaba^nba^n '(a a a b b) '(a a)) #f)
+(check-equal? (G-INV-a^mca^mcaba^nba^n '(a b b b a c a) '()) #f)
+
+
+
+;; word stack -> Boolean
+;; Purpose: Determines if the given word and stack belongs in H
+(define (H-INV-a^mca^mcaba^nba^n ci stack)
+  (and (not (empty? ci))
+       (let*  ([As (takef ci (λ (x) (eq? 'a x)))]
+               [C (if (empty? (drop ci (length As)))
+                      '()
+                      (take (drop ci (length As)) 1))]
+               [As-second (takef (drop ci (+ (length As) (length C))) (λ (x) (eq? 'a x)))]
+               [C-second (if (empty? (drop ci (+ (length As) (length C) (length As-second))))
+                             '()
+                             (take (drop ci (+ (length As) (length C) (length As-second))) 1))]
+               [A (if (empty? (drop ci (+ (length As) (length C) (length As-second) (length C-second))))
+                      '()                      
+                      (take (drop ci (+ (length As) (length C) (length As-second) (length C-second))) 1))]
+               [B (if (empty? (drop ci (+ (length As) (length C) (length As-second) (length C-second) (length A))))
+                      '()                      
+                      (take (drop ci (+ (length As) (length C) (length As-second) (length C-second) (length A))) 1))]
+               [As-third (takef (drop ci (+ (length As) (length C) (length As-second) (length C-second) (length A) (length B))) (λ (x) (eq? 'a x)))]
+               [B-second (takef (drop ci (+ (length As) (length C) (length As-second) (length C-second) (length A) (length B) (length As-third))) (λ (x) (eq? 'b x)))])
+         (and (equal? ci (append As C As-second C-second A B As-third B-second))
+              (= (length stack) (length As-third))
+              (equal? C '(c))
+              (equal? C-second '(c))
+              (equal? A '(a))
+              (equal? B '(b))
+              (equal? B-second '(b))
+              (andmap (λ (x) (eq? 'b x)) stack)))))
+
+;; tests for h-inv
+(check-equal? (H-INV-a^mca^mcaba^nba^n '(a c a c a b a b) '(b)) #t)
+(check-equal? (H-INV-a^mca^mcaba^nba^n '(a a c a a c a b a b) '(b)) #t)
+(check-equal? (H-INV-a^mca^mcaba^nba^n '(a a a a c a a a a c a b a a b) '(b b)) #t)
+(check-equal? (H-INV-a^mca^mcaba^nba^n '(a b) '(a a b)) #f)
+(check-equal? (H-INV-a^mca^mcaba^nba^n '() '()) #f)
+(check-equal? (H-INV-a^mca^mcaba^nba^n '(a a c a a c c b b a) '(a)) #f)
+(check-equal? (H-INV-a^mca^mcaba^nba^n '(a b a c b a) '()) #f)
+(check-equal? (H-INV-a^mca^mcaba^nba^n '(a a a a c  b c c b) '()) #f)
+(check-equal? (H-INV-a^mca^mcaba^nba^n '(a a a b b) '(a a)) #f)
+(check-equal? (H-INV-a^mca^mcaba^nba^n '(a b b b a c a) '()) #f)
+
+
+;; word stack -> Boolean
+;; Purpose: Determines if the given word and stack belongs in I
+(define (I-INV-a^mca^mcaba^nba^n ci stack)
+  (and (not (empty? ci))
+       (let*  ([As (takef ci (λ (x) (eq? 'a x)))]
+               [C (if (empty? (drop ci (length As)))
+                      '()
+                      (take (drop ci (length As)) 1))]
+               [As-second (takef (drop ci (+ (length As) (length C))) (λ (x) (eq? 'a x)))]
+               [C-second (if (empty? (drop ci (+ (length As) (length C) (length As-second))))
+                             '()
+                             (take (drop ci (+ (length As) (length C) (length As-second))) 1))]
+               [A (if (empty? (drop ci (+ (length As) (length C) (length As-second) (length C-second))))
+                      '()                      
+                      (take (drop ci (+ (length As) (length C) (length As-second) (length C-second))) 1))]
+               [B (if (empty? (drop ci (+ (length As) (length C) (length As-second) (length C-second) (length A))))
+                      '()                      
+                      (take (drop ci (+ (length As) (length C) (length As-second) (length C-second) (length A))) 1))]
+               [As-third (takef (drop ci (+ (length As) (length C) (length As-second) (length C-second) (length A) (length B))) (λ (x) (eq? 'a x)))]
+               [B-second (takef (drop ci (+ (length As) (length C) (length As-second) (length C-second) (length A) (length B) (length As-third))) (λ (x) (eq? 'b x)))]
+               [As-fourth (takef (drop ci (+ (length As) (length C) (length As-second) (length C-second) (length A) (length B) (length As-third) (length B-second))) (λ (x) (eq? 'a x)))])
+         (and (equal? ci (append As C As-second C-second A B As-third B-second As-fourth))
+              (= (length stack) (- (length As-third) (length As-fourth)))
+              (equal? C '(c))
+              (equal? C-second '(c))
+              (equal? A '(a))
+              (equal? B '(b))
+              (equal? B-second '(b))
+              (andmap (λ (x) (eq? 'b x)) stack)))))
+
+;; tests for i-inv
+(check-equal? (I-INV-a^mca^mcaba^nba^n '(a c a c a b a b) '(b)) #t)
+(check-equal? (I-INV-a^mca^mcaba^nba^n '(a a c a a c a b a b) '(b)) #t)
+(check-equal? (I-INV-a^mca^mcaba^nba^n '(a a a a c a a a a c a b a a b a) '(b)) #t)
+(check-equal? (I-INV-a^mca^mcaba^nba^n '(a c a c a b a b a) '()) #t)
+(check-equal? (I-INV-a^mca^mcaba^nba^n '(a a c a a c a b a b a) '()) #t)
+(check-equal? (I-INV-a^mca^mcaba^nba^n '(a a a a c a a a a c a b a a b a a) '()) #t)
+(check-equal? (I-INV-a^mca^mcaba^nba^n '(a b) '(a a b)) #f)
+(check-equal? (I-INV-a^mca^mcaba^nba^n '() '()) #f)
+(check-equal? (I-INV-a^mca^mcaba^nba^n '(a a c a a c c b b a) '(a)) #f)
+(check-equal? (I-INV-a^mca^mcaba^nba^n '(a b a c b a) '()) #f)
+(check-equal? (I-INV-a^mca^mcaba^nba^n '(a a a a c  b c c b) '()) #f)
+(check-equal? (I-INV-a^mca^mcaba^nba^n '(a a a b b) '(a a)) #f)
+(check-equal? (I-INV-a^mca^mcaba^nba^n '(a b b b a c a) '()) #f)
+
+;; J: ci = a^mca^mcaba^nba^n AND stack = empty, final state
+
+;; word stack -> Boolean
+;; Purpose: Determines if the given word and stack belongs in J
+(define (J-INV-a^mca^mcaba^nba^n ci stack)
+  (and (not (empty? ci))
+       (let*  ([As (takef ci (λ (x) (eq? 'a x)))]
+               [C (if (empty? (drop ci (length As)))
+                      '()
+                      (take (drop ci (length As)) 1))]
+               [As-second (takef (drop ci (+ (length As) (length C))) (λ (x) (eq? 'a x)))]
+               [C-second (if (empty? (drop ci (+ (length As) (length C) (length As-second))))
+                             '()
+                             (take (drop ci (+ (length As) (length C) (length As-second))) 1))]
+               [A (if (empty? (drop ci (+ (length As) (length C) (length As-second) (length C-second))))
+                      '()                      
+                      (take (drop ci (+ (length As) (length C) (length As-second) (length C-second))) 1))]
+               [B (if (empty? (drop ci (+ (length As) (length C) (length As-second) (length C-second) (length A))))
+                      '()                      
+                      (take (drop ci (+ (length As) (length C) (length As-second) (length C-second) (length A))) 1))]
+               [As-third (takef (drop ci (+ (length As) (length C) (length As-second) (length C-second) (length A) (length B))) (λ (x) (eq? 'a x)))]
+               [B-second (takef (drop ci (+ (length As) (length C) (length As-second) (length C-second) (length A) (length B) (length As-third))) (λ (x) (eq? 'b x)))]
+               [As-fourth (takef (drop ci (+ (length As) (length C) (length As-second) (length C-second) (length A) (length B) (length As-third) (length B-second))) (λ (x) (eq? 'a x)))])
+         (and (equal? ci (append As C As-second C-second A B As-third B-second As-fourth))
+              (empty? stack)
+              (equal? C '(c))
+              (equal? C-second '(c))
+              (equal? A '(a))
+              (equal? B '(b))
+              (equal? B-second '(b))))))
+
+;; tests for j-inv
+(check-equal? (J-INV-a^mca^mcaba^nba^n '(a c a c a b a b a) '()) #t)
+(check-equal? (J-INV-a^mca^mcaba^nba^n '(a a c a a c a b a b a) '()) #t)
+(check-equal? (J-INV-a^mca^mcaba^nba^n '(a a a a c a a a a c a b a a b a a) '()) #t)
+(check-equal? (J-INV-a^mca^mcaba^nba^n '(a c a c a b a b a) '()) #t)
+(check-equal? (J-INV-a^mca^mcaba^nba^n '(a a c a a c a b a b a) '()) #t)
+(check-equal? (J-INV-a^mca^mcaba^nba^n '(a a a a c a a a a c a b a a b a a) '()) #t)
+(check-equal? (J-INV-a^mca^mcaba^nba^n '(a b) '(a a b)) #f)
+(check-equal? (J-INV-a^mca^mcaba^nba^n '() '()) #f)
+(check-equal? (J-INV-a^mca^mcaba^nba^n '(a a c a a c c b b a) '(a)) #f)
+(check-equal? (J-INV-a^mca^mcaba^nba^n '(a b a c b a) '()) #f)
+(check-equal? (J-INV-a^mca^mcaba^nba^n '(a a a a c  b c c b) '()) #f)
+(check-equal? (J-INV-a^mca^mcaba^nba^n '(a a a b b) '(a a)) #f)
+(check-equal? (J-INV-a^mca^mcaba^nba^n '(a b b b a c a) '()) #f)
+
+
+
+
+(define LOI-new (list (list 'S S-INV-a^mca^mcaba^nba^n)
+                      (list 'A A-INV-a^mca^mcaba^nba^n)
+                      (list 'B B-INV-a^mca^mcaba^nba^n)
+                      (list 'C C-INV-a^mca^mcaba^nba^n)
+                      (list 'D D-INV-a^mca^mcaba^nba^n)
+                      (list 'E E-INV-a^mca^mcaba^nba^n)
+                      (list 'F F-INV-a^mca^mcaba^nba^n)
+                      (list 'G G-INV-a^mca^mcaba^nba^n)
+                      (list 'H H-INV-a^mca^mcaba^nba^n)
+                      (list 'I I-INV-a^mca^mcaba^nba^n)
+                      (list 'J J-INV-a^mca^mcaba^nba^n)))
+
+
+
+
+
+
+;; A: ci = (a^nb^n)*a^m AND stack = a^m
+;; B: ci = (a^nb^n)*a^mb^l AND stack = a^m-l
+;; C: ci = (a^nb^n)* AND stack = empty, final state
+;; D: ci = (a^nb^n)*a^m AND stack = b^n
+;; E: ci = (a^nb^n)*a^mb^l AND stack =b^m-l
+
+
+;; state documentation
+;; S: ci = (a^nb^n)* AND stack = empty, starting and final state
+;; A: ci = (a^nb^n)*a^n AND stack = ba^n
+;; B: ci = (a^nb^n)*a^mb^l AND stack = ba^n-l
+(define a^nb^n* (make-unchecked-ndpda '(S A B)
+                            '(a b)
+                            '(a b)
+                            'S
+                            '(S)
+                            `(((S ,EMP ,EMP) (A (b)))
+                              ((A a ,EMP) (A (a)))
+                              ((A ,EMP ,EMP) (B ,EMP))
+                              ((B b (a)) (B ,EMP))
+                              ((B ,EMP (b)) (S ,EMP)))))
+;; tests for a^nb^n*
+(check-equal? (sm-apply a^nb^n* '()) 'accept)
+(check-equal? (sm-apply a^nb^n* '(a b)) 'accept)
+(check-equal? (sm-apply a^nb^n* '(a b a b)) 'accept)
+(check-equal? (sm-apply a^nb^n* '(a b a b a b)) 'accept)
+(check-equal? (sm-apply a^nb^n* '(a a b b a b)) 'accept)
+(check-equal? (sm-apply a^nb^n* '(a a b b a a a b b b a b a a b b)) 'accept)
+(check-equal? (sm-apply a^nb^n* '(a)) 'reject)
+(check-equal? (sm-apply a^nb^n* '(b)) 'reject)
+(check-equal? (sm-apply a^nb^n* '(a a)) 'reject)
+(check-equal? (sm-apply a^nb^n* '(b b)) 'reject)
+(check-equal? (sm-apply a^nb^n* '(a b b)) 'reject)
+(check-equal? (sm-apply a^nb^n* '(a a b)) 'reject)
+(check-equal? (sm-apply a^nb^n* '(a a a a a b b a a a b b b a b b b b)) 'reject)
+
+;; invariants for a^nb^n*
+
+;; word stack -> Boolean
+;; Purpose: Determines if the given word and stack belongs in s
+(define (S-INV-a^nb^n* ci stack)
+  (let* ([As (takef ci (λ (x) (eq? 'a x)))]
+         [Bs (takef (drop ci (length As)) (λ (x) (eq? 'b x)))])
+  (if (and (empty? (drop ci (+ (length Bs) (length As))))
+           (empty? stack))
+      (= (length As) (length Bs))
+      (and (= (length As) (length Bs))
+           (empty? stack)
+           (S-INV-a^nb^n* (drop ci (+ (length As) (length Bs))) stack)))))
+
+;; tests for s-inv
+(check-equal? (S-INV-a^nb^n* '(a b) '()) #t)
+(check-equal? (S-INV-a^nb^n* '(a a b b) '()) #t)
+(check-equal? (S-INV-a^nb^n* '(a a b b a b a b a b) '()) #t)
+(check-equal? (S-INV-a^nb^n* '(a a a b b b a b a a b b) '()) #t)
+(check-equal? (S-INV-a^nb^n* '(b) '(a)) #f)
+(check-equal? (S-INV-a^nb^n* '(a a b b) '(a)) #f)
+(check-equal? (S-INV-a^nb^n* '(a a) '(a)) #f)
+       
+
+;; word stack -> Boolean
+;; Purpose: Determines if the given word and stack belongs in A
+(define (A-INV-a^nb^n* ci stack)
+  (let* ([B-stack (takef-right stack (λ (x) (eq? 'b x)))]
+         [As (takef ci (λ (x) (eq? 'a x)))]
+         [Bs (takef (drop ci (length As)) (λ (x) (eq? 'b x)))])
+  (if (empty? Bs)
+      (equal? stack (append As B-stack))
+      (and (= (length As) (length Bs))
+           (A-INV-a^nb^n* (drop ci (+ (length As) (length Bs))) stack)))))
+
+;; tests for a-inv
+(check-equal? (A-INV-a^nb^n* '() '(b)) #t)
+(check-equal? (A-INV-a^nb^n* '(a) '(a b)) #t)
+(check-equal? (A-INV-a^nb^n* '(a a b b a) '(a b)) #t)
+(check-equal? (A-INV-a^nb^n* '(a b a a) '(a a b)) #t)
+(check-equal? (A-INV-a^nb^n* '(b) '(a)) #f)
+(check-equal? (A-INV-a^nb^n* '(a a b) '(a)) #f)
+(check-equal? (A-INV-a^nb^n* '(a a ) '(a)) #f)
+
+
+;; word stack -> Boolean
+;; Purpose: Determines if the given word and stack belongs in B
+(define (B-INV-a^nb^n* ci stack)
+  (let* ([B-stack (takef-right stack (λ (x) (eq? 'b x)))]
+         [As (takef ci (λ (x) (eq? 'a x)))]
+         [Bs (takef (drop ci (length As)) (λ (x) (eq? 'b x)))])
+  (if (empty? (drop ci (+ (length Bs) (length As))))
+      (= (length As) (+ (length Bs) (- (length stack) (length B-stack))))
+      (and (= (length As) (length Bs))
+           (B-INV-a^nb^n* (drop ci (+ (length As) (length Bs))) stack)))))
+
+;; tests for b-inv
+(check-equal? (B-INV-a^nb^n* '(a b) '(b)) #t)
+(check-equal? (B-INV-a^nb^n* '(a a b b) '(b)) #t)
+(check-equal? (B-INV-a^nb^n* '(a a b) '(a b)) #t)
+(check-equal? (B-INV-a^nb^n* '(a a a b b b a a) '(a a b)) #t)
+(check-equal? (B-INV-a^nb^n* '(b) '(a)) #f)
+(check-equal? (B-INV-a^nb^n* '(a a b b) '(a)) #f)
+(check-equal? (B-INV-a^nb^n* '(a a) '(a)) #f)
+
+
+
+
+
+
+
+(define LOI-a^nb^n* (list (list 'S S-INV-a^nb^n*)
+                          (list 'A A-INV-a^nb^n*)
+                          (list 'B B-INV-a^nb^n*)
+                          ))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 ;;Let Σ = {a b}. Design and implement a pda for L = {w | w has 3
 ;; times as many as than b} 
 

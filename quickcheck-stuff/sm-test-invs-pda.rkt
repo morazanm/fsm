@@ -5,8 +5,15 @@
 (require racket/list
          rackunit
          racket/set
+         data/queue
+         racket/sequence
          "../fsm-core/private/sm-getters.rkt"
          "../fsm-core/private/pda.rkt")
+
+
+;; CONSTANT FOR LIMIT ON LENGTH OF A PATH
+(define MAX-PATH-LENGTH 20) ;not in use rn
+
 
 ;; USEFUL FUNCTIONS
 
@@ -14,50 +21,6 @@
 ;; Purpose: To determine if the given item is a member of the given list
 (define (member? x lox)
   (ormap (λ (y) (equal? x y)) lox))
-
-;; A queue of X, (qof X), is eithe(r:
-;;  1. empty
-;;  2. (cons X (qof X))
-
-
-(define E-QUEUE '())
-
-(define qempty? empty?)
-
-;; Tests for qempty?
-(check-equal? (qempty? '())      #true)
-(check-equal? (qempty? '(a b c)) #false)
-
-;; (listof X) (qof X) --> (qof X)
-;; Purpose: Add the given list of X to the given queue of X
-(define (enqueue a-lox a-qox) (append a-qox a-lox))
-
-;; Tests for enqueue
-(check-equal? (enqueue '(8 d) '()) '(8 d))
-(check-equal? (enqueue '(d) '(a b c)) '(a b c d))
-(check-equal? (enqueue '(6 5 4) '(7)) '(7 6 5 4))
-
-;; (qof X) --> X throws error
-;; Purpose: Return first X of the given queue
-(define (qfirst a-qox)
-  (if (qempty? a-qox)
-      (error "qfirst applied to an empty queue")
-      (first a-qox)))
-
-;; Tests for qfirst
-;(check-error  (qfirst '()) "qfirst applied to an empty queue")
-(check-equal? (qfirst '(a b c)) 'a)
-
-;; (qof X) --> (qof X) throws error
-;; Purpose: Return the rest of the given queue
-(define (dequeue a-qox)
-  (if (qempty? a-qox)
-      (error "dequeue applied to an empty queue")
-      (rest a-qox)))
-
-;; Tests for qfirst
-;(check-error  (dequeue '()) "dequeue applied to an empty queue")
-(check-equal? (dequeue '(a b c)) '(b c))
 
 
 
@@ -131,13 +94,9 @@
 
 
 
-;; CONSTANT FOR LIMIT ON LENGTH OF A PATH
-(define MAX-PATH-LENGTH 12)
-
-
 ;; PATH (listof pda-rule) -> (listof (listof PATH) (listof (listof state word stack)))
 ;; Purpose: To return a list of paths that comes from the given path and rules
-(define (new-paths&visited a-path rules visited)
+(define (new-paths&visited a-path rules visited max-length)
   ;; (listof pda-rule) (listof PATH) -> (listof (listof PATH) (listof (listof state word stack)))
   ;; Purpose: To return a list of paths that come from the given paths and rules
   ;; Accumulator invariant: accum = list of paths
@@ -154,7 +113,7 @@
                                                 (length (if (eq? 'ε (get-pop (first next-rules)))     ;; makes sure that we're not at the 
                                                             '()                                       ;; same state with the same word and
                                                             (get-pop (first next-rules))))))))        ;; stack again (no double doing work),
-               (< MAX-PATH-LENGTH                                                                          ;; making sure the new word and stack at 
+               (< max-length                                                                          ;; making sure the new word and stack at 
                   (length (append (PATH-lor a-path) (list (first next-rules))))))  ;<- caps # of paths     ;; the state has not been visited already
            (new-paths-helper (rest next-rules) accum new-visited)]
           [else (let* [(new-path-rules (append (PATH-lor a-path)
@@ -191,56 +150,74 @@
 
 ;; pda -> (listof PATH)
 ;; Purpose: To return all the paths in the given pda 
-(define (find-paths a-machine)
+(define (find-paths a-machine #:max-length [max-length 12])
+  (define queue (make-queue))
   (define rules (sm-rules a-machine))
   ;; (queueof (listof PATH)) (listof PATH) -> (listof PATH)
   ;; Purpose: To return all the paths of the given machine
   ;; Accumulator invariant: paths = list of current paths
   ;;                        visited = set of a state, word, and stack that has
   ;;                                  been visited
-  (define (find-paths-helper a-qop paths visited)
-    (if (qempty? a-qop) paths
-        (let [(next-rules-first-path (get-next-rules (last (PATH-lor (qfirst a-qop)))
+  (define (find-paths-helper paths visited)
+    (if (queue-empty? queue) paths
+        (let* [;(hello (displayln "queue:    "))
+               ;(hi (displayln (sequence->list (in-queue queue))))
+               (qfirst (dequeue! queue))
+              (next-rules-first-path (get-next-rules (last (PATH-lor qfirst))
                                                      (filter
                                                       (λ (rule)
                                                         (and (or (equal? (get-pop rule) 'ε)
-                                                                 (and (<= (length (get-pop rule)) (length (PATH-stack (qfirst a-qop))))
-                                                                      (equal? (take (PATH-stack (qfirst a-qop))
+                                                                 (and (<= (length (get-pop rule)) (length (PATH-stack qfirst)))
+                                                                      (equal? (take (PATH-stack qfirst)
                                                                                     (length (get-pop rule)))   ;; this part makes sure that we the rules are able to be applied bc 
                                                                               (get-pop rule))))                    ;; can't pop elems off stack if aren't there
                                                              #;(< (count (λ (rl) (equal? rule rl))
-                                                                         (PATH-lor (qfirst a-qop)))
+                                                                         (PATH-lor qfirst))
                                                                   MAX-NUM-REPETITIONS)))
                                                       rules)))
-              (paths-with-qfirst (cons (qfirst a-qop) paths))] ;; <-- the paths with the first of the queue included
+              (paths-with-qfirst (cons qfirst paths))] ;; <-- the paths with the first of the queue included
           (if (empty? next-rules-first-path)
-              (find-paths-helper (dequeue a-qop)
-                                 paths-with-qfirst
+              (find-paths-helper paths-with-qfirst
                                  visited)
-              (find-paths-helper (enqueue (first (new-paths&visited (qfirst a-qop) next-rules-first-path visited))
-                                          (dequeue a-qop)) 
-                                 paths-with-qfirst
-                                 (second (new-paths&visited (qfirst a-qop) next-rules-first-path visited))))
-          )))
-  (find-paths-helper (enqueue (map (λ (y) (make-PATH y (if (eq? 'ε (get-push (first y)))
+              (begin ;(displayln qfirst)
+                      ;(displayln "new paths:   ")
+                      ;(displayln (first (new-paths&visited qfirst next-rules-first-path visited max-length)))
+
+                      
+                      ;(enqueue! queue (first (new-paths&visited qfirst next-rules-first-path visited max-length))) ;; this has to be fixed, needs to map enqueue i think, enqueue the dequeue?
+                      (map (λ (x) (enqueue! queue x)) (first (new-paths&visited qfirst next-rules-first-path visited max-length)))
+
+                      ;(displayln "updated paths: ")
+                      ;(displayln paths-with-qfirst)
+                      
+                      
+                      (find-paths-helper paths-with-qfirst
+                                         (second (new-paths&visited qfirst next-rules-first-path visited max-length))))
+          ))))
+  (begin #;(enqueue! queue (map (λ (y) (make-PATH y (if (eq? 'ε (get-push (first y)))
                                                            '()
-                                                           (get-push (first y)))))
+                                                           (get-push (first y)))))     ;; have to fix this part, when enqueing, maybe map it onto each element?
                                    (map (λ (x) (list x))
                                         (filter
                                          (λ (rule) (eq? (get-source-state rule) (sm-start a-machine)))
-                                         rules)))
-                              '())
-                     '()
-                     (set)))
+                                         rules))))
+          (map (λ (x) (enqueue! queue x)) (map (λ (y) (make-PATH y (if (eq? 'ε (get-push (first y)))
+                                                                       '()
+                                                                       (get-push (first y)))))     ;; have to fix this part, when enqueing, maybe map it onto each element?
+                                               (map (λ (x) (list x))
+                                                    (filter
+                                                     (λ (rule) (eq? (get-source-state rule) (sm-start a-machine)))
+                                                     rules))))
+          (find-paths-helper '() (set)) ))
 
 
 
 
 ;; pda -> (listof PATH)
 ;; Purpose: Returns all the paths that lead to an accepting word of the given machine
-(define (get-accepting-paths a-pda)
+(define (get-accepting-paths a-pda #:max-length [max-length 12])
   (define paths-that-end-in-finals (filter (λ (x) (member? (get-destination-state (last (PATH-lor x))) (sm-finals a-pda)))
-                                           (find-paths a-pda)))
+                                           (find-paths a-pda #:max-length max-length)))
   ;; PATH -> Boolean
   ;; Purpose: To determine if the given path leads to an accept 
   (define (leads-to-accepting? a-path)
@@ -290,9 +267,9 @@
 
 ;; pda -> pda
 ;; Purpose: Takes in pda and remove states and rules that can't reach a final state 
-(define (remove-states-that-cannot-reach-finals a-pda)
+(define (remove-states-that-cannot-reach-finals a-pda #:max-length [max-length 12])
   (define paths-that-end-in-finals (filter (λ (x) (member? (get-destination-state (last (PATH-lor x))) (sm-finals a-pda)))
-                                           (find-paths a-pda)))
+                                           (find-paths a-pda #:max-length max-length)))
   (define new-rules (remove-duplicates (apply append (map (λ (x) (PATH-lor x)) paths-that-end-in-finals))))
   (define new-states (remove-duplicates (append-map (λ (x) (list (get-source-state x) (get-destination-state x))) new-rules)))
   (make-unchecked-ndpda new-states (sm-sigma a-pda) (sm-gamma a-pda) (sm-start a-pda) (sm-finals a-pda) new-rules))
@@ -316,12 +293,12 @@
 
 ;; machine (listof (list state (word -> boolean))) -> (listof (listof state (listof word)))
 ;; Purpose: To return a list of all posible words that can be at each state in a machine 
-(define (sm-all-possible-words a-machine)
+(define (sm-all-possible-words a-machine #:max-path-length [max-path-length 12])
   ;; the given machine without the states and rules of states that cannot reach a final state
-  (define new-machine (remove-states-that-cannot-reach-finals a-machine))
+  (define new-machine (remove-states-that-cannot-reach-finals a-machine #:max-length max-path-length))
  
   ;; list of the paths that lead to accept of the refactored pda 
-  (define all-paths-new-machine (get-accepting-paths new-machine))
+  (define all-paths-new-machine (get-accepting-paths new-machine #:max-length max-path-length))
   
 
   ;; (listof (listof rule)) (listof (listof symbol)) -> (listof (listof symbol))
@@ -397,13 +374,13 @@
 
 ;; pda (listof (list state (word -> boolean))) -> (listof (word stack state))
 ;; Purpose: To return a list of the invarients that don't hold and the words that cause it not to hold
-(define (sm-test-invs-pda a-machine . a-loi)
+(define (sm-test-invs-pda a-machine #:max-path-length [max-path-length 12] . a-loi)
   ;; the given machine without the states and rules of states that cannot reach a final state
-  (define new-machine (remove-states-that-cannot-reach-finals a-machine))
+  (define new-machine (remove-states-that-cannot-reach-finals a-machine #:max-length max-path-length))
   ;; list of invariants that are reachable from the starting configuration
   (define reachable-inv (filter (λ (x) (member? (first x) (sm-states new-machine))) a-loi))
   ;; all accepting paths of new-machine
-  (define all-paths-new-machine (get-accepting-paths new-machine))
+  (define all-paths-new-machine (get-accepting-paths new-machine #:max-length max-path-length))
 
   ;; (listof PATH) (listof (word stack state)) -> (listof (word stack state))
   ;; Purpose: To return a list of the invariants and the word that causes them not to hold

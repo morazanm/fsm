@@ -2,7 +2,7 @@
 (require rackcheck
          rackunit
          racket/list
-         "reg-exp-function.rkt"
+         ;"reg-exp-function.rkt"
          "new-new-regexp.rkt"
          "../fsm-core/private/regexp.rkt"
          "../fsm-core/private/fsa.rkt"
@@ -21,14 +21,14 @@
         [(singleton-regexp? regexp)
          (gen:const (string->symbol (singleton-regexp-a regexp)))]
         [(concat-regexp? regexp)
-         (gen:tuple (regexp->generator (concat-regexp-r1 regexp))
-                    (regexp->generator (concat-regexp-r2 regexp)))]
+         (gen:tuple (regexp->generator (concat-regexp-r1 regexp) num-kleenes)
+                    (regexp->generator (concat-regexp-r2 regexp) num-kleenes))]
         [(union-regexp? regexp)
-         (gen:choice (regexp->generator (union-regexp-r1 regexp))
-                     (regexp->generator (union-regexp-r2 regexp)))]
+         (gen:choice (regexp->generator (union-regexp-r1 regexp) num-kleenes)
+                     (regexp->generator (union-regexp-r2 regexp) num-kleenes))]
         [(kleenestar-regexp? regexp)
          (gen:bind (gen:integer-in 0 num-kleenes)
-                   (λ (x) (gen:list (regexp->generator (kleenestar-regexp-r1 regexp))
+                   (λ (x) (gen:list (regexp->generator (kleenestar-regexp-r1 regexp) num-kleenes)
                                     #:max-length x)))]
         [(empty-regexp? regexp)
          (gen:const '())]))
@@ -54,7 +54,7 @@
             state-invs-pairs))
   (for ([st-inv-pair (in-list non-dead-state-inv-pairs)])
     (testing-function (first st-inv-pair)
-                      (regexp->generator (hash-ref state-regexp-pairs (first st-inv-pair) num-kleenes))
+                      (regexp->generator (hash-ref state-regexp-pairs (first st-inv-pair)) num-kleenes)
                       (second st-inv-pair)
                       tests)))
 

@@ -1,6 +1,7 @@
 #lang racket/base
 (provide get-all-regexp-new-new
-         #;find-paths)
+         find-paths)
+
 (require rackunit
          racket/list
          racket/treelist
@@ -9,18 +10,11 @@
          "../fsm-core/private/fsa.rkt"
          "../fsm-core/private/sm-getters.rkt")
 
-;; A queue of X, (qof X), is eithe(r:
-;;  1. empty
-;;  2. (cons X (qof X))
+;; QUEUE FUNCTIONS
 
-
-(define E-QUEUE (treelist))
-
+;; (qof X) --> (qof X)
+;; Purpose: To determine if the given queue is empty
 (define qempty? treelist-empty?)
-
-;; Tests for qempty?
-;(check-equal? (qempty? '())      #true)
-;(check-equal? (qempty? '(a b c)) #false)
 
 ;; (listof X) (qof X) --> (qof X)
 ;; Purpose: Add the given list of X to the given queue of X
@@ -28,44 +22,41 @@
                                      a-qox
                                      a-lox))
 
-;; Tests for enqueue
-;(check-equal? (enqueue '(8 d) '()) '(8 d))
-;(check-equal? (enqueue '(d) '(a b c)) '(a b c d))
-;(check-equal? (enqueue '(6 5 4) '(7)) '(7 6 5 4))
-
 ;; (qof X) --> X throws error
-;; Purpose: Return car X of the given queue
+;; Purpose: Return first X of the given queue
 (define qfirst treelist-first)
-
-;; Tests for qfirst
-;(check-error  (qfirst '()) "qfirst applied to an empty queue")
-;(check-equal? (qfirst '(a b c)) 'a)
 
 ;; (qof X) --> (qof X) throws error
 ;; Purpose: Return the rest of the given queue
 (define dequeue treelist-rest)
 
-;; Tests for qfirst
-;(check-error  (dequeue '()) "dequeue applied to an empty queue")
-;(check-equal? (dequeue '(a b c)) '(b c))
+
+;; A path is a treelist of rules
+
+;; A path-with-hash is (PATH hash)
+
 (struct path-with-hash (path hash) #:transparent)
-;; machine -> (listof rules)
+
+
+;; machine -> (listof (listof rules))
 ;; Purpose: To return all the paths in the given machine 
 (define (find-paths a-machine)
-  ;; (queueof (listof rule)) (listof (listof rule)) -> (listof (listof rule))
+  
+  ;; (queueof path-with-hash)  -> (listof (listof rule))
   ;; Purpose: To return all the paths of the given machine
   ;; Accumulator invarient: paths = list of current paths
   (define (find-paths-helper a-qop)
     (if (qempty? a-qop)
         '()
-        (let* ([cache (third (first (path-with-hash-path (qfirst a-qop))))]
+        (let* ([cache (third (first (path-with-hash-path (qfirst a-qop))))]  ;<- destination state of
+                                                                             ;   the last rule in path
                [next-rules-first-path
-                (for/list ([rule (in-list (sm-rules a-machine))]
-                           #:when (and (eq? cache (car rule))
+                (for/list ([rule (in-list (sm-rules a-machine))]  ;<- creating the rules that can be used 
+                           #:when (and (eq? cache (car rule))     ;   next(cannot have already been used)
                                        (< (hash-ref (path-with-hash-hash (qfirst a-qop))
                                                     rule
                                                     0)
-                                          1)))
+                                          1)))  
                   (path-with-hash (cons rule (path-with-hash-path (qfirst a-qop)))
                                   (hash-set (path-with-hash-hash (qfirst a-qop))
                                             rule
@@ -73,30 +64,42 @@
                                                             rule
                                                             0)))))])
           (cons (qfirst a-qop) (find-paths-helper (enqueue next-rules-first-path (dequeue a-qop)))))))
+  
   (map (lambda (x) (reverse (path-with-hash-path x)))
-       (find-paths-helper (enqueue (for/list ([rule (in-list (sm-rules a-machine))]
-                                              #:when (eq? (car rule) (sm-start a-machine)))
+       (find-paths-helper (enqueue (for/list ([rule (in-list (sm-rules a-machine))]        ;<-enqueuing paths
+                                              #:when (eq? (car rule) (sm-start a-machine))); with the starting rules
                                      (path-with-hash (list rule) (hash rule 1)))
                                    (treelist)))))
 
 
-;;; DOCUMENT THESE FUNCTIONS   
+
+
+;; (listof path) (listof states) -> (listof path)
+;; purpose: to return the paths that reach finals
 (define (get-paths-to-finals paths finals)
   (filter (λ (path) (member (third (last path)) finals))
           paths))
 
+;; (listof path) -> (listof rule)
+;; purpose: to extract the rule set from the given paths
 (define (extract-rule-set paths)
   (remove-duplicates (apply append paths)))
 
+;; (listof rules) -> (listof states)
+;; purpose: To extract the set of states from the given the rule set
 (define (extract-state-set rules)
   (remove-duplicates (append-map (λ (r) (list (first r) (third r))) rules)))
 
+;; (listof paths) (listof states) -> (listof paths)
+;; purpose: To return the paths that contain the given states
 (define (filter-paths paths states)
   (define (has-only? p states) (andmap (λ (r) (and (member (first r) states)
                                                    (member (third r) states)))
                                        p))
   (filter (λ (p) (has-only? p states)) paths))
 
+;; state (listof paths) -> (listof paths)
+;; purpose: to return all the paths to the given state
 (define (all-paths-to A paths)
   (filter (λ (p) (eq? (third (last p)) A)) paths))
   
@@ -104,129 +107,29 @@
 ;; machine -> hashtable
 ;; Purpose: Construct regular expression hash table for the given machine
 (define (get-all-regexp-new-new M)
-  (let* [(regexp-ht (make-hash))
-         (machine-paths (find-paths M))
-         (paths-to-finals (get-paths-to-finals machine-paths (sm-finals M)))
+  (let* [(regexp-ht (make-hash))  ;; empty ht for regexps
+         (machine-paths (find-paths M)) ;; all machine paths starting at the starting state including paths to dead states
+         (paths-to-finals (get-paths-to-finals machine-paths (sm-finals M))) ;; paths to final states starting at the starting state
          
-         (new-rules (extract-rule-set paths-to-finals))
-         (new-states (extract-state-set new-rules))
-         (refactored-paths (filter-paths machine-paths new-states))
-         #;(refactored-paths machine-paths)]     ;; <- this is the unrefactored paths
-    (for ([A new-states])
+         (new-rules (extract-rule-set paths-to-finals))  ;; all rules used on all paths to a final state from the starting state
+         (new-states (extract-state-set new-rules)) ;; all states traversed on all paths to a final state from the starting state
+         (refactored-paths (filter-paths machine-paths new-states))] ;; all machine paths starting at the starting state that only traverse states on a path to final state reachable from the starting state
+    (for ([A new-states]) ;; traverse all stated on a path to a final state from the starting state
       (if (and (eq? A (sm-start M))
                (empty? (all-paths-to A refactored-paths)))
+          ;; starting state special case: if there are no paths to the starting state in refactored-paths, the starting state is still reachable by consuming empty
           (hash-set! regexp-ht
                      A
                      (empty-regexp))
-          (let* [(A-paths (all-paths-to A refactored-paths))
-                 (rules4A (extract-rule-set A-paths))
-                 (states4A (extract-state-set rules4A))
-                 (A-ndfa (make-unchecked-ndfa states4A 
+          (let* [(A-paths (all-paths-to A refactored-paths)) ;; all paths to A on a path from the final state from the starting state
+                 (rules4A (extract-rule-set A-paths)) ;; rules used to reach A
+                 (states4A (extract-state-set rules4A)) ;; states traversed to reach A
+                 (A-ndfa (make-unchecked-ndfa states4A  ;; ndfa for A (A is the final state)
                                               (sm-sigma M) 
                                               (sm-start M) 
                                               (list A) 
                                               rules4A))]
-            (hash-set! regexp-ht 
+            (hash-set! regexp-ht ;; add regexp for A to ht (maybe also need to simplify regexp, not sure it will do anything useful)
                        A 
                        (fsa->regexp A-ndfa)))))
     regexp-ht))
-
-;; machine -> hashtable
-;; Purpose: To return a hashtable of all regular expressions that
-;;          can be made from the given machine
-#;(define (get-all-regexp a-machine)
-    (define finals-set (list->seteq (sm-finals a-machine)))
-    (define new-states (mutable-seteq))
-    (define machine-paths (find-paths a-machine))
-    (define new-rules 
-      (remove-duplicates (for*/list ([path (in-list machine-paths)]
-                                     ;; eliminate all paths that do not end in a final state
-                                     #:when (set-member? finals-set (third (last path)))
-                                     [rule (in-list path)])
-                           (set-add! new-states (first rule))
-                           (set-add! new-states (third rule))
-                           rule)))
-    (cond [(not (set-member? new-states (sm-start a-machine)))
-           (null-regexp)]
-          [else 
-           ;; path sethash -> Boolean
-           ;; Purpose: Determine if all states in given path are in the given sethash
-           (define (no-dead-states-in-path? path new-states)
-             (let [(path-states (remove-duplicates
-                                 (append-map (λ (rule) (list (first rule) (third rule)))
-                                             path)))]
-               (andmap (λ (st) (set-member? new-states st))
-                       path-states)))
-                 
-           ;; (listof paths) sethash -> (listof paths)
-           ;; Purpose: Remove paths containing dead states
-           (define (remove-dead-paths machine-paths new-states)
-             (filter (λ (path) (no-dead-states-in-path? path new-states))
-                     machine-paths))
-         
-           (define state&its-machine (make-hash))
-           (define refactored-states (set->list new-states))
-           (define refactored-sigma (sm-sigma a-machine))
-           (define refactored-start (sm-start a-machine))
-           (define refactored-finals (filter (λ (final-state)
-                                               (set-member? new-states final-state))
-                                             (sm-finals a-machine)))
-           (define refactored-rules new-rules)
-           (define refactored-paths (remove-dead-paths machine-paths new-states))
-  
-           ;; (listof symbols) (listof regexp) -> (listof (listof symbol regexp))
-           ;; Purpose: To return a hashtable of all regular expressions that
-           ;;          can be made from the given machine
-           (define (get-all-regexp-helper los)
-             (for ([symb (in-list los)])
-             
-               (define paths-to-first-los
-                 (filter (λ (path) (eq? (third (last path)) symb))
-                         refactored-paths))
-              
-               (define (make-rules-states rules states paths)
-                 (define (make-rules-states-helper rules states path)
-                   (if (empty? path)
-                       (values rules states)
-                       (make-rules-states-helper
-                        (cons (first path) rules)
-                        (cons (first (first path))
-                              (cons (third (first path))
-                                    states))
-                        (rest path))))
-                 (if (empty? paths)
-                     (values (remove-duplicates rules)
-                             (remove-duplicates states))
-                     (call-with-values
-                      (lambda () (make-rules-states-helper rules states (first paths)))
-                      (lambda (rules states) (make-rules-states rules states (rest paths))))))
-        
-               (define-values (rules-for-first-los states-to-first-los)
-                 (make-rules-states '() '() paths-to-first-los))
-             
-               (define machine-only-paths-to-first-los
-                 (make-unchecked-ndfa states-to-first-los
-                                      refactored-sigma
-                                      refactored-start
-                                      (list symb)
-                                      rules-for-first-los))
-             
-               (hash-set! state&its-machine
-                          symb
-                          (simplify-regexp
-                           (fsa->regexp machine-only-paths-to-first-los))))
-             state&its-machine)
-           (define states-no-start-state
-             (filter (λ (state) (not (eq? state refactored-start)))
-                     refactored-states))
-           (define paths-to-start-state
-             (filter (λ (path) (eq? (third (last path)) refactored-start))
-                     refactored-paths))
-           (if (empty? paths-to-start-state)
-               (begin (hash-set! state&its-machine
-                                 refactored-start
-                                 (empty-regexp))
-                      (get-all-regexp-helper states-no-start-state))
-               (get-all-regexp-helper refactored-states))]))
- 
-
