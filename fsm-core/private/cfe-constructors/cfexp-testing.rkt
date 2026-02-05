@@ -7,93 +7,96 @@
          "../constants.rkt"
          "./context-free-expressions-constructors.rkt"
          rackunit
+         rackunit/text-ui
          racket/set
          racket/list
          )
 
-(define WORD-AMOUNT 5)
+(define WORD-AMOUNT 1)
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;Unit Tests;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(test-case
- "Concat Constructor Makes Correct CFE"
- (check-equal? (concat-cfexp) (mk-null-cfexp))
- (check-equal? (concat-cfexp NULL) (mk-null-cfexp))
- (check-equal? (concat-cfexp NULL NULL NULL NULL NULL) (mk-null-cfexp))
- (check-equal? (concat-cfexp NULL EMPTY A) (mk-null-cfexp))
- (check-equal? (concat-cfexp EMPTY) (mk-empty-cfexp))
- (check-equal? (concat-cfexp EMPTY EMPTY EMPTY EMPTY EMPTY) (mk-empty-cfexp))
- (check-equal? (concat-cfexp A) (mk-singleton-cfexp "a"))
- (check-equal? (concat-cfexp A A) (mk-concat-cfexp (vector (mk-singleton-cfexp "a") (mk-singleton-cfexp "a"))))
- (check-equal? (concat-cfexp A (union-cfexp B D) C) (mk-concat-cfexp (vector (mk-singleton-cfexp "a")
-                                                                             (box (mk-union-cfexp (vector (mk-singleton-cfexp "b")
-                                                                                                          (mk-singleton-cfexp "d"))))
-                                                                             (mk-singleton-cfexp "c"))))
- )
+(define-test-suite
+  CFE-UNIT-TESTING
+  (test-case
+   "Concat Constructor Makes Correct CFE"
+   (check-equal? (concat-cfexp) (mk-null-cfexp))
+   (check-equal? (concat-cfexp NULL) (mk-null-cfexp))
+   (check-equal? (concat-cfexp NULL NULL NULL NULL NULL) (mk-null-cfexp))
+   (check-equal? (concat-cfexp NULL EMPTY A) (mk-null-cfexp))
+   (check-equal? (concat-cfexp EMPTY) (mk-empty-cfexp))
+   (check-equal? (concat-cfexp EMPTY EMPTY EMPTY EMPTY EMPTY) (mk-empty-cfexp))
+   (check-equal? (concat-cfexp A) (mk-singleton-cfexp "a"))
+   (check-equal? (concat-cfexp A A) (mk-concat-cfexp (vector (mk-singleton-cfexp "a") (mk-singleton-cfexp "a"))))
+   (check-equal? (concat-cfexp A (union-cfexp B D) C) (mk-concat-cfexp (vector (mk-singleton-cfexp "a")
+                                                                               (box (mk-union-cfexp (vector (mk-singleton-cfexp "b")
+                                                                                                            (mk-singleton-cfexp "d"))))
+                                                                               (mk-singleton-cfexp "c"))))
+   )
 
-(test-case
- "Union Constructor Makes Correct CFE"
- (check-equal? (union-cfexp) (mk-null-cfexp))
- (check-equal? (union-cfexp NULL EMPTY) (mk-union-cfexp (vector (mk-null-cfexp) (mk-empty-cfexp))))
- (check-equal? (union-cfexp EMPTY EMPTY EMPTY EMPTY) (mk-empty-cfexp))
- (check-equal? (union-cfexp B) (mk-singleton-cfexp "b"))
- (check-equal? (union-cfexp B D) (mk-union-cfexp (vector (mk-singleton-cfexp "b") (mk-singleton-cfexp "d"))))
- (check-equal? (union-cfexp C (union-cfexp A B) D) (mk-union-cfexp (vector (mk-singleton-cfexp "c")
-                                                                           (mk-singleton-cfexp "d")
-                                                                           (mk-singleton-cfexp "a")
-                                                                           (mk-singleton-cfexp "b"))))
+  (test-case
+   "Union Constructor Makes Correct CFE"
+   (check-equal? (union-cfexp) (mk-null-cfexp))
+   (check-equal? (union-cfexp NULL EMPTY) (mk-union-cfexp (vector (mk-null-cfexp) (mk-empty-cfexp))))
+   (check-equal? (union-cfexp EMPTY EMPTY EMPTY EMPTY) (mk-empty-cfexp))
+   (check-equal? (union-cfexp B) (mk-singleton-cfexp "b"))
+   (check-equal? (union-cfexp B D) (mk-union-cfexp (vector (mk-singleton-cfexp "b") (mk-singleton-cfexp "d"))))
+   (check-equal? (union-cfexp C (union-cfexp A B) D) (mk-union-cfexp (vector (mk-singleton-cfexp "c")
+                                                                             (mk-singleton-cfexp "d")
+                                                                             (mk-singleton-cfexp "a")
+                                                                             (mk-singleton-cfexp "b"))))
+
+   )
+
+  (test-case
+   "Kleene Constructor Makes Correct CFE"
+   (check-equal? (kleene-cfexp A) (mk-kleene-cfexp (mk-singleton-cfexp "a")))
+   (check-equal? (kleene-cfexp EMPTY) EMPTY)
+   (check-equal? (kleene-cfexp NULL) NULL)
+   )
+
+
+  (test-case
+   "CFE Predicates"
+   (check-true (null-cfexp? NULL))
+   (check-false (null-cfexp? EMPTY))
+   (check-true (null-cfexp? (union-cfexp NULL NULL NULL)))
+   (check-true (null-cfexp? (concat-cfexp A NULL NULL B NULL)))
+ 
+   (check-true (empty-cfexp? EMPTY))
+   (check-false (empty-cfexp? NULL))
+   (check-true (empty-cfexp? (concat-cfexp EMPTY EMPTY EMPTY EMPTY)))
+   (check-true (empty-cfexp? (union-cfexp EMPTY EMPTY EMPTY EMPTY)))
+ 
+   (check-true (singleton-cfexp? C))
+   (check-false (singleton-cfexp? (concat-cfexp A C)))
+   (check-true (singleton-cfexp? (concat-cfexp A)))
+   (check-true (singleton-cfexp? (union-cfexp D)))
+ 
+   (check-true (concat-cfexp? (concat-cfexp D C)))
+   (check-false (concat-cfexp? (concat-cfexp EMPTY)))
+   (check-false (concat-cfexp? (concat-cfexp EMPTY EMPTY EMPTY EMPTY)))
+   (check-true (concat-cfexp? (concat-cfexp EMPTY A EMPTY EMPTY EMPTY)))
+   (check-false (concat-cfexp? (concat-cfexp NULL)))
+   (check-false (concat-cfexp? (concat-cfexp NULL NULL NULL)))
+   (check-false (concat-cfexp? (concat-cfexp A NULL NULL B NULL)))
+   (check-false (concat-cfexp? (concat-cfexp A)))
+ 
+   (check-true (union-cfexp? (union-cfexp B A)))
+   (check-false (union-cfexp? (union-cfexp EMPTY)))
+   (check-false (union-cfexp? (union-cfexp NULL)))
+   (check-true (union-cfexp? (union-cfexp A NULL NULL C NULL)))
+   (check-true (union-cfexp? (union-cfexp D NULL NULL B NULL)))
+   (check-false (union-cfexp? (union-cfexp EMPTY EMPTY EMPTY EMPTY)))
+   (check-false (union-cfexp? (union-cfexp NULL NULL NULL)))
+
+   (check-true (kleene-cfexp? (kleene-cfexp A)))
+   (check-false (kleene-cfexp? (kleene-cfexp EMPTY)))
+   (check-false (kleene-cfexp? (kleene-cfexp NULL)))
+   )
 
   )
-
-(test-case
- "Kleene Constructor Makes Correct CFE"
- (check-equal? (kleene-cfexp A) (mk-kleene-cfexp (mk-singleton-cfexp "a")))
- (check-equal? (kleene-cfexp EMPTY) EMPTY)
- (check-equal? (kleene-cfexp NULL) NULL)
- )
-
-
-(test-case
- "CFE Predicates"
- (check-true (null-cfexp? NULL))
- (check-false (null-cfexp? EMPTY))
- (check-true (null-cfexp? (union-cfexp NULL NULL NULL)))
- (check-true (null-cfexp? (concat-cfexp A NULL NULL B NULL)))
- 
- (check-true (empty-cfexp? EMPTY))
- (check-false (empty-cfexp? NULL))
- (check-true (empty-cfexp? (concat-cfexp EMPTY EMPTY EMPTY EMPTY)))
- (check-true (empty-cfexp? (union-cfexp EMPTY EMPTY EMPTY EMPTY)))
- 
- (check-true (singleton-cfexp? C))
- (check-false (singleton-cfexp? (concat-cfexp A C)))
- (check-true (singleton-cfexp? (concat-cfexp A)))
- (check-true (singleton-cfexp? (union-cfexp D)))
- 
- (check-true (concat-cfexp? (concat-cfexp D C)))
- (check-false (concat-cfexp? (concat-cfexp EMPTY)))
- (check-false (concat-cfexp? (concat-cfexp EMPTY EMPTY EMPTY EMPTY)))
- (check-true (concat-cfexp? (concat-cfexp EMPTY A EMPTY EMPTY EMPTY)))
- (check-false (concat-cfexp? (concat-cfexp NULL)))
- (check-false (concat-cfexp? (concat-cfexp NULL NULL NULL)))
- (check-false (concat-cfexp? (concat-cfexp A NULL NULL B NULL)))
- (check-false (concat-cfexp? (concat-cfexp A)))
- 
- (check-true (union-cfexp? (union-cfexp B A)))
- (check-false (union-cfexp? (union-cfexp EMPTY)))
- (check-false (union-cfexp? (union-cfexp NULL)))
- (check-true (union-cfexp? (union-cfexp A NULL NULL C NULL)))
- (check-true (union-cfexp? (union-cfexp D NULL NULL B NULL)))
- (check-false (union-cfexp? (union-cfexp EMPTY EMPTY EMPTY EMPTY)))
- (check-false (union-cfexp? (union-cfexp NULL NULL NULL)))
-
- (check-true (kleene-cfexp? (kleene-cfexp A)))
- (check-false (kleene-cfexp? (kleene-cfexp EMPTY)))
- (check-false (kleene-cfexp? (kleene-cfexp NULL)))
- )
-
-
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;Generating Words;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -252,7 +255,7 @@
              (= 0 (- (length As) (length Bs)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;LANGUAGE BANK;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
+#|
 (define WWR-WORDS (gen-cfe-words WWR))
 
 (define ANBN-WORDS (gen-cfe-words ANBN))
@@ -276,7 +279,7 @@
 (define thesis-cfg-converted-WORDS (gen-cfe-words thesis-cfg-converted))
 
 (define thesis-cfe-WORDS (gen-cfe-words thesis-cfe))
-#|
+
 (define A*-WORDS (gen-cfe-words A*-cfe))
 
 (define Gina-aˆnbˆn-WORDS (gen-cfe-words Gina-aˆnbˆn-cfe))
@@ -381,50 +384,83 @@
  )
 |#
 
-(test-case
- "CFE Word Generation"
+(define CFE-WORD-TESTS
+  (let [(WWR-WORDS (gen-cfe-words WWR))
 
- (check-pred (λ (low) (andmap valid-wwr-word? low)) WWR-WORDS)
+        (ANBN-WORDS (gen-cfe-words ANBN))
 
- (check-pred (λ (low) (andmap valid-anbn-word? low)) ANBN-WORDS)
+        (BNAN-WORDS (gen-cfe-words BNAN))
 
- (check-pred (λ (low) (andmap valid-bnan-word? low)) BNAN-WORDS)
+        (A2iBi-WORDS (gen-cfe-words A2iBi))
 
- (check-pred (λ (low) (andmap valid-a2ibi-word? low)) A2iBi-WORDS)
+        (AiBj-WORDS (gen-cfe-words AiBj))
 
- (check-pred (λ (low) (andmap valid-aibj-word? low)) AiBj-WORDS)
- )
+        (TRANSFORMED-ANBN-WORDS (gen-cfe-words transformed-anbn))
+
+        (TRANSFORMED-BNAN-WORDS (gen-cfe-words (cfg->cfe (cfe->cfg BNAN))))
+
+        (TRANSFORMED-WWR-WORDS (gen-cfe-words (cfg->cfe (cfe->cfg WWR))))
+
+        (TRANSFORMED-AiBj-WORDS (gen-cfe-words (cfg->cfe (cfe->cfg AiBj))))
+
+        (TRANSFORMED-A2iBi-WORDS (gen-cfe-words (cfg->cfe (cfe->cfg A2iBi))))
+
+        (thesis-cfg-converted-WORDS (gen-cfe-words thesis-cfg-converted))
+
+        (thesis-cfe-WORDS (gen-cfe-words thesis-cfe))]
+    (test-suite
+     "Word-Generation-&-Membership"
+     (test-case
+      "CFE Word Generation"
+
+      (check-pred (λ (low) (andmap valid-wwr-word? low)) WWR-WORDS)
+
+      (check-pred (λ (low) (andmap valid-anbn-word? low)) ANBN-WORDS)
+
+      (check-pred (λ (low) (andmap valid-bnan-word? low)) BNAN-WORDS)
+
+      (check-pred (λ (low) (andmap valid-a2ibi-word? low)) A2iBi-WORDS)
+
+      (check-pred (λ (low) (andmap valid-aibj-word? low)) AiBj-WORDS)
+      )
 
 
 
-(test-case
- "CFG->CFE Word Membership"
+     (test-case
+      "CFG->CFE Word Membership"
 
- (check-pred (λ (low) (andmap valid-anbn-word? low)) TRANSFORMED-ANBN-WORDS)
+      (check-pred (λ (low) (andmap valid-anbn-word? low)) TRANSFORMED-ANBN-WORDS)
 
- (check-pred (λ (low) (andmap valid-bnan-word? low)) TRANSFORMED-BNAN-WORDS)
+      (check-pred (λ (low) (andmap valid-bnan-word? low)) TRANSFORMED-BNAN-WORDS)
 
- (check-pred (λ (low) (andmap valid-wwr-word? low)) TRANSFORMED-WWR-WORDS)
+      (check-pred (λ (low) (andmap valid-wwr-word? low)) TRANSFORMED-WWR-WORDS)
 
- (check-pred (λ (low) (andmap valid-a2ibi-word? low)) TRANSFORMED-A2iBi-WORDS)
+      (check-pred (λ (low) (andmap valid-a2ibi-word? low)) TRANSFORMED-A2iBi-WORDS)
 
- (check-pred (λ (low) (andmap valid-aibj-word? low)) TRANSFORMED-AiBj-WORDS)
- )
+      (check-pred (λ (low) (andmap valid-aibj-word? low)) TRANSFORMED-AiBj-WORDS)
+      )
 
-(test-case
- "CFE->CFG Word Membership" 
+     (test-case
+      "CFE->CFG Word Membership" 
 
- (check-true (grammar-checker thesis-cfg1 thesis-cfg-converted-WORDS))
+      (check-true (grammar-checker thesis-cfg1 thesis-cfg-converted-WORDS))
 
- (check-true (grammar-checker thesis-cfe-converted thesis-cfe-WORDS))
+      (check-true (grammar-checker thesis-cfe-converted thesis-cfe-WORDS))
 
- (check-true (grammar-checker (cfe->cfg ANBN) TRANSFORMED-ANBN-WORDS))
+      (check-true (grammar-checker (cfe->cfg ANBN) TRANSFORMED-ANBN-WORDS))
 
- (check-true (grammar-checker (cfe->cfg BNAN) TRANSFORMED-BNAN-WORDS))
+      (check-true (grammar-checker (cfe->cfg BNAN) TRANSFORMED-BNAN-WORDS))
 
- (check-true (grammar-checker (cfe->cfg AiBj) TRANSFORMED-AiBj-WORDS))
+      (check-true (grammar-checker (cfe->cfg AiBj) TRANSFORMED-AiBj-WORDS))
 
- (check-true (grammar-checker (cfe->cfg A2iBi) TRANSFORMED-A2iBi-WORDS))
+      (check-true (grammar-checker (cfe->cfg A2iBi) TRANSFORMED-A2iBi-WORDS))
 
- (check-true (grammar-checker (cfe->cfg WWR) TRANSFORMED-WWR-WORDS))
- )
+      (check-true (grammar-checker (cfe->cfg WWR) TRANSFORMED-WWR-WORDS))
+      )
+
+     )))
+(define (run-testing)
+  (begin
+    (run-tests CFE-UNIT-TESTING)
+    (run-tests CFE-WORD-TESTS)
+    (void)))

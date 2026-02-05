@@ -2,7 +2,6 @@
 
 (require racket/contract
          racket/list
-         "../../../fsm-core/private/macros/validation/validation-predicates.rkt"
          "../../../fsm-core/private/macros/shared/shared-predicates.rkt"
          "../../../fsm-core/private/macros/error-formatting.rkt"
          "../../../fsm-core/private/sm-getters.rkt"

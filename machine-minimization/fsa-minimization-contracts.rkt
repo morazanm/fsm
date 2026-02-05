@@ -17,14 +17,15 @@
    #:first-order procedure?
    #:projection (λ (blame)
                   (λ (val)
-                    (or (or (dfa? val)
-                            (ndfa? val))
-                        (λ ()
+                    (or (and (procedure? val)
+                             (or (dfa? val)
+                                 (ndfa? val)))
+                        ((λ ()
                           (current-blame-format format-error)
                           (raise-blame-error
                            blame
                            val
-                           (format "~a expects as input a dfa or ndfa, given" func-name))))))))
+                           (format "~a expects as input a dfa or ndfa, given" func-name)))))))))
 
 ;;Purpose: A contract to check that minimize-dfa only works on ndfas and dfas
 (define minimization/c (-> (valid-minimization-input "minimize-dfa") dfa?))
