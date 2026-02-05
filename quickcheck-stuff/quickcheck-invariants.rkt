@@ -12,7 +12,7 @@
 (define MAX-KLEENE-LENGTH 20)
 (define NUM-QC-TESTS 300)
 
-;; regexp -> generator throw error
+;; regexp number -> generator throw error
 ;; Purpose: To translate the given regexp into a generator, that generates
 ;;          words that are in the language in the regular expression
 (define (regexp->generator regexp num-kleenes)
@@ -33,7 +33,7 @@
         [(empty-regexp? regexp)
          (gen:const '())]))
 
-;; state regexp invariant natnum -> void throw error
+;; state generator invariant natnum -> void throw error
 ;; Purpose: To test if a word generated from the given regexp holds for the invariant of the state
 (define (testing-function state generator inv tests)
   (check-property
