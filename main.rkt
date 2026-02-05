@@ -25,7 +25,7 @@
    empties
 
    ; cfexp
-   construct-cfe cfg->cfe cfe->cfg pda->cfe cfe->pda printable-cfexp
+   make-cfe cfg->cfe cfe->cfg pda->cfe cfe->pda #;printable-cfexp
 
    ; sm constructors
    sm-test-invs
@@ -111,6 +111,7 @@
    ; constants
    EMP DEAD RIGHT LEFT LM BLANK BRANCH GOTO ARROW VAR
 
+   ;;sm-viz
    sm-viz)
 
 

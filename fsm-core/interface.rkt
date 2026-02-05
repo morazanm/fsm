@@ -141,6 +141,7 @@
  ;; Grammar visualizations
  grammar-viz
 
+ ;;sm-viz
  sm-viz
  )
 ; Primitive constructors imported from other modules
