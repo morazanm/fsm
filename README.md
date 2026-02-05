@@ -25,16 +25,6 @@ If you wish to contribute to `fsm` please read the [contribution docs](fsm-docs/
 - [Visualizing a Nondeterministic to Deterministic Finite-State Machine Transformation](https://arxiv.org/abs/2310.08248)
 - [Visualizing Why Nondeterministic Finite-State Automata Reject](https://arxiv.org/abs/2310.08025)
 - [Composing Turing Machines in FSM](https://dl.acm.org/doi/10.1145/3622780.3623647)
-- [Using Computation Graphs to Explain Nondeterminism to Students](https://dl.acm.org/doi/10.1145/3689493.3689978)
-- [The Implementation of FSM Computation Graphs](https://dl.acm.org/doi/10.1145/3723325.3723337)
-- [On the Implementation of Dynamic Visualizations](https://dl.acm.org/doi/10.1145/3723325.3723340)
-- [Grammar Derivation Visualization in Automata Theory](https://dl.acm.org/doi/10.1145/3689491.3689977)
-- [Visualizing Construction Algorithms for Closure Properties of Regular Languages](https://dl.acm.org/doi/10.1145/3724363.3729120)
-- [Visualizing Composed Turing Machines](https://dl.acm.org/doi/10.1145/3689493.3689979)
-- [Error Messages for Students Taught Using a Systematic Program Design Curriculum](https://link.springer.com/chapter/10.1007/978-3-031-74558-4_9)
-- [A Design Recipe and Recipe-Based Errors for Regular Expressions](https://arxiv.org/abs/2508.03639)
-- [Design Support for Multitape Turing Machines](https://arxiv.org/abs/2508.03638)
-- [Visual Execution and Validation of Finite-State Machines and Pushdown Automata](https://arxiv.org/abs/2508.03641)
 
 ## Getting Started
 Once fsm is installed you use one of the following two options
@@ -139,7 +129,7 @@ To visualize a dfa or ndfa create a new file and require fsm. Then provide one o
 
 ## Current Maintainers
 - [Marco T. Morazán](https://github.com/morazanm)
-- [Andrés M. Garced](https://github.com/aquagarced)
+- [Andrés M. Garced](https://github.com/sora-g22)
 - [David Anthony K. Fields](https://github.com/David-Fields27)
 - [Sophia G. Turano](https://github.com/sophiaturano)
 ## Contributors 

@@ -8,6 +8,7 @@
          "../../visualizations/viz-lib/viz-constants.rkt"
          "../../visualizations/viz-lib/viz-imgs/keyboard_bitmaps.rkt"
          "../viz-lib/bounding-limits-macro.rkt"
+         "../../visualizations/viz-lib/viz-imgs/cursor.rkt"
          "../../visualizations/viz-lib/bounding-limits.rkt"
          "../../visualizations/viz-lib/default-viz-function-generators.rkt"
          "../../visualizations/viz-lib/viz-macros.rkt"
@@ -534,11 +535,8 @@
          (tapes (imsg-struct (list->zipper (drop-right (create-tape tmconfigs) 1)) (list->zipper (drop-right varimgs 1))))
          (lovars (extract-labels comp-edges))]
     (run-viz lographs
-             (list->vector (map (lambda (x) (lambda (y) y)) lographs))
-             #;(lambda () (graph->bitmap (first lographs)))
-              E-SCENE-WIDTH E-SCENE-HEIGHT PERCENT-BORDER-GAP
+             (lambda () (graph->bitmap (first lographs)))
              MIDDLE-E-SCENE
-             E-SCENE-WIDTH E-SCENE-HEIGHT PERCENT-BORDER-GAP
              DEFAULT-ZOOM
              DEFAULT-ZOOM-CAP
              DEFAULT-ZOOM-FLOOR
@@ -567,16 +565,16 @@
                                       CLICK-BUFFER-SECONDS
                                       ()
                                       ([ARROW-UP-KEY-DIMS viz-go-to-begin up-key-pressed]
-                                       [ARROW-DOWN-KEY-DIMS viz-go-to-end down-key-pressed]
-                                       [ARROW-LEFT-KEY-DIMS viz-go-prev left-key-pressed]
-                                       [ARROW-RIGHT-KEY-DIMS viz-go-next right-key-pressed]
-                                       [W-KEY-DIMS viz-zoom-in identity]
-                                       [S-KEY-DIMS viz-zoom-out identity]
-                                       [R-KEY-DIMS viz-max-zoom-out identity]
-                                       [E-KEY-DIMS viz-reset-zoom identity]
-                                       [F-KEY-DIMS viz-max-zoom-in identity]
-                                       [A-KEY-DIMS identity a-key-pressed]
-                                       [D-KEY-DIMS identity d-key-pressed]))
+                                        [ARROW-DOWN-KEY-DIMS viz-go-to-end down-key-pressed]
+                                        [ARROW-LEFT-KEY-DIMS viz-go-prev left-key-pressed]
+                                        [ARROW-RIGHT-KEY-DIMS viz-go-next right-key-pressed]
+                                        [W-KEY-DIMS viz-zoom-in identity]
+                                        [S-KEY-DIMS viz-zoom-out identity]
+                                        [R-KEY-DIMS viz-max-zoom-out identity]
+                                        [E-KEY-DIMS viz-reset-zoom identity]
+                                        [F-KEY-DIMS viz-max-zoom-in identity]
+                                        [A-KEY-DIMS identity a-key-pressed]
+                                        [D-KEY-DIMS identity d-key-pressed]))
              'ctm-viz)))
 
 

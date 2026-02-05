@@ -18,7 +18,6 @@
 ;; instructions-graphic - a struct that contains all the state and functions necessary to render the instructions graphic
 (struct viz-state (imgs ;curr-image
                    prev-image curr-image next-image begin-image end-image
-                   scaled-curr-image
                    image-posn
                         ;; physical-screen-width physical-screen-height
                         ;; scale to screen size and finally stop having windows being too big or small?
