@@ -13,7 +13,6 @@
          "../viz-lib/bounding-limits-macro.rkt"
          "../viz-lib/viz.rkt"
          "../viz-lib/bounding-limits.rkt"
-         "../viz-lib/viz-imgs/cursor.rkt"
          "../viz-lib/zipper.rkt"
          "../../sm-graph.rkt"
          racket/list
@@ -306,10 +305,13 @@
 ;; fsa -> void
 (define (complement-viz M)
   (if (eq? (sm-type M) 'dfa)
-      (run-viz
-       (map graph-struct-grph (list (make-init-grph-structure M) (create-graph-structure M)))
-       (lambda () (graph->bitmap (graph-struct-grph (make-init-grph-structure M))))
+      (let ([graphs (map graph-struct-grph (list (make-init-grph-structure M) (create-graph-structure M)))])
+       (run-viz
+       graphs
+       (list->vector (map (lambda (x) (lambda (y) y)) graphs))
+       #;(lambda () (graph->bitmap (graph-struct-grph (make-init-grph-structure M))))
        MIDDLE-E-SCENE
+       E-SCENE-WIDTH E-SCENE-HEIGHT PERCENT-BORDER-GAP
        DEFAULT-ZOOM
        DEFAULT-ZOOM-CAP
        DEFAULT-ZOOM-FLOOR
@@ -349,15 +351,18 @@
                                   [R-KEY-DIMS viz-max-zoom-out identity]
                                   [E-KEY-DIMS viz-reset-zoom identity]
                                   [F-KEY-DIMS viz-max-zoom-in identity]))
-       'complement-viz)
+       'complement-viz))
 
-      (let ([machine (ndfa->dfa M)])
+      (let* ([machine (ndfa->dfa M)]
+             [graphs (list (graph-struct-grph (make-init-grph-structure M))
+                           (fsa->graph machine 0)
+                           (graph-struct-grph (create-graph-structure machine)))])
         (run-viz
-         (list (graph-struct-grph (make-init-grph-structure M))
-               (fsa->graph machine 0)
-               (graph-struct-grph (create-graph-structure machine)))
-         (lambda () (graph->bitmap (graph-struct-grph (make-init-grph-structure M))))
+         graphs
+         (list->vector (map (lambda (x) (lambda (y) y)) graphs))
+         #;(lambda () (graph->bitmap (graph-struct-grph (make-init-grph-structure M))))
          MIDDLE-E-SCENE
+         E-SCENE-WIDTH E-SCENE-HEIGHT PERCENT-BORDER-GAP
          DEFAULT-ZOOM
          DEFAULT-ZOOM-CAP
          DEFAULT-ZOOM-FLOOR

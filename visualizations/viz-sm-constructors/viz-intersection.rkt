@@ -15,7 +15,6 @@
          "../viz-lib/default-viz-function-generators.rkt"
          "../viz-lib/viz.rkt"
          "../viz-lib/bounding-limits.rkt"
-         "../viz-lib/viz-imgs/cursor.rkt"
          "../viz-lib/zipper.rkt"
          racket/list
          racket/function)
@@ -452,16 +451,22 @@
 ;; intersection-viz
 ;; fsa fsa -> void
 (define (intersection-viz M N)
-  (let ([renamed-machine (if (ormap (λ (x) (member x (sm-states M))) (sm-states N))
+  (let* ([renamed-machine (if (ormap (λ (x) (member x (sm-states M))) (sm-states N))
                              (rename-states-fsa (sm-states M) N)
-                             N)])
+                             N)]
+         [graphs (map graph-struct-grph
+                      (cons (make-init-grph-structure M N) (create-graph-structures M renamed-machine)))]
+        )
     (run-viz
-     (map graph-struct-grph
-          (cons (make-init-grph-structure M N) (create-graph-structures M renamed-machine)))
-     (lambda ()
+     graphs
+     (list->vector (map (lambda (x) (if (list? x)
+                                        (lambda (y z) (above y z))
+                                        (lambda (y) y))) graphs))
+     #;(lambda ()
        (apply above
               (map graph->bitmap (graph-struct-grph (make-init-grph-structure M renamed-machine)))))
      MIDDLE-E-SCENE
+     E-SCENE-WIDTH E-SCENE-HEIGHT PERCENT-BORDER-GAP
      DEFAULT-ZOOM
      DEFAULT-ZOOM-CAP
      DEFAULT-ZOOM-FLOOR
