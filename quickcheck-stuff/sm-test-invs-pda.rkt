@@ -1,7 +1,6 @@
 #lang racket/base
-
-;(provide sm-all-possible-words sm-test-invs-pda)
-(provide (all-defined-out))
+(provide sm-test-invs-pda)
+;(provide (all-defined-out))
 (require racket/list
          rackunit
          racket/set
@@ -374,7 +373,7 @@
 
 ;; pda (listof (list state (word -> boolean))) -> (listof (word stack state))
 ;; Purpose: To return a list of the invarients that don't hold and the words that cause it not to hold
-(define (sm-test-invs-pda a-machine #:max-path-length [max-path-length 12] . a-loi)
+(define (sm-test-invs-pda a-machine max-path-length a-loi)
   ;; the given machine without the states and rules of states that cannot reach a final state
   (define new-machine (remove-states-that-cannot-reach-finals a-machine #:max-length max-path-length))
   ;; list of invariants that are reachable from the starting configuration

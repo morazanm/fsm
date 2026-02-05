@@ -42,7 +42,7 @@
 
 ;; machine (listof (state invariant)) [natnum] -> void throws error 
 ;; Purpose: To quickcheck the invariants of the states of the given machine
-(define (fsa-quickcheck-invs machine state-invs-pairs #:num-tests [tests NUM-QC-TESTS] #:max-length-kleenes [num-kleenes MAX-KLEENE-LENGTH])
+(define (fsa-quickcheck-invs machine state-invs-pairs tests num-kleenes)
   (define state-regexp-pairs (get-all-regexp machine))
   (define non-dead-state-inv-pairs
     (filter (λ (state-inv-pair)

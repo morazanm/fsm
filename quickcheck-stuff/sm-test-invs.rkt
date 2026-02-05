@@ -1,6 +1,6 @@
 #lang racket/base
 
-(provide sm-all-possible-words sm-test-invs find-paths remove-states-that-cannot-reach-finals)
+(provide sm-all-possible-words sm-test-invs-fsa find-paths remove-states-that-cannot-reach-finals)
 (require "../fsm-core/private/sm-getters.rkt"
          "../fsm-core/private/fsa.rkt"
          "../sm-graph.rkt"
@@ -212,12 +212,12 @@
 
 ;; machine . (list state (word -> boolean)) -> (listof (listof symbol))
 ;; Purpose: To return a list of the invarients that don't hold and the words that cause it not to hold
-(define (sm-test-invs a-machine #:rep-limit [rep-limit 1] . a-loi)
+(define (sm-test-invs-fsa a-machine rep-limit a-loi)
   (define a-loi-hash (for/hash ([inv (in-list a-loi)])
                        (values (car inv) (cadr inv))))
 
-  #;(define machine-paths (find-paths a-machine rep-limit))
-  (define machine-paths (find-paths a-machine REPETITION-LIMIT)) 
+  (define machine-paths (find-paths a-machine rep-limit))
+  #;(define machine-paths (find-paths a-machine REPETITION-LIMIT)) 
 
   
   (define paths-to-finals (get-paths-to-finals machine-paths (sm-finals a-machine)))
