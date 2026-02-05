@@ -1,7 +1,7 @@
 #lang racket/base
 (require rackcheck
          racket/list
-         "../main.rkt")
+         "../../../main.rkt")
 
 (define (gen:kleene-star-regexp gen)
   (gen:list gen))
@@ -28,3 +28,4 @@
         [(kleenestar-regexp? fsm-regexp)
          (gen:kleene-star-regexp (gen:fsm-regexp (kleenestar-regexp-r1 fsm-regexp)))]
         [else (error "how did you get here")]))
+
