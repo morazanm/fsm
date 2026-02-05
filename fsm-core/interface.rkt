@@ -143,6 +143,9 @@
 
  ;;sm-viz
  sm-viz
+
+ ;;fsa minimization
+ ;fsa-minimize minimization-viz
  )
 ; Primitive constructors imported from other modules
 

@@ -15,7 +15,8 @@
          racket/hash
          racket/set)
 
-(provide null-cfexp
+(provide cfexp?
+         null-cfexp
          null-cfexp?
          empty-cfexp
          empty-cfexp?
@@ -35,7 +36,7 @@
          ;printable-cfexp
          )
 
-(define MAX-KLEENESTAR-LIMIT 10)
+(define MAX-KLEENESTAR-LIMIT 20)
 
 (define EMPTY-CHANCE .25)
 
@@ -68,7 +69,7 @@
 (define (empty-cfexp? x)
   (mk-empty-cfexp? x))
 
-;; symbol -> singleton-cfexp
+;; string -> singleton-cfexp
 ;;Purpose: A wrapper to create a singleton-cfexp
 (define/contract (singleton-cfexp a-char)
   singleton-cfexp/c 
