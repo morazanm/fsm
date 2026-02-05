@@ -2,12 +2,11 @@
 
 (require "../csg.rkt"
          "../cfg-struct.rkt"
-         "../regular-grammar.rkt"
-         "../regexp.rkt")
+         "../regular-grammar.rkt")
 
-(provide parse-fsm-val-type)
+(provide (all-defined-out))
 
-(define (parse-fsm-val-type unknown-val)
+(define (whatami? unknown-val)
   ;; Any -> Boolean
   ;; Purpose: Checks is g is a grammar
   (define (is-grammar? g)
@@ -15,6 +14,7 @@
         (cfg? g)
         (csg? g)))
 
+  
   ;; Any -> Boolean
   ;; Purpose: Checks if m is a turing machine
   (define (is-turing-machine? m)
@@ -37,8 +37,6 @@
   (cond [(is-turing-machine? unknown-val) 'turing-machine]
         [(is-machine? unknown-val) 'machine]
         [(is-grammar? unknown-val) 'grammar]
-        [(regexp? unknown-val) 'regexp]
-        [(procedure? unknown-val) 'inv]
         [else (if (equal? unknown-val 'Aqua)
                   (begin (displayln "Garced was here")
                          'notanfsmval)
