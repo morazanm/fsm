@@ -2,7 +2,6 @@
 
 ;(provide sm-all-possible-words sm-test-invs-pda)
 (provide (all-defined-out))
-
 (require racket/list
          rackunit
          racket/set

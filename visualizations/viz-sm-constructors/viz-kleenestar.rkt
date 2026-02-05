@@ -386,12 +386,9 @@
 ;;kleenestar-viz
 ;; fsa -> void
 (define (kleenestar-viz M)
-  (define graphs (list (create-init-graph-struct M) (create-graph-struct M)))
-  (run-viz graphs
-           (list->vector (map (lambda (x) (lambda (y) y)) graphs))
-           #;(lambda () (graph->bitmap (create-init-graph-struct M)))
+  (run-viz (list (create-init-graph-struct M) (create-graph-struct M))
+           (lambda () (graph->bitmap (make-init-grph-structure M)))
            MIDDLE-E-SCENE
-           E-SCENE-WIDTH E-SCENE-HEIGHT PERCENT-BORDER-GAP
            DEFAULT-ZOOM
            DEFAULT-ZOOM-CAP
            DEFAULT-ZOOM-FLOOR

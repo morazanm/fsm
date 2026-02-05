@@ -135,7 +135,7 @@ The following starting state, C, is not in the given list of states: (S)"))
                            (S ,ARROW aSb))
                          'S
                          #:accepts 'abab)
-               (format "Step four of the design recipe has not been successfully completed.
+               (format "Step two of the design recipe has not been successfully completed.
 The expected accepts is not a list of words: abab"))
   ; The input to #:accepts must be a list of words (where a word is a list of symbols)
   (check-error (make-cfg '(S)
@@ -144,7 +144,7 @@ The expected accepts is not a list of words: abab"))
                            (S ,ARROW aSb))
                          'S
                          #:accepts '(1 2 3 4 5))
-               (format "Step four of the design recipe has not been successfully completed.
+               (format "Step two of the design recipe has not been successfully completed.
 The expected accepts is not a list of words: (1 2 3 4 5)"))
   ; Each word in #:accepts must contain only symbols from the grammar alphabet (sigma)
   (check-error (make-cfg '(S)
@@ -153,7 +153,7 @@ The expected accepts is not a list of words: (1 2 3 4 5)"))
                            (S ,ARROW aSb))
                          'S
                          #:accepts '((a b) (c d e f g)))
-               (format "Step four of the design recipe has not been successfully completed.
+               (format "Step two of the design recipe has not been successfully completed.
 The following words in the accepts list contain symbols not included in sigma: ((c d e f g))"))
   ; Words in the #:accepts list that are not in the language of the grammar are returned
   ; in the error message
@@ -164,7 +164,7 @@ The following words in the accepts list contain symbols not included in sigma: (
                          'S
                          #:accepts '((a b) (b)))
                (format "Step six of the design recipe has not been successfully completed.
-The constructed grammar does not derive the following words it should derive: ((b))"))
+The constructed grammar does not accept the following words: ((b))"))
   
   ; The input to #:rejects must be a list
   (check-error (make-cfg '(S)
@@ -173,7 +173,7 @@ The constructed grammar does not derive the following words it should derive: ((
                            (S ,ARROW aSb))
                          'S
                          #:rejects 'abab)
-               (format "Step four of the design recipe has not been successfully completed.
+               (format "Step two of the design recipe has not been successfully completed.
 The expected rejects is not a list of words: abab"))
   ; The input to #:rejects must be a list of words (where a word is a list of symbols)
   (check-error (make-cfg '(S)
@@ -182,7 +182,7 @@ The expected rejects is not a list of words: abab"))
                            (S ,ARROW aSb))
                          'S
                          #:rejects '(1 2 3 4 5))
-               (format "Step four of the design recipe has not been successfully completed.
+               (format "Step two of the design recipe has not been successfully completed.
 The expected rejects is not a list of words: (1 2 3 4 5)"))
   ; Each word in #:rejects must contain only symbols from the grammar alphabet (sigma)
   (check-error (make-cfg '(S)
@@ -191,7 +191,7 @@ The expected rejects is not a list of words: (1 2 3 4 5)"))
                            (S ,ARROW aSb))
                          'S
                          #:rejects '((a b) (c d e f g)))
-               (format "Step four of the design recipe has not been successfully completed.
+               (format "Step two of the design recipe has not been successfully completed.
 The following words in the rejects list contain symbols not included in sigma: ((c d e f g))"))
   ; Words in the #:rejects list that are in the language of the grammar are returned
   ; in the error message
@@ -202,7 +202,7 @@ The following words in the rejects list contain symbols not included in sigma: (
                          'S
                          #:rejects '((a b) (b) (a a b b)))
                (format "Step six of the design recipe has not been successfully completed.
-The constructed grammar derives the following words it should not derive: ((a b) (a a b b))"))
+The constructed grammar does not reject the following words: ((a b) (a a b b))"))
 
   (test)
   )

@@ -25,7 +25,7 @@
          correct-csg-rules/c
          )
 
-(define (design-recipe-message step) (format "Step ~a of the design recipe has not been successfully completed." step))
+(define design-recipe-message "Step four of the design recipe has not been successfully completed.")
 
 (define (listof-rules/c pred)
   (make-flat-contract
@@ -37,7 +37,7 @@
                     (raise-blame-error
                      blame
                      (map (lambda (x) (format "~n~s" x)) (invalid-rules pred rules))
-                     (format "~a\nThe following rules are improperly formatted" (design-recipe-message "four"))
+                     (format "~a\nThe following rules are improperly formatted" design-recipe-message)
                      )
                     )
                   )
@@ -54,8 +54,7 @@
                     (raise-blame-error
                      blame
                      (map (lambda (x) (format "~n~s" x)) (pred2 states sigma rules))
-                     (format "~a\nThe following rules contain symbols not contained in the states/sigma: "
-                             (design-recipe-message "four"))
+                     (format "~a\nThe following rules contain symbols not contained in the states/sigma: " design-recipe-message)
                      )
                     )
                   )
@@ -78,7 +77,7 @@
                         (raise-blame-error
                          blame
                          (list (car (incorrect-dfa-rule-structures rules)))
-                         (format "~a\nThe following rules have structural errors" (design-recipe-message "four"))))
+                         (format "~a\nThe following rules have structural errors" design-recipe-message)))
                     ))))
 
 ;correct-dfa-rules/c: (listof state) (listof alpha) --> contract
@@ -96,7 +95,7 @@
                     (raise-blame-error
                      blame
                      (list (car (incorrect-dfa-rules states sigma rules)))
-                     (format "~a\nThe following rules have errors" (design-recipe-message "four")))))))
+                     (format "~a\nThe following rules have errors" design-recipe-message))))))
 
 ;correct-ndpda-rule-structures/c: contract
 ;predicate: (listof x) -> boolean
@@ -114,7 +113,7 @@
                         (raise-blame-error
                          blame
                          (list (car (incorrect-ndpda-rule-structures rules)))
-                         (format "~a\nThe following rules have structural errors" (design-recipe-message "four"))))
+                         (format "~a\nThe following rules have structural errors" design-recipe-message)))
                     ))))
 
 ;correct-ndpda-rules/c: (listof state) (listof alpha) (listof symbol) --> contract
@@ -134,13 +133,7 @@
                     (raise-blame-error
                      blame
                      (list (car (incorrect-ndpda-rules states sigma gamma rules)))
-                     (format "~a\nThe following rules have errors, which make them invalid"
-                             (design-recipe-message "four"))
-                     )
-                    )
-                  )
-   )
-  )
+                     (format "~a\nThe following rules have errors, which make them invalid" design-recipe-message))))))
 
 ;correct-tm-rule-structures/c: contract
 ;predicate: (listof x) -> boolean
@@ -158,7 +151,7 @@
                         (raise-blame-error
                          blame
                          (list (car (incorrect-tm-rule-structures rules)))
-                         (format "~a\nThe following rules have structural errors" (design-recipe-message "four"))))
+                         (format "~a\nThe following rules have structural errors" design-recipe-message)))
                     ))))
 
 ;correct-tm-rules/c: (listof state) (list of alpha) --> contract
@@ -178,14 +171,7 @@
                     (raise-blame-error
                      blame
                      (list (car (incorrect-tm-rules states sigma rules)))
-                     (format "~a\nThe following rules have errors, which make them invalid"
-                             (design-recipe-message "four")
-                             )
-                     )
-                    )
-                  )
-   )
-  )
+                     (format "~a\nThe following rules have errors, which make them invalid" design-recipe-message))))))
 
 ;correct-tm-rule-structures/c: natnum -> contract
 ;predicate: (listof x) -> boolean
@@ -203,7 +189,7 @@
                         (raise-blame-error
                          blame
                          (list (car (incorrect-mttm-rule-structures rules num-tapes)))
-                         (format "~a\nThe following rules have structural errors" (design-recipe-message "four"))))
+                         (format "~a\nThe following rules have structural errors" design-recipe-message)))
                     ))))
 
 ;correct-mttm-rules/c: (listof state) (listof alpha) --> contract
@@ -223,7 +209,7 @@
                     (raise-blame-error
                      blame
                      (list (car (incorrect-mttm-rules states sigma rules)))
-                     (format "~a\nThe following rules have errors, which make them invalid" (design-recipe-message "four")))))))
+                     (format "~a\nThe following rules have errors, which make them invalid" design-recipe-message))))))
 
 ;functional/c: (listof state) (listof sigma) symbol -> contract
 ;predicate: (listof x) --> boolean
@@ -243,8 +229,7 @@
                     (raise-blame-error
                      blame
                      (map (lambda (x) (format "~n~s" x)) (missing-functional rules states sigma))
-                     (format "~a\nYou must include rules for these state/alphabet letter pairings: "
-                             (design-recipe-message "four"))
+                     (format "~a\nYou must include rules for these state/alphabet letter pairings: " design-recipe-message)
                      )
                     )
                   )
@@ -263,7 +248,7 @@
                     (raise-blame-error
                      blame
                      (map (lambda (x) (format "~n~s" x)) (check-duplicates-dfa vals))
-                     (format "~a\nThe following state/sigma pairs are duplicated in your ~a: " (design-recipe-message "four") type)
+                     (format "~a\nThe following state/sigma pairs are duplicated in your ~a: " design-recipe-message type)
                      )
                     )
                   )
@@ -286,12 +271,13 @@
                         (raise-blame-error
                          blame
                          (incorrect-rhs-rg rules start)
-                         (format "~a\nThe following rules cannot have EMP in their RHS" (design-recipe-message "three"))))
+                         (format "~a\nThe following rules cannot have EMP in their RHS" design-recipe-message)))
                     ))))
   
-;correct-grammar-rule-structures/c: natnum -> contract
+;correct-tm-rule-structures/c: natnum -> contract
 ;predicate: (listof x) -> boolean
-;purpose: Ensures that every element in the list is structured as a valid grammar rule.
+;purpose: Ensures that every element in the list is structured as a valid mttm rule.
+; It checks each rule to see that it is a (list (list state (listof symbol)) (list state (listof tm-action)))
 (define correct-grammar-rule-structures/c
   (make-flat-contract
    #:name 'correct-grammar-rule-structures
@@ -305,7 +291,7 @@
                           (raise-blame-error
                            blame
                            (list (car incorrect-rules))
-                           (format "~a\nThe following rules have structural errors" (design-recipe-message "three"))))
+                           (format "~a\nThe following rules have structural errors" design-recipe-message)))
                       )
                     ))))
 
@@ -324,7 +310,7 @@
                     (raise-blame-error
                      blame
                      (list (car (incorrect-rg-rules states sigma rules)))
-                     (format "~a\nThe following rules have errors, which make them invalid" (design-recipe-message "three")))))))
+                     (format "~a\nThe following rules have errors, which make them invalid" design-recipe-message))))))
 
 ;correct-cfg-rules/c: (listof nonterminals) (listof alpha) --> contract
 ;predicate: (listof x) --> boolean
@@ -341,7 +327,7 @@
                     (raise-blame-error
                      blame
                      (list (car (incorrect-cfg-rules states sigma rules)))
-                     (format "~a\nThe following rules have errors, which make them invalid" (design-recipe-message "three")))))))
+                     (format "~a\nThe following rules have errors, which make them invalid" design-recipe-message))))))
 
 ;correct-cfg-rules/c: (listof nonterminals) (listof alpha) --> contract
 ;predicate: (listof x) --> boolean
@@ -358,4 +344,4 @@
                     (raise-blame-error
                      blame
                      (list (car (incorrect-csg-rules states sigma rules)))
-                     (format "~a\nThe following rules have errors, which make them invalid" (design-recipe-message "three")))))))
+                     (format "~a\nThe following rules have errors, which make them invalid" design-recipe-message))))))

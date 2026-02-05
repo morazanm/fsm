@@ -18,7 +18,7 @@
 
 (define-type Image (U htdp:image (Instance Bitmap%)))
 
-(: affine-transform (->* ((Matrix Float))
+(: affine-transform (->* (#:point (Matrix Float))
                          (#:x-translate Flonum
                           #:y-translate Float
                           #:x-scale Float
@@ -36,7 +36,7 @@
                           #:rotate [rotate 0.0]
                           #:x-shear [x-shear 0.0]
                           #:y-shear [y-shear 0.0]
-                          point)
+                          #:point point)
   (let [(reflection (if reflect
                         -1.0
                         1.0))
@@ -58,8 +58,8 @@
                                        (fl/ fl-image-height 2.0))))]
     (affine-transform #:x-translate (fl* -1.0 transformed-x)
                       #:y-translate (fl* -1.0 transformed-y)
-                      (affine-transform #:x-scale (real->double-flonum scale)
+                      #:point (affine-transform #:x-scale (real->double-flonum scale)
                                                 #:y-scale (real->double-flonum scale)
-                                                (affine-transform #:x-translate transformed-x
+                                                #:point (affine-transform #:x-translate transformed-x
                                                                           #:y-translate transformed-y
-                                                                          (matrix [ [0.0] [0.0] [1.0] ]))))))
+                                                                          #:point (matrix [ [0.0] [0.0] [1.0] ]))))))

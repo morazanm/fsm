@@ -4,10 +4,7 @@
          (for-template racket/base)
          (for-syntax racket/base))
 
-(provide quasiquoted-tm-word
-         quoted-tm-word
-         list-tm-word
-         lst-builders)
+(provide (all-defined-out))
 
 (define-literal-set lst-builders
   #:for-syntax
@@ -24,7 +21,8 @@
   
   (pattern (quote ((~var word0 expr) (~var head-pos0 expr)))
     #:with word (syntax/loc #'word0 (quote word0))
-    #:with head-pos #'head-pos0))
+    #:with head-pos #'head-pos0)
+  )
   
 (define-syntax-class list-tm-word
   #:literal-sets (lst-builders)

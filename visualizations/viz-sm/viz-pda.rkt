@@ -5,6 +5,7 @@
          "../viz-lib/viz.rkt"
          racket/treelist
          "../viz-lib/zipper.rkt"
+         "../viz-lib/tl-zipper.rkt"
          "../viz-lib/bounding-limits.rkt"
          "../viz-lib/viz-state.rkt"
          "../viz-lib/viz-macros.rkt"
@@ -12,17 +13,18 @@
          "../viz-lib/viz-imgs/keyboard_bitmaps.rkt"
          "../../fsm-core/private/constants.rkt"
          "../../fsm-core/private/pda.rkt"
+         "../../fsm-core/private/cfg.rkt"
          "../../fsm-core/private/misc.rkt"
          "default-informative-messages.rkt"
-         "david-viz-constants.rkt"
+         "testing-parameter.rkt"
+         ;profile-flame-graph
          (except-in "../viz-lib/viz-constants.rkt"
                     INS-TOOLS-BUFFER)
          "david-imsg-state.rkt"
-         (except-in "david-imsg-dimensions.rkt"
+         (except-in "david-viz-constants.rkt"
                     FONT-SIZE))
 
 (provide pda-viz)
-
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define FONT-SIZE 18)
@@ -70,8 +72,7 @@ farthest-consumed-input | is the portion the ci that the machine consumed the mo
                             inv
                             dead
                             has-cut-off? 
-                            farthest-consumed-input
-                            pallete))
+                            farthest-consumed-input))
 
 ;;word -> (zipperof ci)
 ;;Purpose: Creates all valid combinations of the upci and pci
@@ -100,9 +101,6 @@ farthest-consumed-input | is the portion the ci that the machine consumed the mo
   (and (eq? (triple-read (rule-triple a-rule)) EMP)
        (eq? (triple-pop  (rule-triple a-rule)) EMP)
        (eq? (pair-push   (rule-pair a-rule))   EMP)))
-
-(define (accepting-configuration? state word stack finals-set)
-  (and (empty? word) (empty? stack) (set-member? finals-set state)))
 
 
 ;;word (listof rule) symbol number -> (list (treelistof computation) hashtable)
@@ -145,8 +143,7 @@ farthest-consumed-input | is the portion the ci that the machine consumed the mo
     (struct-copy computation a-comp
                  [LoC (treelist-add (computation-LoC a-comp) (apply-rule-helper (treelist-last (computation-LoC a-comp))))]
                  [LoR (treelist-add (computation-LoR a-comp) a-rule)]
-                 [visited (set-add (computation-visited a-comp) (treelist-last (computation-LoC a-comp)))]
-                 [length (add1 (computation-length a-comp))]))
+                 [visited (set-add (computation-visited a-comp) (treelist-last (computation-LoC a-comp)))]))
 
   ;;hash-set
   ;;Purpose: accumulates the number of computations in a hashset
@@ -189,28 +186,14 @@ farthest-consumed-input | is the portion the ci that the machine consumed the mo
                  [curr-stack (pda-config-stack curr-config)]
                  ;;state
                  ;;the current state of the current configuration
-                 [curr-state (pda-config-state curr-config)]
-                 ;;boolean
-                 ;;determines if the pda-config is in an accepting ocnfiguration
-                 [accepted? (accepting-configuration? curr-state curr-word curr-stack finals-set)]
-                 ;;boolean
-                 ;;determines if the computation has exceeded the cutoff threshold
-                 [reached-cut-off-threshold? (> (computation-length (qfirst QoC)) max-cmps)])
-            (if (or accepted? reached-cut-off-threshold?)
+                 [curr-state (pda-config-state curr-config)])
+            (if (or (and (empty? curr-word)
+                         (empty? curr-stack)
+                         (set-member? finals-set curr-state))
+                    (> (treelist-length (computation-LoC (qfirst QoC))) max-cmps))
                 (begin
                   (update-hash curr-config curr-word)
-                  (make-computations-helper (dequeue QoC)
-                                            (if accepted?
-                                                (struct-copy paths path
-                                                             [accepting (treelist-add (paths-accepting path) (qfirst QoC))]
-                                                             [cut-off? (cond [(paths-cut-off? path) (paths-cut-off? path)]
-                                                                             [reached-cut-off-threshold? #t]
-                                                                             [else (paths-cut-off? path)])])
-                                                (struct-copy paths path
-                                                             [rejecting (treelist-add (paths-rejecting path) (qfirst QoC))]
-                                                             [cut-off? (cond [(paths-cut-off? path) (paths-cut-off? path)]
-                                                                             [reached-cut-off-threshold? #t]
-                                                                             [else (paths-cut-off? path)])]))))
+                  (make-computations-helper (dequeue QoC) (treelist-add path (qfirst QoC))))
                 (let* (;;(listof rules)
                        ;;Purpose: Filters the rules that match the current state 
                        [curr-rules (treelist-filter (λ (rule) (eq? (triple-source (rule-triple rule))
@@ -250,18 +233,24 @@ farthest-consumed-input | is the portion the ci that the machine consumed the mo
                   (begin
                     (update-hash curr-config curr-word)
                     (if (treelist-empty? new-configs)
-                        (make-computations-helper (dequeue QoC) (struct-copy paths path
-                                                                             [rejecting (treelist-add (paths-rejecting path) (qfirst QoC))]))
+                        (make-computations-helper (dequeue QoC) (treelist-add path (qfirst QoC)))
                         (make-computations-helper (enqueue new-configs (dequeue QoC)) path))))))))
-    (make-computations-helper (enqueue (treelist starting-computation) E-QUEUE) (paths empty-treelist empty-treelist #f #f)))
- 
+    (make-computations-helper (enqueue (treelist starting-computation) E-QUEUE) empty-treelist))
+
   (let (;;computation
         ;;Purpose: The starting computation
         [starting-computation (computation (treelist (pda-config start a-word '() 0))
                                            empty-treelist
-                                           (set)
-                                           1)])
-    (make-computations starting-computation)))  
+                                           (set))])
+    (make-computations starting-computation)))
+
+;;(X -> Y) (X -> Y) (X -> Y) (X -> Y) (listof (listof X)) -> (listof (listof X))
+;;Purpose: filtermaps the given f-on-x on the given (listof (listof X))
+(define (filter-map-acc filter-func map-func bool-func accessor a-lolox)
+  (filter-map (λ (x)
+                (and (bool-func (filter-func x))
+                     (map-func (accessor x))))
+              a-lolox))
 
 ;;(listof rules) -> (treelistof rule-struct)
 ;;Purpose: Converts the (listof rules) into a (treelistof rule-struct)
@@ -277,42 +266,39 @@ farthest-consumed-input | is the portion the ci that the machine consumed the mo
 
 ;;graph machine -> graph
 ;;Purpose: Creates the nodes for the given graph
-(define (make-node-graph dgraph M dead held-inv fail-inv cut-off color-scheme)
+(define (make-node-graph dgraph M dead held-inv fail-inv cut-off)
   (foldl (λ (state graph)
            (let ([member-of-held-inv? (member? state held-inv eq?)]
                  [member-of-fail-inv? (member? state fail-inv eq?)]
-                 [member-of-cut-off?  (member? state cut-off eq?)]
-                 [graph-attributes (graph-attributes-node-attributes default-graph-attributes)])
+                 [member-of-cut-off?  (member? state cut-off eq?)])
              (add-node graph
                        state
-                       #:atb (hash 'color (if (eq? (pda-start M) state)
-                                              (color-palette-start-state-color color-scheme)
-                                              (color-palette-font-color color-scheme))
-                                   'style (cond [(and member-of-held-inv? member-of-fail-inv?)
-                                                 (node-data-bi-inv-node graph-attributes)]
-                                                [(or member-of-held-inv? member-of-fail-inv? member-of-cut-off?)
-                                                 (node-data-inv-node graph-attributes)]
-                                                [(eq? state dead) (node-data-dead-node graph-attributes)]
-                                                [else (node-data-regular-node graph-attributes)])
-                                   'shape (if (member? state (pda-finals M) eq?)
-                                              (node-data-final-state graph-attributes)
-                                              (node-data-regular-state graph-attributes))
-                                   'fillcolor (cond [member-of-cut-off? (color-palette-cut-off-color color-scheme)]
-                                                    [(and member-of-held-inv? member-of-fail-inv?) (color-palette-split-inv-color color-scheme)]
-                                                    [member-of-held-inv? (color-palette-inv-hold-color color-scheme)]
-                                                    [member-of-fail-inv? (color-palette-inv-fail-color color-scheme)]
-                                                    [else (color-palette-blank-color color-scheme)])
+                       #:atb (hash 'color (if (eq? (pda-start M) state) 'green 'black)
+                                   'style (cond [(and member-of-held-inv? member-of-fail-inv?) 'wedged]
+                                                [(or member-of-held-inv?
+                                                     member-of-fail-inv?
+                                                     member-of-cut-off?) 'filled]
+                                                [(eq? state dead) 'dashed]
+                                                [else 'solid])
+                                   'shape (if (member? state (pda-finals M) eq?) 'doublecircle 'circle)
+                                   'fillcolor (cond [member-of-cut-off? GRAPHVIZ-CUTOFF-GOLD]
+                                                    [(and member-of-held-inv? member-of-fail-inv?)
+                                                     "red:chartreuse4"]
+                                                    [member-of-held-inv? HELD-INV-COLOR]
+                                                    [member-of-fail-inv? BRKN-INV-COLOR]
+                                                    [else 'white])
                                    'label state
-                                   'fontcolor (color-palette-font-color color-scheme)
+                                   'fontcolor 'black
                                    'fontname (if (and member-of-held-inv? member-of-fail-inv?)
-                                                 (node-data-bi-inv-font graph-attributes)
-                                                 (node-data-regular-font graph-attributes))))))
+                                                 "times-bold"
+                                                 "Times-Roman")))))
          dgraph
          (pda-states M)))
 
 ;;graph machine -> graph
 ;;Purpose: Creates the edges for the given graph
-(define (make-edge-graph dgraph rules current-tracked-rules current-accept-rules current-reject-rules accepted? dead color-scheme) 
+(define (make-edge-graph dgraph rules current-shown-accept-rules current-accept-rules current-reject-rules dead)
+
   ;;rule symbol (listof rules) -> boolean
   ;;Purpose: Determines if the given rule is a member of the given (listof rules)
   ;;         or similiar to one of the rules in the given (listof rules) 
@@ -325,35 +311,21 @@ farthest-consumed-input | is the portion the ci that the machine consumed the mo
                         (eq? (triple-pop rule) dead)))))))
 
   (foldl (λ (rule graph)
-           (let ([found-tracked-rule? (find-rule? rule dead current-tracked-rules)]
-                 [found-accept-rule? (find-rule? rule dead current-accept-rules)]
-                 [found-reject-rule? (find-rule? rule dead current-reject-rules)]
-                 [graph-attributes (graph-attributes-edge-attributes default-graph-attributes)])             
+           (let ([member-of-current-accept-rules? (member? rule current-accept-rules equal?)])
              (add-edge graph
                        (triple-read rule)
                        (triple-source rule)
                        (triple-pop rule)
-                       #:atb (hash 'color
-                                   (cond [(and found-tracked-rule? found-accept-rule?)
-                                          (color-palette-split-accept-color color-scheme)] ;;<--- watch out if coloring issue
-                                         [(and found-tracked-rule? found-reject-rule? (not accepted?))
-                                          (color-palette-split-reject-color color-scheme)] ;;<-- may cause issue
-                                         [(and found-tracked-rule? found-reject-rule? accepted?)
-                                          (color-palette-split-accept-reject-color color-scheme)] ;;<-- may cause issue
-                                         [(and found-tracked-rule? found-accept-rule? found-reject-rule? accepted?)
-                                          (color-palette-bi-accept-reject-color color-scheme)]
-                                         [(and accepted? found-tracked-rule?) (color-palette-shown-accept-color color-scheme)] 
-                                         [found-tracked-rule?  (color-palette-shown-reject-color color-scheme)]
-                                         [found-accept-rule?   (color-palette-other-accept-color color-scheme)]
-                                         [found-reject-rule?   (color-palette-other-reject-color color-scheme)]
-                                         [else (color-palette-font-color color-scheme)])
-                                   'style (cond [found-tracked-rule? #;(and found-tracked-rule? accepted?)
-                                                 (edge-data-accept-edge graph-attributes)]
-                                                [(or #;found-tracked-rule? found-accept-rule? found-reject-rule?)
-                                                 (edge-data-reject-edge graph-attributes)]
-                                                [(eq? (triple-pop rule) dead)
-                                                 (edge-data-dead-edge graph-attributes)]
-                                                [else (edge-data-regular-edge graph-attributes)])
+                       #:atb (hash 'color (cond [(and (member? rule current-shown-accept-rules equal?)
+                                                      member-of-current-accept-rules?)
+                                                 SPLIT-ACCEPT-COLOR]
+                                                [(find-rule? rule dead current-shown-accept-rules) TRACKED-ACCEPT-COLOR]
+                                                [(find-rule? rule dead current-accept-rules)       ALL-ACCEPT-COLOR]
+                                                [(find-rule? rule dead current-reject-rules)       REJECT-COLOR]
+                                                [else 'black])
+                                   'style (cond [(eq? (triple-pop rule) dead) 'dashed]
+                                                [member-of-current-accept-rules? 'bold]
+                                                [else 'solid])
                                    'fontsize FONT-SIZE))))
          dgraph
          rules))
@@ -463,7 +435,7 @@ farthest-consumed-input | is the portion the ci that the machine consumed the mo
 
          ;;(listof symbols)
          ;;Purpose: Returns all states whose invariants holds
-         [held-invs (get-invariants get-invs identity)])
+         [held-invs (get-invariants get-invs id)])
     (make-edge-graph
      (make-node-graph
       (create-graph 'pdagraph #:atb (hash 'rankdir "LR"))
@@ -471,15 +443,12 @@ farthest-consumed-input | is the portion the ci that the machine consumed the mo
       (building-viz-state-dead a-vs)
       held-invs
       brkn-invs
-      cut-off-states
-      (building-viz-state-pallete a-vs))
+      cut-off-states)
      all-rules
      current-shown-accept-rules
      current-accept-rules
      current-reject-rules
-     (not (empty? (building-viz-state-acc-comp a-vs)))
-     (building-viz-state-dead a-vs)
-     (building-viz-state-pallete a-vs))))
+     (building-viz-state-dead a-vs))))
 
 ;;viz-state -> (listof graph-thunks)
 ;;Purpose: Creates all the graphs needed for the visualization
@@ -519,7 +488,8 @@ farthest-consumed-input | is the portion the ci that the machine consumed the mo
                                                                         #:do [(define rest-of-computation (rest computation))]
                                                                         #:unless (empty? rest-of-computation))
                                                                rest-of-computation)]
-                                               [tracked-accept-trace (get-next-traces (building-viz-state-tracked-accept-trace a-vs))]
+                                               [tracked-accept-trace
+                                                (get-next-traces (building-viz-state-tracked-accept-trace a-vs))]
                                                [accept-traces (get-next-traces (building-viz-state-accept-traces a-vs))]
                                                [reject-traces (get-next-traces (building-viz-state-reject-traces a-vs))])
                                               (cons next-graph acc)))]))
@@ -534,7 +504,8 @@ farthest-consumed-input | is the portion the ci that the machine consumed the mo
                                                                                       (viz-state-informative-messages a-vs)))]
          [imsg-state-shown-accepting-trace (imsg-state-pda-shown-accepting-trace (informative-messages-component-state
                                                                                   (viz-state-informative-messages a-vs)))]
-         [shown-accepting-trace (if (zipper-at-end? imsg-state-shown-accepting-trace)
+         [shown-accepting-trace (if (or (zipper-empty? imsg-state-shown-accepting-trace)
+                                        (zipper-at-end? imsg-state-shown-accepting-trace))
                                     imsg-state-shown-accepting-trace
                                     (zipper-next imsg-state-shown-accepting-trace))]
          [imsg-state-stack (imsg-state-pda-stack (informative-messages-component-state (viz-state-informative-messages a-vs)))]
@@ -543,7 +514,6 @@ farthest-consumed-input | is the portion the ci that the machine consumed the mo
                         shown-accepting-trace
                         (first (trace-rules (zipper-current shown-accepting-trace))))]
          [rule (if (zipper-empty? imsg-state-shown-accepting-trace) DUMMY-RULE next-rule)])
-    
     (struct-copy
      viz-state
      a-vs
@@ -554,23 +524,23 @@ farthest-consumed-input | is the portion the ci that the machine consumed the mo
        [component-state
         (struct-copy imsg-state-pda
                      (informative-messages-component-state (viz-state-informative-messages a-vs))
-                     [ci (cond [(or (zipper-at-end? imsg-state-ci)
-                                    (equal? (ci-upci (zipper-current imsg-state-ci))
-                                            (pda-config-word imsg-state-farthest-consumed-input)))
-                                imsg-state-ci]
-                               [(eq? (pda-config-state imsg-state-farthest-consumed-input) 'none-consumed) (zipper-next imsg-state-ci)]
-                               [(and (eq? (triple-read (rule-triple rule)) EMP)
-                                         (not (zipper-at-end? imsg-state-shown-accepting-trace))
-                                         (or (equal? DUMMY-RULE rule)
-                                             (not (empty-rule? rule))))
-                                imsg-state-ci]
-                             [else (zipper-next imsg-state-ci)])]
+                     [ci (if (or (zipper-at-end? imsg-state-ci)
+                                 (equal? (ci-upci (zipper-current imsg-state-ci)) (pda-config-word imsg-state-farthest-consumed-input))
+                                 (and (eq? (triple-read (rule-triple rule)) EMP)
+                                      (not (zipper-at-end? imsg-state-shown-accepting-trace))
+                                      (or (equal? DUMMY-RULE rule)
+                                          (not (empty-rule? rule)))))
+                             imsg-state-ci
+                             (zipper-next imsg-state-ci))]
                      [shown-accepting-trace shown-accepting-trace]
-                     [stack (if (zipper-at-end? imsg-state-stack) imsg-state-stack (zipper-next imsg-state-stack))]
+                     [stack (if (or (zipper-empty? imsg-state-stack)
+                                    (zipper-at-end? imsg-state-stack))
+                                imsg-state-stack
+                                (zipper-next imsg-state-stack))]
                      [invs-zipper (cond [(zipper-empty? imsg-state-invs-zipper) imsg-state-invs-zipper]
                                         [(and (not (zipper-at-end? imsg-state-invs-zipper))
-                                              (>= (add1 (get-pda-config-index-frm-trace imsg-state-shown-accepting-trace))
-                                                  (pda-config-index (first (zipper-current imsg-state-invs-zipper)))))
+                                              (>= (get-pda-config-index-frm-trace imsg-state-shown-accepting-trace)
+                                                  (pda-config-index (first (first (zipper-unprocessed imsg-state-invs-zipper))))))
                                          (zipper-next imsg-state-invs-zipper)]
                                         [else imsg-state-invs-zipper])])])])))
 
@@ -583,7 +553,7 @@ farthest-consumed-input | is the portion the ci that the machine consumed the mo
         [imsg-state-shown-accepting-trace (imsg-state-pda-shown-accepting-trace (informative-messages-component-state
                                                                                  (viz-state-informative-messages a-vs)))]
         [imsg-state-stack (imsg-state-pda-stack (informative-messages-component-state (viz-state-informative-messages a-vs)))]
-        [imsg-state-invs-zipper (imsg-state-pda-invs-zipper (informative-messages-component-state (viz-state-informative-messages a-vs)))])    
+        [imsg-state-invs-zipper (imsg-state-pda-invs-zipper (informative-messages-component-state (viz-state-informative-messages a-vs)))])
     (struct-copy
      viz-state
      a-vs
@@ -654,8 +624,8 @@ farthest-consumed-input | is the portion the ci that the machine consumed the mo
 
                      [invs-zipper (cond [(zipper-empty? imsg-state-invs-zipper) imsg-state-invs-zipper]
                                         [(and (not (zipper-at-begin? imsg-state-invs-zipper))
-                                              (<= (sub1 (get-pda-config-index-frm-trace imsg-state-shown-accepting-trace))
-                                                  (pda-config-index (first (zipper-current imsg-state-invs-zipper)))))
+                                              (<= (get-pda-config-index-frm-trace imsg-state-shown-accepting-trace)
+                                                  (pda-config-index (first (first (zipper-processed imsg-state-invs-zipper))))))
                                          (zipper-prev imsg-state-invs-zipper)]
                                         [else imsg-state-invs-zipper])])])])))
 
@@ -733,6 +703,8 @@ farthest-consumed-input | is the portion the ci that the machine consumed the mo
         [imsg-state-stack (imsg-state-pda-stack (informative-messages-component-state (viz-state-informative-messages a-vs)))]
         [imsg-state-invs-zipper (imsg-state-pda-invs-zipper (informative-messages-component-state (viz-state-informative-messages a-vs)))])
     (if (or (zipper-empty? imsg-state-invs-zipper)
+            (and (zipper-at-begin? imsg-state-invs-zipper)
+                 (not (zipper-at-end? imsg-state-invs-zipper)))
             (< (get-index imsg-state-stack)
                (get-pda-config-index-frm-invs imsg-state-invs-zipper)))
         a-vs
@@ -779,6 +751,8 @@ farthest-consumed-input | is the portion the ci that the machine consumed the mo
         [imsg-state-stack (imsg-state-pda-stack (informative-messages-component-state (viz-state-informative-messages a-vs)))]
         [imsg-state-invs-zipper (imsg-state-pda-invs-zipper (informative-messages-component-state (viz-state-informative-messages a-vs)))])
     (if (or (zipper-empty? imsg-state-invs-zipper)
+            (and (zipper-at-end? imsg-state-invs-zipper)
+                 (not (zipper-at-begin? imsg-state-invs-zipper)))
             (> (get-index imsg-state-stack)
                (get-pda-config-index-frm-invs imsg-state-invs-zipper)))
         a-vs
@@ -863,9 +837,9 @@ farthest-consumed-input | is the portion the ci that the machine consumed the mo
          (pda-getfinals M)
          (remake-rules (append (pda-getrules M) rules-to-dead dead-read-rules dead-pop-rules)))))
 
-;;pda word [boolean] [natnum] [symbol] . (listof (list state (w s -> boolean))) -> (void)
+;;pda word [boolean] [natnum] . -> (void)
 ;;Purpose: Visualizes the given pda processing the given word
-(define (pda-viz M a-word #:add-dead [add-dead #f] #:cut-off [cut-off 100] #:palette [palette 'default] invs)
+(define (pda-viz M a-word #:add-dead [add-dead #f] #:cut-off [cut-off 100] invs)
   ;;(listof configuration) (listof rules) (listof configurations) -> (listof configurations)
   ;;Purpose: Returns a propers trace for the given (listof configurations) that accurately
   ;;         tracks each transition
@@ -949,7 +923,14 @@ farthest-consumed-input | is the portion the ci that the machine consumed the mo
       (remove-duplicates (filter (λ (config) (not (second config))) inv-config-results)))
     (return-brk-inv-configs (get-inv-config-results (make-inv-configs LoC))))
   
- 
+  ;; (listof computation) (listof symbol) -> (listof symbol)
+  ;; Purpose: Returns the most consumed input
+  ;;acc = the word with smallest unconsumed input
+  (define (get-farthest-consumed LoC acc)
+    (cond [(empty? LoC) acc]
+          [(< (length (pda-config-word (treelist-last (first LoC)))) (length (pda-config-word acc)))
+           (get-farthest-consumed (rest LoC) (treelist-last (first LoC)))]
+          [else (get-farthest-consumed (rest LoC) acc)]))
 
   ;;computation -> computation 
   ;;Purpose: removes any empty transitions from given computation
@@ -964,25 +945,6 @@ farthest-consumed-input | is the portion the ci that the machine consumed the mo
              (remove-empty-helper (rest computation) acc)]
             [else (remove-empty-helper (rest computation) (cons (first computation) acc))]))
     (remove-empty-helper a-computation '()))
-
-  ;;(listof computation) (listof computatuon) -> computation
-  ;;Purpose: Finds the longest computation for rejecting traces
-  (define (find-longest-computation a-LoRT acc)
-    ;; (listof computation) (listof symbol) -> (listof symbol)
-    ;; Purpose: Returns the most consumed input
-    ;;acc = the word with smallest unconsumed input
-    (define (get-farthest-consumed LoC acc)
-      (cond [(empty? LoC) acc]
-            [(< (length (pda-config-word (treelist-last (computation-LoC (first LoC)))))
-                (length (pda-config-word (treelist-last (computation-LoC acc)))))
-             (get-farthest-consumed (rest LoC) (first LoC))]
-            [else (get-farthest-consumed (rest LoC) acc)]))
-       (cond [(empty? a-LoRT) (get-farthest-consumed (rest acc) (first acc))]
-          [(> (computation-length (first a-LoRT)) (computation-length (first acc)))
-           (find-longest-computation (rest a-LoRT) (list (first a-LoRT)))]
-          [(= (computation-length (first a-LoRT)) (computation-length (first acc)))
-           (find-longest-computation (rest a-LoRT) (cons (first a-LoRT) acc))]
-          [(find-longest-computation (rest a-LoRT) acc)]))
   
   (let* (;;pda ;;Purpose: A pda (structure) with the dead state if add-dead is true
          [new-M (if add-dead (make-new-M M)
@@ -992,44 +954,43 @@ farthest-consumed-input | is the portion the ci that the machine consumed the mo
                          (pda-getstart M)
                          (pda-getfinals M)
                          (remake-rules (pda-getrules M))))]
-         ;;color-pallete ;;The corresponding color scheme to used in the viz
-         [color-scheme (cond [(eq? palette 'prot) protanopia-color-scheme] ;;red color blind
-                             [(eq? palette 'deut) deuteranopia-color-scheme] ;;green color blind 
-                             [(eq? palette 'trit) tritanopia-color-scheme] ;;blue color blind
-                             [else standard-color-scheme])]
          ;;symbol ;;Purpose: The name of the dead state
          [dead-state (if add-dead (first (pda-states new-M)) 'no-dead)]
-         ;;(list paths hash) ;;Purpose: All computations that the machine can have
+         ;;(listof computations) ;;Purpose: All computations that the machine can have
          [computations+hash (get-computations a-word (pda-rules new-M) (pda-start new-M) (pda-finals new-M) cut-off)]
-          ;;paths ;;Purpose: All computations that the machine can have
-         [all-paths (first computations+hash)]
+
+         [computations (treelist->list (first computations+hash))]
+
+         ;;(listof configurations) ;;Purpose: Extracts the configurations from the computation
+         [LoC (map computation-LoC computations)]
+         ;;number ;;Purpose: The length of the word
+         ;[word-len (length a-word)]
          ;;(listof computation) ;;Purpose: Extracts all accepting computations
-         [accepting-computations (treelist->list (paths-accepting all-paths))]
-         ;;boolean ;;Purpose: Determines if the word has been rejected
-         [rejected? (empty? accepting-computations)]
-         ;;(listof computation) ;;Purpose: Extracts all rejecting computations
-         [rejecting-computations (treelist->list (paths-rejecting all-paths))]
-         ;;(listof computation) ;;Purpose: Extracts the configurations from the computation
-         [LoC (map2 computation-LoC (append accepting-computations rejecting-computations))]
+         [accepting-computations (filter (λ (comp)
+                                           (and (member? (pda-config-state (treelist-last (computation-LoC comp)))
+                                                         (pda-finals new-M) eq?)
+                                                (empty? (pda-config-word (treelist-last (computation-LoC comp))))
+                                                (empty? (pda-config-stack (treelist-last (computation-LoC comp))))))
+                                         computations)]
          ;;(listof trace) ;;Purpose: Makes traces from the accepting computations
-         [accepting-traces (map2 (λ (acc-comp)
+         [accept-cmps (map (λ (acc-comp)
                              (make-trace (treelist->list (computation-LoC acc-comp))
                                          (treelist->list (computation-LoR acc-comp))
                                          '()))
-                           accepting-computations)]         
+                           accepting-computations)]
+         ;;(listof computation) ;;Purpose: Extracts all rejecting computations
+         [rejecting-computations (filter (λ (config)
+                                           (not (member? config accepting-computations equal?)))
+                                         computations)]
          ;;(listof trace) ;;Purpose: Makes traces from the rejecting computations
-         [rejecting-traces (map2 (λ (computation)
+         [rejecting-traces (map (λ (computation)
                                   (make-trace (treelist->list (computation-LoC computation))
                                               (treelist->list (computation-LoR computation))
                                               '()))
                                 rejecting-computations)]
-         
-         [longest-rejecting-compution (if rejected?
-                                          (find-longest-computation (rest rejecting-computations) (list (first rejecting-computations)))
-                                          '())]
          ;;(zipperof computation) ;;Purpose: Gets the stack of the first accepting computation
-         [pre-stack (remove-empty (if rejected?
-                                  (treelist->list (computation-LoC longest-rejecting-compution))
+         [stack (remove-empty (if (empty? accepting-computations)
+                                  '()
                                   (treelist->list (computation-LoC (first accepting-computations)))))]
 
          [computation-lens (begin
@@ -1040,18 +1001,9 @@ farthest-consumed-input | is the portion the ci that the machine consumed the mo
                              (second computations+hash))]
 
          ;;(listof rules) ;;Purpose: Returns the first accepting computations (listof rules)
-         [accepting-trace (if rejected? '() (first accepting-traces))]
-         [rejecting-trace (if rejected? (make-trace (treelist->list (computation-LoC longest-rejecting-compution))
-                                                              (treelist->list (computation-LoR longest-rejecting-compution))
-                                                              '())
-                              '())]
-         [any-consumed? (not (equal? (pda-config-word (last pre-stack)) a-word))]
-         ;;boolean ;;Determines if the computation has reached the cut-off threshold
-         [computation-has-cut-off? (paths-cut-off? all-paths)]
+         [accepting-trace (if (empty? accept-cmps) '() (first accept-cmps))]
          ;;(listof symbol) ;;Purpose: The portion of the ci that the machine can conusme the most 
-         [most-consumed-word (let* ([farthest-consumed (if (not rejected?)
-                                                           (pda-config (pda-start new-M) FULLY-CONSUMED '() 0)
-                                                           (treelist-last (computation-LoC longest-rejecting-compution)))]
+         [most-consumed-word (let* ([farthest-consumed (get-farthest-consumed LoC (pda-config (pda-start new-M) a-word '() 0))]
                                     [last-word (if (and (empty? accepting-trace) (not (empty? (pda-config-word farthest-consumed))))
                                                    farthest-consumed
                                                    (pda-config (pda-start new-M) FULLY-CONSUMED '() 0))])
@@ -1059,16 +1011,13 @@ farthest-consumed-input | is the portion the ci that the machine consumed the mo
                                    last-word
                                    (struct-copy pda-config
                                                 last-word
-                                                [state (if any-consumed? 'most-consumed 'none-consumed)]
+                                                [state 'most-consumed]
                                                 [word (rest (pda-config-word last-word))]
-                                                [index (if (or (not any-consumed?) computation-has-cut-off?)
-                                                           (add1 (pda-config-index last-word))
-                                                           (pda-config-index last-word))])))]
-
-         [stack (if (eq? (pda-config-word most-consumed-word) FULLY-CONSUMED)
-                    pre-stack
-                    (append pre-stack (list (last pre-stack))))]
+                                                [index (add1 (pda-config-index last-word))])))]
          [CIs (remake-ci a-word)]
+         [computation-has-cut-off? (and (empty? accepting-trace)
+                                        (for/or ([computation LoC])
+                                          (>= (treelist-length computation) cut-off)))]
          ;;(listof computation)
          ;;Purpose: Gets all the cut off computations if the length of the word is greater than max computations
          [get-cut-off-trace (if computation-has-cut-off? (map last rejecting-traces) '())]
@@ -1085,59 +1034,41 @@ farthest-consumed-input | is the portion the ci that the machine consumed the mo
                                              (for/list ([computation LoC]) (treelist->list computation))
                                              accepting-computations
                                              (list->zipper stack)
-                                             (list (if rejected? rejecting-trace accepting-trace))
-                                             (if rejected? '() (rest accepting-traces))
+                                             (list accepting-trace)
+                                             (if (empty? accept-cmps) '() (rest accept-cmps))
                                              cut-off-traces
                                              new-M
                                              (if (and add-dead (not (empty? invs))) (cons (list dead-state (λ (w s) #t)) invs) invs)
                                              dead-state
                                              computation-has-cut-off? 
-                                             most-consumed-word
-                                             color-scheme)]
-         
+                                             most-consumed-word)]
 
          ;;(listof graph-thunk) ;;Purpose: Gets all the graphs needed to run the viz
          [graphs (create-graph-thunks building-state)]
          ;;(listof number) ;;Purpose: Gets the index of image where an invariant failed
-         [inv-configs (get-failed-invariants a-word accepting-computations invs)]
-
-         [color-legend (let* ([buffer-sqaure (square HEIGHT-BUFFER 'solid (color-palette-blank-color color-scheme))]
-                              [spacer (beside buffer-sqaure buffer-sqaure buffer-sqaure buffer-sqaure)])
-                         (if rejected?
-                           (beside (text "Reject traced" 20 (color-palette-legend-shown-reject-color color-scheme))
-                                   spacer
-                                   (text "Reject not traced" 20 (color-palette-legend-other-reject-color color-scheme)))
-                           (beside (text "Accept traced" 20 (color-palette-legend-shown-accept-color color-scheme))
-                                   spacer
-                                   (text "Accept not traced" 20 (color-palette-legend-other-accept-color color-scheme))
-                                   spacer
-                                   (text "Reject not traced" 20 (color-palette-legend-other-reject-color color-scheme)))))])
+         [inv-configs (get-failed-invariants a-word accepting-computations invs)])
     (run-viz graphs
-             (list->vector (map (λ (x) (λ (grph) grph)) graphs))
-             #;(lambda () (list (graph->bitmap (first graphs))))
+             (lambda () (graph->bitmap (first graphs)))
              (posn (/ E-SCENE-WIDTH 2) (/ PDA-E-SCENE-HEIGHT 2))
-              E-SCENE-WIDTH PDA-E-SCENE-HEIGHT PERCENT-BORDER-GAP
              DEFAULT-ZOOM
              DEFAULT-ZOOM-CAP
              DEFAULT-ZOOM-FLOOR
              (informative-messages pda-create-draw-informative-message
                                    (imsg-state-pda new-M
                                                    CIs
-                                                   (list->zipper (if (empty? accepting-traces) rejecting-trace accepting-trace))
+                                                   (list->zipper accepting-trace)
                                                    (list->zipper stack) 
                                                    most-consumed-word 
                                                    (list->zipper inv-configs)
                                                    computation-lens 
-                                                   computation-has-cut-off?
-                                                   (not (empty? accepting-traces))
+                                                   computation-has-cut-off? 
                                                    cut-off
                                                    0
                                                    (let ([offset-cap (- (length a-word) TAPE-SIZE)])
                                                      (if (> 0 offset-cap) 0 offset-cap))
-                                                   0
-                                                   color-scheme)
+                                                   0)
                                    pda-img-bounding-limit)
-             (instructions-graphic (above color-legend E-SCENE-TOOLS)
+             (instructions-graphic E-SCENE-TOOLS
                                    (bounding-limits 0
                                                     (image-width E-SCENE-TOOLS)
                                                     (+ EXTRA-HEIGHT-FROM-CURSOR
@@ -1154,15 +1085,15 @@ farthest-consumed-input | is the portion the ci that the machine consumed the mo
                                      [ "left" viz-go-prev left-key-pressed]
                                      [ "up" viz-go-to-begin up-key-pressed]
                                      [ "down" viz-go-to-end down-key-pressed]
-                                     [ "w" pda-viz-zoom-in identity]
-                                     [ "s" pda-viz-zoom-out identity]
-                                     [ "r" pda-viz-max-zoom-out identity]
-                                     [ "f" pda-viz-max-zoom-in identity] 
-                                     [ "e" pda-viz-reset-zoom identity]
+                                     [ "w" viz-zoom-in identity]
+                                     [ "s" viz-zoom-out identity]
+                                     [ "r" viz-max-zoom-out identity]
+                                     [ "f" viz-max-zoom-in identity]
+                                     [ "e" viz-reset-zoom identity]
                                      [ "a" identity a-key-pressed]
                                      [ "d" identity d-key-pressed]
-                                     [ "wheel-down" pda-viz-zoom-in identity]
-                                     [ "wheel-up" pda-viz-zoom-out identity]
+                                     [ "wheel-down" viz-zoom-in identity]
+                                     [ "wheel-up" viz-zoom-out identity]
                                      [ "j" pda-jump-prev j-key-pressed]
                                      [ "l" pda-jump-next l-key-pressed]
                                      )
@@ -1172,36 +1103,16 @@ farthest-consumed-input | is the portion the ci that the machine consumed the mo
                                       PDA-E-SCENE-HEIGHT
                                       CLICK-BUFFER-SECONDS
                                       ( [pda-img-bounding-limit
-                                         (lambda (a-imsgs x-diff y-diff)
-                                           (let ([new-scroll-accum (+ (imsg-state-pda-scroll-accum a-imsgs) x-diff)])
-                                             (cond
-                                               [(and (>= (imsg-state-pda-word-img-offset-cap a-imsgs)
-                                                         (imsg-state-pda-word-img-offset a-imsgs))
-                                                     (<= (quotient (+ (imsg-state-pda-scroll-accum a-imsgs) x-diff) 25) -1))
-                                                (struct-copy imsg-state-pda
-                                                             a-imsgs
-                                                             [word-img-offset (+ (imsg-state-pda-word-img-offset a-imsgs) 1)]
-                                                             [scroll-accum 0])]
-                                               [(and (> (imsg-state-pda-word-img-offset a-imsgs) 0)
-                                                     (>= (quotient (+ (imsg-state-pda-scroll-accum a-imsgs) x-diff) 25) 1))
-                                                (struct-copy imsg-state-pda
-                                                             a-imsgs
-                                                             [word-img-offset (- (imsg-state-pda-word-img-offset a-imsgs) 1)]
-                                                             [scroll-accum 0])]
-                                               [else
-                                                (struct-copy imsg-state-pda
-                                                             a-imsgs
-                                                             [scroll-accum
-                                                              (+ (imsg-state-pda-scroll-accum a-imsgs) x-diff)])])))])
+                                         (lambda (a-imsgs x-diff y-diff) a-imsgs)])
                                       ( [ ARROW-UP-KEY-DIMS viz-go-to-begin up-key-pressed]
                                         [ ARROW-DOWN-KEY-DIMS viz-go-to-end down-key-pressed]
                                         [ ARROW-LEFT-KEY-DIMS viz-go-prev left-key-pressed]
                                         [ ARROW-RIGHT-KEY-DIMS viz-go-next right-key-pressed]
-                                        [ W-KEY-DIMS pda-viz-zoom-in identity]
-                                        [ S-KEY-DIMS pda-viz-zoom-out identity]
-                                        [ R-KEY-DIMS pda-viz-max-zoom-out identity]
-                                        [ E-KEY-DIMS pda-viz-reset-zoom identity]
-                                        [ F-KEY-DIMS pda-viz-max-zoom-in identity]
+                                        [ W-KEY-DIMS viz-zoom-in identity]
+                                        [ S-KEY-DIMS viz-zoom-out identity]
+                                        [ R-KEY-DIMS viz-max-zoom-out identity]
+                                        [ E-KEY-DIMS viz-reset-zoom identity]
+                                        [ F-KEY-DIMS viz-max-zoom-in identity]
                                         [ A-KEY-DIMS identity a-key-pressed]
                                         [ D-KEY-DIMS identity d-key-pressed]
                                         [ J-KEY-DIMS pda-jump-prev j-key-pressed]

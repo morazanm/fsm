@@ -65,13 +65,13 @@
                          (F-KEY "Max zoom")))
 
 ;; L = ab*
- (define nl (make-unchecked-ndfa '(S)
+#| (define nl (make-ndfa '(S)
                       '(a b)
                       'S
                       '()
                       '()))
 
-(define A (make-unchecked-ndfa '(S A B C D E F)
+(define A (make-ndfa '(S A B C D E F)
                      '(a b x)
                      'S
                      '(D E)
@@ -86,14 +86,14 @@
                        (F a C))))
 
 ;; L = ab*
-(define ab* (make-unchecked-ndfa '(S A)
+(define ab* (make-ndfa '(S A)
                        '(a b)
                        'S
                        '(A)
                        '((S a A)
                          (A b A))))
 ;; L = a(a U ab)b*
-(define a-aUb-b* (make-unchecked-ndfa '(Z H B C D F)
+(define a-aUb-b* (make-ndfa '(Z H B C D F)
                             '(a b)
                             'Z
                             '(F)
@@ -105,7 +105,7 @@
                               (C b F)
                               (F b F))))
 ;; L = aab*
-(define aab* (make-unchecked-ndfa '(W X Y)
+(define aab* (make-ndfa '(W X Y)
                         '(a b)
                         'W
                         '(Y)
@@ -113,7 +113,7 @@
                           (X a Y)
                           (Y b Y))))
 ;; L = a*
-(define a* (make-unchecked-dfa '(S D)
+(define a* (make-dfa '(S D)
                      '(a b)
                      'S
                      '(S)
@@ -123,7 +123,7 @@
                        (D b D))
                      'no-dead))
 
-(define AT-LEAST-ONE-MISSING (make-unchecked-ndfa '(S A B C) '(a b c)
+(define AT-LEAST-ONE-MISSING (make-ndfa '(S A B C) '(a b c)
                                         'S
                                         '(A B C)
                                         `((S ,EMP A)
@@ -136,7 +136,7 @@
                                           (C a C)
                                           (C b C))))
 
-
+|#
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -514,13 +514,10 @@
 ;; ndfa2regexp-viz
 ;; ndfa --> (void)
 (define (ndfa2regexp-viz M)
-  (define graphs (list* (fsa->graph M 0) (map graph-struct-grph (create-graphs M))))
   (run-viz
-   graphs
-   (list->vector (map (lambda (x) (lambda (y) y)) graphs))
-   #;(lambda () (sm-graph M))
+   (list* (fsa->graph M 0) (map graph-struct-grph (create-graphs M)))
+   (lambda () (sm-graph M))
    MIDDLE-E-SCENE
-   E-SCENE-WIDTH E-SCENE-HEIGHT PERCENT-BORDER-GAP
    DEFAULT-ZOOM
    DEFAULT-ZOOM-CAP
    DEFAULT-ZOOM-FLOOR

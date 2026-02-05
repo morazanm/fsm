@@ -1,11 +1,29 @@
 #lang racket
 
-(require "../../interface.rkt"
-         "interface.rkt")
+(require (for-syntax syntax/parse
+                     racket/base
+                     )
+         "../../interface.rkt"
+         "check-accept-reject-macro.rkt"
+         rackunit)
 
-;; TESTING
+;; TESTING MACHINES
 
- #|
+#|
+
+2 Design and implement an ndfa for:
+(ab)*b* ∪ ab*
+
+S - ci = ε starting
+A - ci = (ab)*
+B - ci = (ab)*a 
+C - ci = (ab)*b* final
+D - ci = ε
+E - ci = ab* final
+
+|#
+
+    
 (define AB*B*UAB*
   (make-ndfa '(S K B C H)
              '(a b)
@@ -18,29 +36,6 @@
                (B b K)
                (C ,EMP H)
                (H b H))))
-
-(define numb>numa
-  (make-cfg
-   '(S A)
-   '(a b)
-   `((S ,ARROW b) (S ,ARROW AbA) (A ,ARROW AaAbA) (A ,ARROW AbAaA) (A ,ARROW ,EMP) (A ,ARROW bA))
-   'S))
-
-(define (A-INV w)
-  (let ([as (filter (lambda (symb) (eq? symb 'a)) w)] [bs (filter (lambda (symb) (eq? symb 'b)) w)])
-    (>= (length bs) (length as))))
-
-(define (S-INV w)
-  (let ([as (filter (lambda (symb) (eq? symb 'a)) w)]
-        [bs (filter (lambda (symb) (eq? symb 'b)) w)]
-        [As (filter (lambda (symb) (eq? symb 'A)) w)])
-    (> (length bs) (length as))
-    ))
-
-(check-in-lang? A-INV '(a a b b) '(a b) '())
-(check-in-lang? S-INV '(a a b b b) '(b b) '(b b))
-
-(check-in-lang? (curry append '(2)) '(1))
 
 (check-in-lang? AB*B*UAB* '(a b a b a b b b b))
 (check-in-lang? AB*B*UAB* '())
@@ -1280,4 +1275,3 @@ Y - w=x* AND [xs] remainder 3 = 0, final accepting state
 (check-not-in-lang? aibj '(a a a b a a a)) 
 (check-not-in-lang? aibj '(a a b b a a))
 (check-not-in-lang? aibj '(b b a b b))
-|#
