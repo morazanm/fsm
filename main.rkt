@@ -15,10 +15,7 @@
            "visualizations/viz-sm-constructors/viz-ndfa2regexp.rkt"
            "visualizations/viz-sm-constructors/viz-regexp2ndfa.rkt"
            "visualizations/viz-sm-constructors/viz-union.rkt"
-           "sm-graph.rkt"
-           "quickcheck-stuff/quickcheck-invariants.rkt"
-           "quickcheck-stuff/sm-test-invs.rkt"
-           "quickcheck-stuff/sm-test-invs-pda.rkt")
+           "sm-graph.rkt")
   
   (provide
    (all-from-out racket)
