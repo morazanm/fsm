@@ -1,11 +1,8 @@
 #lang racket/base
-(provide get-all-regexp-new-new
-         find-paths)
+(provide get-all-regexp)
 
-(require rackunit
-         racket/list
+(require racket/list
          racket/treelist
-         racket/set
          "../fsm-core/private/regexp.rkt"
          "../fsm-core/private/fsa.rkt"
          "../fsm-core/private/sm-getters.rkt")
@@ -106,7 +103,7 @@
 
 ;; machine -> hashtable
 ;; Purpose: Construct regular expression hash table for the given machine
-(define (get-all-regexp-new-new M)
+(define (get-all-regexp M)
   (let* [(regexp-ht (make-hash))  ;; empty ht for regexps
          (machine-paths (find-paths M)) ;; all machine paths starting at the starting state including paths to dead states
          (paths-to-finals (get-paths-to-finals machine-paths (sm-finals M))) ;; paths to final states starting at the starting state

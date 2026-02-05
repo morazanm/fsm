@@ -1,6 +1,6 @@
 #lang racket
 (require "quickcheck-invariants.rkt"
-         "reg-exp-function.rkt"
+         ;"reg-exp-function.rkt"
          "new-new-regexp.rkt"
          "../fsm-core/private/fsa.rkt"
          "../fsm-core/private/sm-apply.rkt"
@@ -110,11 +110,11 @@
 ;; word -> Boolean
 ;; Purpose: To determine if the consumed input ends with a
 ;;          and does not contain the prohibited input
-(define (A-INV ci)
+#;(define (A-INV ci)
   (and (equal? (drop ci (- (length ci) 1)) '(a))    ;<-- broken 
        (contains? ci PROHIBITED-PATTERN)))
 
-#;(define (A-INV ci)
+(define (A-INV ci)
   (and (equal? (drop ci (- (length ci) 1)) '(a))    ;<-- not broken 
        (not (contains? ci PROHIBITED-PATTERN))))
 
@@ -127,11 +127,11 @@
 
 ;; word -> Boolean
 ;; Purpose: Determine if NO-AA shoule be in B
-#;(define (B-INV ci)
+(define (B-INV ci)
   (and (equal? (drop ci (- (length ci) 1)) '(b))
        (not (contains? ci PROHIBITED-PATTERN))))    ;<-- not broken
 
-(define (B-INV ci)
+#;(define (B-INV ci)
   (and (equal? (drop ci (- (length ci) 1)) '(b))
        (contains? ci PROHIBITED-PATTERN)))          ; <- broken
 
@@ -149,7 +149,7 @@
 
 ;; word -> Boolean
 ;; Purpose: Determine if NO-AA should be in S
-#;(define (S-INV ci)
+(define (S-INV ci)
   (or (= (length ci) 0)
       (and (not (contains? ci PROHIBITED-PATTERN))
            (eq? (last ci) 'b)
@@ -158,7 +158,7 @@
                             '(a a)))))))
 
 
-(define (S-INV ci)
+#;(define (S-INV ci)
   (or (= (length ci) 0)
       (and (contains? ci PROHIBITED-PATTERN)
            (eq? (last ci) 'b)

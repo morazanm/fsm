@@ -1,13 +1,9 @@
-#lang racket
+#lang racket/base
 (require rackcheck
-         rackunit
          racket/list
-         ;"reg-exp-function.rkt"
          "new-new-regexp.rkt"
-         "../fsm-core/private/regexp.rkt"
-         "../fsm-core/private/fsa.rkt"
-         "../fsm-core/private/sm-apply.rkt")
-(provide quickcheck-invs)
+         "../fsm-core/private/regexp.rkt")
+(provide fsa-quickcheck-invs)
 
 (define MAX-KLEENE-LENGTH 20)
 (define NUM-QC-TESTS 300)
@@ -46,8 +42,8 @@
 
 ;; machine (listof (state invariant)) [natnum] -> void throws error 
 ;; Purpose: To quickcheck the invariants of the states of the given machine
-(define (quickcheck-invs machine state-invs-pairs #:num-tests [tests NUM-QC-TESTS] #:max-length-kleenes [num-kleenes MAX-KLEENE-LENGTH])
-  (define state-regexp-pairs (get-all-regexp-new-new machine))
+(define (fsa-quickcheck-invs machine state-invs-pairs #:num-tests [tests NUM-QC-TESTS] #:max-length-kleenes [num-kleenes MAX-KLEENE-LENGTH])
+  (define state-regexp-pairs (get-all-regexp machine))
   (define non-dead-state-inv-pairs
     (filter (λ (state-inv-pair)
               (hash-has-key? state-regexp-pairs (first state-inv-pair)))
