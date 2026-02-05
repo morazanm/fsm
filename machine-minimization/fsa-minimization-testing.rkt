@@ -6,8 +6,7 @@
          "../fsm-core/private/tm.rkt"
          "fsa-minimization.rkt"
          "../sm-graph.rkt"
-         "../visualizations/viz-sm-constructors/viz-minimization.rkt"
-         "../visualizations/viz-sm-constructors/viz-minimization-new.rkt")
+         "../visualizations/viz-sm-constructors/viz-minimization.rkt")
 
 
   
@@ -451,7 +450,7 @@
 (* 100 (/ (length (filter (λ (s) (status-result s)) minimize5-test)) (length listofmachines)))
 |#
 #;(map (λ (M)
-         (time (minimization-viz2 M)))
+         (time (minimization-viz M)))
        listofmachines)
 
 #;(map (λ (M)
@@ -459,11 +458,11 @@
                (sm-graph (minimize-dfa M))))
        listofmachines)
 
-;(map minimization-viz2 listofmachines)
+;(map minimization-viz listofmachines)
 
-;(minimization-viz2 EX3-vid)
-;(minimization-viz2 AB*B*UAB*2)
-;(minimization-viz2 AT-LEAST-ONE-MISSING)
+;(minimization-viz EX3-vid)
+;(minimization-viz AB*B*UAB*2)
+;(minimization-viz AT-LEAST-ONE-MISSING)
 
-;(time (minimization-viz2 EX3-vid))
+;(time (minimization-viz EX3-vid))
 

@@ -105,7 +105,7 @@
            (define compiled-img-path
              (make-thread a-file-path))
            (vector-set! img-vec idx (lambda () (graphic-formatter (bitmap/file (force compiled-img-path))))))
-
+         #|
         (define (make-thread a-file-path)
           (delay/thread
            #:group graphviz-thread-group
@@ -128,6 +128,7 @@
           (define compiled-img-path
             (make-thread a-file-path))
           (vector-set! img-vec idx (lambda () (graphic-formatter (bitmap/file (force compiled-img-path))))))
+        |#
 
         (define (compile-multiple-graphs a-lst-of-file-paths graphic-formatter idx)
           (define compiled-img-paths
@@ -146,5 +147,5 @@
               (compile-single-graph (vector-ref img-vec idx)
                                     (vector-ref graphic-formatter-vec idx)
                                     idx)))
-        img-vec)
+        img-vec]
       (error "Error caused when creating png file. This was probably due to the dot environment variable not existing on the path")))
