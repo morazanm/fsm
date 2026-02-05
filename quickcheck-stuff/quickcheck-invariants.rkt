@@ -1,7 +1,7 @@
 #lang racket/base
 (require rackcheck
          racket/list
-         "new-new-regexp.rkt"
+         "regexp.rkt"
          "../fsm-core/private/regexp.rkt")
 (provide fsa-quickcheck-invs)
 
