@@ -24,7 +24,11 @@
    check-machine
    empties
 
+   ; cfexp
+   construct-cfe cfg->cfe cfe->cfg pda->cfe cfe->pda printable-cfexp
+
    ; sm constructors
+   sm-test-invs
    make-dfa make-ndfa make-ndpda make-tm
    regexp->fsa ndfa->dfa fsa->regexp
    sm-rename-states 
@@ -95,7 +99,7 @@
 
    ;; FSM Unit Testing
    check-derive? check-not-derive?
-   ;check-gen? check-not-gen?
+   check-gen? check-not-gen?
    check-accept? check-reject?
    check-inv-holds? check-inv-fails?
    ;check-in-lang? check-not-in-lang?

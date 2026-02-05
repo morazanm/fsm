@@ -3,7 +3,8 @@
 (require "../csg.rkt"
          "../cfg-struct.rkt"
          "../regular-grammar.rkt"
-         "../regexp.rkt")
+         "../regexp.rkt"
+         "../cfe-constructors/cfexp-structs.rkt")
 
 (provide parse-fsm-val-type)
 
@@ -38,6 +39,7 @@
         [(is-machine? unknown-val) 'machine]
         [(is-grammar? unknown-val) 'grammar]
         [(regexp? unknown-val) 'regexp]
+        [(cfexp? unknown-val) 'cfexp]
         [(procedure? unknown-val) 'inv]
         [else (if (equal? unknown-val 'Aqua)
                   (begin (displayln "Garced was here")

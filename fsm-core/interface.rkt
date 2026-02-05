@@ -5,6 +5,7 @@
 #lang racket/base
 
 (require
+  "private/sm-test/sm-test-invs-fsa.rkt"
   "private/cyk.rkt"
   "private/fsa.rkt"
   "private/cfg.rkt"
@@ -42,11 +43,14 @@
   ;"private/Chomsky-Greibach-CFG-Transformations/chomsky.rkt"
   "private/Chomsky-Greibach-CFG-Transformations/greibach.rkt"
   "private/fsmunit/interface.rkt"
+  "private/cfe-constructors/construct-cfe-macro.rkt"
+  "private/cfe-constructors/context-free-expressions-constructors.rkt"
   racket/list
   racket/bool
   racket/contract)
   
 (provide
+ sm-test-invs
  check-machine
  empties
 
@@ -88,6 +92,9 @@
 
  ; grammar transformations
  cfg->chomsky cfg->greibach
+
+ ; cfexp
+ make-cfe cfg->cfe cfe->cfg pda->cfe cfe->pda #;printable-cfexp
  
  ; regexp constructors
  empty-regexp singleton-regexp union-regexp concat-regexp kleenestar-regexp null-regexp
@@ -126,7 +133,7 @@
 
  ;; FSM Unit Testing
  check-derive? check-not-derive?
- ;check-gen? check-not-gen?
+ check-gen? check-not-gen?
  check-accept? check-reject?
  check-inv-holds? check-inv-fails?
  ;check-in-lang? check-not-in-lang?
@@ -143,6 +150,12 @@
         [(cfg? G) (apply cfg-viz G w #:cpu-cores cpu-cores #:derv-type derv-type invariants)]
         [(csg? G) (apply csg-viz G w #:cpu-cores cpu-cores invariants)]
         [else (error "Unknown grammar type given to grammar-viz.")]))
+
+(define (sm-test-invs M . invs)
+  (let ([type (sm-type M)])
+    (cond [(or (eq? 'ndfa type) (eq? 'dfa type))
+           (sm-test-invs-fsa M invs)]
+          [else (error "Support for other types of automata is coming soon!")])))
   
 ; sm word [natnum] --> image
 (define (sm-cmpgraph M w #:palette [p 'default] #:cutoff [c 100] . headpos)

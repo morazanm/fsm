@@ -3,7 +3,6 @@
          "../../fsm-core/private/cfg-struct.rkt"
          "../../fsm-core/private/constants.rkt"
          "../../fsm-core/private/misc.rkt"
-         "../../fsm-core/private/chomsky.rkt"
          "circular-queue-treelist.rkt"
          "grammar-viz.rkt"
          "../viz-lib/zipper.rkt"
@@ -14,7 +13,6 @@
          racket/treelist
          "yield-struct.rkt"
          racket/list
-         racket/local
          racket/string)
 
 (provide cfg-viz)
@@ -115,47 +113,47 @@
 ;; tree (listof Symbol) (listof (list Symbol ((listof Symbol) -> (U boolean Symbol)) -> (U boolean Symbol)
 ;; Checks all invariants against all of their respective nodes
 (define (check-all-invariants tree nonterminals-to-check invariants)
-  (local [(define (check-invariant invariant-nt invariant-func)
-            (local [(define (find-all-invariant-nodes nts)
-                      (if (empty? nts)
-                          '()
-                          (if (equal? invariant-nt (undo-renaming (first nts)))
-                              (cons (first nts) (find-all-invariant-nodes (rest nts)))
-                              (find-all-invariant-nodes (rest nts)))))
-                    (define (check-all-invariant-nodes nonterminals invar-func broken-nodes)
-                      (if (empty? nonterminals)
-                          (if (empty? broken-nodes) #t broken-nodes)
-                          (if (invariant-holds? (dfs tree (first nonterminals)) invar-func)
-                              (check-all-invariant-nodes (rest nonterminals) invar-func broken-nodes)
-                              (check-all-invariant-nodes (rest nonterminals)
-                                                         invar-func
-                                                         (cons (first nonterminals) broken-nodes)))
-                          ))]
-              (check-all-invariant-nodes (find-all-invariant-nodes nonterminals-to-check)
-                                         invariant-func
-                                         '())))
-          (define (check-all-invariants-helper nonterminals-to-check invariants broken-nodes)
-            (if (empty? invariants)
-                (if (empty? broken-nodes) '() broken-nodes)
-                (let ([result (check-invariant (first (first invariants))
-                                               (second (first invariants)))])
-                  (if (list? result)
-                      (check-all-invariants-helper nonterminals-to-check
-                                                   (rest invariants)
-                                                   (append result broken-nodes))
-                      (check-all-invariants-helper nonterminals-to-check
-                                                   (rest invariants)
-                                                   broken-nodes)))))]
-    (check-all-invariants-helper nonterminals-to-check invariants '())))
+  (define (check-invariant invariant-nt invariant-func)
+    (define (find-all-invariant-nodes nts)
+      (if (empty? nts)
+          '()
+          (if (equal? invariant-nt (undo-renaming (first nts)))
+              (cons (first nts) (find-all-invariant-nodes (rest nts)))
+              (find-all-invariant-nodes (rest nts)))))
+    (define (check-all-invariant-nodes nonterminals invar-func broken-nodes)
+      (if (empty? nonterminals)
+          (if (empty? broken-nodes) #t broken-nodes)
+          (if (invariant-holds? (dfs tree (first nonterminals)) invar-func)
+              (check-all-invariant-nodes (rest nonterminals) invar-func broken-nodes)
+              (check-all-invariant-nodes (rest nonterminals)
+                                         invar-func
+                                         (cons (first nonterminals) broken-nodes)))
+          ))
+    (check-all-invariant-nodes (find-all-invariant-nodes nonterminals-to-check)
+                               invariant-func
+                               '()))
+  (define (check-all-invariants-helper nonterminals-to-check invariants broken-nodes)
+    (if (empty? invariants)
+        (if (empty? broken-nodes) '() broken-nodes)
+        (let ([result (check-invariant (first (first invariants))
+                                       (second (first invariants)))])
+          (if (list? result)
+              (check-all-invariants-helper nonterminals-to-check
+                                           (rest invariants)
+                                           (append result broken-nodes))
+              (check-all-invariants-helper nonterminals-to-check
+                                           (rest invariants)
+                                           broken-nodes)))))
+  (check-all-invariants-helper nonterminals-to-check invariants '()))
 
 ;; levels -> (listof levels)
 ;; Purpose: creates a list containing the levels used for each graph generated
 (define (create-list-of-levels levels)
-  (local [;; levels -> (listof levels)
-          ;; Purpose: creates a list containing the levels used for each graph generated in reverse
-          (define (create-list-of-levels-helper lvls)
-            (if (empty? lvls) '() (cons lvls (create-list-of-levels-helper (rest lvls)))))]
-    (create-list-of-levels-helper (reverse levels))))
+  ;; levels -> (listof levels)
+  ;; Purpose: creates a list containing the levels used for each graph generated in reverse
+  (define (create-list-of-levels-helper lvls)
+    (if (empty? lvls) '() (cons lvls (create-list-of-levels-helper (rest lvls)))))
+  (create-list-of-levels-helper (reverse levels)))
 
 ;; nonterminal?
 ;; symbol -> Boolean
@@ -244,8 +242,8 @@
                                                INVARIANT-HOLDS-COLOR])
                                  'shape 'circle
                                  'label (string->symbol (list->string (takef (string->list (symbol->string state))
-                                                                                   (lambda (x) (not (equal? #\_ x))))
-                                                                                   ))
+                                                                             (lambda (x) (not (equal? #\_ x))))
+                                                                      ))
                                  'fontcolor 'black
                                  'font "Sans"
                                  'penwidth (cond
@@ -411,28 +409,28 @@
       ;; If theres no more rules to apply than computation is done
       '()
       (let ([current-nt (find-nt-func current-state)])
-        (if (boolean? current-nt)
-            ;; If its fails to find a nonterminal in the current state, attempt to go back up
-            ;; the stack to a previous state
-            (if (empty? prev-states)
-                ;; If there are no more previous states, than the computation is done
-                '()
-                (let* ([prev-state (first prev-states)]
-                       [prev-current-nt (find-nt-func prev-state)]
-                       ;; Need to remove the leftmost-nt from the previous state since we just went
-                       ;; down its respective path
-                       ;; when we call the function again with it removed, the next nt will be processed
-                       [updated-states (filter (lambda (x) (not (eq? prev-current-nt x)))
-                                               prev-state)])
-                  ;; Don't reduce the number of rules here since one was not sucessfully applied, only
-                  ;; remove the state we popped off the stack
-                  (generate-levels-list-helper updated-states
-                                               rules
-                                               (rest prev-states)
-                                               used-names
-                                               find-nt-func)))
-            (local
-              [;; Just sticks a number after the symbol itself, uses a hash table to keep track of what numbers
+        (cond [(boolean? current-nt)
+               ;; If its fails to find a nonterminal in the current state, attempt to go back up
+               ;; the stack to a previous state
+               (if (empty? prev-states)
+                   ;; If there are no more previous states, than the computation is done
+                   '()
+                   (let* ([prev-state (first prev-states)]
+                          [prev-current-nt (find-nt-func prev-state)]
+                          ;; Need to remove the leftmost-nt from the previous state since we just went
+                          ;; down its respective path
+                          ;; when we call the function again with it removed, the next nt will be processed
+                          [updated-states (filter (lambda (x) (not (eq? prev-current-nt x)))
+                                                  prev-state)])
+                     ;; Don't reduce the number of rules here since one was not sucessfully applied, only
+                     ;; remove the state we popped off the stack
+                     (generate-levels-list-helper updated-states
+                                                  rules
+                                                  (rest prev-states)
+                                                  used-names
+                                                  find-nt-func)))]
+              [else
+               ;; Just sticks a number after the symbol itself, uses a hash table to keep track of what numbers
                ;; were already used for a specific symbol
                (define renamed-states (map (lambda (st) (rename-symb used-names st)) (first rules)))
                ;; Creates a new level by taking the current rule that is meant to be applied at this point of
@@ -440,13 +438,13 @@
                ;; and creating an edge between each of the elements within and the current nonterminal being
                ;;processed
                (define (new-level start)
-                 (map (lambda (st) (list start st)) renamed-states))]
-              (cons (new-level current-nt)
-                    (generate-levels-list-helper renamed-states
-                                                 (rest rules)
-                                                 (cons current-state prev-states)
-                                                 used-names
-                                                 find-nt-func)))))))
+                 (map (lambda (st) (list start st)) renamed-states))
+               (cons (new-level current-nt)
+                     (generate-levels-list-helper renamed-states
+                                                  (rest rules)
+                                                  (cons current-state prev-states)
+                                                  used-names
+                                                  find-nt-func))]))))
 
 ;; list any -> list
 ;; Purpose: Returns the list up until and excluding the value given
@@ -485,34 +483,34 @@
                                          used-names
                                          find-nt-func
                                          derv-type)
-  (if (empty? rules)
-      '()
-      (let ([current-nt (find-nt-func unprocessed-yield)])
-        (if (not current-nt)
-            (generate-levels-bfs-list-helper processed-yield
-                                             '()
-                                             rules
-                                             used-names
-                                             find-nt-func
-                                             derv-type)
-            (local
-              [(define renamed-states (map (lambda (st) (rename-symb used-names st)) (first rules)))
-               (define (new-level start)
-                 (map (lambda (st) (list start st)) renamed-states))]
-              (cons (new-level current-nt)
-                    (generate-levels-bfs-list-helper
-                     (if (eq? derv-type 'level-left)
-                         (rest (member current-nt unprocessed-yield))
-                         (take-until unprocessed-yield current-nt))
-                     (if (eq? derv-type 'level-left)
-                         (append (if (list? processed-yield) processed-yield (list processed-yield))
-                                 (if (list? renamed-states) renamed-states (list renamed-states)))
-                         (append (if (list? renamed-states) renamed-states (list renamed-states))
-                                 (if (list? processed-yield) processed-yield (list processed-yield))))
-                     (rest rules)
-                     used-names
-                     find-nt-func
-                     derv-type)))))))
+  (cond [(empty? rules) '()]
+        [else
+         (define current-nt (find-nt-func unprocessed-yield))
+         (cond [(not current-nt)
+                (generate-levels-bfs-list-helper processed-yield
+                                                 '()
+                                                 rules
+                                                 used-names
+                                                 find-nt-func
+                                                 derv-type)]
+               [else
+                (define renamed-states (map (lambda (st) (rename-symb used-names st)) (first rules)))
+                (define (new-level start)
+                  (map (lambda (st) (list start st)) renamed-states))
+                (cons (new-level current-nt)
+                      (generate-levels-bfs-list-helper
+                       (if (eq? derv-type 'level-left)
+                           (rest (member current-nt unprocessed-yield))
+                           (take-until unprocessed-yield current-nt))
+                       (if (eq? derv-type 'level-left)
+                           (append (if (list? processed-yield) processed-yield (list processed-yield))
+                                   (if (list? renamed-states) renamed-states (list renamed-states)))
+                           (append (if (list? renamed-states) renamed-states (list renamed-states))
+                                   (if (list? processed-yield) processed-yield (list processed-yield))))
+                       (rest rules)
+                       used-names
+                       find-nt-func
+                       derv-type))])]))
 
 (define (treelist-insert-list tl i lst)
   (if (empty? lst) tl (treelist-insert-list (treelist-insert tl i (first lst)) (add1 i) (rest lst))))
