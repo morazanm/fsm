@@ -6,9 +6,9 @@
          "../regexp.rkt"
          "../cfe-constructors/cfexp-structs.rkt")
 
-(provide (all-defined-out))
+(provide parse-fsm-val-type)
 
-(define (whatami? unknown-val)
+(define (parse-fsm-val-type unknown-val)
   ;; Any -> Boolean
   ;; Purpose: Checks is g is a grammar
   (define (is-grammar? g)
@@ -16,7 +16,6 @@
         (cfg? g)
         (csg? g)))
 
-  
   ;; Any -> Boolean
   ;; Purpose: Checks if m is a turing machine
   (define (is-turing-machine? m)

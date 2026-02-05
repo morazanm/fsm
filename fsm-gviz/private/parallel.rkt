@@ -2,125 +2,39 @@
 
 (require "lib.rkt"
          "../../visualizations/2htdp/image.rkt"
+         "for-vector-concurrent.rkt"
          "dot.rkt"
          racket/list
          racket/future
          racket/port
          racket/system
-         racket/promise
-         )
+         racket/promise)
 
-(provide (all-defined-out))
+(provide graphs->bitmap-thunks)
 
-(define NUM-PRELOAD 2)
-(define SAVE-DIR (find-tmp-dir))
+;; On Mac/Linux we can bypass having to look at the systems PATH by instead
+;; using the absolute path to the executable. For unknown reasons this does not
+;; work on Windows so we will still use the PATH to call the dot executable
+;; Additionally, we need to use a different shell command for windows systems in order to get a status code back 
+(define (make-process-windows a-file-path)
+  (process (format "~a -T~s ~s -o ~s & echo %errorlevel%"
+                       "dot"
+                       'png
+                       (string-append a-file-path ".dot")
+                       (string-append a-file-path ".png"))))
 
-;; num num -> Listof Thunk
-;; Creates a list of functions which when called will load its respective graph img from disk
-(define (pngs->bitmap-thunks enumerated-graphs)
-  (for/list ([i enumerated-graphs])
-    (if (list? (second i))
-        (for/list ([j (range 0 (length (second i)))])
-          (lambda () (bitmap/file (string->path (format "~adot~s_~s.png" SAVE-DIR (first i) j))))
-          )
-        (lambda () (bitmap/file (string->path (format "~adot~s.png" SAVE-DIR (first i)))))
-        )
-    )
-  )
+(define ((make-process-unix dot-executable-path) a-file-path)
+  (process (format "~a -T~s ~s -o ~s; echo $?"
+                       (path->string dot-executable-path)
+                       'png
+                       (string-append a-file-path ".dot")
+                       (string-append a-file-path ".png"))))
 
-;; (listof any) (listof any) -> (listof (list any any))
-;; Combines two lists into a list of pairs
-(define (make-pairs lst0 lst1) (if (empty? lst0)
-                                   '()
-                                   (cons (list (first lst0) (first lst1)) (make-pairs (rest lst0) (rest lst1)))
-                                   )
-  )
+(define (get-shell-process-result-windows shell-process-output)
+  (sync (read-line-evt shell-process-output 'any)))
 
-;; -> nat
-;; Produces the number of cpus cores on the system
-(define (find-number-of-cores) (processor-count))
-
-;; Procedure Listof Any -> Void
-;; Runs a given function in parallel based on information gathered from the system
-(define (parallel-shell func args cpu-cores)
-  (let [
-        (cpu-cores-avail (make-semaphore cpu-cores))
-        (system-os (system-type 'os))
-        ]
-    (define (make-thread a)
-      (semaphore-wait cpu-cores-avail)
-      (define shell-process (func a))
-      (thread (lambda () (let [
-                               (result (sync (if (eq? system-os 'windows)
-                                                 (read-line-evt (first shell-process) 'any)
-                                                 (read-line-evt (first shell-process))
-                                                 )
-                                             )
-                                       )
-                               ]
-                           (if (= 0 (string->number result))
-                               ;; This is thrown away, just doing this for the error check
-                               result
-                               (error (format "Graphviz produced an error while compiling the graphs: ~a" result))
-                               )
-                           )
-                (close-input-port (first shell-process))
-                (close-output-port (second shell-process))
-                (close-input-port (fourth shell-process))
-                (semaphore-post cpu-cores-avail)
-                )
-              )
-      )
-    (define graphviz-threads (map make-thread args))
-    (for-each thread-wait graphviz-threads)
-    )
-  )
-
-;; Listof String -> Void
-;; Creates all the graphviz images
-(define (parallel-dots->pngs dot-files cpu-cores)
-  (define dot-executable-path (find-dot))
-  ;; On Mac/Linux we can bypass having to look at the systems PATH by instead
-  ;; using the absolute path to the executable. For unknown reasons this does not
-  ;; work on Windows so we will still use the PATH to call the dot executable
-  ;; Additionally, we need to use a different shell command for windows systems in order to get a status code back 
-  (define (make-process file-path) (process (if (equal? (system-type) 'windows)
-                                                (format "~a -T~s ~s -o ~s & echo %errorlevel%"
-                                                        "dot"
-                                                        'png
-                                                        (string-append file-path ".dot")
-                                                        (string-append file-path ".png")
-                                                        )
-                                                (format "~a -T~s ~s -o ~s; echo $?"
-                                                        (path->string dot-executable-path)
-                                                        'png
-                                                        (string-append file-path ".dot")
-                                                        (string-append file-path ".png")
-                                                        )
-                                                )
-                                            )
-    )
-  (if (path? dot-executable-path)
-      (parallel-shell make-process dot-files cpu-cores)
-      (error "Error caused when creating png file. This was probably due to the dot environment variable not existing on the path")
-      )
-                                          
-  )
-
-;; Listof graph -> Num
-;; Creates all of the dotfiles based on the graph structs given
-(define (graphs->dots enumerated-graphs)
-  (for ([i enumerated-graphs])
-    (if (list? (second i))
-        (for ([j (range 0 (length (second i)))]
-              [k (second i)])
-          (graph->dot k SAVE-DIR (format "dot~s_~s" (first i) j))
-          )
-        (graph->dot (second i) SAVE-DIR (format "dot~s" (first i)))
-        )
-    )
-  )
-
+(define (get-shell-process-result-unix shell-process-output)
+  (sync (read-line-evt shell-process-output)))
 
 ;; Listof graph -> Listof Thunk
 ;; Creates all the graph images needed in parallel, and returns a list of thunks that will load them from disk

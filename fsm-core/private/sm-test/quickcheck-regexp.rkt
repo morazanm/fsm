@@ -1,7 +1,6 @@
-#lang racket/base
+#lang fsm
 (require rackcheck
-         racket/list
-         "../../../main.rkt")
+         racket/list)
 
 (define (gen:kleene-star-regexp gen)
   (gen:list gen))
@@ -29,3 +28,11 @@
          (gen:kleene-star-regexp (gen:fsm-regexp (kleenestar-regexp-r1 fsm-regexp)))]
         [else (error "how did you get here")]))
 
+(define A (singleton-regexp "a"))
+(define B (singleton-regexp "b"))
+(define AUB (union-regexp A B))
+(define AUB* (kleenestar-regexp AUB))
+(define ENDS-WITH-A
+ (concat-regexp AUB* A))
+
+(map flatten (sample (gen:fsm-regexp ENDS-WITH-A)))

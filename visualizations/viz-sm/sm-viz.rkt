@@ -18,9 +18,9 @@
     (cond [(or (eq? m-type 'ndfa) (eq? m-type 'dfa))
            (ndfa-viz M a-word invs #:add-dead add-dead #:palette palette)]
           [(eq? m-type 'pda)
-           (pda-viz M a-word #:add-dead add-dead #:cut-off cut-off invs)]
+           (pda-viz M a-word #:add-dead add-dead #:cut-off cut-off #:palette palette invs)]
           [(or (eq? m-type 'tm) (eq? m-type 'tm-language-recognizer))
-           (tm-viz M a-word head-pos #:cut-off cut-off invs)]
+           (tm-viz M a-word head-pos #:cut-off cut-off #:palette palette invs)]
           [(or (eq? m-type 'mttm) (eq? m-type 'mttm-language-recognizer))
-           (error (format "Stay tuned: sm-viz for mttm and mttm language recognizers is not yet implemented"))]
+           (mttm-viz M a-word head-pos #:cut-off cut-off #:palette palette invs)]
           [else (error "Unknown finite-state machine type given to sm-viz.")])))

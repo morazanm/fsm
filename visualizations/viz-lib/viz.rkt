@@ -1,15 +1,12 @@
 #lang racket/base
 (require "../2htdp/universe.rkt"
          "../../fsm-gviz/private/parallel.rkt"
-         "../../fsm-gviz/private/lib.rkt"
-         racket/async-channel
          "vector-zipper.rkt"
          "bounding-limits.rkt"
          "viz-state.rkt"
-         "../2htdp/image.rkt"
          racket/list
-         racket/promise
-         )
+         "resize-viz-image.rkt"
+         "viz-image-loading-functions.rkt")
 
 (provide run-viz)
 
@@ -18,13 +15,19 @@
 ;; create-graph-imgs
 ;; (listof dgraph) -> (listof image)
 ;; Purpose: To create a list of graph images built level by level
-(define (create-graph-imgs graphs #:graph-type [graph-type 'rg] #:rank-node-lst [rank-node-lst '()] #:cpu-cores [cpu-cores #f])
+(define (create-graph-imgs graphs graphic-formatters #:graph-type [graph-type 'rg] #:rank-node-lst [rank-node-lst '()] #:cpu-cores [cpu-cores #f])
   (if (empty? graphs)
       '()
       (if (not cpu-cores)
-          (streaming-parallel-graphs->bitmap-thunks graphs #:graph-type graph-type #:rank-node-lst rank-node-lst)
-          (streaming-parallel-graphs->bitmap-thunks graphs #:graph-type graph-type #:rank-node-lst rank-node-lst #:cpu-cores cpu-cores)
-          )))
+          (graphs->bitmap-thunks graphs
+                                 graphic-formatters
+                                 #:graph-type graph-type
+                                 #:rank-node-lst rank-node-lst)
+          (graphs->bitmap-thunks graphs
+                                 graphic-formatters
+                                 #:graph-type graph-type
+                                 #:rank-node-lst rank-node-lst
+                                 #:cpu-cores cpu-cores))))
 
 ;; viz-state int int MouseEvent
 ;; Updates viz-state as to whether the mouse is currently being pressed while on the visualization
@@ -76,9 +79,9 @@
 ;; special-graphs - Boolean that lets us know we are using graphs meant for csgs
 ;; rank-node-lst - List of list of symbols that are in a specific order so that they are forced to be
 ;; in said order and positioned at the same level
-(define (run-viz graphs first-img first-img-coord DEFAULT-ZOOM DEFAULT-ZOOM-CAP DEFAULT-ZOOM-FLOOR
+(define (run-viz graphs graphic-formatters first-img-coord E-SCENE-WIDTH E-SCENE-HEIGHT PERCENT-BORDER-GAP
+                 DEFAULT-ZOOM DEFAULT-ZOOM-CAP DEFAULT-ZOOM-FLOOR
                  imsg-struct instructions-struct draw-world process-key process-tick name
-                 
                  #:cpu-cores [cpu-cores #f] #:special-graphs? [special-graphs? 'rg] #:rank-node-lst [rank-node-lst '()])
   (let* [(imgs (create-graph-imgs graphs
                                   graphic-formatters
@@ -110,7 +113,7 @@
                     first-img-coord
                     DEFAULT-ZOOM
                     DEFAULT-ZOOM-CAP
-                    DEFAULT-ZOOM-FLOOR
+                    new-floor
                     (posn 0 0)
                     (posn 0 0)
                     #f
