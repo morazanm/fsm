@@ -392,7 +392,7 @@
   (->* (is-machine/c is-word/c)
        (#:add-dead (valid-add-dead-input/c "add-dead" "boolean")
         #:cut-off (valid-cutoff-input/c "cut-off" "postive integer greater than 0")
-        #:head-pos (valid-headpos-input/c "head-pos" "natural number")
+        #:head-pos (valid-headpos-input/c "head-pos" "positive integer")
         #:palette (valid-palette-input/c "palette" "symbol [prot, deut or trit]"))
        #:rest valid-invariant-input/c
        void?))

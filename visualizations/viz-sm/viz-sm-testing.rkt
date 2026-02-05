@@ -1,7 +1,6 @@
 #lang racket
 
 (require ;"testing-parameter.rkt"
-  #;"../../fsm-core/interface.rkt"
   "../../fsm-core/private/fsa.rkt"
   "../../fsm-core/private/pda.rkt"
   "../../fsm-core/private/tm.rkt" 
