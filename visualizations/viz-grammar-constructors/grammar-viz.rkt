@@ -194,11 +194,6 @@
                      YIELD-WORD))]
      (beside RULE-YIELD-DREV-LABELS WORDS))))
 
-;; viz-state -> img
-;; Returns the the instructions and e-scene-tools images combined into one
-(define (create-instructions-and-tools a-imsgs)
-  (above (create-instructions a-imsgs) (square INS-TOOLS-BUFFER 'solid 'white) E-SCENE-TOOLS))
-
 ;; viz-state -> viz-state
 ;; Updates the informative message so it displays the next rule yield
 (define (right-key-pressed a-vs)
@@ -439,9 +434,17 @@
                   #:rank-node-lst [rank-node-lst '()])
   (let ()
     (run-viz
-     graphs
-     (create-first-img (first (first w-der)))
+     (cons (add-node (create-graph 'dgraph #:atb (hash 'rankdir "TB" 'font "Sans" 'ordering "in"))
+               (first (first w-der))
+               #:atb
+               (hash 'color 'black 'shape 'circle 'label (first (first w-der)) 'fontcolor 'black 'font "Sans"))
+           (rest graphs))
+     (list->vector (map (lambda (x) (lambda (y) y)) graphs))
+     #;(create-first-img (first (first w-der)))
      (posn (/ E-SCENE-WIDTH 2) (/ E-SCENE-HEIGHT 2))
+     E-SCENE-WIDTH
+     E-SCENE-HEIGHT
+     PERCENT-BORDER-GAP
      DEFAULT-ZOOM
      DEFAULT-ZOOM-CAP
      DEFAULT-ZOOM-FLOOR
