@@ -262,7 +262,7 @@
 
 ;; machine . (list state (word -> boolean)) -> (listof (listof symbol))
 ;; Purpose: To return a list of the invarients that don't hold and the words that cause it not to hold
-(define (sm-test-invs-fsa a-machine #:ds-remove [ds-remove #f] #:rep-limit [rep-limit 1] a-loi)
+(define (sm-test-invs-fsa a-machine a-loi ds-remove rep-limit)
   (define a-loi-hash (for/hash ([inv (in-list a-loi)])
                        (values (car inv) (cadr inv))))
   ;; the given machine without the states and rules of states that cannot reach a final state
