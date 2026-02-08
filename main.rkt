@@ -108,8 +108,11 @@
    ; constants
    EMP DEAD RIGHT LEFT LM BLANK BRANCH GOTO ARROW VAR
 
-   sm-viz)
+   sm-viz
 
+   ; invariant testing
+   sm-test-invs
+   )
 
   ;; sm-graph :: fsa optional(number) -> bitmap
   ;; draws a graph of the given machine and returns the bitmap so it
@@ -125,7 +128,7 @@
                                     '(Y)
                                     '((W a X)
                                       (X a Y)
-                                      (Y b Y))))
+                                      (Y b Y))))  
 
   (define EQABC2
     (make-mttm
@@ -158,11 +161,11 @@
      'Y))
 
   (define M (make-dfa 
-	'(B A S) 
-	'(a b) 
-	'S 
-	'(B) 
-	'((B a S) (A b A) (B b B) (A a B) (S b A) (S a B))))
+             '(B A S) 
+             '(a b) 
+             'S 
+             '(B) 
+             '((B a S) (A b A) (B b B) (A a B) (S b A) (S a B))))
 
   ;(sm-graph EQABC2)
   ;(sm-cmpgraph EQABC2 `(,LM ,BLANK a a b c c b) 1)

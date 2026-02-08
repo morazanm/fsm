@@ -146,11 +146,13 @@
         [(csg? G) (apply csg-viz G w #:cpu-cores cpu-cores invariants)]
         [else (error "Unknown grammar type given to grammar-viz.")]))
 
-(define (sm-test-invs M . invs)
+(define (sm-test-invs M #:ds-remove [ds-remove #f] #:rep-limit [rep-limit 1] . invs)
   (let ([type (sm-type M)])
     (cond [(or (eq? 'ndfa type) (eq? 'dfa type))
-           (sm-test-invs-fsa M invs)]
-          [else (error "Support for other types of automata is coming soon!")])))
+           (sm-test-invs-fsa M invs ds-remove rep-limit)]
+          [(eq? 'pda type)
+           (error "Support for pdas coming soon!")]
+          [else (error "Support for tms and mttms is under development!")])))
   
 ; sm word [natnum] --> image
 (define (sm-cmpgraph M w #:palette [p 'default] #:cutoff [c 100] . headpos)
