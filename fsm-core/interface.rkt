@@ -160,7 +160,7 @@
 
 ;; machine (listof (state invariant)) natnum -> void throw error 
 ;; Purpose: To quickcheck the invariants of the states of the given machine
-(define (sm-quickcheck machine los&inv #:num-tests [tests 1000])
+(define (sm-quickcheck machine #:num-tests [tests 300] . los&inv)
   (let ([type (sm-type machine)])
     (cond [(or (eq? 'ndfa type)
                (eq? 'dfa type))
