@@ -26,6 +26,7 @@
 
    ; sm constructors
    sm-test-invs
+   sm-quickcheck
    make-dfa make-ndfa make-ndpda make-tm
    regexp->fsa ndfa->dfa fsa->regexp
    sm-rename-states 
