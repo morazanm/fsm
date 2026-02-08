@@ -6,6 +6,8 @@
 
 (require
   "private/sm-test/sm-test-invs-fsa.rkt"
+  "private/sm-test/quickcheck-invariants.rkt"
+  "private/sm-test/sm-test-invs-pda.rkt"
   "private/cyk.rkt"
   "private/fsa.rkt"
   "private/cfg.rkt"
@@ -49,6 +51,7 @@
   
 (provide
  sm-test-invs
+ sm-quickcheck
  check-machine
  empties
 
@@ -146,14 +149,27 @@
         [(csg? G) (apply csg-viz G w #:cpu-cores cpu-cores invariants)]
         [else (error "Unknown grammar type given to grammar-viz.")]))
 
-(define (sm-test-invs M #:ds-remove [ds-remove #f] #:rep-limit [rep-limit 1] . invs)
+(define (sm-test-invs M #:ds-remove [ds-remove #t] #:rep-limit [rep-limit 1] #:max-path-length [path-length 12] . invs)
   (let ([type (sm-type M)])
     (cond [(or (eq? 'ndfa type) (eq? 'dfa type))
-           (sm-test-invs-fsa M invs ds-remove rep-limit)]
+           (sm-test-invs-fsa M rep-limit ds-remove invs)]
           [(eq? 'pda type)
-           (error "Support for pdas coming soon!")]
-          [else (error "Support for tms and mttms is under development!")])))
-  
+           (sm-test-invs-pda M path-length invs)]
+          [else (error "Support for tms and mttms is under development! :)")])))
+
+
+;; machine (listof (state invariant)) natnum -> void throw error 
+;; Purpose: To quickcheck the invariants of the states of the given machine
+(define (sm-quickcheck machine los&inv #:num-tests [tests 1000])
+  (let ([type (sm-type machine)])
+    (cond [(or (eq? 'ndfa type)
+               (eq? 'dfa type))
+               (quickcheck-invs-fsa machine los&inv tests)]
+          [(eq? 'pda type)
+           (error "Support for pdas coming soon! :)")]
+          [else (error "Support for tms and mttms is under development! :)")])))
+
+
 ; sm word [natnum] --> image
 (define (sm-cmpgraph M w #:palette [p 'default] #:cutoff [c 100] . headpos)
   (let ((t1 (sm-type M)))
