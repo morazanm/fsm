@@ -33,6 +33,11 @@
          cfe->cfg
          pda->cfe
          cfe->pda
+         pick-cfexp
+         singleton-cfexp-a
+         union-cfexp-cfes
+         concat-cfexp-cfes
+         kleenestar-cfexp-c1
          ;printable-cfexp
          )
 
@@ -79,6 +84,14 @@
 ;;Purpose: Determines if the X is a singleton-cfexp
 (define (singleton-cfexp? x)
   (mk-singleton-cfexp? x))
+
+(define singleton-cfexp-a mk-singleton-cfexp-char)
+
+(define union-cfexp-cfes mk-union-cfexp-locfe)
+
+(define concat-cfexp-cfes mk-concat-cfexp-locfe)
+
+(define kleenestar-cfexp-c1 mk-kleene-cfexp-cfe)
 
 ;;(listof X) -> boolean
 ;;Purpose: Determines if the (listof X) is of length 1

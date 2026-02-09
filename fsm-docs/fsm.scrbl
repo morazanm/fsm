@@ -1076,6 +1076,12 @@ word are returned.
 @defproc[(kleenestar-cfexp-c1 [cfe kleenestar-cfexp])
          cfexp?]{Extracts the context-free expression in the given kleenestar-cfexp.}
 
+@defproc[(pick-regexp [cfe union-cfexp])
+         cfexp]
+         Nondeterministically return a nested sub-cfexp from the
+         given union-cfexp. This includes any nested union-cfexps
+         in cfe.
+
 @defproc*[([(gen-cfexp-word [cfe cfexp]) word]
            [(gen-cfexp-word [cfe cfexp] [n natural?]) word])]
         Nondeterministically generate a word in the language
@@ -1191,4 +1197,5 @@ Names in no paticular order:
           @item{Tijana Minić}
           @item{Andres M. Garced}
           @item{David Anthony K. Fields}
-          @item{Sophia G. Turano}]
+          @item{Sophia G. Turano}
+          ]

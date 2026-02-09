@@ -17,6 +17,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;Unit Tests;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+
 (define-test-suite
   CFE-UNIT-TESTING
   (test-case
@@ -34,6 +35,15 @@
                                                                                                             (mk-singleton-cfexp "d"))))
                                                                                (mk-singleton-cfexp "c"))))
    )
+
+  (test-case
+   "Observers for singleton, union, concat, and kleenestar"
+   (check-equal? (concat-cfexp-cfes (concat-cfexp A A)) (vector A A))
+   (check-equal? (union-cfexp-cfes (union-cfexp C (union-cfexp A B) D)) (vector C D A B))
+   (check-equal? (kleenestar-cfexp-c1 (kleene-cfexp A)) A)
+   (check-equal? (singleton-cfexp-a C) "c")
+   )
+   
 
   (test-case
    "Union Constructor Makes Correct CFE"

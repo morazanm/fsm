@@ -1,6 +1,6 @@
 #lang racket/base
 
-(require "../fsm-core/private/fsa.rkt"
+(require "../fsa.rkt"
          "fsa-minimization-contracts.rkt"
          racket/list
          racket/set

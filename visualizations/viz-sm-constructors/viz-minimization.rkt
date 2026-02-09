@@ -1,7 +1,7 @@
 #lang racket/base
 (require "../../fsm-gviz/private/lib.rkt"
          "../2htdp/image.rkt"
-         "../../machine-minimization/fsa-minimization-contracts.rkt"
+         "../../fsm-core/private/machine-minimization/fsa-minimization-contracts.rkt"
          "../../fsm-core/private/fsa.rkt"
          "../viz-lib/viz-constants.rkt"
          "../viz-lib/viz-state.rkt"

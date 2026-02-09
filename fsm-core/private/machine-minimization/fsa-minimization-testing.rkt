@@ -1,10 +1,10 @@
 #lang racket
 
-(require "../fsm-core/private/constants.rkt"
-         "../fsm-core/private/fsa.rkt"
-         "fsa-minimization.rkt"
-         "../sm-graph.rkt"
-         "../visualizations/viz-sm-constructors/viz-minimization.rkt")
+(require "../constants.rkt"
+         "../fsa.rkt"
+         "./fsa-minimization.rkt"
+         "../../../sm-graph.rkt"
+         "../../../visualizations/viz-sm-constructors/viz-minimization.rkt")
 
 
   
