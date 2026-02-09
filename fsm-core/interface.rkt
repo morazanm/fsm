@@ -160,6 +160,8 @@
  )
 ; Primitive constructors imported from other modules
 
+(define fsa-minimize minimize-dfa)
+
 (define (grammar-viz G w #:derv-type [derv-type 'left] #:cpu-cores [cpu-cores #f] . invariants)
   (cond [(rg? G) (apply rg-viz G w #:cpu-cores cpu-cores invariants)]
         [(cfg? G) (apply cfg-viz G w #:cpu-cores cpu-cores #:derv-type derv-type invariants)]
