@@ -2,10 +2,10 @@
 
 (require "../macros/shared/shared-predicates.rkt"
          "../macros/error-formatting.rkt"
-         racket/bool
          "../cfg-struct.rkt"
          "cfexp-structs.rkt"
-         racket/contract)
+         racket/contract/combinator
+         racket/contract/base)
 
 (provide singleton-cfexp/c
          concat-cfexp/c
@@ -25,8 +25,8 @@
 ;;          and false for every other input.
 (define (valid-alpha-string? x)
   (define regex-pattern (regexp "^[a-z0-9]$"))
-  (not (false? (and (string? x)
-                    (regexp-match regex-pattern x)))))
+  (and (string? x)
+       (regexp-match regex-pattern x)))
 
 ;; string -> flat-contract
 ;;Purpose: Creates a flat contract that determines if the input is a cfexp

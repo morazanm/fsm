@@ -7,27 +7,26 @@
          "cfexp-contracts.rkt"
          "cfexp-structs.rkt"
          "cfexp-helpers.rkt"
-         racket/contract
+         racket/contract/region
          racket/vector
          racket/list
-         racket/string
          racket/treelist
          racket/hash
          racket/set)
 
 (provide cfexp?
          null-cfexp
-         null-cfexp?
          empty-cfexp
-         empty-cfexp?
          singleton-cfexp
-         singleton-cfexp?
          concat-cfexp
-         concat-cfexp?
          union-cfexp
-         union-cfexp?
+         (rename-out (mk-union-cfexp? union-cfexp?)
+                     (mk-concat-cfexp? concat-cfexp?)
+                     (mk-singleton-cfexp? singleton-cfexp?)
+                     (mk-kleene-cfexp? kleene-cfexp?)
+                     (mk-empty-cfexp? empty-cfexp?)
+                     (mk-null-cfexp? null-cfexp?))
          kleene-cfexp
-         kleene-cfexp?
          gen-cfexp-word          
          cfg->cfe
          cfe->cfg
@@ -38,7 +37,6 @@
          union-cfexp-cfes
          concat-cfexp-cfes
          kleenestar-cfexp-c1
-         ;printable-cfexp
          )
 
 (define MAX-KLEENESTAR-LIMIT 20)
@@ -59,31 +57,16 @@
 (define (null-cfexp)
   (mk-null-cfexp))
 
-;; X -> Boolean
-;;Purpose: Determines if the X is a null-cfexp
-(define (null-cfexp? x)
-  (mk-null-cfexp? x))
-
 ;; -> empty-cfexp
 ;;Purpose: A wrapper to create a empty-cfexp
 (define (empty-cfexp)
   (mk-empty-cfexp))
-
-;; X -> Boolean
-;;Purpose: Determines if the X is a empty-cfexp
-(define (empty-cfexp? x)
-  (mk-empty-cfexp? x))
 
 ;; string -> singleton-cfexp
 ;;Purpose: A wrapper to create a singleton-cfexp
 (define/contract (singleton-cfexp a-char)
   singleton-cfexp/c 
   (mk-singleton-cfexp a-char))
-
-;; X -> Boolean
-;;Purpose: Determines if the X is a singleton-cfexp
-(define (singleton-cfexp? x)
-  (mk-singleton-cfexp? x))
 
 (define singleton-cfexp-a mk-singleton-cfexp-char)
 
@@ -96,12 +79,9 @@
 ;;(listof X) -> boolean
 ;;Purpose: Determines if the (listof X) is of length 1
 (define (is-length-one? lox)
-  (= (length lox) 1))
+  (and (not (null? lox))
+       (null? (cdr lox))))
 
-;;(listof cfexp) -> boolean
-;;Purpose: Determines if every element in the given (listof cfexp) is the empty-cfexp
-(define (all-X-cfexp? cfexp-pred locfe)
-  (andmap cfexp-pred locfe))
 
 ;;(listof cfexp) -> boolean
 ;;Purpose: Determines if the given (listof cfexp) contains the null-cfexp
@@ -118,34 +98,23 @@
     (if (mk-union-cfexp? cfe)
         (box cfe)
         cfe))
-  (cond [(or (empty? cfexps) (contains-null? cfexps)) (null-cfexp)] ;; no input cfes -> null
-        [(all-X-cfexp? mk-empty-cfexp? cfexps) (empty-cfexp)] ;; only empty cfes -> empty
-        [(is-length-one? cfexps) (first cfexps)] ;;only one cfe -> cfe
+  (cond [(or (null? cfexps) (contains-null? cfexps)) (null-cfexp)] ;; no input cfes -> null
+        [(andmap mk-empty-cfexp? cfexps) (empty-cfexp)] ;; only empty cfes -> empty
+        [(is-length-one? cfexps) (car cfexps)] ;;only one cfe -> cfe
         [else (mk-concat-cfexp (list->vector (map unnest-unions cfexps)))])) ;;otherwise box unboxed-union cfes -> concat
-
-
-;; X -> Boolean
-;;Purpose: Determines if the X is a concat-cfexp
-(define (concat-cfexp? x)
-  (mk-concat-cfexp? x))
 
 ;; . cfexp -> union-cfexp/null-cfexp/empty-cfexp/singleton-cfexp
 ;;Purpose: A wrapper to create a union-cfexp unless all the given cfexps are empty-cfexp
 (define/contract (union-cfexp . cfexps)
   union-cfexp/c
-  (cond [(or (empty? cfexps) (all-X-cfexp? mk-null-cfexp? cfexps)) (null-cfexp)] ;; no input cfes -> null
-        [(all-X-cfexp? mk-empty-cfexp? cfexps) (empty-cfexp)] ;; only empty cfes -> empty
-        [(is-length-one? cfexps) (first cfexps)] ;;only one cfe -> cfe
-        [else (mk-union-cfexp (vector-append (list->vector (filter-not mk-union-cfexp? cfexps)) ;;otherwise flatten nested unions -> union
+  (cond [(or (null? cfexps) (andmap mk-null-cfexp? cfexps)) (null-cfexp)] ;; no input cfes -> null
+        [(andmap mk-empty-cfexp? cfexps) (empty-cfexp)] ;; only empty cfes -> empty
+        [(is-length-one? cfexps) (car cfexps)] ;;only one cfe -> cfe
+        [else (mk-union-cfexp (vector-append (list->vector (filter (compose1 not mk-union-cfexp?) cfexps)) ;;otherwise flatten nested unions -> union
                                              (foldl (λ (u-cfe acc)
                                                       (vector-append acc (mk-union-cfexp-locfe u-cfe)))
                                                     (vector)
                                                     (filter mk-union-cfexp? cfexps))))]))
-
-;; X -> Boolean
-;;Purpose: Determines if the X is a union-cfexp
-(define (union-cfexp? x)
-  (mk-union-cfexp? x))
 
 ;;cfexp -> Kleene-cfexp/empty-cfexp/null-cfexp
 ;;Purpose: A wrapper to create a Kleene-cfexp
@@ -155,15 +124,6 @@
           (mk-empty-cfexp? cfe))
       cfe
       (mk-kleene-cfexp cfe)))
-
-;; X -> Boolean
-;;Purpose: Determines if the X is a union-cfexp
-(define (kleene-cfexp? x)
-  (mk-kleene-cfexp? x))
-
-;;singleton-cfe -> word
-;;Purpose: Extracts the singleton 
-(define (convert-singleton singleton-cfexp) (mk-singleton-cfexp-char singleton-cfexp))
 
 ;;(vectorof cfexp) -> boolean
 ;;Purpose: Determines if the given (vectorof cfexp) contains an empty-cfexp
@@ -199,12 +159,12 @@
                      (build-list
                       (random (add1 reps))
                       (λ (i) (gen-function (mk-kleene-cfexp-cfe kleene-cfexp) reps))))))]
-    (if (empty? lst-words) EMP (append-map append lst-words))))
+    (if (null? lst-words) EMP (append-map append lst-words))))
 
 ;;string -> Boolean
 ;;Purpose: Determines if the given string is empty
 (define (string-empty? str)
-  (not (non-empty-string? str)))
+  (string=? str ""))
 
 ;;string -> (listof symbol)
 ;;Purpose: Converts the given string into a fsm word
@@ -223,7 +183,7 @@
 ;; Purpose: Generates a word using 
 (define/contract (gen-cfexp-word cfe . reps)
   gen-cfexp-word/c
-  (define MAX-KLEENESTAR-REPS (if (empty? reps) MAX-KLEENESTAR-LIMIT (first reps)))
+  (define MAX-KLEENESTAR-REPS (if (null? reps) MAX-KLEENESTAR-LIMIT (car reps)))
   (cond [(mk-null-cfexp? cfe) (error "A word cannot be generated using the null-regexp.")]
         [(mk-empty-cfexp? cfe) EMP]
         [(mk-singleton-cfexp? cfe) (list (string->symbol (mk-singleton-cfexp-char cfe)))]
@@ -238,7 +198,7 @@
 (define (gen-cfexp-word-helper cfe reps)
   (cond [(mk-null-cfexp? cfe) (error "A word cannot be generated using the null-regexp.")]
         [(mk-empty-cfexp? cfe) ""]
-        [(mk-singleton-cfexp? cfe) (convert-singleton cfe)]
+        [(mk-singleton-cfexp? cfe) (mk-singleton-cfexp-char cfe)]
         [(mk-concat-cfexp? cfe) (gen-concat-word cfe gen-cfexp-word-helper reps)]
         [(mk-union-cfexp? cfe) (gen-cfexp-word-helper (pick-cfexp (mk-union-cfexp-locfe cfe)) reps)]
         [(box? cfe) (gen-cfexp-word-helper (unbox cfe) reps)]
@@ -250,11 +210,11 @@
   ;;(listof cfe) string (setof cfe) -> string
   ;;Purpose: Converts and appends all of the cfes in the given (listof cfe) 
   (define (printable-helper locfe connector seen)
-    (cond [(= (length locfe) 1) (printable-cfexp (first locfe) #:seen seen)]
-          [else (let ([new-seen (set-add seen (first locfe))])
-                  (string-append (printable-cfexp (first locfe) #:seen new-seen)
+    (cond [(= (length locfe) 1) (printable-cfexp (car locfe) #:seen seen)]
+          [else (let ([new-seen (set-add seen (car locfe))])
+                  (string-append (printable-cfexp (car locfe) #:seen new-seen)
                                  connector
-                                 (printable-helper (rest locfe) connector new-seen)))]))
+                                 (printable-helper (cdr locfe) connector new-seen)))]))
 
   ;;var-cfexp (setof cfe) -> string
   ;;Purpose: Prints the variable 
@@ -268,10 +228,8 @@
         [(box? cfe) (printable-var cfe (if (set-empty? seen)
                                            (set)
                                            seen))]
-        [(mk-concat-cfexp? cfe) (printable-helper (vector->list (mk-concat-cfexp-locfe cfe)) "" seen)
-                                #;(string-append "(" (printable-helper (vector->list (mk-concat-cfexp-locfe cfe)) "" seen) ")")]
-        [(mk-union-cfexp? cfe) (printable-helper (vector->list (mk-union-cfexp-locfe cfe)) " | "#;" ∪ " seen)
-                               #;(string-append "(" (printable-helper (vector->list (mk-union-cfexp-locfe cfe)) " | "#;" ∪ " seen) ")")]
+        [(mk-concat-cfexp? cfe) (printable-helper (vector->list (mk-concat-cfexp-locfe cfe)) "" seen)]
+        [(mk-union-cfexp? cfe) (printable-helper (vector->list (mk-union-cfexp-locfe cfe)) " | " seen)]
         [else (string-append (printable-cfexp (mk-kleene-cfexp cfe)) "*")]))
   
 
@@ -311,17 +269,17 @@
     ;;Purpose: Translates the given CFG-RHS into its corresponding cfe
     (define (rule->expression RHS-of-rule)
       (if (= (length RHS-of-rule) 1)
-          (convert-to-expression (first RHS-of-rule))
+          (convert-to-expression (car RHS-of-rule))
           (apply concat-cfexp (map (λ (sym) (convert-to-expression sym)) RHS-of-rule))))
     (hash-map/copy rules (λ (nts RHS)
-                           (values nts (cond [(empty? RHS) (error (format "invalid RHS from nt: ~s" nts))]
-                                             [(= (length RHS) 1) (rule->expression (first RHS))]
+                           (values nts (cond [(null? RHS) (error (format "invalid RHS from nt: ~s" nts))]
+                                             [(= (length RHS) 1) (rule->expression (car RHS))]
                                              [else (apply union-cfexp (map (λ (rule) (rule->expression rule)) RHS))])))))
   
   (let* ([nts (cfg-get-v G)]
          [rules (make-hash-table nts (λ (nt) (filter-map (λ (rule)
-                                                           (and (eq? (first rule) nt)
-                                                                (symbol->fsmlos (third rule))))
+                                                           (and (eq? (car rule) nt)
+                                                                (symbol->fsmlos (caddr rule))))
                                                          (cfg-get-rules G))))]
          [start (cfg-get-start G)]
          [singletons (make-hash-table (cfg-get-alphabet G) (λ (sig)
@@ -546,12 +504,12 @@
     ;;(listof nt) (listof nt) (hash nt . nt)
     ;;Purpose: Renames the given (listof nt) and pairs the each nt with a new name in a hash
     (define (rename-nts-helper old-nts new-nts acc)
-      (if (empty? old-nts)
+      (if (null? old-nts)
           acc
           (let* ([translated-nt (gen-nt new-nts)]
-                 [new-acc (hash-set acc (first old-nts) translated-nt)]
+                 [new-acc (hash-set acc (car old-nts) translated-nt)]
                  [new-nts (cons translated-nt new-nts)])
-            (rename-nts-helper (rest old-nts) new-nts new-acc))))
+            (rename-nts-helper (cdr old-nts) new-nts new-acc))))
     (rename-nts-helper (CFG-nts G) '() (hash)))
 
   ;;CFG (hash nt . nt) -> cfg
@@ -575,10 +533,6 @@
   ;;cfg -> cfg
   ;;Purpose: minimizes the given cfg by removing nts and rules that aren't needed
   (define (minimize-cfg G)
-    ;;X (listof Y) -> boolean
-    ;;Purpose: Determines if the given X is in the (listof Y)
-    (define (member? X lst)
-      (ormap (λ (y) (eq? X y)) lst))
   
     ;;CFG -> cfg
     ;;Purpose: Minimizes the given CFG by repeatedly removing rules that can't
@@ -602,15 +556,15 @@
             ;;(listof cfg-rule) (listof cfg-rule) -> Boolean
             ;;Purpose: Determines if the first given (listof cfg-rule) is the same as the second given (listof cfg-rule)
             (define (same-rules? rules1 rules2)
-              (and (andmap (λ (rule) (member? rule rules2)) rules1)
-                   (andmap (λ (rule) (member? rule rules1)) rules2)))
+              (and (andmap (λ (rule) (member rules2 rule)) rules1)
+                   (andmap (λ (rule) (member rules1 rule)) rules2)))
             (if (and (>= (length acc) 2)
-                     (same-rules? (first acc) (second acc)))
-                (first acc)
+                     (same-rules? (car acc) (cadr acc)))
+                (car acc)
                 (let* ([new-rules (filter (λ (rule)
                                             (andmap (λ (rhs)
-                                                      (or (member? rhs sigma)
-                                                          (member? rhs nts)))
+                                                      (or (member sigma rhs)
+                                                          (member nts rhs)))
                                                     (cfg-rule-rhs rule)))
                                           rules)]
                        [new-nts (map cfg-rule-lhs new-rules)])
@@ -619,22 +573,22 @@
           ;;(listof cfg-rules) (listof cfg-rules) -> (listof cfg-rules)
           ;;Purpose: Removes rules whose LHS nt only produces self-loops 
           (define (remove-only-self-loops rules new-rules)
-            (if (empty? rules)
+            (if (null? rules)
                 new-rules
-                (let* ([rule-lhs (cfg-rule-lhs (first rules))]
+                (let* ([rule-lhs (cfg-rule-lhs (car rules))]
                        [related-rules (filter (λ (rule) (eq? (cfg-rule-lhs rule) rule-lhs)) rules)]
                        [only-self-loop? (or (and (= (length related-rules) 1)
-                                                 (not (member? rule-lhs (cfg-rule-rhs (first related-rules)))))
+                                                 (not (member (cfg-rule-rhs (car related-rules)) rule-lhs)))
                                             (and (> (length related-rules) 1)
-                                                 (ormap (λ (rule) (not (member? rule-lhs (cfg-rule-rhs rule)))) related-rules)))])
+                                                 (ormap (λ (rule) (not (member (cfg-rule-rhs rule) rule-lhs))) related-rules)))])
                   (if (not only-self-loop?)
-                      (remove-only-self-loops (rest rules) new-rules)
-                      (remove-only-self-loops (rest rules) (cons (first rules) new-rules))))))
+                      (remove-only-self-loops (cdr rules) new-rules)
+                      (remove-only-self-loops (cdr rules) (cons (car rules) new-rules))))))
   
           (let* ([rhs-nts (remove-duplicates (append-map cfg-rule-rhs rules))]
                  [rules-that-can-be-generated (filter (λ (rule)
                                                         (or (eq? (cfg-rule-lhs rule) start)
-                                                            (member? (cfg-rule-lhs rule) rhs-nts)))
+                                                            (member  rhs-nts (cfg-rule-lhs rule))))
                                                       rules)]
                  [lhs-nts (map cfg-rule-lhs rules-that-can-be-generated)])
             (remove-only-self-loops (remove-rules-without-nts lhs-nts rules-that-can-be-generated sigma '()) '())))
@@ -642,32 +596,32 @@
         ;;(listof cfg-rule) (listof nt) (listof nt) -> (listof nt)
         ;;Purpose: Extrascts rules who rhs contain needed nts
         (define (extract-needed-nts rules needed seen)
-          (let* ([new-needed-nts (filter-not (λ (nt)
-                                               (member? nt seen))
-                                             (remove-duplicates (filter-map (λ (rule)
-                                                                              (and (ormap (λ (rhs) (member? rhs needed))
-                                                                                          (cfg-rule-rhs rule))
-                                                                                   (cfg-rule-lhs rule)))
-                                                                            rules)))])
-            (if (empty? new-needed-nts)
+          (let* ([new-needed-nts (filter (λ (nt)
+                                           (not (member seen nt)))
+                                         (remove-duplicates (filter-map (λ (rule)
+                                                                          (and (ormap (λ (rhs) (member needed rhs))
+                                                                                      (cfg-rule-rhs rule))
+                                                                               (cfg-rule-lhs rule)))
+                                                                        rules)))])
+            (if (null? new-needed-nts)
                 seen 
                 (extract-needed-nts rules (append needed new-needed-nts) (append seen new-needed-nts)))))
   
         (let* ([sigma (cons EMP (CFG-sigma G))]
                [needed-nts (extract-needed-nts (remove-useless-rules (CFG-start G) (CFG-nts G) (CFG-rules G) sigma) sigma '())]
                [rules-that-contain-needed-nts (filter (λ (rule)
-                                                        (member? (cfg-rule-lhs rule) needed-nts))
+                                                        (member needed-nts (cfg-rule-lhs rule)))
                                                       (CFG-rules G))])
           (CFG needed-nts
                (CFG-sigma G)
                (filter (λ (rule)
-                         (andmap (λ (rhs) (or (member? rhs sigma)
-                                              (member? rhs needed-nts))) (cfg-rule-rhs rule)))
+                         (andmap (λ (rhs) (or (member sigma rhs)
+                                              (member needed-nts rhs))) (cfg-rule-rhs rule)))
                        rules-that-contain-needed-nts)
                (CFG-start G))))
       (if (and (>= (length acc) 2)
-               (equal? (first acc) (second acc)))
-          (cfg->unchecked (first acc))
+               (equal? (car acc) (cadr acc)))
+          (cfg->unchecked (car acc))
           (let ([new-cfg (clean-up-cfg-rules-and-nts cfg)])
             (clean-up-cfg new-cfg (cons new-cfg acc)))))
     (clean-up-cfg G '()))
@@ -682,21 +636,21 @@
 
   (define (simplify-rules curr-rules acc-rules)
     (if (and (>= (length acc-rules) 2)
-             (equal? (first acc-rules) (second acc-rules)))
-        (hash-filter (first acc-rules)
+             (equal? (car acc-rules) (cadr acc-rules)))
+        (hash-filter (car acc-rules)
                      (λ (k v)
-                       (andmap (λ (r) (not (or (empty? r)
+                       (andmap (λ (r) (not (or (null? r)
                                                (equal? (list EMP) r)))) v)))
         (let* ([only-empty-rules
                 (hash-filter curr-rules (λ (k v)
-                                          (andmap (λ (r) (or (empty? r)
+                                          (andmap (λ (r) (or (null? r)
                                                              (equal? (list EMP) r))) v)))]
                [e-nts (hash-keys only-empty-rules)]
                [new-rules (hash-map/copy curr-rules (λ (k v)
                                                       (if (ormap (λ (rule)
                                                                    (ormap (λ (r)
                                                                             (hash-has-key? only-empty-rules r)) rule)) v)
-                                                          (values k (map (λ (val) (filter-not (λ (r) (member r e-nts)) val)) v))
+                                                          (values k (map (λ (val) (filter (λ (r) (not (member r e-nts))) val)) v))
                                                           (values k v))))])
           (simplify-rules new-rules (cons new-rules acc-rules)))))
   
@@ -705,11 +659,11 @@
          [renamed-cfg (unchecked->cfg (rebuild-cfg G renamed-nts-mapping))]
          [proper-cfg  (minimize-cfg renamed-cfg)]
          [new-rules (make-hash-table (cfg-get-v proper-cfg) (λ (nt) (filter-map (λ (rule)
-                                                                                  (and (eq? (first rule) nt)
-                                                                                       (symbol->fsmlos (third rule))))
+                                                                                  (and (eq? (car rule) nt)
+                                                                                       (symbol->fsmlos (caddr rule))))
                                                                                 (cfg-get-rules proper-cfg))))]
          [only-empty-rules (hash-filter new-rules (λ (k v)
-                                                    (or (empty? v)
+                                                    (or (null? v)
                                                         (andmap (λ (r) (equal? (list EMP) r)) v))))]
          [e-nts (hash-keys only-empty-rules)]
          [simp-rules (simplify-rules new-rules '())]
@@ -725,10 +679,10 @@
                                                                         (hash-has-key? sub-only-rules r)) rule)) v)
                                                       (values k (map (λ (val) (map (λ (r)
                                                                                      (if (hash-has-key? sub-only-rules r)
-                                                                                         (first (flatten (hash-ref sub-only-rules r)))
+                                                                                         (car (flatten (hash-ref sub-only-rules r)))
                                                                                          r)) val)) v))
                                                       (values k v))))]
-         [startt (first (filter (λ (x) (eq? x (cfg-get-start proper-cfg))) (hash-keys simp-rules2)))]
+         [startt (car (filter (λ (x) (eq? x (cfg-get-start proper-cfg))) (hash-keys simp-rules2)))]
          [final-rules (hash-filter simp-rules2 (λ (k v)
                                                  (or (eq? k startt)
                                                      (not (member k sub-nts)))))]
@@ -737,30 +691,9 @@
                                             (cfg-rule lhs rhs))
                                           (hash-ref final-rules lhs)))
                                    (hash-keys final-rules))])
-    #;(values ;proper-cfg
-       new-rules
-       only-empty-rules
-       simp-rules
-       sub-only-rules
-       simp-rules2
-       final-rules
-       (append-map (λ (lhs)
-                     (map (λ (rhs)
-                            (cfg-rule lhs rhs))
-                          (hash-ref final-rules lhs)))
-                   (hash-keys final-rules)))
-            
-    #;(cfg (CFG-nts G) (CFG-sigma G) (append-map (λ (lhs)
-                                                   (map (λ (rh)
-                                                          (cfg-rule lhs rh))
-                                                        (hash-ref lrhs))
-                                                   (hash-keys final-rules)
-                                                   (hash-values final-rules)) (CFG-start G)))
-    final-rules #;(cfg->cfe (cfg (hash-keys final-rules) (cfg-get-alphabet proper-cfg) usable-rules startt))                            
-    #;(cfg->cfe proper-cfg)))
+    final-rules))
 
 ;;cfe -> pda
 ;;Purpose: Converts the given cfe into a pda
-(define #;define/contract (cfe->pda cfe)
-  #;cfe->pda/c
+(define (cfe->pda cfe)
   (cfg->pda (cfe->cfg cfe)))

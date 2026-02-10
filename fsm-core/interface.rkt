@@ -47,7 +47,8 @@
   "private/fsmunit/interface.rkt"
   "private/cfe-constructors/construct-cfe-macro.rkt"
   "private/cfe-constructors/context-free-expressions-constructors.rkt"
-  "private/machine-minimization/fsa-minimization.rkt"
+  (rename-in "private/machine-minimization/fsa-minimization.rkt"
+             (minimize-dfa fsa-minimize))
   "../visualizations/viz-sm-constructors/viz-minimization.rkt"
   racket/list
   racket/bool
@@ -162,8 +163,6 @@
    #;pda->cfe #;cfe->pda #;printable-cfexp
  )
 ; Primitive constructors imported from other modules
-
-(define fsa-minimize minimize-dfa)
 
 (define (grammar-viz G w #:derv-type [derv-type 'left] #:cpu-cores [cpu-cores #f] . invariants)
   (cond [(rg? G) (apply rg-viz G w #:cpu-cores cpu-cores invariants)]

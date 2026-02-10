@@ -1,6 +1,7 @@
-#lang fsm
+#lang racket/base
 (require rackcheck
-         racket/list)
+         racket/list
+         "../../../main.rkt")
 
 (define (gen:kleene-star-regexp gen)
   (gen:list gen))

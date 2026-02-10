@@ -3,7 +3,8 @@
 (require
   "../macros/shared/shared-predicates.rkt"
   "../macros/error-formatting.rkt"
-  racket/contract)
+  racket/contract/base
+  racket/contract/combinator)
 
 (provide minimization/c
          minimization-viz/c)
