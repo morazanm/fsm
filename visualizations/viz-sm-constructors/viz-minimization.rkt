@@ -120,7 +120,7 @@
 
 ;;new-symbol | the new state symbol that represents all of the states that got merged | symbol
 ;;old-symbols | all of the symbols that merged into one state | (listof state)
-(struct merged-state (new-symbol old-symbols state-pairs) #:transparent)
+(struct merged-state (new-symbol old-symbols state-pairs orginal-symbol) #:transparent)
 
 ;;new-machine | the *possibly* minimized machine that resulted from the minimize-dfa |fsa
 ;;unreachables-removed-M | the machine with unreachable states removed | fsa
@@ -156,7 +156,7 @@
 (struct phase-4-attributes (unmarked-pair) #:transparent)
 
 ;;merged-stated | all of the states that got merged into another state | (listof merged-state)
-(struct phase-5-attributes (rebuild-M merged-states remaining-states) #:transparent)
+(struct phase-5-attributes (rebuild-M merged-states remaining-states assoc-table) #:transparent)
 
 ;;minimized? | determines if the machine has been minimized | boolean
 (struct phase-6-attributes (minimized?) #:transparent)
@@ -445,17 +445,21 @@ A Path is a (treelistof dfa-rule)
               [ump-s2 (state-pair-s2 unmarked-pair)])
           (cond [(or (eq? ump-s1 start)
                      (eq? ump-s2 start))
-                 (merged-state start (set ump-s1 ump-s2) (list unmarked-pair))]
+                 (merged-state start (set ump-s1 ump-s2) (list unmarked-pair) start)]
                 [(or (member ump-s1 finals)
                      (member ump-s2 finals))
                  (merged-state (if (member ump-s1 finals)
                                    ump-s1
                                    ump-s2)
                                (set ump-s1 ump-s2)
-                               (list unmarked-pair))]
+                               (list unmarked-pair)
+                               (if (member ump-s1 finals)
+                                   ump-s1
+                                   ump-s2))]
                 [else (merged-state ump-s1
                                     (set (state-pair-s1 unmarked-pair) ump-s2)
-                                    (list unmarked-pair))])))
+                                    (list unmarked-pair)
+                                    ump-s1)])))
       (cond [(treelist-empty? unmarked-pairs) acc]
             [(overlap? (treelist-first unmarked-pairs) acc)
              (accumulate-unmarked-pairs (treelist-rest unmarked-pairs) (merge-pairs (treelist-first unmarked-pairs) acc))]
@@ -465,7 +469,8 @@ A Path is a (treelistof dfa-rule)
            [merged-unmarked-pairs (accumulate-unmarked-pairs unmarked-pairs empty)]
            [states-that-were-merged (set->list (foldl (λ (mp acc) (set-remove (set-union acc (merged-state-old-symbols mp))
                                                                               (merged-state-new-symbol mp)))
-                                                      (set) merged-unmarked-pairs))]
+                                                      (set)
+                                                      merged-unmarked-pairs))]
            [remaining-states (filter (λ (s) (not (member s states-that-were-merged))) states)]
            [new-finals (filter (λ (s) (member s finals)) remaining-states)]
            [table->rules (apply append
@@ -918,7 +923,10 @@ A Path is a (treelistof dfa-rule)
       (above (text "Minimizing the machine" FONT-SIZE BLACK)
              (if (or (symbol? merged-state)
                      (< (set-count (merged-state-old-symbols merged-state)) 2))                 
-                 (above (text (format "State ~a is distinguishable and does not get merged" (first (dfa-states (phase-5-attributes-rebuild-M phase-attribute))))
+                 (above (text (format "State ~a is distinguishable, does not get merged, and is renamed to ~a"
+                                      (hash-ref (phase-5-attributes-assoc-table phase-attribute)
+                                                (first (dfa-states (phase-5-attributes-rebuild-M phase-attribute))))
+                                      (first (dfa-states (phase-5-attributes-rebuild-M phase-attribute))))
                               FONT-SIZE BLACK)
                         (text (format "States remaining to be used for building the minimized machine: ~a"
                                (if (empty? remaining-states)
@@ -1038,7 +1046,7 @@ A Path is a (treelistof dfa-rule)
                                           [else (merged-state-old-symbols merge-states)]))     
                    (cond [(box? merge-states) (rest (unbox merge-states))]
                          [(or (symbol? merge-states)
-                           (empty? merge-states))
+                              (empty? merge-states))
                           merge-states]
                          [else (merged-state-old-symbols merge-states)])))
 
@@ -1049,7 +1057,7 @@ A Path is a (treelistof dfa-rule)
 ;; fsa -> void
 ;; Purpose: Displays the process of minimizing a dfa
 (define/contract (minimization-viz M)
-  minimization-viz/c
+  any/c #;minimization-viz/c
   ;;dfa dfa -> boolean
   ;;Purpose: Determines if the two dfa have any changes
   (define (machine-changed? old-M new-M)
@@ -1207,7 +1215,7 @@ A Path is a (treelistof dfa-rule)
 
   ;; (listof dfa) (listof merged-state) (vectorof (vectorof marking)) -> (listof phase)
   ;; Purpose: Pairs a merged-state with a rebuild dfa that contains either the new merged state symbol or one of the states that got merged
-  (define (make-phase-5 unminimized-M loRM loMS state-pairing-table states)
+  (define (make-phase-5 unminimized-M loRM loMS state-pairing-table states assoc-table)
     ;;(listof dfa) (listof merged-state) (listof phase)
     ;;Purpose: Associates the given rebuilt dfa with a merged-state if any of the components a merged-state has been found
     (define (make-phase-5-helper loRM loMS states acc)
@@ -1234,7 +1242,9 @@ A Path is a (treelistof dfa-rule)
                                     (if found-merged-state?
                                         (first merged-state)
                                         (first (dfa-states rebuild-M)))
-                                    remaining-states))])
+                                    remaining-states
+                                    assoc-table
+                                    ))])
             (make-phase-5-helper (rest loRM)
                                  (if found-merged-state?
                                      (remove (first merged-state) loMS)
@@ -1298,15 +1308,17 @@ A Path is a (treelistof dfa-rule)
          [filled-table (phase-results-new-table phase4+new-table)]
          [merged-states (minimization-results-merged-states results-from-minimization)]
          [rebuilding-machines (reconstruct-machine minimized-M merged-states)]
+         
          [phase-5 (if can-be-minimized?
-                      (make-phase-5 no-unreachables-M rebuilding-machines merged-states filled-table (dfa-states minimized-M))
+                      (make-phase-5 no-unreachables-M rebuilding-machines merged-states filled-table (dfa-states minimized-M)
+                       (minimization-results-state-assoc results-from-minimization))
                       empty)]
          [phase-6 (list (phase PHASE-6 (last rebuilding-machines) filled-table (phase-6-attributes can-be-minimized?)))]
          [all-phases (append phase--1 phase-0 phase-1 phase-2 phase-3 phase-4 phase-5 phase-6)]
-         [graphs (make-main-graphic all-phases state-table-mappings (minimization-results-state-assoc  results-from-minimization))]
-
+         [graphs (make-main-graphic all-phases state-table-mappings (minimization-results-state-assoc results-from-minimization))]
+         
          )
-    
+    ;(values merged-states rebuilding-machines results-from-minimization )
     #;
     (void)
     ;phase-5
