@@ -5,6 +5,9 @@
 #lang racket/base
 
 (require
+  "private/sm-test/sm-test-invs-fsa.rkt"
+  "private/sm-test/quickcheck-invariants.rkt"
+  "private/sm-test/sm-test-invs-pda.rkt"
   "private/cyk.rkt"
   "private/fsa.rkt"
   "private/cfg.rkt"
@@ -37,12 +40,14 @@
   "../visualizations/viz-grammar-constructors/csg-viz.rkt"
   "private/chomsky.rkt"
   "private/Chomsky-Greibach-CFG-Transformations/greibach.rkt"
-  "private/fsmunit/check-accept-reject-macro.rkt"
+  "private/fsmunit/interface.rkt"
   racket/list
   racket/contract/region
   )
   
 (provide
+ sm-test-invs
+ sm-quickcheck
  check-machine
  empties
 
@@ -122,8 +127,9 @@
 
  ;; FSM Unit Testing
  check-derive? check-not-derive?
- ;check-gen? check-not-gen?
+ check-gen? check-not-gen?
  check-accept? check-reject?
+ check-inv-holds? check-inv-fails?
  ;check-in-lang? check-not-in-lang?
  
  ;; Grammar visualizations
@@ -138,7 +144,28 @@
         [(cfg? G) (apply cfg-viz G w #:cpu-cores cpu-cores #:derv-type derv-type invariants)]
         [(csg? G) (apply csg-viz G w #:cpu-cores cpu-cores invariants)]
         [else (error "Unknown grammar type given to grammar-viz.")]))
-  
+
+(define (sm-test-invs M #:ds-remove [ds-remove #t] #:rep-limit [rep-limit 1] #:max-path-length [path-length 12] . invs)
+  (let ([type (sm-type M)])
+    (cond [(or (eq? 'ndfa type) (eq? 'dfa type))
+           (sm-test-invs-fsa M rep-limit ds-remove invs)]
+          [(eq? 'pda type)
+           (sm-test-invs-pda M path-length invs)]
+          [else (error "Support for tms and mttms is under development! :)")])))
+
+
+;; machine (listof (state invariant)) natnum -> void throw error 
+;; Purpose: To quickcheck the invariants of the states of the given machine
+(define (sm-quickcheck machine #:num-tests [tests 300] . los&inv)
+  (let ([type (sm-type machine)])
+    (cond [(or (eq? 'ndfa type)
+               (eq? 'dfa type))
+               (quickcheck-invs-fsa machine los&inv tests)]
+          [(eq? 'pda type)
+           (error "Support for pdas coming soon! :)")]
+          [else (error "Support for tms and mttms is under development! :)")])))
+
+
 ; sm word [natnum] --> image
 (define (sm-cmpgraph M w #:palette [p 'default] #:cutoff [c 100] . headpos)
   (let ((t1 (sm-type M)))

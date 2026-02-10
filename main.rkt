@@ -26,6 +26,8 @@
    empties
 
    ; sm constructors
+   sm-test-invs
+   sm-quickcheck
    make-dfa make-ndfa make-ndpda make-tm
    regexp->fsa ndfa->dfa fsa->regexp
    sm-rename-states 
@@ -96,8 +98,9 @@
 
    ;; FSM Unit Testing
    check-derive? check-not-derive?
-   ;check-gen? check-not-gen?
+   check-gen? check-not-gen?
    check-accept? check-reject?
+   check-inv-holds? check-inv-fails?
    ;check-in-lang? check-not-in-lang?
 
    ; some helpful functions
@@ -107,8 +110,11 @@
    ; constants
    EMP DEAD RIGHT LEFT LM BLANK BRANCH GOTO ARROW VAR
 
-   sm-viz)
+   sm-viz
 
+   ; invariant testing
+   sm-test-invs
+   )
 
   ;; sm-graph :: fsa optional(number) -> bitmap
   ;; draws a graph of the given machine and returns the bitmap so it
@@ -124,7 +130,7 @@
                                     '(Y)
                                     '((W a X)
                                       (X a Y)
-                                      (Y b Y))))
+                                      (Y b Y))))  
 
   #;(define EQABC2
     (make-mttm

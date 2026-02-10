@@ -42,8 +42,8 @@
        (#:accepts [accepts (states
                             sigma
                             delta
-                            start) (and/c (listof-words/c "accepts" "two")
-                                          (words-in-sigma/c sigma 'accepts "two")
+                            start) (and/c (listof-words/c "accepts" "four")
+                                          (words-in-sigma/c sigma 'accepts "four")
                                           (rg-input/c states
                                                       sigma
                                                       delta
@@ -52,8 +52,8 @@
         #:rejects [rejects (states
                             sigma
                             delta
-                            start) (and/c (listof-words/c "rejects" "two")
-                                          (words-in-sigma/c sigma 'rejects "two")
+                            start) (and/c (listof-words/c "rejects" "four")
+                                          (words-in-sigma/c sigma 'rejects "four")
                                           (rg-input/c states
                                                       sigma
                                                       delta
@@ -84,8 +84,8 @@
        (#:accepts [accepts (states
                             sigma
                             delta
-                            start) (and/c (listof-words/c "accepts" "two")
-                                          (words-in-sigma/c sigma 'accepts "two")
+                            start) (and/c (listof-words/c "accepts" "four")
+                                          (words-in-sigma/c sigma 'accepts "four")
                                           (cfg-input/c states
                                                        sigma
                                                        delta
@@ -94,8 +94,8 @@
         #:rejects [rejects (states
                             sigma
                             delta
-                            start) (and/c (listof-words/c "rejects" "two")
-                                          (words-in-sigma/c sigma 'rejects "two")
+                            start) (and/c (listof-words/c "rejects" "four")
+                                          (words-in-sigma/c sigma 'rejects "four")
                                           (cfg-input/c states
                                                        sigma
                                                        delta
@@ -127,8 +127,8 @@
        (#:accepts [accepts (states
                             sigma
                             delta
-                            start) (and/c (listof-words/c "accepts" "two")
-                                          (words-in-sigma/c sigma 'accepts "two")
+                            start) (and/c (listof-words/c "accepts" "four")
+                                          (words-in-sigma/c sigma 'accepts "four")
                                           (csg-input/c states
                                                        sigma
                                                        delta
@@ -137,8 +137,8 @@
         #:rejects [rejects (states
                             sigma
                             delta
-                            start) (and/c (listof-words/c "rejects" "two")
-                                          (words-in-sigma/c sigma 'rejects "two")
+                            start) (and/c (listof-words/c "rejects" "four")
+                                          (words-in-sigma/c sigma 'rejects "four")
                                           (csg-input/c states
                                                        sigma
                                                        delta

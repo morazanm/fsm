@@ -3,7 +3,6 @@
 (require "../../fsm-gviz/private/lib.rkt"
          rackunit
          "../2htdp/image.rkt"
-         "../viz-lib/resize-sm-image.rkt"
          "../../fsm-core/private/fsa.rkt"
          "../../fsm-core/private/constants.rkt"
          "../../fsm-core/private/sm-getters.rkt"
@@ -12,7 +11,6 @@
          "../viz-lib/viz-state.rkt"
          "../viz-lib/viz-imgs/keyboard_bitmaps.rkt"
          "../viz-lib/bounding-limits-macro.rkt"
-         "../viz-lib/viz-imgs/cursor.rkt"
          "../viz-lib/viz-macros.rkt"
          "../viz-lib/default-viz-function-generators.rkt"
          "../viz-lib/viz.rkt"
@@ -702,8 +700,11 @@
              [grphs (combine-lists ndfa-dgrphs dfa-dgrphs)])
         (run-viz
          grphs
-         (lambda () (above (graph->bitmap (first (first grphs))) (graph->bitmap (second (first grphs)))))
+         (list->vector (map (lambda (x) (lambda (graph0 graph1) (above graph0 graph1))) grphs))
+         #;(lambda () (list (graph->bitmap (first (first grphs)))
+                          (graph->bitmap (second (first grphs)))))
          MIDDLE-E-SCENE
+         E-SCENE-WIDTH E-SCENE-HEIGHT PERCENT-BORDER-GAP
          DEFAULT-ZOOM
          DEFAULT-ZOOM-CAP
          DEFAULT-ZOOM-FLOOR

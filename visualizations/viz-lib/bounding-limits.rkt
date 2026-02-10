@@ -44,38 +44,22 @@
 ;; bounding-limits posn -> boolean
 ;; Purpose: Checks whether the given posn's Y position is beyond only the minimum Y value
 (define (outside-north-side-bounding-limits? b-limit a-posn)
-  (> (bounding-limits-min-y b-limit) (posn-y a-posn))
-  #;(and (<= (bounding-limits-min-x b-limit) (posn-x a-posn))
-       (<= (posn-x a-posn) (bounding-limits-max-x b-limit))
-       (> (bounding-limits-min-y b-limit) (posn-y a-posn))
-       (<= (posn-y a-posn) (bounding-limits-max-y b-limit))))
+  (> (bounding-limits-min-y b-limit) (posn-y a-posn)))
 
 ;; bounding-limits posn -> boolean
 ;; Purpose: Checks whether the given posn's Y position is beyond only the maximum Y value
 (define (outside-south-side-bounding-limits? b-limit a-posn)
-  (> (posn-y a-posn) (bounding-limits-max-y b-limit))
-  #;(and (<= (bounding-limits-min-x b-limit) (posn-x a-posn))
-       (<= (posn-x a-posn) (bounding-limits-max-x b-limit))
-       (<= (bounding-limits-min-y b-limit) (posn-y a-posn))
-       (> (posn-y a-posn) (bounding-limits-max-y b-limit))))
+  (> (posn-y a-posn) (bounding-limits-max-y b-limit)))
 
 ;; bounding-limits posn -> boolean
 ;; Purpose: Checks whether the given posn's X position is beyond only the maximum X value
 (define (outside-east-side-bounding-limits? b-limit a-posn)
-  (> (posn-x a-posn) (bounding-limits-max-x b-limit))
-  #;(and (<= (bounding-limits-min-x b-limit) (posn-x a-posn))
-       (> (posn-x a-posn) (bounding-limits-max-x b-limit))
-       (<= (bounding-limits-min-y b-limit) (posn-y a-posn))
-       (<= (posn-y a-posn) (bounding-limits-max-y b-limit))))
+  (> (posn-x a-posn) (bounding-limits-max-x b-limit)))
 
 ;; bounding-limits posn -> boolean
 ;; Purpose: Checks whether the given posn's X position is beyond only the minimum X value
 (define (outside-west-side-bounding-limits? b-limit a-posn)
-  (> (bounding-limits-min-x b-limit) (posn-x a-posn))
-  #;(and (> (bounding-limits-min-x b-limit) (posn-x a-posn))
-       (<= (posn-x a-posn) (bounding-limits-max-x b-limit))
-       (<= (bounding-limits-min-y b-limit) (posn-y a-posn))
-       (<= (posn-y a-posn) (bounding-limits-max-y b-limit))))
+  (> (bounding-limits-min-x b-limit) (posn-x a-posn)))
 
 ;; bounding-limits posn -> boolean
 ;; Purpose: Checks whether the given posn is beyond the minimum X value, and is beyond the minimum Y value
@@ -112,22 +96,18 @@
 ;; bounding-limits posn -> boolean
 ;; Purpose: Checks whether the given posn is beyond either the minimum or maximum X value
 (define (outside-x-axis-bounding-limits? b-limit a-posn)
-  (and (or (> (bounding-limits-min-x b-limit) (posn-x a-posn))
-           (> (posn-x a-posn) (bounding-limits-max-x b-limit)))
-       (<= (bounding-limits-min-y b-limit) (posn-y a-posn))
-       (<= (posn-y a-posn) (bounding-limits-max-y b-limit))))
+  (or (> (bounding-limits-min-x b-limit) (posn-x a-posn))
+           (> (posn-x a-posn) (bounding-limits-max-x b-limit))))
 
 ;; bounding-limits posn -> boolean
 ;; Purpose: Checks whether the given posn is beyond either the minimum or maximum Y value
 (define (outside-y-axis-bounding-limits? b-limit a-posn)
-  (and (<= (bounding-limits-min-x b-limit) (posn-x a-posn))
-       (<= (posn-x a-posn) (bounding-limits-max-x b-limit))
-       (or (> (bounding-limits-min-y b-limit) (posn-y a-posn))
-           (> (posn-y a-posn) (bounding-limits-max-y b-limit)))))
+  (or (> (bounding-limits-min-y b-limit) (posn-y a-posn))
+           (> (posn-y a-posn) (bounding-limits-max-y b-limit))))
 
 ;; bounding-limits posn -> boolean
 ;; Purpose: Checks whether the given posn is beyond both: either the minimum or maximum X value, and either the minimum or maximum Y value
-(define (outside-x-and-y-axis-bounding-limits? b-limit a-posn)
+#;(define (outside-x-and-y-axis-bounding-limits? b-limit a-posn)
   (and (or (> (bounding-limits-min-x b-limit) (posn-x a-posn))
            (> (posn-x a-posn) (bounding-limits-max-x b-limit)))
        (or (> (bounding-limits-min-y b-limit) (posn-y a-posn))

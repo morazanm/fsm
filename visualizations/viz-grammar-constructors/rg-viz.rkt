@@ -41,30 +41,19 @@
 
 ;; levels -> tree
 ;; Creates a tree structure from the levels
-(define (create-yield-tree levels)
+(define (create-yield-tree levels start-elem)
   (foldl (lambda (val accum)
            (set-tree-subtrees! (dfs accum (car (car val)))
                                (map (lambda (edge) (tree (cadr edge) '())) val))
            accum)
-         (tree 'S '())
+         (tree start-elem '())
          levels))
 
 ;; Symbol -> Symbol
 ;; Removes all numbers from the symbol (that were originally added for differentiating in graphviz)
 (define (undo-renaming symb)
-  (string->symbol (list->string (filter (lambda (x)
-                                          (not (or (equal? #\0 x)
-                                                   (equal? #\1 x)
-                                                   (equal? #\2 x)
-                                                   (equal? #\3 x)
-                                                   (equal? #\4 x)
-                                                   (equal? #\5 x)
-                                                   (equal? #\6 x)
-                                                   (equal? #\7 x)
-                                                   (equal? #\8 x)
-                                                   (equal? #\9 x)
-                                                   (equal? #\- x))))
-                                        (string->list (symbol->string symb))))))
+  (string->symbol (list->string (takef (string->list (symbol->string symb)) (lambda (x) (not (equal? #\_ x))))
+                                )))
 
 ;; tree -> listof Symbol
 ;; Accumulates all of the leave nodes in order (producing the yield of the tree)
@@ -192,10 +181,20 @@
                                    (cadr (map symbol->string (take-right (cadr w-der) 2))))))
              (create-rules (cdr w-der)))]))
 
+(define (rename-symbol nt hashtb)
+    (let ([result (hash-ref hashtb nt #f)])
+      (if result
+          (begin
+            (hash-set! hashtb nt (add1 result))
+            (string->symbol (format "~s_~s" nt (add1 result))))
+          (begin
+            (hash-set! hashtb nt 0)
+            (string->symbol (format "~s_0" nt))))))
+
 ;; rename-edges
 ;; (listof level) -> (listof level)
 ;; Purpose: To rename the nonterminals that reoccur in extracted edges
-(define (rename-edges exe)
+(define (rename-edges exe hash-nt)
   (define (rnm-lvl lvl acc)
     (cond
       [(null? lvl) '()]
@@ -219,7 +218,7 @@
 ;; rename-nodes
 ;; (listof level) -> (listof level)
 ;; Purpose: To rename the terminals that reoccur in extracted edges
-(define (rename-nodes exe)
+(define (rename-nodes exe hash-nt)
   (define (rnm-lvl lvl acc)
     (cond
       [(null? lvl) '()]
@@ -300,7 +299,7 @@
                                                     (not (member state broken-invariants?)))
                                                INVARIANT-HOLDS-COLOR])
                                  'shape 'circle
-                                 'label (string->symbol (string (string-ref (symbol->string state) 0)))
+                                 'label (undo-renaming state)
                                  'fontcolor 'black
                                  'font "Sans")))
          graph
@@ -367,6 +366,13 @@
          [producing-nodes (get-producing-nodes (append* levels))]
          [invariant-nodes
           (cons root-node
+                (append-map
+                 (lambda (lvl)
+                   (filter (lambda (node) (member node producing-nodes))
+                                               (map (lambda (edge) (second edge))
+                                                    (filter (lambda (edge) (not (empty? edge))) lvl))))
+                 levels))
+          #;(cons root-node
                 (append-map (lambda (lvl)
                               (let* ([nodes (map (lambda (edge) (cadr edge))
                                                  (filter (lambda (edge) (not (null? edge))) lvl))])
@@ -412,30 +418,42 @@
 
 ;; run function
 (define (rg-viz rg word #:cpu-cores [cpu-cores #f] . invariants)
-  (if (string? (rg-derive rg word))
-      (rg-derive rg word)
+  (define rg-derv-res (rg-derive rg word))
+  (if (string? rg-derv-res)
+      rg-derv-res
       (let* ([derivation (rg-derive-with-rules rg word)]
-             [w-der (map symbol->fsmlos
-                         (map first (filter (λ (x) (not (equal? (car x) '->))) derivation)))]
+             [w-der (for/list ([derv-elem (in-list derivation)]
+                               #:when (not (equal? (first derv-elem) '->)))
+                      (symbol->fsmlos (first derv-elem)))]
              [rules (cons ""
-                          (map (lambda (x)
-                                 (string-append (symbol->string (car x))
-                                                " → "
-                                                (symbol->string (caddr x))))
-                               (map second (cdr derivation))))]
-             [extracted-edges (create-edges w-der)]
-             [renamed (rename-nodes (rename-edges extracted-edges))]
-             [loe (map (λ (el) (if (symbol? (car el)) (list el '()) el)) renamed)]
-             [loe-without-empty (map (λ (el) (if (symbol? (car el)) (list el) el)) renamed)]
-             [yield-trees (map create-yield-tree
-                               (map reverse (create-list-of-levels loe-without-empty)))]
-             [dgraph (dgrph loe
+                          (for/list ([derv-elem (in-list (rest derivation))])
+                            (string-append (symbol->string (first (second derv-elem)))
+                                           " → "
+                                           (symbol->string (third (second derv-elem))))))]
+             [used-node-names (make-hash)]
+             [renamed (rename-nodes (rename-edges (create-edges w-der) used-node-names) used-node-names)]
+             [yield-trees (map (lambda (x) (create-yield-tree x (grammar-start rg))) (map reverse (create-list-of-levels (map (λ (el) (if (symbol? (first el))
+                                                                                (list el)
+                                                                                el))
+                                                                    renamed))))]
+             [dgraph (dgrph (map (λ (el) (if (symbol? (first el))
+                                             (list el '())
+                                             el))
+                                 renamed)
                             '()
                             '()
                             '()
-                            (cdr rules)
-                            (list (car rules))
-                            (reverse yield-trees)
+                            (rest rules)
+                            (list (first rules))
+                            
+                            (map (lambda (x) (first yield-trees))
+                                 yield-trees)
+                            #;(reverse (for/list ([lvl (in-list (create-list-of-levels
+                                                               (map (λ (el) (if (symbol? (first el))
+                                                                                (list el)
+                                                                                el))
+                                                                    renamed)))])
+                                       (create-yield-tree (reverse lvl) (grammar-start rg))))
                             (list (tree (grammar-start rg) '())))]
              [lod (reverse (create-dgrphs dgraph '()))]
              [broken-invariants
@@ -455,14 +473,14 @@
 
 (define even-bs-odd-as
   (make-unchecked-rg '(S A B C)
-                     '(a b)
-                     `((S ,ARROW aA) (S ,ARROW bB)
-                                     (S ,ARROW a)
-                                     (A ,ARROW aS)
-                                     (A ,ARROW bC)
-                                     (B ,ARROW aC)
-                                     (B ,ARROW bS)
-                                     (C ,ARROW aB)
-                                     (C ,ARROW bA)
-                                     (C ,ARROW b))
-                     'S))
+           '(a b)
+           `((S ,ARROW aA) (S ,ARROW bB)
+                           (S ,ARROW a)
+                           (A ,ARROW aS)
+                           (A ,ARROW bC)
+                           (B ,ARROW aC)
+                           (B ,ARROW bS)
+                           (C ,ARROW aB)
+                           (C ,ARROW bA)
+                           (C ,ARROW b))
+           'S))

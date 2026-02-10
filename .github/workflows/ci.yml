@@ -29,7 +29,7 @@ jobs:
           version: ${{ matrix.racket-version }} # Taken from `racket-version: ["stable"]`
       # Build FSM
       - name: Build FSM DSL
-        run: xvfb-run raco pkg install
+        run: xvfb-run raco pkg install --auto rackcheck
       # Kick off the tests
       - name: Run tests
         run: xvfb-run -a raco test -t -j 4 fsm-test fsm-gui fsm-core fsm-gviz

@@ -787,7 +787,7 @@
   (let ((test-words (generate-words number-tests (fsa-getalphabet m) null))) ;(build-list number-tests (lambda (i) (generate-word (fsa-getalphabet m))))))
     (map (lambda (w) (list w (apply-fsa m w))) test-words)))
 
-#;(define aUb (regexp->fsa (make-unchecked-union
+(define aUb (regexp->fsa (make-unchecked-union
                           (make-unchecked-singleton "a")
                           (make-unchecked-singleton "b"))))
 
@@ -820,5 +820,18 @@
 ;(fsa-getstart BB)
 ;(fsa-getfinals BB)
 ;(fsa-getrules BB)
+
+(define DNA-SEQUENCE (make-unchecked-dfa '(K H F M I D B S R)
+                                         '(a t c g)
+                                         'K
+                                         '(K F I B R)
+                                         `((K a H) (H t F) (F a H) (F t M) (F c D) (F g S)  
+                                                   (K t M) (M a I) (I a H) (I t M) (I c D) (I g S)
+                                                   (K c D) (D g B) (B a H) (B t M) (B c D) (B g S)
+                                                   (K g S) (S c R) (R a H) (R t M) (R c D) (R g S))))
+
+(define EVIL-dna-sequence (complement-fsa DNA-SEQUENCE))
+
+(define EVIL-regexp (fsa->regexp EVIL-dna-sequence))
                          
 ; closes module

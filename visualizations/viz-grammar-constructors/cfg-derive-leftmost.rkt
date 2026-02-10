@@ -5,22 +5,23 @@
          "../../fsm-core/private/misc.rkt"
          "../../fsm-core/private/cyk.rkt"
          "../../fsm-core/private/chomsky.rkt"
-         "circular-queue-treelist.rkt")
-
+         "circular-queue-treelist.rkt"
+         racket/set)
 (provide cfg-derive-leftmost)
+
 (define (cfg-derive-leftmost g w)
+  (define alphabet-set (list->set (cfg-get-alphabet g)))
+  (define nt-set (list->set (cfg-get-v g)))
+  (define nt-to-rules-ht
+    (for/hasheq ([nt (in-list (cfg-get-v g))])
+      (values nt (filter (lambda (r) (eq? nt (cfg-rule-lhs r))) (cfg-get-the-rules g)))))
   ;; (listof symbol) -> Symbol
   ;; Purpose: Returns leftmost nonterminal
   (define (get-first-nt st)
     (cond
-      [(null? st) #f]
-      [(not (member (car st) (cfg-get-alphabet g))) (car st)]
+      [(empty? st) #f]
+      [(set-member? nt-set (car st)) (car st)]
       [else (get-first-nt (cdr st))]))
-
-  ;; (listof symbol) -> symbol
-  ;; Purpose: Returns rightmost nonterminal
-  (define (get-last-nt st)
-    (get-first-nt (reverse st)))
 
   ;; symbol CFG -> (Listof CFG-rule)
   ; A CFG-rule is a structure, (CFG-rule L R), where L is a symbol (non-terminal) and R
@@ -87,12 +88,12 @@
                                (if (equal? w (car l))
                                    (if (null? l)
                                        (list EMP)
-                                       (list (list (los->symbol (car l)) (los->symbol (cadr l)))))
-                                   (list (list (los->symbol (car l)) (los->symbol (cadr l)))
-                                         ARROW)))
-                             (reverse fderiv)))
+                                       (list (list (los->symbol (first l)) (los->symbol (second l)))))
+                                   (list (list (los->symbol (first l)) (los->symbol (second l)))
+                                         )))
+                             (reverse fderiv))
                  (make-deriv visited (dequeue! derivs) g chomsky))
-             (let* ([rls (get-rules fnt g)]
+             (let* ([rls (hash-ref nt-to-rules-ht fnt)]
                     [rights (map cfg-rule-rhs rls)]
                     [new-states
                      (filter (lambda (st)
@@ -139,7 +140,7 @@
                                       (C ,ARROW b))
                       'S))
 
-(define cfg-moreAs-than-Bs (make-cfg '(S T)
+#;(define cfg-moreAs-than-Bs (make-cfg '(S T)
                                        '(a b)
                                        `((S -> TaT)
                                          (T -> aTb)
