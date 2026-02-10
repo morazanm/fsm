@@ -321,7 +321,6 @@
                (C ,EMP D)
                (D ,EMP S))))
 
-;;L = {w | w has even # of bs}
 (define EVEN-NUM-Bs
   (make-unchecked-dfa '(S F)
             '(a b)

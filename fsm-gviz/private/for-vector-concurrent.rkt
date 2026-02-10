@@ -26,11 +26,6 @@
            (vector-map! force promises)
            promises))]))
 
-#;(for/vector/concurrent
-    #:length 3
-  ([sym (in-list '(a b c))])
-  sym)
-  
 #;(define-syntax (for/vector/concurrent stx)
     (syntax-parse stx
       [(_ #:length len (clauses ...) body ...)

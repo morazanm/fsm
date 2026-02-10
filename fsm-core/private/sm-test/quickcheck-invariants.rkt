@@ -5,7 +5,7 @@
          "reg-exp-function.rkt"
          "../regexp.rkt"
          "../fsa.rkt")
-(provide quickcheck-invs)
+(provide quickcheck-invs-fsa)
 
 (define MAX-KLEENE-LENGTH 20)
 
@@ -43,7 +43,7 @@
 
 ;; machine (listof (state invariant)) natnum -> void throw error 
 ;; Purpose: To quickcheck the invariants of the states of the given machine
-(define (quickcheck-invs machine los&inv #:num-tests [tests 1000])
+(define (quickcheck-invs-fsa machine los&inv tests)
   (define los&regexp (get-all-regexp machine))
   (define los&inv-only-states-that-reach-finals
     (filter (λ (s&inv) (hash-has-key? los&regexp (first s&inv))) los&inv))
