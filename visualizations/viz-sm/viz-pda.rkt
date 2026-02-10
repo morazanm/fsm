@@ -1,25 +1,30 @@
-#lang racket
+#lang racket/base
 
 (require "../../fsm-gviz/private/lib.rkt"
          "../2htdp/image.rkt"
          "../viz-lib/viz.rkt"
          racket/treelist
-         "../viz-lib/zipper.rkt"
+         racket/list
+         racket/set
+         racket/function
+         racket/contract
+         "sm-viz-contracts/sm-viz-contracts.rkt"
          "../viz-lib/bounding-limits.rkt"
+         "../viz-lib/zipper.rkt"
          "../viz-lib/viz-state.rkt"
          "../viz-lib/viz-macros.rkt"
          "../viz-lib/vector-zipper.rkt"
-         "../viz-lib/viz-imgs/keyboard_bitmaps.rkt"
          "../../fsm-core/private/constants.rkt"
+         "../viz-lib/viz-imgs/keyboard_bitmaps.rkt"
          "../../fsm-core/private/pda.rkt"
          "../../fsm-core/private/misc.rkt"
-         "default-informative-messages.rkt"
-         "david-viz-constants.rkt"
+         "sm-viz-helpers/david-viz-constants.rkt"
          (except-in "../viz-lib/viz-constants.rkt"
                     INS-TOOLS-BUFFER)
-         "david-imsg-state.rkt"
-         (except-in "david-imsg-dimensions.rkt"
-                    FONT-SIZE))
+         (except-in "sm-viz-helpers/david-imsg-dimensions.rkt"
+                    FONT-SIZE)
+         "sm-viz-helpers/david-imsg-state.rkt"
+         "sm-viz-helpers/default-informative-messages.rkt")
 
 (provide pda-viz)
 
@@ -169,6 +174,14 @@ farthest-consumed-input | is the portion the ci that the machine consumed the mo
   ;;set
   ;;the set of final states
   (define finals-set (list->seteq finals))
+  
+  ;;(setof pda-config) pda-config -> boolean
+  ;;Purpose: Determines if the given pda-config is a member of the given set
+  (define (set-member? st val)
+    (for/or ([elem (in-set st)])
+      (and (equal? (pda-config-state elem) (pda-config-state val))
+           (equal? (pda-config-word  elem) (pda-config-word  val))
+           (equal? (pda-config-stack elem) (pda-config-stack val)))))
 
   ;;(queueof computation) -> (listof computation hashtable)
   ;;Purpose: Makes all the computations based around the (queueof computation) and (listof rule)
@@ -819,41 +832,42 @@ farthest-consumed-input | is the portion the ci that the machine consumed the mo
 ;;machine -> machine
 ;;Purpose: Produces an equivalent machine with the addition of the dead state and rules to the dead state
 (define (make-new-M M)
-  (local [;;symbol
+  (let* [;;symbol
           ;;Purpose: If ds is already used as a state in M, then generates a random seed symbol,
           ;;         otherwise uses DEAD
-          (define dead (if (member? DEAD (pda-getstates M) eq?) (gen-state (pda-getstates M)) DEAD))
+          (dead (if (member? DEAD (pda-getstates M) eq?) (gen-state (pda-getstates M)) DEAD))
           ;;(listof symbols)
           ;;Purpose: Makes partial rules for every combination of states in M and symbols in sigma of M
-          (define new-read-rules
+          (new-read-rules
             (for*/list ([states (pda-getstates M)]
                         [sigma (pda-getalphabet M)])
               (list states sigma)))
 
           ;;(listof rules)
           ;;Purpose: Makes rules for that empty the stack and transition to the ds
-          (define dead-pop-rules
+          (dead-pop-rules
             (for*/list ([ds (list dead)]
                         [gamma (pda-getgamma M)])
               (list (list ds EMP (list gamma)) (list ds EMP))))
 
           ;;(listof rules)
           ;;Purpose: Makes rules for every dead state transition to itself using the symbols in sigma of M
-          (define dead-read-rules
+          (dead-read-rules
             (for*/list ([ds (list dead)]
                         [sigma (pda-getalphabet M)])
               (list (list ds sigma EMP) (list ds EMP))))
+
+          (partial-rules (map (λ (rule)
+                                       (list (first (first rule)) (second (first rule))))
+                                     (pda-getrules M)))
           ;;(listof rules)
           ;;Purpose: Gets rules that are not currently in the original rules of M
-          (define get-rules-not-in-M  (local [(define partial-rules (map (λ (rule)
-                                                                           (list (first (first rule)) (second (first rule))))
-                                                                         (pda-getrules M)))]
-                                        (filter (λ (rule)
+          (get-rules-not-in-M  (filter (λ (rule)
                                                   (not (member? rule partial-rules equal?)))
-                                                new-read-rules)))
+                                                new-read-rules))
           ;;(listof rules)
           ;;Purpose: Maps the dead state as a destination for all rules that are not currently in the original rules of M
-          (define rules-to-dead
+          (rules-to-dead
             (map (λ (rule) (cons (append rule (list EMP)) (list (list dead EMP))))
                  get-rules-not-in-M))]
     (pda (cons dead (pda-getstates M))
@@ -865,7 +879,8 @@ farthest-consumed-input | is the portion the ci that the machine consumed the mo
 
 ;;pda word [boolean] [natnum] [symbol] . (listof (list state (w s -> boolean))) -> (void)
 ;;Purpose: Visualizes the given pda processing the given word
-(define (pda-viz M a-word #:add-dead [add-dead #f] #:cut-off [cut-off 100] #:palette [palette 'default] invs)
+(define/contract (pda-viz M a-word #:add-dead [add-dead #f] #:cut-off [cut-off 100] #:palette [palette 'default] invs)
+  pda-viz/c
   ;;(listof configuration) (listof rules) (listof configurations) -> (listof configurations)
   ;;Purpose: Returns a propers trace for the given (listof configurations) that accurately
   ;;         tracks each transition
@@ -1112,9 +1127,11 @@ farthest-consumed-input | is the portion the ci that the machine consumed the mo
                                    (text "Accept not traced" 20 (color-palette-legend-other-accept-color color-scheme))
                                    spacer
                                    (text "Reject not traced" 20 (color-palette-legend-other-reject-color color-scheme)))))])
+    #;
+    (void)
+    ;#;
     (run-viz graphs
              (list->vector (map (λ (x) (λ (grph) grph)) graphs))
-             #;(lambda () (list (graph->bitmap (first graphs))))
              (posn (/ E-SCENE-WIDTH 2) (/ PDA-E-SCENE-HEIGHT 2))
               E-SCENE-WIDTH PDA-E-SCENE-HEIGHT PERCENT-BORDER-GAP
              DEFAULT-ZOOM

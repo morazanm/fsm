@@ -101,13 +101,14 @@
                       #;(apply (vector-ref graphic-formatters 0) (load-image (cache-image (vector-ref imgs 0)))))
          (new-floor (find-new-floor first-img
                                     (* E-SCENE-WIDTH PERCENT-BORDER-GAP)
-                                    (* E-SCENE-HEIGHT PERCENT-BORDER-GAP)))]
+                                    (* E-SCENE-HEIGHT PERCENT-BORDER-GAP)))
+         (num-of-imgs (vector-length imgs))]
     (viz (viz-state (vector->vector-zipper imgs)
                     'BEGIN ;; PREV
                      first-img ;; CURR
-                    (cache-image (vector-ref imgs 1)) ;; NEXT
+                    (cache-image (vector-ref imgs (if (= num-of-imgs 1) 0 1))) ;; NEXT
                     first-img ;;  BEGIN
-                    (cache-image (vector-ref imgs (sub1 (vector-length imgs)))) ;; END
+                    (cache-image (vector-ref imgs (sub1 num-of-imgs))) ;; END
                     first-img
                     first-img-coord
                     DEFAULT-ZOOM

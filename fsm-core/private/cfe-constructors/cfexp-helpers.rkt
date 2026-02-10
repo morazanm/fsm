@@ -1,9 +1,10 @@
-#lang racket
+#lang racket/base
 
 (require "../cfg-struct.rkt"
          "../pda.rkt" ;(except-in "../fsm-core/private/pda.rkt" pda->spda)
          "../misc.rkt"
-         "../constants.rkt")
+         "../constants.rkt"
+         racket/list)
 
 (provide pda2cfg pda->spda)
 

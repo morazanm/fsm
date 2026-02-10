@@ -143,12 +143,14 @@ position and a sublist representing the contents of the tape.
 
 @defidform[regexp] A regular expression (see regular expression constructors below).
 
+@defidform[cfexp]A context-free expression (see context-free expression constructors below).
+
 @defidform[terms] Lowercase letters.
 
 @defidform[nts]
 A set of nonterminal symbols. A nonterminal symbol is an upercase
 letter in English: A..Z. That is, FSM programmers are limited to 26 nonterminals.
-The internal representation in FSM may use symbols of the form nts-<digit>^+
+The internal representation in FSM may use symbols of the form nts-<digit>@superscript{+}
 (e.g., A-72431). Such nonterminals may not be directly used in an FSM program.
 
 @defidform[rrule] A regular grammar rule is a list of 
@@ -188,7 +190,7 @@ A representation of a grammar in FSM. A grammar is one of the following:
 @itemlist[
  @item{Regular Grammar (rg)}
  @item{Context-Free Grammar (cfg)}
- @item{Context-Sensitive Grammar (csg)}]
+ @item{Unrestricted Grammar (urg)}]
 
 @defidform[grule]  
 A grammar rule is either a rrule, a cfrule, or csrule.
@@ -219,26 +221,26 @@ A composed Turing machine.
                    [start state] 
                    [finals (listof state)] 
                    [delta (listof dfa-rule)]
-                   [add-dead (or/c 'no-dead (void))]
+                   [add-dead (or/c 'no-dead void?)]
                    [#:rejects rejects (listof word) '()]
                    [#:accepts accepts (listof word) '()])
          dfa]{Builds a deterministic finite-state automaton.
-              @italic{delta} is a transition function. The optional
-              argument @italic{add-dead} is used to signal the
-              constructor to add or not add a dead state and
-              transitions into it for any transitions in delta (to
-              make it a function). If the delta function is fully
-              specified providing 'no-dead prevents the
-              addition of such a dead state and associated
-              transitions. The optional
-              keyword parameters @italic{rejects} and @italic{accepts}
-              are used to integrate testing. They are both lists of
-              words using elements of @italic{sigma}. The first is a
-              list of words that ought to be rejected and the second is
-              a list of words that ought to be accepted. If any word
-              produces the wrong result the constructor fails and a
-              @italic{recipe-based} error is thrown.
-             }
+ @italic{delta} is a transition function. The optional
+ argument @italic{add-dead} is used to signal the
+ constructor to add or not add a dead state and
+ transitions into it for any transitions in delta (to
+ make it a function). If the delta function is fully
+ specified providing 'no-dead prevents the
+ addition of such a dead state and associated
+ transitions. The optional
+ keyword parameters @italic{rejects} and @italic{accepts}
+ are used to integrate testing. They are both lists of
+ words using elements of @italic{sigma}. The first is a
+ list of words that ought to be rejected and the second is
+ a list of words that ought to be accepted. If any word
+ produces the wrong result the constructor fails and a
+ @italic{recipe-based} error is thrown.
+}
 
 
 @defproc[(make-ndfa [sts (listof state)] 
@@ -249,16 +251,16 @@ A composed Turing machine.
                     [#:rejects rejects (listof word) '()]
                     [#:accepts accepts (listof word) '()])
          ndfa]{Builds a nondeterministic finite-state automaton.
-               @italic{delta} is a transition relation.
-               The optional
-              keyword parameters @italic{rejects} and @italic{accepts}
-              are used to integrate testing. They are both lists of
-              words using elements of @italic{sigma}. The first is a
-              list of words that ought to be rejected and the second is
-              a list of words that ought to be accepted. If any word
-              produces the wrong result the constructor fails and a
-              @italic{recipe-based} error is thrown.
-              }
+ @italic{delta} is a transition relation.
+ The optional
+ keyword parameters @italic{rejects} and @italic{accepts}
+ are used to integrate testing. They are both lists of
+ words using elements of @italic{sigma}. The first is a
+ list of words that ought to be rejected and the second is
+ a list of words that ought to be accepted. If any word
+ produces the wrong result the constructor fails and a
+ @italic{recipe-based} error is thrown.
+}
 
 @defproc[(make-ndpda [sts (listof state)] 
                      [sigma alphabet] 
@@ -305,19 +307,19 @@ A composed Turing machine.
  Rules for moving off the @italic{LM} are automatically added
  to the machine's rules.
  If the optional @italic{accept} argument is given then the resulting
-  Turing machine is a language recognizer. The optional
-              keyword parameters @italic{rejects} and @italic{accepts}
-              are used to integrate testing. They are both lists of
-              words using elements of @italic{sigma}. The first is a
-              list of words that ought to be rejected and the second is
-              a list of words that ought to be accepted. If any word
-              produces the wrong result the constructor fails and a
-              @italic{recipe-based} error is thrown.
+ Turing machine is a language recognizer. The optional
+ keyword parameters @italic{rejects} and @italic{accepts}
+ are used to integrate testing. They are both lists of
+ words using elements of @italic{sigma}. The first is a
+ list of words that ought to be rejected and the second is
+ a list of words that ought to be accepted. If any word
+ produces the wrong result the constructor fails and a
+ @italic{recipe-based} error is thrown.
 
-  Given that a tm may only semidecide a language,
-  use @italic{rejects} with caution. Words not in the machine's
-  language may cause the constructor to not terminate.
-  }
+ Given that a tm may only semidecide a language,
+ use @italic{rejects} with caution. Words not in the machine's
+ language may cause the constructor to not terminate.
+}
 
 @defproc*[([(make-mttm  [sts (listof state)] 
                         [sigma alphabet]
@@ -339,13 +341,13 @@ A composed Turing machine.
 Builds a nondeterministic Multitape Turing machine with the given number of
 tapes. If the optional @italic{accept} argument is given then the resulting multitape
 Turing machine is a language recognizer. The optional
-              keyword parameters @italic{rejects} and @italic{accepts}
-              are used to integrate testing. They are both lists of
-              words using elements of @italic{sigma}. The first is a
-              list of words that ought to be rejected and the second is
-              a list of words that ought to be accepted. If any word
-              produces the wrong result the constructor fails and a
-              @italic{recipe-based} error is thrown.
+keyword parameters @italic{rejects} and @italic{accepts}
+are used to integrate testing. They are both lists of
+words using elements of @italic{sigma}. The first is a
+list of words that ought to be rejected and the second is
+a list of words that ought to be accepted. If any word
+produces the wrong result the constructor fails and a
+@italic{recipe-based} error is thrown.
 
 Given that a mttm may only semidecide a language,
 use @italic{rejects} with caution. Words not in the machine's
@@ -401,45 +403,51 @@ language may cause the constructor to not terminate.
          machine?]{Builds a state machine for the language of the given
  regular or context-free grammar.}
 
+@defproc[(fsa-minimize [m fsa]) dfa]
+Builds a @italic{deterministic} finite-state 
+automaton with a minimal number of states from the given finite-state automaton.
 
 @section{State Machine Visualization}
 @bold{You must have GraphViz installed as an enviroment variable
-  for this to work. For more information how to set this up, please see: @(hyperlink "https://github.com/morazanm/fsm/tree/master/GraphViz" "FSM GraphViz ReadMe")}
+ for this to work. For more information how to set this up, please see: @(hyperlink "https://github.com/morazanm/fsm/tree/master/GraphViz" "FSM GraphViz ReadMe")}
 
 @defproc[(sm-graph [m machine?])
          image?]{Generates an image for the given machine's transition diagram. @(linebreak)}
 
 @defproc[(sm-cmpgraph [m machine?] [w word?] [#:palette palette symbol? 'default] [#:cutoff cutoff natural? 100] [headpos natural? 0])
          image?]
-        Generates a computation graph image for the given machine and word. A computation graph
-        visually summarizes the result of all paths in the computation tree generated by applying
-        the given machine to the given word. Any state at which any computation ends is highlighted
-        in crimson. Given that a machine may run forever (e.g., when it semidecides a language),
-        the user may specify the maximum number of steps to explore for all possible computations.
-        States at which a computation is cut off by reaching this threshold are highlighted using
-        gold filling. If any final state is highlighted in crimson, then we have visual proof that
-        at least one computation naturally halts. @(linebreak) @(linebreak)
-        The optional
-        keyword parameter @italic{palette} is a symbol used to select a color blindness pallete:
-        'default for the default palette and 'deut for the deuteranopia palette. The optional
-        keyword argument @italic{cutoff} is used to specify the
-        maximum number of steps any possible computation may perform.
-        The optional argument @italic{headpos} specifies the initial head position on the main tape
-        for Turing machines and multitape Turing machines. @(linebreak)
+Generates a computation graph image for the given machine and word. A computation graph
+visually summarizes the result of all paths in the computation tree generated by applying
+the given machine to the given word. Any state at which any computation ends is highlighted
+in crimson. Given that a machine may run forever (e.g., when it semidecides a language),
+the user may specify the maximum number of steps to explore for all possible computations.
+States at which a computation is cut off by reaching this threshold are highlighted using
+gold filling. If any final state is highlighted in crimson, then we have visual proof that
+at least one computation naturally halts. @(linebreak) @(linebreak)
+The optional
+keyword parameter @italic{palette} is a symbol used to select a color blindness pallete:
+'default for the default palette and 'deut for the deuteranopia palette. The optional
+keyword argument @italic{cutoff} is used to specify the
+maximum number of steps any possible computation may perform.
+The optional argument @italic{headpos} specifies the initial head position on the main tape
+for Turing machines and multitape Turing machines. @(linebreak)
 
-@defproc[(sm-viz [m machine?] [w word?] [#:add-dead add-dead boolean? #f] [#:cut-off cut-off natural? 100] [invariant (-> word? boolean?)] ...)
-         void]
-        Visualizes the given machine being applied to the given word. Currently only NDFAs and PDAs
-        are supported. Adds a dead state if the optional keyword argument @italic{add-dead} is set to true.
-        In the case that a pushdown automata is being visualized, due to the possibility of an infinite
-        recursion, a @italic{cutoff} threshold is defined and can be modified by the user setting the optional
-        keyword argument cut-off to the maximum number of steps a computation can take. Invariant predicates
-        can optionally be provided for each of the states of the machine, which when given will display
-        when the predicate holds and has been broken during the visualization.
+@defproc[(sm-viz [m machine?] [w word?] [#:add-dead add-dead boolean? #f] [#:cut-off cut-off natural? 100] [#:head-pos head-pos natural? 0] [#:palette palette symbol? 'default] [invariant (list state (-> word? boolean?))] ...)
+         void?]
+Visualizes the given machine being applied to the given word. Adds a dead state if the optional keyword argument
+@italic{add-dead} is set to true. In the case that a pushdown automata, a Turing machine, or a multitape Turing machine
+is being visualized, due to the possibility of an infinite recursion, a @italic{cut-off} threshold is defined
+and can be modified by the user setting the optional keyword argument cut-off to the maximum number of steps
+a computation can take. The optional keyword parameter @italic{head-pos} specifies the initial head position on the main tape
+for Turing machines and multitape Turing machines. The optional keyword parameter @italic{palette} is used
+to select a color blindness pallete: 'default for the default palette, 'prot for the protanopia palette,
+'deut for the deuteranopia palette, and 'trit for the tritanopia palette. Invariant predicates can optionally
+be provided for each of the states of the machine, which when given will display when the predicate holds
+and has been broken during the visualization by filling the state grean or red respectively.   
 
 @defproc*[([(sm-visualize [sym (or/c 'dfa 'ndfa 'pda 'tm 'mttm 'tm-language-recognizer 'mttm-language-recognizer)]) void?]
            [(sm-visualize [m machine?]
-                          [inv-list (listof (listof state? procedure?)) '()]) void])]{
+                          [inv-list (listof (listof state? procedure?)) '()]) void?])]{
  When supplied with a symbol as the argument the visualization tool is started for the specified machine type.
  When supplied with a state machine as the argument the visualization tool is started with
  the state machine built within the tool. When supplied with the optional list of state and
@@ -529,61 +537,65 @@ Empty Tool
          symbol]{Returns the number of tapes in the given state machine.}
 
 @defproc[(sm-apply [m machine?] [w word?] [n natural? 0]) symbol]
- Applies the given state machine to the given word
- and returns either @racket['accept] or @racket['reject] for a dfa, a
- ndfa, a ndpda, a Turing machine language 
- recognizer, or a multitape Turing machine language recognizer. If the given machine
- is a Turing machine, but not a language recognizer, a (list @racket['Halt:] S) is
- returned where S is a state. The optional natural 
- number is only used for the initial position of the 
- Turing machine head or the head position for the first tape
- in a multitape Turing machine.
+Applies the given state machine to the given word
+and returns either @racket['accept] or @racket['reject] for a dfa, a
+ndfa, a ndpda, a Turing machine language 
+recognizer, or a multitape Turing machine language recognizer. If the given machine
+is a Turing machine, but not a language recognizer, a (list @racket['Halt:] S) is
+returned where S is a state. The optional natural 
+number is only used for the initial position of the 
+Turing machine head or the head position for the first tape
+in a multitape Turing machine.
 
 @defproc[(sm-showtransitions [m machine?] [w word?] [n natural? 0]) (or/c (listof smconfig) 'reject)]
- Applies the given state machine to the given word
- and returns a list of configurations if the machine
- reaches a final/halting state and @racket['reject] otherwise. The 
- optional natural number is only used for the initial position of a 
- Turing machine's head or the head position for the first tape
- in a multitape Turing machine.
+Applies the given state machine to the given word
+and returns a list of configurations if the machine
+reaches a final/halting state and @racket['reject] otherwise. The 
+optional natural number is only used for the initial position of a 
+Turing machine's head or the head position for the first tape
+in a multitape Turing machine.
 
 @section{Construction Visualization}
 
 @bold{All construction visualization tools use the arrow keys to move the
-      visualization forwards or backwards. The right arrow moves the visualization
-      one step forward. The left arrow moves the visualization one step backwards.
-      The up arrow moves the visualization to the beginning. The down arrow moves
-      the visualization to the end.}
+ visualization forwards or backwards. The right arrow moves the visualization
+ one step forward. The left arrow moves the visualization one step backwards.
+ The up arrow moves the visualization to the beginning. The down arrow moves
+ the visualization to the end.}
 
-@defproc[(union-viz [m1 ndfa] [m2 ndfa]) (void)]
+@defproc[(minimization-viz [m fsa]) void?]
+Launches a visualization tool for the construction of a dfa with a minimal number of states that decides
+L = {w | w∈L(m)}.
+
+@defproc[(union-viz [m1 ndfa] [m2 ndfa]) void?]
 Launches a visualization tool for the construction of an ndfa that decides
-L = {w | w∈L(m1) ∨ w∈L(m2).
+L = {w | w∈L(m1) ∨ w∈L(m2)}.
 
-@defproc[(concat-viz [m1 ndfa] [m2 ndfa]) (void)]
+@defproc[(concat-viz [m1 ndfa] [m2 ndfa]) void?]
 Launches a visualization tool for the construction of an ndfa that decides
-L = {uv | u∈L(m1) ∧ v∈L(m2).
+L = {uv | u∈L(m1) ∧ v∈L(m2)}.
 
-@defproc[(complement-viz [m dfa]) (void)]
+@defproc[(complement-viz [m dfa]) void?]
 Launches a visualization tool for the construction of a dfa for the complement
 of the language decided by the given dfa.
 
-@defproc[(kleenestar-viz [m1 ndfa]) (void)]
+@defproc[(kleenestar-viz [m1 ndfa]) void?]
 Launches a visualization tool for the construction of an ndfa that decides
 L = L(m1)*.
 
-@defproc[(intersection-viz [m1 ndfa] [m2 ndfa]) (void)]
+@defproc[(intersection-viz [m1 ndfa] [m2 ndfa]) void?]
 Launches a visualization tool for the construction of an ndfa that decides
 L = L(m1) ∩ L(m2).
 
-@defproc[(ndfa2dfa-viz [m1 ndfa]) (void)]
+@defproc[(ndfa2dfa-viz [m1 ndfa]) void?]
 Launches a visualization tool for the construction of a dfa that decides
 L(m1).
 
-@defproc[(ndfa2regexp-viz [m1 ndfa]) (void)]
+@defproc[(ndfa2regexp-viz [m1 ndfa]) void?]
 Launches a visualization tool for the construction of a regular expression
 for L(m1).
 
-@defproc[(regexp2ndfa-viz [r regexp]) (void)]
+@defproc[(regexp2ndfa-viz [r regexp]) void?]
 Launches a visualization tool for the construction of an ndfa to decide, L(r),
 the language generated by the given regular expression.
 
@@ -591,17 +603,17 @@ the language generated by the given regular expression.
 @section{Derivation Visualization}
 
 @bold{The word derivation visualization tool uses the arrow keys to move the
-      visualization forwards or backwards. The right arrow moves the visualization
-      one step forward. The left arrow moves the visualization one step backwards.
-      The up arrow moves the visualization to the beginning. The down arrow moves
-      the visualization to the end}
+ visualization forwards or backwards. The right arrow moves the visualization
+ one step forward. The left arrow moves the visualization one step backwards.
+ The up arrow moves the visualization to the beginning. The down arrow moves
+ the visualization to the end}
 
 @defproc[(grammar-viz [g grammar]
                       [w word]
                       [#:derv-type derv-type (or/c 'left 'right 'level-left 'level-right) 'left]
                       [#:cpu-cores cpu-cores (or/c number? #f) #f]
-                      [inv-list (listof (listof state? (-> word? boolean?))) (void)])
-         (or/c (void) string)]
+                      [inv-list (listof (listof state? (-> word? boolean?))) void?])
+         (or/c void? string)]
 Launches a visualization tool for the construction of the derivation tree for the given
 word using the given grammar. If the given word is not in the language then the tool does
 not launch and a string is returned indicating that the given word is not in the given grammar's
@@ -616,34 +628,34 @@ and a predicate to determine if the word generated by the nonterminal satisfies 
 
 @defproc[(sm-test-invs [m machine?] [#:rep-limit rep-limit natural? 1] [#:max-path-length path-length natural? 12] [#:ds-remove ds-remove #t] [invs (list state (-> word boolean))] ...)
          (listof (list state word))]
-        Tests the given machine using the given state invariants. Dead states are removed for testing purposes, @italic{ds-remove}
-        is used to determine if they are removed. If m is a finite-state machine, then @italic{rep-limit} is used to
-        limit the number of times a transition is used. If m is a pda, then @italic{max-path-length} is used to limit
-        the number of steps a computation can take. If all tests pass, then the function returns the empty list.
-        Otherwise, the function returns a list of pairs, where each pair contains a word and the state for which
-        the invariant failed.
+Tests the given machine using the given state invariants. Dead states are removed for testing purposes, @italic{ds-remove}
+is used to determine if they are removed. If m is a finite-state machine, then @italic{rep-limit} is used to
+limit the number of times a transition is used. If m is a pda, then @italic{max-path-length} is used to limit
+the number of steps a computation can take. If all tests pass, then the function returns the empty list.
+Otherwise, the function returns a list of pairs, where each pair contains a word and the state for which
+the invariant failed.
 
-        Note: Currently does not work with Turing machines, and mttms.
+Note: Currently does not work with Turing machines, and mttms.
 
 @defproc[(sm-quickcheck [m machine?] [#:num-tests tests natural? 300] [#:max-length-kleenes num-kleenes natural? 20] [invs (list state (-> word boolean))] ...)
-         (void)]
-        Tests the given machine using the given state invariants. Dead states are removed for testing purposes. @italic{ds-remove}
-        is used to determine if they are removed. @italic{tests} is the number of tests to perform on each state.
-        @italic{num-kleenes} is the maximum number of times a loop is traversed in the given machine's transition
-        relation. If tests pass, the function returns void. If tests fail, failed test reports are generated.
+         void?]
+Tests the given machine using the given state invariants. Dead states are removed for testing purposes. @italic{ds-remove}
+is used to determine if they are removed. @italic{tests} is the number of tests to perform on each state.
+@italic{num-kleenes} is the maximum number of times a loop is traversed in the given machine's transition
+relation. If tests pass, the function returns void. If tests fail, failed test reports are generated.
 
-        Note: Currently does not work with pdas, Turing machines, and mttms.
+Note: Currently does not work with pdas, Turing machines, and mttms.
 
 @defproc*[([(sm-test [m1 machine?]) (listof (list word symbol))]
            [(sm-test [m1 machine?] [n natural?]) (listof (list word symbol))])]
-         Applies the given machine to randomly generated words  and returns
-          a list of words and the obtained result. If the given machine is a
-          Turing machine, it must be a language recognizer. For a Turing machine
-          language recognizer, the generated tests start with the left-end marker
-          followed by the input word and the head on the first letter of the input
-          word. The optional natural number specifies the number of tests
-          (the default is 100). May not be used for Turing machines and multitape
-          Turing machines.
+Applies the given machine to randomly generated words  and returns
+a list of words and the obtained result. If the given machine is a
+Turing machine, it must be a language recognizer. For a Turing machine
+language recognizer, the generated tests start with the left-end marker
+followed by the input word and the head on the first letter of the input
+word. The optional natural number specifies the number of tests
+(the default is 100). May not be used for Turing machines and multitape
+Turing machines.
 
 @defproc[(sm-sameresult? [m1 machine?] [m2 machine?] [w word])
          boolean]{Tests if the two given machines return the same
@@ -668,14 +680,14 @@ and a predicate to determine if the word generated by the nonterminal satisfies 
                     [#:rejects rejects (listof word) '()]
                     [#:accepts accepts (listof word) '()])
          rg]{Builds a regular grammar. The optional
-             keyword parameters @italic{rejects} and @italic{accepts}
-             are used to integrate testing. They are both lists of
-             words using elements of @italic{sigma}. The first is a
-             list of words that ought not be generated and the second is
-             a list of words that ought to be generated. If any word
-             produces the wrong result the constructor fails and a
-             @italic{recipe-based} error is thrown.
-             }
+ keyword parameters @italic{rejects} and @italic{accepts}
+ are used to integrate testing. They are both lists of
+ words using elements of @italic{sigma}. The first is a
+ list of words that ought not be generated and the second is
+ a list of words that ought to be generated. If any word
+ produces the wrong result the constructor fails and a
+ @italic{recipe-based} error is thrown.
+}
 
 @defproc[(make-cfg  [nt (listof nts)] 
                     [sigma alphabet] 
@@ -684,18 +696,18 @@ and a predicate to determine if the word generated by the nonterminal satisfies 
                     [#:rejects rejects (listof word) '()]
                     [#:accepts accepts (listof word) '()])
          cfg]{Builds a context-free grammar. The optional
-             keyword parameters @italic{rejects} and @italic{accepts}
-             are used to integrate testing. They are both lists of
-             words using elements of @italic{sigma}. The first is a
-             list of words that ought not be generated and the second is
-             a list of words that ought to be generated. If any word
-             produces the wrong result the constructor fails and a
-             @italic{recipe-based} error is thrown.
+ keyword parameters @italic{rejects} and @italic{accepts}
+ are used to integrate testing. They are both lists of
+ words using elements of @italic{sigma}. The first is a
+ list of words that ought not be generated and the second is
+ a list of words that ought to be generated. If any word
+ produces the wrong result the constructor fails and a
+ @italic{recipe-based} error is thrown.
 
-             Given that derivations may be infinite, use @italic{rejects}
-             with caution. For words not in the grammar's language, testing
-             may cause the constructor to not terminate.
-             }
+ Given that derivations may be infinite, use @italic{rejects}
+ with caution. For words not in the grammar's language, testing
+ may cause the constructor to not terminate.
+}
 
 @defproc[(make-csg  [nt (listof nts)] 
                     [sigma alphabet] 
@@ -704,18 +716,38 @@ and a predicate to determine if the word generated by the nonterminal satisfies 
                     [#:rejects rejects (listof word) '()]
                     [#:accepts accepts (listof word) '()])
          csg]{Builds a context-sensitive grammar. The optional
-             keyword parameters @italic{rejects} and @italic{accepts}
-             are used to integrate testing. They are both lists of
-             words using elements of @italic{sigma}. The first is a
-             list of words that ought not be generated and the second is
-             a list of words that ought to be generated. If any word
-             produces the wrong result the constructor fails and a
-             @italic{recipe-based} error is thrown.
+ keyword parameters @italic{rejects} and @italic{accepts}
+ are used to integrate testing. They are both lists of
+ words using elements of @italic{sigma}. The first is a
+ list of words that ought not be generated and the second is
+ a list of words that ought to be generated. If any word
+ produces the wrong result the constructor fails and a
+ @italic{recipe-based} error is thrown.
 
-             Given that derivations may be infinite, use @italic{rejects}
-             with caution. For words not in the grammar's language, testing
-             may cause the constructor to not terminate.
-             }
+ Given that derivations may be infinite, use @italic{rejects}
+ with caution. For words not in the grammar's language, testing
+ may cause the constructor to not terminate.
+}
+
+@defproc[(make-grammar  [nt (listof nts)] 
+                        [sigma alphabet] 
+                        [delta (listof csrule)]
+                        [start nts]
+                        [#:rejects rejects (listof word) '()]
+                        [#:accepts accepts (listof word) '()])
+         csg]{Builds an unrestricted grammar. The optional
+ keyword parameters @italic{rejects} and @italic{accepts}
+ are used to integrate testing. They are both lists of
+ words using elements of @italic{sigma}. The first is a
+ list of words that ought not be generated and the second is
+ a list of words that ought to be generated. If any word
+ produces the wrong result the constructor fails and a
+ @italic{recipe-based} error is thrown.
+
+ Given that derivations may be infinite, use @italic{rejects}
+ with caution. For words not in the grammar's language, testing
+ may cause the constructor to not terminate.
+}
 
 @defproc[(grammar-union  [g1 grammar] 
                          [g2 grammar])
@@ -731,8 +763,8 @@ and a predicate to determine if the word generated by the nonterminal satisfies 
 
 @defproc[(grammar-kleenestar [g grammar])
          grammar]
-        Let L(g) denote the language defined by g. This function
-         builds a grammar for L(g)^*.
+Let L(g) denote the language defined by g. This function
+builds a grammar for L(g)@superscript{*}.
 
 @defproc[(sm->grammar [m machine?])
          grammar]{Builds a grammar for the language of the given
@@ -748,6 +780,8 @@ and a predicate to determine if the word generated by the nonterminal satisfies 
 @defproc[(cfg->greibach [g cfg])
          cfg]{Converts the given context-free grammar to Greibach normal form.}
 
+@defproc[(cfe->cfg [cfe cfexp?])
+         cfg]{Returns a context-free grammar for the language of the given cfexp.}
 
 @section{Grammar Observers}
 
@@ -795,12 +829,12 @@ and a predicate to determine if the word generated by the nonterminal satisfies 
 @defproc*[([(grammar-testequiv [g1 grammar] [g2 grammar]) (or true (listof word))]
            [(grammar-testequiv [g1 grammar] [g2 grammar] [natural? n]) (or true (listof word))])]
 Tests in the given grammars obtain
- the same results when deriving 100 (or the optional n)
- randomly generated words.  If all tests
- give the same result true is returned.
- Otherwise, a list or words that
- produce different results is 
- returned.
+the same results when deriving 100 (or the optional n)
+randomly generated words.  If all tests
+give the same result true is returned.
+Otherwise, a list or words that
+produce different results is 
+returned.
 
 @defproc*[([(grammar-test [g1 grammar]) (listof (cons word (Derivation or string)))]
            [(grammar-test [g1 grammar] [n natural?]) (listof (cons word (Derivation or string)))])]
@@ -827,8 +861,8 @@ word are returned.
 
 @defproc[(ctm-viz  [m ctm] [d ctmd] [tape (listof symbol?)] [headpos natural?])
          ctm]{Launches a dynamic visualization tool for the application of the
-              given ctm to the given tape using the given initial head position.
-              The given machine needs to correspond to the given ctmd.}
+ given ctm to the given tape using the given initial head position.
+ The given machine needs to correspond to the given ctmd.}
 
 @section{Regular Expression Constructors}
 
@@ -837,11 +871,11 @@ word are returned.
 
 @defproc[(empty-regexp)
          regexp]{Builds the regular expression for the language that only contains the
-                 empty string.}
+ empty string.}
 
 @defproc[(singleton-regexp [a (or/c letter? special-char?)])
          regexp]{Builds the regular expression for the language that only has a single
-                 word of length 1 representing the given letter or special character: $, &, !, *.}
+ word of length 1 representing the given letter or special character: $, &, !, *.}
 
 @defproc[(union-regexp [r1 regexp]
                        [r2 regexp]
@@ -927,7 +961,7 @@ word are returned.
 @defproc[(printable-regexp [r regexp])
          string]{Converts the given regular expression to a string.}
 
-@defproc[(singleton-regexp-a [r singelton-regexp])
+@defproc[(singleton-regexp-a [r singleton-regexp])
          string]{Extracts the string in the given singleton-regexp.}
 
 @defproc[(union-regexp-r1 [r union-regexp])
@@ -947,113 +981,209 @@ word are returned.
 
 @defproc*[([(gen-regexp-word [r regexp]) word]
            [(gen-regexp-word [r regexp] [n natural?]) word])]
-        Nondeterministically generate a word in the language
-        of the given regexp. The maximum nuber of repetitions
-        for a Kleene star is the the optional natural number if provided.
-        Otherwise, it is 20.
+Nondeterministically generate a word in the language
+of the given regexp. The maximum nuber of repetitions
+for a Kleene star is the the optional natural number if provided.
+Otherwise, it is 20.
 
 @defproc[(gen-concat-word [r concat-regexp] [f (regexp --> word)] [n natnum])
          word]
-        Generate a word by concatenating words generated
-        from the sub regular expressions in the given concat-regexp
-        using the given word-generating function. The given natnum
-        is used to limit the number of repetitions generated for
-        nested Kleene star regular expressions (if any).
+Generate a word by concatenating words generated
+from the sub regular expressions in the given concat-regexp
+using the given word-generating function. The given natnum
+is used to limit the number of repetitions generated for
+nested Kleene star regular expressions (if any).
 
 @defproc[(gen-ks-word [n natural?] [r regexp] [f (regexp --> word)])
          word]
-         Generate a word in the language of the given Kleene star
-         regular expression using the given word-generation function.
-         The number of concatenated words generated using r is in [0..n+1].
+Generate a word in the language of the given Kleene star
+regular expression using the given word-generation function.
+The number of concatenated words generated using r is in [0..n+1].
 
 @defproc[(extract-concat-regexps [r concat-regexp])
          (listof regexp)]
-         Extract all the nested concatenated sub-regexps in the given
-         concat-regexp. This includes any nested concat-regexps in r.
+Extract all the nested concatenated sub-regexps in the given
+concat-regexp. This includes any nested concat-regexps in r.
 
 @defproc[(extract-union-regexps [r union-regexp])
          (listof regexp)]
-         Extract all the nested unioned sub-regexps in the given
-         union-regexp. This includes any nested union-regexps in r.
+Extract all the nested unioned sub-regexps in the given
+union-regexp. This includes any nested union-regexps in r.
 
 @defproc[(pick-regexp [r union-regexp])
          regexp]
-         Nondeterministically return a nested sub-regexp from the
-         given union-regexp. This includes any nested union-regexps
-         in r.
+Nondeterministically return a nested sub-regexp from the
+given union-regexp. This includes any nested union-regexps
+in r.
 
 @defproc[(pick-reps [n natural?])
          natnum]
-         Nondeterministically return a natural number in [0..n].
+Nondeterministically return a natural number in [0..n].
 
 @defproc[(convert-singleton [r singleton-regexp])
          word]
-         Convert the given singleton-regexp to a word of length 1
-         containing r's nested symbol or number.
+Convert the given singleton-regexp to a word of length 1
+containing r's nested symbol or number.
+
+
+@section{Context-Free Expression Constructors}
+
+@defproc[(null-cfexp)
+         cfexp?]{Builds the context-free expression for the empty language.}
+
+@defproc[(empty-cfexp)
+         cfexp?]{Builds the context-free expression for the language that only contains the
+ empty string.}
+
+@defproc[(singleton-cfexp [a (or/c letter? special-char?)])
+         cfexp?]{Builds the context-free expression for the language that only has a single
+ word of length 1 representing the given letter or special character: $, &, !, *.}
+
+@defproc[(union-cfexp [cfes cfexp?] ...)
+         cfexp?]{Builds a union context-free expression from the given
+ context-free expressions. }
+
+@defproc[(concat-cfexp [cfes cfexp?] ...)
+         cfexp?]{Builds a concatenation context-free expression from the 
+ given context-free expressions.}
+
+@defproc[(kleenestar-cfexp [cfe cfexp?])
+         cfexp?]{Builds a Kleene star context-free expression from the 
+ given context-free expression.}
+
+@defform/subs[
+ (make-cfe [aux-cfe ...] [result-cfe cfexp?])
+ ([aux-cfe (identifier? cfexp?)])
+ ]{
+ Constructs @italic{result-cfe} using the provided context-free expressions @italic{aux-cfe}.
+ Order of definitions does not matter when using this constructor.
+ Recursive references are supported when using this constructor. For example, a cfe for L = a@superscript{n}b@superscript{n}
+ is defined as follows:
+ @(racketblock
+   (make-cfe [(EMPTY (empty-cfexp))
+              (A (singleton-cfexp "a"))
+              (B (singleton-cfexp "b"))
+              (ANBN (concat-cfexp A ANBN B))]
+             (union-cfexp ANBN EMPTY))
+   )
+}
+
+@defproc[(cfg->cfe [g cfg])
+         cfexp?]{Returns a context-free expression for the language of the given cfg.}
+
+
+@section{Context-Free Expression Observers}
+
+@defproc[(cfexp? [e any?])
+         Boolean]{Predicate to determine if @italic{e} is a context-free expression.}
+
+@defproc[(empty-cfexp? [e any?])
+         Boolean]{Predicate to determine if @italic{e} is a empty context-free expression.}
+
+@defproc[(singleton-cfexp? [e any?])
+         Boolean]{Predicate to determine if @italic{e} is a singleton context-free expression.}
+
+@defproc[(union-cfexp? [e any?])
+         Boolean]{Predicate to determine if @italic{e} is a union context-free expression.}
+
+@defproc[(concat-cfexp? [e any?])
+         Boolean]{Predicate to determine if @italic{e} is a concat context-free expression.}
+
+@defproc[(kleenestar-cfexp? [e any?])
+         Boolean]{Predicate to determine if @italic{e} is a Kleene star context-free expression.}
+@;{
+ @defproc[(printable-cfexp [cfe cfexp?])
+          string]{Converts the given context-free expression to a string.}
+}
+@defproc[(singleton-cfexp-a [cfe singleton-cfexp?])
+         string]{Extracts the string in the given singleton-cfexp.}
+
+@defproc[(union-cfexp-cfes [cfe union-cfexp?])
+         (vectorof cfexp?)]{Extracts all of the context-free expressions in the given union-cfexp.}
+
+@defproc[(concat-cfexp-cfes [cfe concat-cfexp?])
+         (vectorof cfexp?)]{Extracts all of the context-free expressions in the given concat-cfexp.}
+
+@defproc[(kleenestar-cfexp-c1 [cfe kleenestar-cfexp?])
+         cfexp?]{Extracts the context-free expression in the given kleenestar-cfexp.}
+
+@defproc[(pick-cfexp [cfe union-cfexp?])
+         cfexp?]
+Nondeterministically return a nested sub-cfexp from the
+given union-cfexp. This includes any nested union-cfexps
+in cfe.
+
+@defproc*[([(gen-cfexp-word [cfe cfexp?]) word]
+           [(gen-cfexp-word [cfe cfexp?] [n natural?]) word])]
+Nondeterministically generate a word in the language
+of the given cfexp. The maximum nuber of repetitions
+for a Kleene star is the the optional natural number if provided.
+Otherwise, it is 20.
+
 
 @section{FSM Unit Testing}
 
 @defproc[(check-accept? [M machine]
                         [w word] ...)
          void?]
-         Checks if the given machine accepts all the given words.
-         If any word is rejected, the test fails. If M only semidecides
-         a language, words not in the machine's language may cause
-         the test to not terminate.
+Checks if the given machine accepts all the given words.
+If any word is rejected, the test fails. If M only semidecides
+a language, words not in the machine's language may cause
+the test to not terminate.
 
 @defproc[(check-reject? [M machine]
                         [w word] ...)
-         (void)]
-         Checks if the given machine rejects all the given words.
-         If any word is aceepted, the test fails. If M only semidecides
-         a language, words not in the machine's language may cause
-         the test to not terminate.
+         void?]
+Checks if the given machine rejects all the given words.
+If any word is aceepted, the test fails. If M only semidecides
+a language, words not in the machine's language may cause
+the test to not terminate.
 
 @defproc[(check-derive? [G grammar]
                         [w word] ...)
-         (void)]
-         Checks if the given grammar generates all the given words.
-         If any word is not generated, the test fails. If w is not
-         in the grammar's language, the test may not terminate.
+         void?]
+Checks if the given grammar generates all the given words.
+If any word is not generated, the test fails. If w is not
+in the grammar's language, the test may not terminate.
 
 @defproc[(check-not-derive? [G grammar]
                             [w word] ...)
-         (void)]
-         Checks if the given grammar does not generate all the given words.
-         If any word is generated, the test fails. If w is not
-         in the grammar's language, the test may not terminate.
+         void?]
+Checks if the given grammar does not generate all the given words.
+If any word is generated, the test fails. If w is not
+in the grammar's language, the test may not terminate.
 
 @defproc[(check-inv-holds? [pred (U (-> word head-pos Boolean)
                                     (-> (Listof (List head-pos word)) Boolean)
                                     (-> word Boolean))]
                            [w word] ...)
-         (void)]
-         Checks if the given invariant predicate holds for all the given words.
-         If the invariant predicate does not hold for any of the words, the
-         test fails.
+         void?]
+Checks if the given invariant predicate holds for all the given words.
+If the invariant predicate does not hold for any of the words, the
+test fails.
 
 @defproc[(check-inv-fails? [pred (U (-> word head-pos Boolean)
                                     (-> (Listof (List head-pos word)) Boolean)
                                     (-> word Boolean))]
                            [w word] ...)
-         (void)]
-         Checks if the given invariant predicate fails to hold for all
-         the given words. If the invariant predicate does hold for any
-         of the words, the test fails.
+         void?]
+Checks if the given invariant predicate fails to hold for all
+the given words. If the invariant predicate does hold for any
+of the words, the test fails.
 
 @defproc[(check-gen? [R fsm-regexp]
                      [w word] ...)
-         (void)]
-         Checks if the given regular expression generates all the given words.
-         If the regular expression does not generate any of the words, the
-         test fails.
+         void?]
+Checks if the given regular expression generates all the given words.
+If the regular expression does not generate any of the words, the
+test fails.
 
 @defproc[(check-not-gen? [R fsm-regexp]
                          [w word] ...)
-         (void)]
-         Checks if the given regular expression does not generate any of the given words.
-         If the regular expression does generate any of the words, the
-         test fails.
+         void?]
+Checks if the given regular expression does not generate any of the given words.
+If the regular expression does generate any of the words, the
+test fails.
 
 @section{Some Useful Functions}
 
@@ -1095,6 +1225,8 @@ Names in no paticular order:
           @item{Joshua Schappel}
           @item{Shamil Dzhatdoyev}
           @item{Oliwia Kempinski}
-          @item{Tijana Minic}
+          @item{Tijana Minić}
           @item{Andres M. Garced}
-          @item{David Anthony K. Fields}]
+          @item{David Anthony K. Fields}
+          @item{Sophia G. Turano}
+          ]
