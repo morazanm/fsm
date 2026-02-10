@@ -61,9 +61,7 @@
         (if (not (member (treelist-ref st i) (cfg-get-alphabet g)))
             (if (eq? (car rght) EMP)
                 (treelist-delete st i)
-                ;(subst-last-nt-helper st rght (sub1 i))
                 (treelist-insert-list (treelist-delete st i) i rght))
-            ;(treelist-append (treelist-sublist
             (subst-last-nt-helper st rght (sub1 i)))))
 
   ;; (listof symbol) -> symbol
@@ -121,17 +119,19 @@
               (treelist-length treelist-w)))
        (make-deriv visited (dequeue! derivs) g chomsky)]
       [else
-       (let* ([fderiv (qpeek derivs)] [state (car fderiv)] [fnt (get-last-nt (car state))])
+       (let* ([fderiv (qpeek derivs)]
+              [state (car fderiv)]
+              [fnt (get-last-nt (car state))])
          (if (not fnt)
              (if (equal? treelist-w (car state))
                  (apply append
-                  (map (lambda (l)
-                         (if (equal? treelist-w (car l))
-                             (if (null? l)
-                                 (list EMP)
-                                 (list (list (tlos->symbol (car l)) (los->symbol (cadr l)))))
-                             (list (list (tlos->symbol (car l)) (los->symbol (cadr l))) ARROW)))
-                       (reverse fderiv)))
+                        (map (lambda (l)
+                               (if (equal? treelist-w (car l))
+                                   (if (null? l)
+                                       (list EMP)
+                                       (list (list (tlos->symbol (car l)) (los->symbol (cadr l)))))
+                                   (list (list (tlos->symbol (car l)) (los->symbol (cadr l))) ARROW)))
+                             (reverse fderiv)))
                  (make-deriv visited (dequeue! derivs) g chomsky))
              (let* ([rls (get-rules fnt g)]
                     [rights (map cfg-rule-rhs rls)]
@@ -151,16 +151,14 @@
                            chomsky))))]))
   (if (null? w)
       (let ([deriv-queue (make-queue)])
-          (make-deriv (make-hash)
-                      (enqueue! deriv-queue (list (list (treelist (cfg-get-start g)) '())))
-                      g
-                      #f))
+        (make-deriv (make-hash)
+                    (enqueue! deriv-queue (list (list (treelist (cfg-get-start g)) '())))
+                    g
+                    #f))
       (if (cyk (chomsky g) w)
-        ;(if (string? ng-derivation)
-        ;ng-derivation
-        (let ([deriv-queue (make-queue)])
-          (make-deriv (make-hash)
-                      (enqueue! deriv-queue (list (list (treelist (cfg-get-start g)) '())))
-                      g
-                      #f))
-        (format "~s is not in L(G)." w))))
+          (let ([deriv-queue (make-queue)])
+            (make-deriv (make-hash)
+                        (enqueue! deriv-queue (list (list (treelist (cfg-get-start g)) '())))
+                        g
+                        #f))
+          (format "~s is not in L(G)." w))))

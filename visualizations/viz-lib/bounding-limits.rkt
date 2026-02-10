@@ -14,7 +14,7 @@
          outside-east-south-sides-bounding-limits?
          outside-x-axis-bounding-limits?
          outside-y-axis-bounding-limits?
-         outside-x-and-y-axis-bounding-limits?)
+         )
 
 ;; Coordinate pair
 ;; num num -> posn

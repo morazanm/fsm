@@ -432,12 +432,12 @@
   (let ()
     (run-viz
      (cons (add-node (create-graph 'dgraph #:atb (hash 'rankdir "TB" 'font "Sans" 'ordering "in"))
-               (first (first w-der))
+               (car (car w-der))
                #:atb
-               (hash 'color 'black 'shape 'circle 'label (first (first w-der)) 'fontcolor 'black 'font "Sans"))
-           (rest graphs))
+               (hash 'color 'black 'shape 'circle 'label (car (car w-der)) 'fontcolor 'black 'font "Sans"))
+           (cdr graphs))
      (list->vector (map (lambda (x) (lambda (y) y)) graphs))
-     #;(create-first-img (first (first w-der)))
+     #;(create-first-img (car (car w-der)))
      (posn (/ E-SCENE-WIDTH 2) (/ E-SCENE-HEIGHT 2))
      E-SCENE-WIDTH
      E-SCENE-HEIGHT

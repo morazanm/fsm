@@ -6,6 +6,7 @@
          "../../fsm-core/private/cyk.rkt"
          "../../fsm-core/private/chomsky.rkt"
          "circular-queue-treelist.rkt"
+         
          racket/set)
 (provide cfg-derive-leftmost)
 
@@ -19,7 +20,7 @@
   ;; Purpose: Returns leftmost nonterminal
   (define (get-first-nt st)
     (cond
-      [(empty? st) #f]
+      [(null? st) #f]
       [(set-member? nt-set (car st)) (car st)]
       [else (get-first-nt (cdr st))]))
 
@@ -88,10 +89,10 @@
                                (if (equal? w (car l))
                                    (if (null? l)
                                        (list EMP)
-                                       (list (list (los->symbol (first l)) (los->symbol (second l)))))
-                                   (list (list (los->symbol (first l)) (los->symbol (second l)))
+                                       (list (list (los->symbol (car l)) (los->symbol (cadr l)))))
+                                   (list (list (los->symbol (car l)) (los->symbol (cadr l)))
                                          )))
-                             (reverse fderiv))
+                             (reverse fderiv)))
                  (make-deriv visited (dequeue! derivs) g chomsky))
              (let* ([rls (hash-ref nt-to-rules-ht fnt)]
                     [rights (map cfg-rule-rhs rls)]
