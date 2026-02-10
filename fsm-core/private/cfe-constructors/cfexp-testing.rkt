@@ -40,7 +40,7 @@
    "Observers for singleton, union, concat, and kleenestar"
    (check-equal? (concat-cfexp-cfes (concat-cfexp A A)) (vector A A))
    (check-equal? (union-cfexp-cfes (union-cfexp C (union-cfexp A B) D)) (vector C D A B))
-   (check-equal? (kleenestar-cfexp-c1 (kleene-cfexp A)) A)
+   (check-equal? (kleenestar-cfexp-c1 (kleenestar-cfexp A)) A)
    (check-equal? (singleton-cfexp-a C) "c")
    )
    
@@ -61,9 +61,9 @@
 
   (test-case
    "Kleene Constructor Makes Correct CFE"
-   (check-equal? (kleene-cfexp A) (mk-kleene-cfexp (mk-singleton-cfexp "a")))
-   (check-equal? (kleene-cfexp EMPTY) EMPTY)
-   (check-equal? (kleene-cfexp NULL) NULL)
+   (check-equal? (kleenestar-cfexp  A) (mk-kleene-cfexp (mk-singleton-cfexp "a")))
+   (check-equal? (kleenestar-cfexp  EMPTY) EMPTY)
+   (check-equal? (kleenestar-cfexp  NULL) NULL)
    )
 
 
@@ -101,9 +101,9 @@
    (check-false (union-cfexp? (union-cfexp EMPTY EMPTY EMPTY EMPTY)))
    (check-false (union-cfexp? (union-cfexp NULL NULL NULL)))
 
-   (check-true (kleene-cfexp? (kleene-cfexp A)))
-   (check-false (kleene-cfexp? (kleene-cfexp EMPTY)))
-   (check-false (kleene-cfexp? (kleene-cfexp NULL)))
+   (check-true (kleenestar-cfexp? (kleenestar-cfexp  A)))
+   (check-false (kleenestar-cfexp? (kleenestar-cfexp  EMPTY)))
+   (check-false (kleenestar-cfexp? (kleenestar-cfexp  NULL)))
    )
 
   )

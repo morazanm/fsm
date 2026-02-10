@@ -17,48 +17,48 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;CFEXP;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define EMPTY (make-cfe [(EMPTY (empty))]
+(define EMPTY (make-cfe [(EMPTY (empty-cfexp))]
                  EMPTY
                  #;(empty))
   #;(empty-cfexp))
 
-(define NULL (make-cfe [(NULL (null))]
+(define NULL (make-cfe [(NULL (null-cfexp))]
                  NULL))
 
-(define ONEorTWO (make-cfe ([one (singleton "1")]
-                             [two (singleton "2")])
-                      (union one two)))
+(define ONEorTWO (make-cfe ([one (singleton-cfexp "1")]
+                             [two (singleton-cfexp "2")])
+                      (union-cfexp one two)))
 
 
-(define A (make-cfe [(A (singleton "a"))]
+(define A (make-cfe [(A (singleton-cfexp "a"))]
                  A)
   #;(singleton-cfexp 'a))
 
-#;(make-cfe [(A (singleton 'a))]
+#;(make-cfe [(A (singleton-cfexp 'a))]
                  A)
 
-(define B (make-cfe [(B (singleton "b"))]
+(define B (make-cfe [(B (singleton-cfexp "b"))]
                  B)
   #;(singleton-cfexp 'b))
 
-(define C (make-cfe [(C (singleton "c"))]
+(define C (make-cfe [(C (singleton-cfexp "c"))]
                  C)
   #;(singleton-cfexp 'c))
 
-(define D (make-cfe [(D (singleton "d"))]
+(define D (make-cfe [(D (singleton-cfexp "d"))]
                  D))
 
 #;(singleton-cfexp 'a)
-(define G (make-cfe [(B (singleton "g"))
-                     (test (kleene B))]
+(define G (make-cfe [(B (singleton-cfexp "g"))
+                     (test (kleenestar-cfexp B))]
                  test))
 
 
 ;; w = ww^r
 (define WWR
-  (make-cfe [(WWr (union EMPTY
-                         (concat A WWr A)
-                         (concat B WWr B)))]
+  (make-cfe [(WWr (union-cfexp EMPTY
+                         (concat-cfexp A WWr A)
+                         (concat-cfexp B WWr B)))]
             WWr)
   #;(let* [(WWR (var-cfexp 'S))
            (AHA (concat-cfexp A WWR A))
@@ -69,7 +69,7 @@
 
 ;;w = a^nb^n
 (define ANBN
-  (make-cfe ([ASB (union EMPTY (concat A ASB B))])
+  (make-cfe ([ASB (union-cfexp EMPTY (concat-cfexp A ASB B))])
             ASB)
   #;(let* [(ANBN (var-cfexp 'S))
          (ASB (concat-cfexp A ANBN B))]
@@ -77,28 +77,28 @@
       (update-binding! ANBN 'S (union-cfexp EMPTY ASB))
       ANBN)))
 
-(define WWRUANBN (make-cfe ([WWrUAnBn (union WWR ANBN)])
+(define WWRUANBN (make-cfe ([WWrUAnBn (union-cfexp WWR ANBN)])
                            WWrUAnBn))
 
-(define AUB (make-cfe ([AUB (union A B)])
+(define AUB (make-cfe ([AUB (union-cfexp A B)])
                       AUB))
-(define cAUB (make-cfe ([AUB (union A B)]
-                        [aAUB (concat C AUB)])
+(define cAUB (make-cfe ([AUB (union-cfexp A B)]
+                        [aAUB (concat-cfexp C AUB)])
                       aAUB))
 
-(define cAUB2 (make-cfe ([aAUB (concat C (union A B))]) ;; now boxes the union 
+(define cAUB2 (make-cfe ([aAUB (concat-cfexp C (union-cfexp A B))]) ;; now boxes the union-cfexp 
                       aAUB))
 
-(define CUAUB (make-cfe ([CUAUB (union C (union A B))]) ;;now lifts nested unions
+(define CUAUB (make-cfe ([CUAUB (union-cfexp C (union-cfexp A B))]) ;;now lifts nested unions
                       CUAUB))
 
-(define CUAUBUD (make-cfe ([CUAUBUD (union C (union A (union D B)))]) ;;now lifts nested unions
+(define CUAUBUD (make-cfe ([CUAUBUD (union-cfexp C (union-cfexp A (union-cfexp D B)))]) ;;now lifts nested unions
                       CUAUBUD))
 
 
 ;;w = a^2ib^i
 (define A2iBi
-  (make-cfe ([A2iBi (union EMPTY (concat A A A2iBi B))])
+  (make-cfe ([A2iBi (union-cfexp EMPTY (concat-cfexp A A A2iBi B))])
             A2iBi)
             #;(let* [(A2iBi (var-cfexp 'S))
          (EUAAKB (union-cfexp EMPTY (concat-cfexp A A A2iBi B)))]
@@ -108,9 +108,9 @@
 
 ;;w = A^iB^j | i <= j <= 2i
 (define AiBj
-  (make-cfe ([AiBj (union EMPTY
-                          (concat A AiBj B)
-                          (concat A AiBj B B))])
+  (make-cfe ([AiBj (union-cfexp EMPTY
+                          (concat-cfexp A AiBj B)
+                          (concat-cfexp A AiBj B B))])
             AiBj)
             #;(let* [(AiBj (var-cfexp 'A))
          (AIB (concat-cfexp A AiBj B))
@@ -121,19 +121,19 @@
       AiBj)))
 
 (define AiBj-new
-  (make-cfe ([AiBj (union EMPTY
-                          (concat A AiBj B)
-                          (concat A AiBj B B))
-                  #;(EUAIBUAIBB (union EMPTY AIB AIBB))
-                  #;(AIB (concat A AiBj B))
-                  #;(AIBB (concat A AiBj B B))])
+  (make-cfe ([AiBj (union-cfexp EMPTY
+                          (concat-cfexp A AiBj B)
+                          (concat-cfexp A AiBj B B))
+                  #;(EUAIBUAIBB (union-cfexp EMPTY AIB AIBB))
+                  #;(AIB (concat-cfexp A AiBj B))
+                  #;(AIBB (concat-cfexp A AiBj B B))])
                  AiBj))
 
 ;AiBj-new
 
 ;;w = b^na^n
 (define BNAN
-  (make-cfe ([BNAN (union EMPTY (concat B BNAN A))])
+  (make-cfe ([BNAN (union-cfexp EMPTY (concat-cfexp B BNAN A))])
             BNAN)
   #;(let* [(BNAN (var-cfexp 'S))
          (BSA (concat-cfexp B BNAN A))]
@@ -191,14 +191,14 @@
       ASB)))
 
 (define ANBN-2
-  (make-cfe ([ASB (union EMPTY (concat A ASB B))])
+  (make-cfe ([ASB (union-cfexp EMPTY (concat-cfexp A ASB B))])
             ASB)
   #;(let [(ASB (box (void)))]
     (begin
       (set-box! ASB (union-cfexp EMPTY (concat-cfexp A ASB B)))
       ASB)))
 
-(define ANBN* (kleene-cfexp ANBN-2))
+(define ANBN* (kleenestar-cfexp ANBN-2))
 
 (define A-STAR
   #;(let ([EMPTY (empty-cfexp)]
@@ -207,86 +207,86 @@
     (begin
       (set-box! A* (union-cfexp EMPTY (concat-cfexp A A*)))
       A*))
-  (make-cfe ([EMPTY (empty)]
-             [A (singleton "a")]
-             [A* (union EMPTY (concat A A*))])
+  (make-cfe ([EMPTY (empty-cfexp)]
+             [A (singleton-cfexp "a")]
+             [A* (union-cfexp EMPTY (concat-cfexp A A*))])
              A*))
 
 #;(define AiBjCk
-  (make-cfe ([A (singleton "a")]
-             [B (singleton "b")]
-             [C (singleton "c")]
-             [AEB (union EMPTY (concat A AEB B))]
-             [CF (union (concat C CF) EMPTY)]
-             [BWC (union (concat B BWC C) EMPTY)]
-             [AZ (union (concat A AZ) EMPTY)])
-            (union (concat AEB CF) (concat AZ BWC)))
-  #;(make-cfe ([A (singleton "a")]
-               [B (singleton "b")]
-               [C (singleton "c")]
-               [AEB #;(union EMPTY #(concat-cfexp A AEB B)) (concat A E B)] ;; AEB = A^iB^j, i=j
-               [CF (concat C F)] ;;c^k
-               [AEBUEMP (union AEB EMPTY)] ;;AEB U EMP
-               [CFUEMP (union CF EMPTY)] ;;CF U EMP
+  (make-cfe ([A (singleton-cfexp "a")]
+             [B (singleton-cfexp "b")]
+             [C (singleton-cfexp "c")]
+             [AEB (union-cfexp EMPTY (concat-cfexp A AEB B))]
+             [CF (union-cfexp (concat-cfexp C CF) EMPTY)]
+             [BWC (union-cfexp (concat-cfexp B BWC C) EMPTY)]
+             [AZ (union-cfexp (concat-cfexp A AZ) EMPTY)])
+            (union-cfexp (concat-cfexp AEB CF) (concat-cfexp AZ BWC)))
+  #;(make-cfe ([A (singleton-cfexp "a")]
+               [B (singleton-cfexp "b")]
+               [C (singleton-cfexp "c")]
+               [AEB #;(union-cfexp EMPTY #(concat-cfexp A AEB B)) (concat-cfexp A E B)] ;; AEB = A^iB^j, i=j
+               [CF (concat-cfexp C F)] ;;c^k
+               [AEBUEMP (union-cfexp AEB EMPTY)] ;;AEB U EMP
+               [CFUEMP (union-cfexp CF EMPTY)] ;;CF U EMP
                [E (var AEBUEMP)]
                [F (var CFUEMP)]
-               [EF (concat E F)] ;;a^ib^jc^k, i=j
-               [BWC (concat B W C)] ;;BWC = B^jC^k, j=k
-               [AZ (concat A Z)] ;;a^i
-               [BWCUEMP (union BWC EMPTY)]
-               [AZUEMP (union AZ EMPTY)]
+               [EF (concat-cfexp E F)] ;;a^ib^jc^k, i=j
+               [BWC (concat-cfexp B W C)] ;;BWC = B^jC^k, j=k
+               [AZ (concat-cfexp A Z)] ;;a^i
+               [BWCUEMP (union-cfexp BWC EMPTY)]
+               [AZUEMP (union-cfexp AZ EMPTY)]
                [W (var BWCUEMP)]
                [Z (var AZUEMP)]
-               [ZW (concat Z W)] ;;a^ib^jc^k, j=k
-               [EFUWZ (union EF ZW)]
+               [ZW (concat-cfexp Z W)] ;;a^ib^jc^k, j=k
+               [EFUWZ (union-cfexp EF ZW)]
                [AiBjCk (var EFUWZ)])
               AiBjCk))
 
 (define AiBjCk2
-  (make-cfe ([A (singleton "a")]
-             [B (singleton "b")]
-             [C (singleton "c")]
-             [AEB (union EMPTY (concat A AEB B))]
-             [CF (union (concat C CF) EMPTY)]
-             [BWC (union (concat B BWC C) EMPTY)]
-             [AZ (union (concat A AZ) EMPTY)]
-             [AiBjCk (union (concat AEB CF) (concat AZ BWC))])
+  (make-cfe ([A (singleton-cfexp "a")]
+             [B (singleton-cfexp "b")]
+             [C (singleton-cfexp "c")]
+             [AEB (union-cfexp EMPTY (concat-cfexp A AEB B))]
+             [CF (union-cfexp (concat-cfexp C CF) EMPTY)]
+             [BWC (union-cfexp (concat-cfexp B BWC C) EMPTY)]
+             [AZ (union-cfexp (concat-cfexp A AZ) EMPTY)]
+             [AiBjCk (union-cfexp (concat-cfexp AEB CF) (concat-cfexp AZ BWC))])
             AiBjCk)
-  #;(make-cfe ([A (singleton "a")]
-                  [B (singleton "b")]
-                  [C (singleton "c")]
-                  [AEB (concat A E B)] ;; AEB = A^iB^j, i=j
-                  [CF (concat C F)] ;;c^k
-                  [AEBUEMP (union AEB EMPTY)] ;;AEB U EMP
-                  [CFUEMP (union CF EMPTY)] ;;CF U EMP
+  #;(make-cfe ([A (singleton-cfexp "a")]
+                  [B (singleton-cfexp "b")]
+                  [C (singleton-cfexp "c")]
+                  [AEB (concat-cfexp A E B)] ;; AEB = A^iB^j, i=j
+                  [CF (concat-cfexp C F)] ;;c^k
+                  [AEBUEMP (union-cfexp AEB EMPTY)] ;;AEB U EMP
+                  [CFUEMP (union-cfexp CF EMPTY)] ;;CF U EMP
                   [E (var AEBUEMP)]
                   [F (var CFUEMP)]
-                  [EF (concat E F)] ;;a^ib^jc^k, i=j
-                  [BWC (concat B W C)] ;;BWC = B^jC^k, j=k
-                  [AZ (concat A Z)] ;;a^i
-                  [BWCUEMP (union BWC EMPTY)]
-                  [AZUEMP (union AZ EMPTY)]
+                  [EF (concat-cfexp E F)] ;;a^ib^jc^k, i=j
+                  [BWC (concat-cfexp B W C)] ;;BWC = B^jC^k, j=k
+                  [AZ (concat-cfexp A Z)] ;;a^i
+                  [BWCUEMP (union-cfexp BWC EMPTY)]
+                  [AZUEMP (union-cfexp AZ EMPTY)]
                   [W (var BWCUEMP)]
                   [Z (var AZUEMP)]
-                  [ZW (concat Z W)] ;;a^ib^jc^k, j=k
-                  [AiBjCk (union EF ZW)])
+                  [ZW (concat-cfexp Z W)] ;;a^ib^jc^k, j=k
+                  [AiBjCk (union-cfexp EF ZW)])
                  AiBjCk))
 
 (define AiBjCk4
-  (make-cfe ([A (singleton "a")]
-             [B (singleton "b")]
-             [C (singleton "c")]
-             [AEB (union EMPTY (concat A AEB B))]
-             [CF (kleene C)]
-             [BWC (union (concat B BWC C) EMPTY)]
-             [AZ (kleene A)]
-             [AiBjCk (union (concat AEB CF) (concat AZ BWC))])
+  (make-cfe ([A (singleton-cfexp "a")]
+             [B (singleton-cfexp "b")]
+             [C (singleton-cfexp "c")]
+             [AEB (union-cfexp EMPTY (concat-cfexp A AEB B))]
+             [CF (kleenestar-cfexp C)]
+             [BWC (union-cfexp (concat-cfexp B BWC C) EMPTY)]
+             [AZ (kleenestar-cfexp A)]
+             [AiBjCk (union-cfexp (concat-cfexp AEB CF) (concat-cfexp AZ BWC))])
             AiBjCk))
 
 
 ;;L = wcw^r
-(define WcWr (make-cfe ([WcWr (union (concat A WcWr A)
-                                     (concat B WcWr B)
+(define WcWr (make-cfe ([WcWr (union-cfexp (concat-cfexp A WcWr A)
+                                     (concat-cfexp B WcWr B)
                                      C)])
                        WcWr))
 
@@ -328,7 +328,7 @@
 
 ;;w = (ab)*c
 (define AB^NC
-  (make-cfe ([ABnC (union (concat A B ABnC) C)])
+  (make-cfe ([ABnC (union-cfexp (concat-cfexp A B ABnC) C)])
             ABnC)
   #;(let* [(AB^NC (var-cfexp 'S))
          (ABX (concat-cfexp A B AB^NC))]
@@ -349,8 +349,8 @@
       (set-box! ABY (union-cfexp (concat-cfexp A B CXA) EMPTY))
       (set-box! CXA (concat-cfexp C ABY A))
       ABY))
-  (make-cfe ([ABY (union (concat A B CXA) EMPTY)]
-             [CXA (concat C ABY A)])
+  (make-cfe ([ABY (union-cfexp (concat-cfexp A B CXA) EMPTY)]
+             [CXA (concat-cfexp C ABY A)])
             ABY)
   #;(let* [(X (var-cfexp 'X))
          (Y (var-cfexp 'Y))
@@ -368,8 +368,8 @@
       (set-box! ABY (union-cfexp (concat-cfexp A B CXA) EMPTY))
       (set-box! CXA (concat-cfexp C ABY A))
       ABY))
-    #;(make-cfe ([ABY (union (concat A B CXA) EMPTY)]
-             [CXA (concat C ABY A)])
+    #;(make-cfe ([ABY (union-cfexp (concat-cfexp A B CXA) EMPTY)]
+             [CXA (concat-cfexp C ABY A)])
             ABY)
   #;(let* [(X (var-cfexp 'X))
          (Y (var-cfexp 'Y))

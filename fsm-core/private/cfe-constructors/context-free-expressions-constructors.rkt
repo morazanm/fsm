@@ -23,10 +23,10 @@
          (rename-out (mk-union-cfexp? union-cfexp?)
                      (mk-concat-cfexp? concat-cfexp?)
                      (mk-singleton-cfexp? singleton-cfexp?)
-                     (mk-kleene-cfexp? kleene-cfexp?)
+                     (mk-kleene-cfexp? kleenestar-cfexp?)
                      (mk-empty-cfexp? empty-cfexp?)
-                     (mk-null-cfexp? null-cfexp?))
-         kleene-cfexp
+                     (mk-null-cfexp? null-cfexp?)
+                     (kleene-cfexp kleenestar-cfexp))
          gen-cfexp-word          
          cfg->cfe
          cfe->cfg

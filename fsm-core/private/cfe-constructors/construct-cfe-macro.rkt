@@ -15,7 +15,7 @@
   (define-syntax-class concat-cfexp-expr
     #:attributes ((vals 1))
     #:description "concat cfexp"
-    (pattern ((~datum concat) vals:expr ...)))
+    (pattern ((~datum concat-cfexp) vals:expr ...)))
 
   (define-syntax-class concat-cfexp-binding
     #:attributes (id (expr.vals 1))
@@ -25,7 +25,7 @@
   (define-syntax-class singleton-cfexp-expr
     #:attributes (val)
     #:description "singleton cfexp"
-    (pattern ((~datum singleton) val:expr)))
+    (pattern ((~datum singleton-cfexp) val:expr)))
     
   (define-syntax-class singleton-cfexp-binding
     #:attributes (id expr.val)
@@ -35,7 +35,7 @@
   (define-syntax-class union-cfexp-expr
     #:attributes ((vals 1))
     #:description "union cfexp"
-    (pattern ((~datum union) vals:expr ...)))
+    (pattern ((~datum union-cfexp) vals:expr ...)))
   
   (define-syntax-class union-cfexp-binding
     #:attributes (id (expr.vals 1))
@@ -45,7 +45,7 @@
   (define-syntax-class kleene-cfexp-expr
     #:attributes (val)
     #:description "kleene cfexp"
-    (pattern ((~datum kleene) val:expr)))
+    (pattern ((~datum kleenestar-cfexp) val:expr)))
   
   (define-syntax-class kleene-cfexp-binding
     #:attributes (id expr.val)
@@ -54,7 +54,7 @@
 
   (define-syntax-class empty-cfexp-expr
     #:description "empty cfexp"
-    (pattern ((~datum empty))))
+    (pattern ((~datum empty-cfexp))))
   
   (define-syntax-class empty-cfexp-binding
     #:attributes (id)
@@ -63,7 +63,7 @@
 
   (define-syntax-class null-cfexp-expr
     #:description "null cfexp"
-    (pattern ((~datum null))))
+    (pattern ((~datum null-cfexp))))
 
   (define-syntax-class null-cfexp-binding
     #:attributes (id)
@@ -172,7 +172,7 @@
          (lambda ()
            (set! a-kleene-clause.id
                  #,(syntax/loc #'a-kleene-clause
-                     (kleene-cfexp (process-cfe-syntax a-kleene-clause.expr.val a-kleene-clause.id))))))]))
+                     (kleenestar-cfexp (process-cfe-syntax a-kleene-clause.expr.val a-kleene-clause.id))))))]))
 
 (define-syntax (union-cfe-set-box stx)
   (syntax-parse stx
