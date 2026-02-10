@@ -923,7 +923,7 @@ A Path is a (treelistof dfa-rule)
       (above (text "Minimizing the machine" FONT-SIZE BLACK)
              (if (or (symbol? merged-state)
                      (< (set-count (merged-state-old-symbols merged-state)) 2))                 
-                 (above (text (format "State ~a is distinguishable and does not get merged. It has also been renamed to: ~a"
+                 (above (text (format "State ~a is distinguishable, does not get merged, and is renamed to ~a"
                                       (hash-ref (phase-5-attributes-assoc-table phase-attribute)
                                                 (first (dfa-states (phase-5-attributes-rebuild-M phase-attribute))))
                                       (first (dfa-states (phase-5-attributes-rebuild-M phase-attribute))))
