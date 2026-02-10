@@ -1041,22 +1041,25 @@ word are returned.
          cfexp]{Builds the context-free expression for the language that only has a single
                  word of length 1 representing the given letter or special character: $, &, !, *.}
 
-@defproc[(union-cfexp [cfe cfexp] ...)
+@defproc[(union-cfexp [cfes cfexp] ...)
          cfexp]{Builds a union context-free expression from the given
  context-free expressions. }
 
-@defproc[(concat-cfexp [cfe cfexp] ...)
+@defproc[(concat-cfexp [cfes cfexp] ...)
          cfexp]{Builds a concatenation context-free expression from the 
  given context-free expressions.}
 
 @defproc[(kleenestar-cfexp [cfe cfexp])
          cfexp]{Builds a Kleene star context-free expression from the 
  given context-free expression.}
-@;{
-@defproc[(make-cfe [cfe cfexp]... [cfe cfexp])
-         cfexp]
- Builds a context-free expression that 
+
+@defproc[(make-cfe [cfes cfexp]... [result-cfe cfexp])
+         cfexp]{
+ Constructs result-cfe using the provided context-free expressions cfes.
+ Order of definitions does not matter when using this constructor.
+ Recursive references are supported when using this constructor.
 }
+
 @defproc[(cfg->cfe [g cfg])
          cfe]{Returns a context-free expression for the language of the given cfg.}
 
@@ -1096,7 +1099,7 @@ word are returned.
 @defproc[(kleenestar-cfexp-c1 [cfe kleenestar-cfexp])
          cfexp?]{Extracts the context-free expression in the given kleenestar-cfexp.}
 
-@defproc[(pick-regexp [cfe union-cfexp])
+@defproc[(pick-cfexp [cfe union-cfexp])
          cfexp]
          Nondeterministically return a nested sub-cfexp from the
          given union-cfexp. This includes any nested union-cfexps
