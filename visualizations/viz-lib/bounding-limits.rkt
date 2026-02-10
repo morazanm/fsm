@@ -1,5 +1,20 @@
 #lang racket/base
-(provide (all-defined-out))
+(provide (struct-out posn)
+         (struct-out bounding-limits)
+         bounding-limits-height
+         bounding-limits-width
+         within-bounding-limits?
+         outside-north-side-bounding-limits?
+         outside-south-side-bounding-limits?
+         outside-east-side-bounding-limits?
+         outside-west-side-bounding-limits?
+         outside-west-north-sides-bounding-limits?
+         outside-west-south-sides-bounding-limits?
+         outside-east-north-sides-bounding-limits?
+         outside-east-south-sides-bounding-limits?
+         outside-x-axis-bounding-limits?
+         outside-y-axis-bounding-limits?
+         outside-x-and-y-axis-bounding-limits?)
 
 ;; Coordinate pair
 ;; num num -> posn

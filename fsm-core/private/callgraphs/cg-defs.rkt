@@ -1,8 +1,6 @@
 #lang racket/base
 
-(require rackunit
-         racket/list
-         racket/local)
+(require rackunit)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -250,7 +248,7 @@
 ;; rule -> symbol
 ;; Purpose: Given a rule, extracts the source state
 (define (ndfa-rule-fromst r)
-  (first r))
+  (car r))
 
 ;; Tests for ndfa-rule-fromst
 (check-equal? (ndfa-rule-fromst '(S ε S)) 'S)
@@ -263,7 +261,7 @@
 ;; rule -> symbol
 ;; Purpose: Given a rule, extracts the destination state
 (define (ndfa-rule-tost r)
-  (third r))
+  (caddr r))
 
 ;; Tests for ndfa-rule-tost
 (check-equal? (ndfa-rule-tost '(S ε S)) 'S)
@@ -276,7 +274,7 @@
 ;; rule -> symbol
 ;; Purpose: Given a rule, extracts the read input
 (define (ndfa-rule-read r)
-  (second r))
+  (cadr r))
 
 ;; Tests for ndfa-rule-read
 (check-equal? (ndfa-rule-read '(S ε S)) 'ε)
@@ -423,7 +421,7 @@
 ;; rule -> symbol
 ;; Purpose: Given a rule, extracts the current state
 (define (pda-rule-fromst r)
-  (first (first r)))
+  (car (car r)))
 
 ;; Tests for pda-rule-fromst
 (check-equal? (pda-rule-fromst '((S ε ε) (X ε))) 'S)
@@ -437,7 +435,7 @@
 ;; rule -> symbol
 ;; Purpose: Given a rule, extracts the next state
 (define (pda-rule-tost r)
-  (first (second r)))
+  (car (cadr r)))
 
 ;; Tests for pda-rule-tost
 (check-equal? (pda-rule-tost '((S ε ε) (X ε))) 'X)
@@ -451,7 +449,7 @@
 ;; rule -> symbol
 ;; Purpose: Given a rule, extracts the read input
 (define (pda-rule-read r)
-  (second (first r)))
+  (cadr (car r)))
 
 ;; Tests for read
 (check-equal? (pda-rule-read '((S ε ε) (X ε))) 'ε)
@@ -465,7 +463,7 @@
 ;; rule -> symbol
 ;; Purpose: Given a rule, extracts the popped input
 (define (pda-rule-pop r)
-  (third (first r)))
+  (caddr (car r)))
 
 ;; Tests for pda-rule-pop
 (check-equal? (pda-rule-pop '((S ε ε) (X ε))) 'ε)
@@ -479,7 +477,7 @@
 ;; rule -> symbol
 ;; Purpose: Given a rule, extracts the pushed input
 (define (pda-rule-push r)
-  (second (second r)))
+  (cadr (cadr r)))
 
 ;; Tests for pda-rule-push
 (check-equal? (pda-rule-push '((S ε ε) (X ε))) 'ε)
@@ -593,7 +591,7 @@
 ;; tm-Edge -> symbol
 ;; Purpose: Given a rule, extracts the source state
 (define (tm-rule-fromst r)
-  (first (first r)))
+  (car (car r)))
 
 ;; Tests for tm-rule-fromst
 (check-equal? (tm-rule-fromst '((S a) (Q _))) 'S)
@@ -607,7 +605,7 @@
 ;; tm-Edge -> symbol
 ;; Purpose: Given a rule, extracts the destination state
 (define (tm-rule-tost r)
-  (first (second r)))
+  (car (cadr r)))
 
 ;; Tests for tm-rule-tost
 (check-equal? (tm-rule-tost '((S a) (Q _))) 'Q)
@@ -621,7 +619,7 @@
 ;; tm-Edge -> symbol
 ;; Purpose: Given a rule, extracts the read input
 (define (tm-rule-read r)
-  (second (first r)))
+  (cadr (car r)))
 
 ;; Tests for tm-rule-read
 (check-equal? (tm-rule-read '((S a) (Q _))) 'a)
@@ -635,7 +633,7 @@
 ;; tm-Edge -> symbol
 ;; Purpose: Given a rule, extracts the action
 (define (tm-rule-action r)
-  (second (second r)))
+  (cadr (cadr r)))
 
 ;; Tests for tm-rule-action
 (check-equal? (tm-rule-action '((S a) (Q _))) '_)
@@ -717,7 +715,7 @@
 ;; rule -> symbol
 ;; Purpose: Extract the from state from a rule
 (define (mttm-rule-fromst r)
-  (first (first r)))
+  (car (car r)))
   
 ;.................................................
 ;; mttm-rule-reads
@@ -725,7 +723,7 @@
 ;; rule -> (listof symbol)
 ;; Purpose: Extract the read elements from a rule
 (define (mttm-rule-reads r)
-  (second (first r)))
+  (cadr (car r)))
 
 ;.................................................
 ;; mttm-rule-tost
@@ -733,7 +731,7 @@
 ;; rule -> symbol
 ;; Purpose: Extract the to state from a rule
 (define (mttm-rule-tost r)
-  (first (second r)))
+  (car (cadr r)))
 
 ;.................................................
 ;; mttm-rule-actions
@@ -741,20 +739,20 @@
 ;; rule -> (listof symbol)
 ;; Purpose: Extract the action elements from a rule
 (define (mttm-rule-actions r)
-  (second (second r)))
+  (cadr (cadr r)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; mcons-set-i!
 
 ;; Sample tape
 (define TAPE (mcons '@
-                  (mcons '_
-                         (mcons 'x
-                                (mcons 'x
-                                       (mcons 'a
-                                              (mcons 'x
-                                                     (mcons 'x
-                                                            (mcons '_ '())))))))))
+                    (mcons '_
+                           (mcons 'x
+                                  (mcons 'x
+                                         (mcons 'a
+                                                (mcons 'x
+                                                       (mcons 'x
+                                                              (mcons '_ '())))))))))
 
 ;.................................................
 
@@ -773,24 +771,24 @@
                 (mcons-set-i! TAPE 4 'x)
                 TAPE)
               (mcons '@
-                  (mcons '_
-                         (mcons 'x
-                                (mcons 'x
-                                       (mcons 'x
-                                              (mcons 'x
-                                                     (mcons 'x
-                                                            (mcons '_ '())))))))))
+                     (mcons '_
+                            (mcons 'x
+                                   (mcons 'x
+                                          (mcons 'x
+                                                 (mcons 'x
+                                                        (mcons 'x
+                                                               (mcons '_ '())))))))))
 (check-equal? (begin
                 (mcons-set-i! TAPE 7 'x)
                 TAPE)
               (mcons '@
-                  (mcons '_
-                         (mcons 'x
-                                (mcons 'x
-                                       (mcons 'x
-                                              (mcons 'x
-                                                     (mcons 'x
-                                                            (mcons 'x '())))))))))
+                     (mcons '_
+                            (mcons 'x
+                                   (mcons 'x
+                                          (mcons 'x
+                                                 (mcons 'x
+                                                        (mcons 'x
+                                                               (mcons 'x '())))))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; tape-at-i
@@ -800,7 +798,7 @@
 (define (tape-at-i stuci)
   (let* [(tape (tm-stuci-tape stuci))
          (i (tm-stuci-head stuci))]         
-    (cond [(empty? tape) '_]
+    (cond [(null? tape) '_]
           [(= i 0) (mcar tape)]
           [else (tape-at-i (tm-stuci (tm-stuci-state stuci) (mcdr tape) (sub1 i) (tm-stuci-cl stuci)))])))
 
@@ -817,15 +815,15 @@
 ;; mttm-stuci -> symbol
 ;; Purpose: Given a mttm-stuci return the element at the stuci's head position on the tape
 (define (tapes-at-i stuci)
-  (local (;; (mlistof X) natnum -> X
-          ;; Purpose: Find element at i on given mttm tape
-          (define (mttm-tape-at-i tape i)
-            (cond [(empty? tape) '_]
-                  [(= i 0) (mcar tape)]
-                  [else (mttm-tape-at-i (mcdr tape) (sub1 i))])))
-    (let* [(tapes (mttm-stuci-tapes stuci))
-           (is (mttm-stuci-heads stuci))]         
-      (map (lambda (x y) (mttm-tape-at-i x y)) tapes is))))
+  ;; (mlistof X) natnum -> X
+  ;; Purpose: Find element at i on given mttm tape
+  (define (mttm-tape-at-i tape i)
+    (cond [(null? tape) '_]
+          [(= i 0) (mcar tape)]
+          [else (mttm-tape-at-i (mcdr tape) (sub1 i))]))
+  (let [(tapes (mttm-stuci-tapes stuci))
+        (is (mttm-stuci-heads stuci))]         
+    (map (lambda (x y) (mttm-tape-at-i x y)) tapes is)))
 
 ;; Tests for tape-at-i
 (check-equal? (tapes-at-i (mttm-stuci 'S (list TAPE (mcons '_ '())) '(0 0) 10)) '(@ _))
@@ -840,8 +838,8 @@
 ;; tm-stuci -> symbol
 ;; Purpose: Given a tm-stuci return the element to the left of the stuci's head position on the tape
 (define (tape-left-i stuci)
-  (let* [(tape (mcons '() (tm-stuci-tape stuci)))
-         (i (tm-stuci-head stuci))]         
+  (let [(tape (mcons '() (tm-stuci-tape stuci)))
+        (i (tm-stuci-head stuci))]         
     (cond [(= i 0) (mcar tape)]
           [else (tape-at-i (tm-stuci (tm-stuci-state stuci) (mcdr tape) (sub1 i) (tm-stuci-cl stuci)))])))
 
@@ -865,8 +863,8 @@
 ;; tm-stuci -> symbol
 ;; Purpose: Given a tm-stuci return the element to the left of the stuci's head position on the tape
 (define (tape-right-i stuci)
-  (let* [(tape (tm-stuci-tape stuci))
-         (i (add1 (tm-stuci-head stuci)))]         
+  (let [(tape (tm-stuci-tape stuci))
+        (i (add1 (tm-stuci-head stuci)))]         
     (cond [(= i 0) (mcar tape)]
           [else (tape-at-i (tm-stuci (tm-stuci-state stuci) (mcdr tape) (sub1 i) (tm-stuci-cl stuci)))])))
 
@@ -890,14 +888,14 @@
 ;; word -> (mlistof word)
 ;; Purpose: Given a word, creates a tape
 (define (create-tape word)
-  (local [(define (create-tape-helper word)
-            (if (empty? word)
-                '()
-                (mcons (first word)
-                       (create-tape-helper (rest word)))))]
-    (cond [(null? word) (mcons '@ '())]
-          [(eq? '@ (car word)) (create-tape-helper word)]
-          [else (mcons '@ (create-tape-helper word))])))
+  (define (create-tape-helper word)
+    (if (null? word)
+        '()
+        (mcons (car word)
+               (create-tape-helper (cdr word)))))
+  (cond [(null? word) (mcons '@ '())]
+        [(eq? '@ (car word)) (create-tape-helper word)]
+        [else (mcons '@ (create-tape-helper word))]))
 
 ;; Tests for create-tape
 (check-equal? (create-tape '(_ x x x x x x))
@@ -915,7 +913,7 @@
 ;; (mlistof X) -> (mlistof X)
 ;; Purpose: Given a tape, adds a blank at the end
 (define (add-blank tape)
-  (if (empty? tape)
+  (if (null? tape)
       (mcons '_ '())
       (mcons (mcar tape)
              (add-blank (mcdr tape)))))
@@ -934,7 +932,7 @@
 ;; (mlistof X) -> (mlistof X)
 ;; Purpose: Create copy of tape
 (define (create-tape-copy tape)
-  (if (empty? tape)
+  (if (null? tape)
       '()
       (mcons (mcar tape)
              (create-tape-copy (mcdr tape)))))

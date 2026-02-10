@@ -1,6 +1,5 @@
 #lang racket/base
-(require racket/list
-         "grammar-getters.rkt"
+(require "grammar-getters.rkt"
          "misc.rkt")
 
 (provide cyk)
@@ -23,7 +22,7 @@
   (define nts-vec (list->vector (grammar-nts g)))
 
   (define rules-vec (for/vector ([r (in-list (grammar-rules g))])
-                      (grammar-rule (first r) (third r))))
+                      (grammar-rule (car r) (caddr r))))
   (define arr-bools (3d-array (add1 word-len) (add1 word-len) (add1 (vector-length nts-vec)) #f))
   (define enumeration-ht (make-hash))
   
@@ -35,7 +34,7 @@
          [rule (in-vector rules-vec)])
     (when (let ([symb (symbol->fsmlos (grammar-rule-to rule))])
             (and (= 1 (length symb))
-                 (eq? (vector-ref word-vec s) (first symb))))
+                 (eq? (vector-ref word-vec s) (car symb))))
       (3d-array-set! arr-bools 0 s (hash-ref enumeration-ht (grammar-rule-from rule)) #t)))
 
   (for* ([l (in-range 2 (add1 word-len) 1)]
@@ -44,7 +43,7 @@
          [rule (in-vector rules-vec)])
     (when (let ([to-symb (symbol->fsmlos (grammar-rule-to rule))])
             (and (= 2 (length to-symb))
-                 (3d-array-get arr-bools (sub1 p) s (hash-ref enumeration-ht (first to-symb)))
-                 (3d-array-get arr-bools (sub1 (- l p)) (+ s p) (hash-ref enumeration-ht (second to-symb)))))
+                 (3d-array-get arr-bools (sub1 p) s (hash-ref enumeration-ht (car to-symb)))
+                 (3d-array-get arr-bools (sub1 (- l p)) (+ s p) (hash-ref enumeration-ht (cadr to-symb)))))
       (3d-array-set! arr-bools (sub1 l) s (hash-ref enumeration-ht (grammar-rule-from rule)) #t)))
   (3d-array-get arr-bools (sub1 word-len) 0 (hash-ref enumeration-ht (grammar-start g))))

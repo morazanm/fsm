@@ -8,14 +8,12 @@
          "../../fsm-core/private/constants.rkt"
          "default-informative-messages.rkt"
          "../viz-lib/zipper.rkt"
-         "../viz-lib/tl-zipper.rkt"
          racket/treelist
          "david-imsg-state.rkt"
          "../viz-lib/viz-constants.rkt"
          "../../fsm-core/private/fsa.rkt"
          "../../fsm-core/private/pda.rkt"
-         "../../fsm-core/private/tm.rkt"
-         "../../fsm-core/private/misc.rkt")
+         "../../fsm-core/private/tm.rkt")
 
 (define FONT-SIZE 18)
 (provide (all-defined-out))

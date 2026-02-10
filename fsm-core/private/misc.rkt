@@ -5,7 +5,7 @@
 #lang racket/base
   (require "string.rkt"
            "constants.rkt"
-           racket/list)
+           )
   (provide #;remove-duplicates los->symbol generate-symbol symbol-upcase equiv-los? 
            not-in-l2 symbol->list sublist subst-in-list gen-symbol get-differences
            symbol->fsmlos gen-state gen-nt)
@@ -79,8 +79,8 @@
     ;; natnum (listof states) --> state
     ;; Purpose: Generate an allowed state
     (define (gen-helper n s-choices)
-      (if (not (empty? s-choices))
-          (first s-choices)
+      (if (not (null? s-choices))
+          (car s-choices)
           (gen-helper (add1 n)
                       (filter (λ (s) (not (member s disallowed)))
                               (map (λ (s) (concat-n s n)) STS)))))

@@ -1,7 +1,6 @@
 #lang racket/base
 (require rackunit
-         "rules/rules-predicates.rkt"
-         racket/list)
+         "rules/rules-predicates.rkt")
 (provide format-error
          format-finals-error
          format-duplicates-error
@@ -58,7 +57,7 @@
   (define (make-string los prefix separator suffix)
     (string-append
      prefix
-     (string-append (first los) (foldr string-append "" (map (lambda (s) (string-append separator s)) (rest los))))
+     (string-append (car los) (foldr string-append "" (map (lambda (s) (string-append separator s)) (cdr los))))
      suffix)
     )
   (define rule (invalid-rule-rule rule-with-errors))

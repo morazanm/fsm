@@ -1,17 +1,13 @@
 #lang racket/base
-(require (for-syntax syntax/parse
-                     racket/base)
-         "vector-zipper.rkt"
+(require "vector-zipper.rkt"
          "zipper.rkt"
          "viz-state.rkt"
          math/matrix
          "bounding-limits.rkt"
          "../2htdp/image.rkt"
          "resize-viz-image.rkt"
-         "../viz-sm/david-imsg-state.rkt"
          "typed-matrices.rkt"
-         racket/promise
-         racket/list)
+         racket/promise)
 
 (provide (all-defined-out))
 
@@ -21,16 +17,16 @@
            (beside/align
             "bottom"
             (above/align "middle"
-                         (first val)
+                         (car val)
                          (square HEIGHT-BUFFER 'solid 'white)
-                         (text (second val) (- FONT-SIZE 2) 'black))
+                         (text (cadr val) (- FONT-SIZE 2) 'black))
             (square LETTER-KEY-WIDTH-BUFFER 'solid 'white)
             accum))
          (above/align "middle"
-                (first (first rev-elems-lst))
+                (car (car rev-elems-lst))
                 (square HEIGHT-BUFFER 'solid 'white)
-                (text (second (first rev-elems-lst)) (- FONT-SIZE 2) 'black))
-         (rest rev-elems-lst))))
+                (text (cadr (car rev-elems-lst)) (- FONT-SIZE 2) 'black))
+         (cdr rev-elems-lst))))
 
 ;; img num>0 num num num -> viewport-limits
 ;; Calculates the min and max values of x and y that keep the graph on the screen at all times
@@ -197,7 +193,7 @@
                             (/ (image-height (scale (viz-state-scale-factor a-vs) curr-pimgs-img)) 2))])
         
           (if (does-img-need-resizing? new-curr-img E-SCENE-WIDTH E-SCENE-HEIGHT)
-              (let ([NEW-FLOOR (min (second img-resize) (third img-resize))])
+              (let ([NEW-FLOOR (min (cadr img-resize) (caddr img-resize))])
                 (cond
                   [(> (viz-state-scale-factor a-vs) DEFAULT-ZOOM-CAP)
                    (let ([new-viz-state
@@ -324,7 +320,7 @@
                                  (/ (image-height (scale (viz-state-scale-factor a-vs) curr-pimgs-img)) 2))])
        
                (if (does-img-need-resizing? new-curr-img E-SCENE-WIDTH E-SCENE-HEIGHT)
-                   (let ([NEW-FLOOR (min (second img-resize) (third img-resize))])
+                   (let ([NEW-FLOOR (min (cadr img-resize) (caddr img-resize))])
                      (cond
                        [(> (viz-state-scale-factor a-vs) DEFAULT-ZOOM-CAP)
                         (let ([new-viz-state
@@ -449,7 +445,7 @@
                (growth-y (- (/ (image-height (scale (viz-state-scale-factor a-vs) new-curr-img)) 2)
                             (/ (image-height (scale (viz-state-scale-factor a-vs) curr-pimgs-img)) 2)))]
           (if (does-img-need-resizing? new-curr-img E-SCENE-WIDTH E-SCENE-HEIGHT)
-              (let [(NEW-FLOOR (min (second img-resize) (third img-resize)))]
+              (let [(NEW-FLOOR (min (cadr img-resize) (caddr img-resize)))]
                 (cond [(> (viz-state-scale-factor a-vs) DEFAULT-ZOOM-CAP)
                        (let [(new-viz-state (struct-copy viz-state a-vs
                                                          [imgs new-imgs]
@@ -545,7 +541,7 @@
                (growth-y (- (/ (image-height (scale (viz-state-scale-factor a-vs) new-pimgs-img)) 2)
                             (/ (image-height (scale (viz-state-scale-factor a-vs) curr-pimgs-img)) 2)))]
           (if (does-img-need-resizing? new-pimgs-img E-SCENE-WIDTH E-SCENE-HEIGHT)
-              (let [(NEW-FLOOR (min (second img-resize) (third img-resize)))]
+              (let [(NEW-FLOOR (min (cadr img-resize) (caddr img-resize)))]
                 (cond [(> (viz-state-scale-factor a-vs) DEFAULT-ZOOM-CAP)
                        (reposition-out-of-bounds-img (struct-copy viz-state a-vs
                                                                   [imgs new-imgs]
@@ -634,7 +630,7 @@
                (growth-y (- (/ (image-height (scale (viz-state-scale-factor a-vs) new-pimgs-img)) 2)
                             (/ (image-height (scale (viz-state-scale-factor a-vs) curr-pimgs-img)) 2)))]
           (if (does-img-need-resizing? new-pimgs-img E-SCENE-WIDTH E-SCENE-HEIGHT)
-              (let [(NEW-FLOOR (min (second img-resize) (third img-resize)))]
+              (let [(NEW-FLOOR (min (cadr img-resize) (caddr img-resize)))]
                 (cond [(> (viz-state-scale-factor a-vs) DEFAULT-ZOOM-CAP) 
                        (let [(new-viz-state (struct-copy viz-state a-vs
                                                          [imgs new-imgs]
@@ -717,7 +713,7 @@
                (growth-y (- (/ (image-height (scale (viz-state-scale-factor a-vs) new-pimgs-img)) 2)
                             (/ (image-height (scale (viz-state-scale-factor a-vs) curr-pimgs-img)) 2)))]
           (if (does-img-need-resizing? new-pimgs-img E-SCENE-WIDTH E-SCENE-HEIGHT)
-              (let [(NEW-FLOOR (min (second img-resize) (third img-resize)))]
+              (let [(NEW-FLOOR (min (cadr img-resize) (caddr img-resize)))]
                 (cond [(> (viz-state-scale-factor a-vs) DEFAULT-ZOOM-CAP) 
                        (let [(new-viz-state (struct-copy viz-state a-vs
                                                          [imgs new-imgs]
@@ -810,7 +806,7 @@
     (if (or (< E-SCENE-WIDTH (image-width (viz-state-curr-image a-vs)))
             (< E-SCENE-HEIGHT (image-height (viz-state-curr-image a-vs))))
         (let [(img-resize (resize-image (viz-state-curr-image a-vs) (* E-SCENE-WIDTH PERCENT-BORDER-GAP) (* E-SCENE-HEIGHT PERCENT-BORDER-GAP)))]
-          ((zoom (/ (min (second img-resize) (third img-resize)) (viz-state-scale-factor a-vs))
+          ((zoom (/ (min (cadr img-resize) (caddr img-resize)) (viz-state-scale-factor a-vs))
                  E-SCENE-WIDTH E-SCENE-HEIGHT ZOOM-INCREASE ZOOM-DECREASE NODE-SIZE) a-vs))
         (struct-copy viz-state a-vs
                      [scale-factor DEFAULT-ZOOM]))))

@@ -20,7 +20,8 @@
   (provide
    (all-from-out racket)
    (all-from-out rackunit)
-   (all-from-out "fsm-gui/interface.rkt")
+   #;(all-from-out "fsm-gui/interface.rkt")
+   sm-visualize
    check-machine
    empties
 
@@ -117,7 +118,7 @@
         (error 'sm-graph "Invalid color option. Must be either 0, 1, or 2. Given ~a" color-blind-mode))
       (fsa->bitmap fsa color-blind-mode))
 
-  (define aab* (make-unchecked-ndfa '(W X Y)
+  #;(define aab* (make-unchecked-ndfa '(W X Y)
                                     '(a b)
                                     'W
                                     '(Y)
@@ -125,7 +126,7 @@
                                       (X a Y)
                                       (Y b Y))))
 
-  (define EQABC2
+  #;(define EQABC2
     (make-mttm
      '(S Y C D E F G)
      '(a b c)
@@ -155,7 +156,7 @@
      4
      'Y))
 
-  (define M (make-dfa 
+  #;(define M (make-dfa 
 	'(B A S) 
 	'(a b) 
 	'S 

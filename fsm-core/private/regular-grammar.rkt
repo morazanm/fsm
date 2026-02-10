@@ -55,7 +55,7 @@
   (define (mk-symb  s1 s2)
     (string->symbol (string-append (symbol->string s1) (symbol->string s2))))
   (define (gen-prules rls)
-    (cond [(empty? rls) rls]
+    (cond [(null? rls) rls]
           [(erule? (car rls)) (cons (list (rg-s g) ARROW EMP) (gen-prules (cdr rls)))]
           [(srule? (car rls)) (cons (list (srule-lhs (car rls)) 
                                           ARROW 
@@ -70,7 +70,7 @@
   
 ; (listof (list symbol ARROW symbol)) symbol (start) --> lor
 (define (parse-rrules l S)
-  (cond [(empty? l) l]
+  (cond [(null? l) l]
         [(and (eq? (caar l) S) (eq? (caddar l) EMP)) 
          (cons (erule S) (parse-rrules (cdr l) S))]
         [else
@@ -90,11 +90,11 @@
 ; rg-rename-nts : (listof symbol) rg -> rg       
 (define (rg-rename-nts nts1 g2)
   (define (generate-table disallowed nts2)
-    (if (empty? nts2)
+    (if (null? nts2)
         '()
         (let ((new-nt (gen-nt disallowed)))
-          (cons (list (first nts2) new-nt)
-                (generate-table (cons new-nt disallowed) (rest nts2)))))
+          (cons (list (car nts2) new-nt)
+                (generate-table (cons new-nt disallowed) (cdr nts2)))))
     #;(map (lambda (s) (list s (generate-symbol s nts1))) nts2))
     
   (define (update-rg-rule rule table)
@@ -248,17 +248,17 @@
                        (curr (car firstpath))
                          
                        )
-                  (cond [(equal? (first curr) w) firstpath]
+                  (cond [(equal? (car curr) w) firstpath]
                         [else (let*
                                   (
                                      
-                                   (new-words (apply-one-step (first curr) (rg-getrules g)))
+                                   (new-words (apply-one-step (car curr) (rg-getrules g)))
                                      
                                    (newstrings (if (null? new-words) 
                                                    null
-                                                   (filter (lambda (s) (and (<= (length (first s)) (add1 (length w)))
-                                                                            (same-start (first s) w) 
-                                                                            (not (member (first s) visited))))
+                                                   (filter (lambda (s) (and (<= (length (car s)) (add1 (length w)))
+                                                                            (same-start (car s) w) 
+                                                                            (not (member (car s) visited))))
                                                            new-words)))
                                      
                                    (newpaths (append (cdr tovisit)
@@ -277,7 +277,7 @@
   (define (convert-rule-struct-to-list rule-struct) (cond [(erule? rule-struct) (list (erule-lhs rule-struct) ARROW EMP)]
                                                           [(srule? rule-struct) (list (srule-lhs rule-struct) ARROW (srule-rhs rule-struct))]
                                                           [(crule? rule-struct) (list (crule-lhs rule-struct) ARROW (los->symbol (list (crule-rhs1 rule-struct) (crule-rhs2 rule-struct))))]
-                                                          [(empty? rule-struct) '()]
+                                                          [(null? rule-struct) '()]
                                                           )
     )
     
@@ -286,8 +286,8 @@
          )
     (if (null? res)
         (format "~s is not in L(G)." w)
-        (append-map (lambda (l) (if (equal? w (first l)) 
-                                    (if (null? w) (list EMP) (list (list (los->symbol (first l)) (convert-rule-struct-to-list (second l))))) 
-                                    (list (list (los->symbol (first l)) (convert-rule-struct-to-list (second l))))))
+        (append-map (lambda (l) (if (equal? w (car l)) 
+                                    (if (null? w) (list EMP) (list (list (los->symbol (car l)) (convert-rule-struct-to-list (cadr l))))) 
+                                    (list (list (los->symbol (car l)) (convert-rule-struct-to-list (cadr l))))))
                     (reverse res)))))
 ;closes module

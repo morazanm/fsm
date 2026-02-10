@@ -19,32 +19,28 @@
   "private/misc.rkt"
   "private/state.rkt"
   "private/sm-getters.rkt"
-  "private/grammar-getters.rkt" 
-  "private/regexp-predicate.rkt"
+  "private/grammar-getters.rkt"
   "private/abstract-predicate.rkt"
   "private/mtape-tm.rkt"
   "private/macros/regexp-contracts.rkt"
   "private/macros/constructors.rkt"
   "private/macros/grammar-constructors.rkt"
   "private/sm-apply.rkt"
-  "private/sm-apply.rkt"
   "private/callgraphs/callgraphs-ndfa.rkt"
   "private/callgraphs/callgraphs-pda.rkt"
   "private/callgraphs/callgraphs-tm.rkt"
   "private/callgraphs/callgraphs-mttm.rkt"
-  "private/callgraphs/transdiagram-mttm.rkt"
   "../visualizations/viz-sm/viz-ctm.rkt"
   "../visualizations/viz-sm/sm-viz.rkt"
   "../visualizations/viz-grammar-constructors/rg-viz.rkt"
   "../visualizations/viz-grammar-constructors/cfg-viz.rkt"
   "../visualizations/viz-grammar-constructors/csg-viz.rkt"
   "private/chomsky.rkt"
-  ;"private/Chomsky-Greibach-CFG-Transformations/chomsky.rkt"
   "private/Chomsky-Greibach-CFG-Transformations/greibach.rkt"
   "private/fsmunit/check-accept-reject-macro.rkt"
   racket/list
-  racket/bool
-  racket/contract)
+  racket/contract/region
+  )
   
 (provide
  check-machine
@@ -152,9 +148,9 @@
           [(eq? t1 'pda)
            (computation-diagram-pda M w c p)]
           [(or (eq? t1 'tm) (eq? t1 'tm-language-recognizer))
-           (computation-diagram-tm M w (if (empty? headpos) 0 (first headpos)) c p)]
+           (computation-diagram-tm M w (if (null? headpos) 0 (car headpos)) c p)]
           [(or (eq? t1 'mttm) (eq? t1 'mttm-language-recognizer))
-           (computation-diagram-mttm M w (if (empty? headpos) 0 (first headpos)) c p)]
+           (computation-diagram-mttm M w (if (null? headpos) 0 (car headpos)) c p)]
           [else (error "Unknown machine type given to sm-cmpgraph.")])))
   
 ; (listof state) fsm --> fsm
@@ -412,7 +408,7 @@
 
 (define (grammar-derive? g w)
   (cond [(rg? g) (list? (rg-derive g w))]
-        [(cfg? g) (if (empty? w)
+        [(cfg? g) (if (null? w)
                       (list? (cfg-derive g w))
                       (cyk (chomsky g) w))]
         [(csg? g) (list? (csg-derive g w))]
@@ -455,7 +451,7 @@
                         (if (string? r) r (last r))))
                     testlist))
          (diffs (get-differences res1 res2 testlist)))
-    (if (null? diffs) true diffs)))
+    (if (null? diffs) #t diffs)))
 
 ;; make-dfa: states alphabet state states rules (boolean) -> machine
 ;; Purpose: Eventually, will construct a multi-tape turing-machine from the given

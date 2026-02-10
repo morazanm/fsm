@@ -10,10 +10,7 @@
          "../viz-lib/viz-constants.rkt"
          "../viz-lib/bounding-limits-macro.rkt"
          "../viz-lib/viz-imgs/keyboard_bitmaps.rkt"
-         "../viz-lib/default-viz-function-generators.rkt"
-         racket/list
-         racket/local
-         racket/function)
+         "../viz-lib/default-viz-function-generators.rkt")
 
 (provide init-viz)
 (define FONT-SIZE 20)
@@ -44,9 +41,9 @@
 ;; Returns an image of a tape of symbols, capable of sliding when its start-index is varied
 (define (make-tape-img tape start-index)
   (define (make-tape-img loi start-index)
-    (if (empty? (rest loi))
-        (first loi)
-        (beside (first loi) (make-tape-img (rest loi) (add1 start-index)))))
+    (if (null? (cdr loi))
+        (car loi)
+        (beside (car loi) (make-tape-img (cdr loi) (add1 start-index)))))
   (let ([letter-imgs
          (build-list
           TAPE-SIZE
@@ -123,76 +120,76 @@
 ;; viz-state -> Image
 ;; Returns a image containing all the information regarding what is being derived and what the current yield is
 (define (create-instructions a-imsgs)
+  (define DREV
+    (let ([drev-text (text "Deriving: " FONT-SIZE 'black)])
+      (overlay drev-text (rectangle (image-width drev-text) TAPE-IMG-HEIGHT 'solid 'white))))
+  (define YIELD
+    (let ([yield-text (text "Current Yield: " FONT-SIZE 'black)])
+      (overlay yield-text (rectangle (image-width yield-text) TAPE-IMG-HEIGHT 'solid 'white))))
+  (define INPUT-WORD
+    (make-tape-img (imsg-state-input-word a-imsgs)
+                   (if (> (length (imsg-state-input-word a-imsgs)) TAPE-SIZE)
+                       (imsg-state-word-img-offset a-imsgs)
+                       0)))
+  (define (find-arrow used-rule acc)
+    (cond [(> acc (sub1 (string-length used-rule))) 1]
+          [(equal? (string-ref used-rule acc) #\→) acc]
+          [(find-arrow used-rule (add1 acc))]))
+  (define YIELD-WORD
+    (let ([normalized-p-yield (if (list? (zipper-current (imsg-state-yield a-imsgs)))
+                                  (zipper-current (imsg-state-yield a-imsgs))
+                                  (list (zipper-current (imsg-state-yield a-imsgs))))])
+      (make-tape-img
+       normalized-p-yield
+       (if (> (length normalized-p-yield) TAPE-SIZE) (imsg-state-word-img-offset a-imsgs) 0))))
+  (define RULE-USED
+    (if (equal? "" (zipper-current (imsg-state-rules a-imsgs)))
+        ;; Use white so its invisible, makes it so the words dont shift (using an empty string would make the words shift)
+        (text "The rule used: " FONT-SIZE 'white)
+        (text "The rule used: " FONT-SIZE 'black)))
+  (define RULE-USED-WORD
+    (let ([arrow-place (find-arrow (zipper-current (imsg-state-rules a-imsgs)) 0)])
+      (if (equal? "" (zipper-current (imsg-state-rules a-imsgs)))
+          (text "" FONT-SIZE 'white)
+          (beside (text (format "~a" (substring (zipper-current (imsg-state-rules a-imsgs)) 0 (sub1 arrow-place)))
+                        FONT-SIZE
+                        YIELD-COLOR)
+                  (text (format " ~a" (substring (zipper-current (imsg-state-rules a-imsgs)) arrow-place))
+                        FONT-SIZE
+                        HEDGE-COLOR)))))
+  ;(define INVARIANT-MSG (text "Invariant: " FONT-SIZE 'black))
+  (define INVARIANT-STATE
+    (if (equal? 'NO-INV (imsg-state-broken-invariants a-imsgs))
+        (text "All invariants hold." FONT-SIZE 'white)
+        (if (null? (zipper-current (imsg-state-broken-invariants a-imsgs)))
+            (text "All invariants hold." FONT-SIZE 'black)
+            (text (format "~a invariant does not hold."
+                          (car (zipper-current (imsg-state-broken-invariants a-imsgs))))
+                  FONT-SIZE
+                  'black))))
+  (define spacer
+    (rectangle (- E-SCENE-WIDTH
+                  (image-width RULE-USED)
+                  (image-width RULE-USED-WORD)
+                  ;(image-width INVARIANT-MSG)
+                  (image-width INVARIANT-STATE)
+                  10)
+               (image-height RULE-USED)
+               'solid
+               'white))
+  (define RULE-YIELD-DREV-LABELS (above/align "right" RULE-USED DREV YIELD))
+  (define WORDS
+    (above/align "left"
+                 (beside RULE-USED-WORD
+                         spacer
+                         ;INVARIANT-MSG
+                         INVARIANT-STATE)
+                 INPUT-WORD
+                 YIELD-WORD))
+     
   (beside
    (rectangle 1 (* 2 FONT-SIZE) "solid" 'white)
-   (local
-     [(define DREV
-        (let ([drev-text (text "Deriving: " FONT-SIZE 'black)])
-          (overlay drev-text (rectangle (image-width drev-text) TAPE-IMG-HEIGHT 'solid 'white))))
-      (define YIELD
-        (let ([yield-text (text "Current Yield: " FONT-SIZE 'black)])
-          (overlay yield-text (rectangle (image-width yield-text) TAPE-IMG-HEIGHT 'solid 'white))))
-      (define INPUT-WORD
-        (make-tape-img (imsg-state-input-word a-imsgs)
-                       (if (> (length (imsg-state-input-word a-imsgs)) TAPE-SIZE)
-                           (imsg-state-word-img-offset a-imsgs)
-                           0)))
-      (define (find-arrow used-rule acc)
-        (cond [(> acc (sub1 (string-length used-rule))) 1]
-              [(equal? (string-ref used-rule acc) #\→) acc]
-              [(find-arrow used-rule (add1 acc))]))
-      (define YIELD-WORD
-        (let ([normalized-p-yield (if (list? (zipper-current (imsg-state-yield a-imsgs)))
-                                      (zipper-current (imsg-state-yield a-imsgs))
-                                      (list (zipper-current (imsg-state-yield a-imsgs))))])
-          (make-tape-img
-           normalized-p-yield
-           (if (> (length normalized-p-yield) TAPE-SIZE) (imsg-state-word-img-offset a-imsgs) 0))))
-      (define RULE-USED
-        (if (equal? "" (zipper-current (imsg-state-rules a-imsgs)))
-            ;; Use white so its invisible, makes it so the words dont shift (using an empty string would make the words shift)
-            (text "The rule used: " FONT-SIZE 'white)
-            (text "The rule used: " FONT-SIZE 'black)))
-      (define RULE-USED-WORD
-        (let ([arrow-place (find-arrow (zipper-current (imsg-state-rules a-imsgs)) 0)])
-          (if (equal? "" (zipper-current (imsg-state-rules a-imsgs)))
-              (text "" FONT-SIZE 'white)
-              (beside (text (format "~a" (substring (zipper-current (imsg-state-rules a-imsgs)) 0 (sub1 arrow-place)))
-                            FONT-SIZE
-                            YIELD-COLOR)
-                      (text (format " ~a" (substring (zipper-current (imsg-state-rules a-imsgs)) arrow-place))
-                            FONT-SIZE
-                            HEDGE-COLOR)))))
-      ;(define INVARIANT-MSG (text "Invariant: " FONT-SIZE 'black))
-      (define INVARIANT-STATE
-        (if (equal? 'NO-INV (imsg-state-broken-invariants a-imsgs))
-            (text "All invariants hold." FONT-SIZE 'white)
-            (if (empty? (zipper-current (imsg-state-broken-invariants a-imsgs)))
-                (text "All invariants hold." FONT-SIZE 'black)
-                (text (format "~a invariant does not hold."
-                              (first (zipper-current (imsg-state-broken-invariants a-imsgs))))
-                      FONT-SIZE
-                      'black))))
-      (define spacer
-        (rectangle (- E-SCENE-WIDTH
-                      (image-width RULE-USED)
-                      (image-width RULE-USED-WORD)
-                      ;(image-width INVARIANT-MSG)
-                      (image-width INVARIANT-STATE)
-                      10)
-                   (image-height RULE-USED)
-                   'solid
-                   'white))
-      (define RULE-YIELD-DREV-LABELS (above/align "right" RULE-USED DREV YIELD))
-      (define WORDS
-        (above/align "left"
-                     (beside RULE-USED-WORD
-                             spacer
-                             ;INVARIANT-MSG
-                             INVARIANT-STATE)
-                     INPUT-WORD
-                     YIELD-WORD))]
-     (beside RULE-YIELD-DREV-LABELS WORDS))))
+   (beside RULE-YIELD-DREV-LABELS WORDS)))
 
 ;; viz-state -> img
 ;; Returns the the instructions and e-scene-tools images combined into one
@@ -440,7 +437,7 @@
   (let ()
     (run-viz
      graphs
-     (create-first-img (first (first w-der)))
+     (create-first-img (car (car w-der)))
      (posn (/ E-SCENE-WIDTH 2) (/ E-SCENE-HEIGHT 2))
      DEFAULT-ZOOM
      DEFAULT-ZOOM-CAP
@@ -472,15 +469,15 @@
                              ["left" viz-go-prev left-key-pressed]
                              [ "up" viz-go-to-begin up-key-pressed]
                              ["down" viz-go-to-end down-key-pressed]
-                             ["w" viz-zoom-in identity]
-                             ["s" viz-zoom-out identity]
-                             ["r" viz-max-zoom-out identity]
-                             ["f" viz-max-zoom-in identity]
-                             ["e" viz-reset-zoom identity]
-                             ["a" identity a-key-pressed]
-                             ["d" identity d-key-pressed]
-                             ["wheel-down" viz-zoom-in identity]
-                             ["wheel-up" viz-zoom-out identity])
+                             ["w" viz-zoom-in (lambda (x) x)]
+                             ["s" viz-zoom-out (lambda (x) x)]
+                             ["r" viz-max-zoom-out (lambda (x) x)]
+                             ["f" viz-max-zoom-in (lambda (x) x)]
+                             ["e" viz-reset-zoom (lambda (x) x)]
+                             ["a" (lambda (x) x) a-key-pressed]
+                             ["d" (lambda (x) x) d-key-pressed]
+                             ["wheel-down" viz-zoom-in (lambda (x) x)]
+                             ["wheel-up" viz-zoom-out (lambda (x) x)])
      (create-viz-process-tick
       E-SCENE-BOUNDING-LIMITS
       NODE-SIZE
@@ -513,13 +510,13 @@
        [ARROW-DOWN-KEY-DIMS viz-go-to-end down-key-pressed]
        [ARROW-LEFT-KEY-DIMS viz-go-prev left-key-pressed]
        [ARROW-RIGHT-KEY-DIMS viz-go-next right-key-pressed]
-       [W-KEY-DIMS viz-zoom-in identity]
-       [S-KEY-DIMS viz-zoom-out identity]
-       [R-KEY-DIMS viz-max-zoom-out identity]
-       [E-KEY-DIMS viz-reset-zoom identity]
-       [F-KEY-DIMS viz-max-zoom-in identity]
-       [A-KEY-DIMS identity a-key-pressed]
-       [D-KEY-DIMS identity d-key-pressed]))
+       [W-KEY-DIMS viz-zoom-in (lambda (x) x)]
+       [S-KEY-DIMS viz-zoom-out (lambda (x) x)]
+       [R-KEY-DIMS viz-max-zoom-out (lambda (x) x)]
+       [E-KEY-DIMS viz-reset-zoom (lambda (x) x)]
+       [F-KEY-DIMS viz-max-zoom-in (lambda (x) x)]
+       [A-KEY-DIMS (lambda (x) x) a-key-pressed]
+       [D-KEY-DIMS (lambda (x) x) d-key-pressed]))
      'grammar-viz
      #:cpu-cores cpu-cores
      #:special-graphs? special-graphs?

@@ -1,13 +1,10 @@
 #lang racket/base
 (require "../2htdp/universe.rkt"
          "../../fsm-gviz/private/parallel.rkt"
-         "../../fsm-gviz/private/lib.rkt"
-         racket/async-channel
          "vector-zipper.rkt"
          "bounding-limits.rkt"
          "viz-state.rkt"
          "../2htdp/image.rkt"
-         racket/list
          racket/promise
          )
 
@@ -19,7 +16,7 @@
 ;; (listof dgraph) -> (listof image)
 ;; Purpose: To create a list of graph images built level by level
 (define (create-graph-imgs graphs #:graph-type [graph-type 'rg] #:rank-node-lst [rank-node-lst '()] #:cpu-cores [cpu-cores #f])
-  (if (empty? graphs)
+  (if (null? graphs)
       '()
       (if (not cpu-cores)
           (streaming-parallel-graphs->bitmap-thunks graphs #:graph-type graph-type #:rank-node-lst rank-node-lst)
@@ -100,7 +97,7 @@
                         (load-image (vector-ref imgs 1)))
                     ((vector-ref imgs 0))
                     (if (list? (vector-ref imgs (sub1 (vector-length imgs))))
-                        (above ((force (first (vector-ref imgs (sub1 (vector-length imgs)))))) ((force (second (vector-ref imgs (sub1 (vector-length imgs)))))))
+                        (above ((force (car (vector-ref imgs (sub1 (vector-length imgs)))))) ((force (cadr (vector-ref imgs (sub1 (vector-length imgs)))))))
                         ((force (vector-ref imgs (sub1 (vector-length imgs)))))
                         )
                     first-img-coord

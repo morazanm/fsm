@@ -44,11 +44,11 @@
   (define (tm-rename-states sts m)
 
     (define (generate-rename-table disallowed sts)
-      (if (empty? sts)
+      (if (null?  sts)
           '()
           (let ((new-st (gen-state disallowed)))
-            (cons (list (first sts) new-st)
-                  (generate-rename-table (cons new-st disallowed) (rest sts))))))
+            (cons (list (car sts) new-st)
+                  (generate-rename-table (cons new-st disallowed) (cdr sts))))))
     
     (let* (
            (rename-table (generate-rename-table (remove-duplicates (append (tm-getstates m)
@@ -305,7 +305,7 @@
       
       (lambda (w i . L)
         (cond [(eq? w 'whatami) (if (null? accept) 'tm 'tm-language-recognizer)]
-              [(empty? L) 
+              [(null?  L) 
                (let* ((res (consume '() (list (list (tmconfig s i w)))))) ; res = (listof tmconfig)
                  (cond [(and (not (null? accept)) (null? res))
                         'reject]
@@ -499,7 +499,7 @@
               (reverse (eval inputctm (label-pairs inputctm) START (list (tmconfig START i tape)))))
           (if (null? inputctm)
               (tmconfig HALT i tape)
-              (first (eval inputctm (label-pairs inputctm) START (list (tmconfig START i tape))))))))
+              (car (eval inputctm (label-pairs inputctm) START (list (tmconfig START i tape))))))))
 
 
   ; L = a*

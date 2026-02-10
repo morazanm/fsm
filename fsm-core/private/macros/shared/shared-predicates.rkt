@@ -165,7 +165,7 @@
 ;purpose: return all the duplicated items in any list of anything
 (define (return-duplicates input)
   (define (helper los)
-    (cond [(empty? los) '()]
+    (cond [(null? los) '()]
           [(member (car los) (cdr los)) (cons (car los) (return-duplicates (cdr los)))]
           [else (return-duplicates (cdr los))]))
   (remove-duplicates (helper input)))

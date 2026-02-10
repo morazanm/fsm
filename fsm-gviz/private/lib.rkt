@@ -2,7 +2,6 @@
 (require "../../visualizations/2htdp/image.rkt"
          racket/hash
          "dot.rkt"
-         racket/treelist
          racket/string
          racket/list
          racket/match
@@ -240,15 +239,6 @@
       (if (boolean? val)
           (if val 'true 'false)
           val))
-    #;(define (key-val->string key value)
-      (define fmtr-fun (hash-ref fmtr key #f))
-      (if fmtr-fun
-          (cons "\"" (cons (fmtr-fun value) (cons "\"" (cons "=" (cons (stringify-value key) '())))))
-          (cons (if (equal? key 'label)
-                    (stringify-value (fmt-val value))
-                    (stringify-value (fmt-val value)))
-                (cons "=" (cons (symbol->string key) '())))
-          ))
     (define (key-val->string key value)
       (define fmtr-fun (hash-ref fmtr key #f))
       (if fmtr-fun
@@ -257,11 +247,11 @@
                                   (format "~a" (fmt-val value))
                                   (fmt-val value)))))
     (define (add-spacer lst accum)
-      (if (empty? lst)
+      (if (null? lst)
           accum
-          (add-spacer (rest lst) (cons (first lst) (cons spacer accum)))))
+          (add-spacer (cdr lst) (cons (car lst) (cons spacer accum)))))
     (let ([hash-vals (reverse (hash-map hash key-val->string))])
-      (add-spacer (rest hash-vals) (cons (first hash-vals) accum))
+      (add-spacer (cdr hash-vals) (cons (car hash-vals) accum))
       ))
   (define (node->str-accum node fmtr accum)
     (cons "];\n" (hash->str-accum (node-atb node) fmtr (cons "[" (cons (symbol->string (node-name node)) (cons "    " accum)))))
@@ -351,21 +341,10 @@
   (if (graph? parent)
       (struct-copy graph parent
                    [node-list (cons new-node (graph-node-list parent))])
-      #;(graph
-       (graph-name parent)
-       (cons new-node (graph-node-list parent))
-       (graph-edge-list parent)
-       (graph-subgraph-list parent)
-       (graph-fmtrs parent)
-       (graph-atb parent))
+      
       (struct-copy subgraph parent
                    [node-list (cons new-node (subgraph-node-list parent))])
-      #;(subgraph 
-       (subgraph-name parent)
-       (cons new-node (subgraph-node-list parent))
-       (subgraph-edge-list parent)
-       (subgraph-subgraph-list parent)
-       (subgraph-atb parent))))
+      ))
 
 
 ;; add-nodes: graph | subgraph listof(symbol) Optional(hash-map) -> graph | subgraph
@@ -380,21 +359,10 @@
   (if (graph? parent)
       (struct-copy graph parent
                    [node-list (append nodes-to-add (graph-node-list parent))])
-      #;(graph
-       (graph-name parent)
-       (append nodes-to-add (graph-node-list parent))
-       (graph-edge-list parent)
-       (graph-subgraph-list parent)
-       (graph-fmtrs parent)
-       (graph-atb parent))
+      
       (struct-copy subgraph parent
                    [node-list (append nodes-to-add (subgraph-node-list parent))])
-      #;(subgraph 
-       (subgraph-name parent)
-       (append nodes-to-add (subgraph-node-list parent))
-       (subgraph-edge-list parent)
-       (subgraph-subgraph-list parent)
-       (subgraph-atb parent))))
+      ))
 
 ;; add-edge: graph | subgraph  symbol symbol symbol Optional(hash-map) -> graph | subgraph
 ;; Purpose: adds an edge to the graph
@@ -444,20 +412,10 @@
   (if (graph? parent)
       (struct-copy graph parent
                    [edge-list (add/update-in-list (graph-edge-list parent))])
-      #;(graph 
-       (graph-name parent)
-       (graph-node-list parent)
-       (add/update-in-list (graph-edge-list parent))
-       (graph-subgraph-list parent)
-       (graph-fmtrs parent)
-       (graph-atb parent))
+      
       (struct-copy subgraph parent
                    [edge-list (add/update-in-list (subgraph-edge-list parent))])
-      #;(subgraph 
-       (subgraph-name parent)
-       (subgraph-node-list parent)
-       (add/update-in-list (subgraph-edge-list parent))
-       (subgraph-atb parent))))
+      ))
 
 
 ;; add-edges: graph | subgraph listof(symbol symbol any/c) Optional(hash-map) -> graph | subgraph
@@ -480,21 +438,10 @@
   (if (graph? parent)
       (struct-copy graph parent
                    [subgraph-list (cons sg (graph-subgraph-list parent))])
-      #;(graph 
-       (graph-name parent)
-       (graph-node-list parent)
-       (graph-edge-list parent)
-       (cons sg (graph-subgraph-list parent))
-       (graph-fmtrs parent)
-       (graph-atb parent))
+      
       (struct-copy subgraph parent
                    [subgraph-list (cons sg (subgraph-subgraph-list parent))])
-      #;(subgraph 
-       (subgraph-name parent)
-       (subgraph-node-list parent)
-       (subgraph-edge-list parent)
-       (cons sg (subgraph-subgraph-list parent))
-       (subgraph-atb parent))))
+      ))
 
 ; clean-string: symbol -> symbol
 ; Purpose: cleans the string to only have valid dot language id symbols
@@ -734,26 +681,5 @@
    (lambda ()
      (define sg (create-subgraph #:name 'A))
      (add-subgraph (add-nodes (create-graph 'test) '(A B C D)) sg)))
-
-
-
-  #;(displayln
-   (graph 'dgraph
-          (list (node 'S0 (make-hash '(['color . 'violet]
-                                       ['font . 'Sans]
-                                       ['fontcolor . 'black]
-                                       ['label . 'S]
-                                       ['shape . 'hexagon]))))
-          (list (edge 'A2 'a2 (make-hash '(['arrowhead . 'none]
-                                           ['label . '()]
-                                           ['style . 'invisible])))
-                (edge 'S2 'A2 (make-hash '(['color . 'red]
-                                           ['fontsize . 12]
-                                           ['label . '()]
-                                           ['style . 'solid]))))
-          '()
-          DEFAULT-FORMATTERS
-          (hash))
-   )
 
   ) ;; end module+ test

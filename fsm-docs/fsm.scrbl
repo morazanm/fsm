@@ -3,7 +3,7 @@
 
 #lang scribble/manual
 
-@(require (for-label racket 2htdp/image) setup/collects)
+@(require (for-label racket 2htdp/image racket/undefined racket/shared) setup/collects scribble/eval)
 
 @title{FSM}
 @author[(author+email "Marco T. Morazán" "morazanm@shu.edu")]
@@ -967,7 +967,7 @@ word are returned.
 
 @defproc[(check-accept? [M machine]
                         [w word] ...)
-         (void)]
+         void?]
          Checks if the given machine accepts all the given words.
          If any word is rejected, the test fails. If M only semidecides
          a language, words not in the machine's language may cause

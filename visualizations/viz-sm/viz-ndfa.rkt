@@ -11,7 +11,6 @@
          (except-in "../viz-lib/viz-constants.rkt" INS-TOOLS-BUFFER)
          "../viz-lib/viz-imgs/keyboard_bitmaps.rkt"
          "david-imsg-state.rkt"
-         "testing-parameter.rkt"
          racket/treelist
          (except-in "david-viz-constants.rkt" FONT-SIZE)
          "../../fsm-core/private/constants.rkt"
