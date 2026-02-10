@@ -105,23 +105,47 @@
            (define compiled-img-path
              (make-thread a-file-path))
            (vector-set! img-vec idx (lambda () (graphic-formatter (bitmap/file (force compiled-img-path))))))
+         #|
+        (define (make-thread a-file-path)
+          (delay/thread
+           #:group graphviz-thread-group
+           (semaphore-wait cpu-cores-avail)
+           (let* ([shell-process (make-process a-file-path)]
+                  [result (sync (if (eq? system-os 'windows)
+                                    (read-line-evt (first shell-process) 'any)
+                                    (read-line-evt (first shell-process))))])
+               
+             (close-input-port (first shell-process))
+             (close-output-port (second shell-process))
+             (close-input-port (fourth shell-process))
+             (when (not (string=? "0" result))
+               (error (format "Graphviz produced an error while compiling the graphs: ~a" result)))
+             (semaphore-post cpu-cores-avail)
+             ;; TODO figure out how to get multiple graphs into singular thunk here
+             (string->path (format "~a.png" a-file-path)))))
+        
+        (define (compile-single-graph a-file-path graphic-formatter idx)
+          (define compiled-img-path
+            (make-thread a-file-path))
+          (vector-set! img-vec idx (lambda () (graphic-formatter (bitmap/file (force compiled-img-path))))))
+        |#
 
-         (define (compile-multiple-graphs a-lst-of-file-paths graphic-formatter idx)
-           (define compiled-img-paths
-             (map (lambda (a-file-path)
-                    (make-thread a-file-path))
-                  a-lst-of-file-paths))
-           (vector-set! img-vec idx
-                        (lambda () (apply graphic-formatter
-                                          (map (lambda (img-path)  
-                                                 (bitmap/file (force img-path))) compiled-img-paths)))))
-         (for ([idx (in-range (vector-length img-vec))])
-           (if (list? (vector-ref img-vec idx))
-               (compile-multiple-graphs (vector-ref img-vec idx)
-                                        (vector-ref graphic-formatter-vec idx)
-                                        idx)
-               (compile-single-graph (vector-ref img-vec idx)
-                                     (vector-ref graphic-formatter-vec idx)
-                                     idx)))
-         img-vec]
-        [else (error "Error caused when creating png file. This was probably due to the dot environment variable not existing on the path")]))
+        (define (compile-multiple-graphs a-lst-of-file-paths graphic-formatter idx)
+          (define compiled-img-paths
+            (map (lambda (a-file-path)
+                   (make-thread a-file-path))
+                 a-lst-of-file-paths))
+          (vector-set! img-vec idx
+                       (lambda () (apply graphic-formatter
+                                   (map (lambda (img-path)  
+                                     (bitmap/file (force img-path))) compiled-img-paths)))))
+        (for ([idx (in-range (vector-length img-vec))])
+          (if (list? (vector-ref img-vec idx))
+              (compile-multiple-graphs (vector-ref img-vec idx)
+                                       (vector-ref graphic-formatter-vec idx)
+                                       idx)
+              (compile-single-graph (vector-ref img-vec idx)
+                                    (vector-ref graphic-formatter-vec idx)
+                                    idx)))
+        img-vec]
+      (error "Error caused when creating png file. This was probably due to the dot environment variable not existing on the path")))

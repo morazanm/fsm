@@ -45,6 +45,11 @@
   ;"private/Chomsky-Greibach-CFG-Transformations/chomsky.rkt"
   "private/Chomsky-Greibach-CFG-Transformations/greibach.rkt"
   "private/fsmunit/interface.rkt"
+  "private/cfe-constructors/construct-cfe-macro.rkt"
+  "private/cfe-constructors/context-free-expressions-constructors.rkt"
+  (rename-in "private/machine-minimization/fsa-minimization.rkt"
+             (minimize-dfa fsa-minimize))
+  "../visualizations/viz-sm-constructors/viz-minimization.rkt"
   racket/list
   racket/bool
   racket/contract)
@@ -139,7 +144,23 @@
  ;; Grammar visualizations
  grammar-viz
 
+ ;;sm-viz
  sm-viz
+
+ ;;fsa minimization
+ fsa-minimize minimization-viz
+
+ ;;cfexp constructors
+   make-cfe null-cfexp empty-cfexp singleton-cfexp
+   concat-cfexp union-cfexp kleenestar-cfexp
+
+   ; cfexp observers
+   cfg->cfe cfe->cfg
+   cfexp? null-cfexp? empty-cfexp? singleton-cfexp?
+   concat-cfexp? union-cfexp? kleenestar-cfexp?
+   gen-cfexp-word pick-cfexp singleton-cfexp-a
+   union-cfexp-cfes concat-cfexp-cfes kleenestar-cfexp-c1
+   #;pda->cfe #;cfe->pda #;printable-cfexp
  )
 ; Primitive constructors imported from other modules
 

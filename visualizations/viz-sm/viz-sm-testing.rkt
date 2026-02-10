@@ -1,7 +1,14 @@
 #lang racket
 
 (require ;"testing-parameter.rkt"
-  "../../fsm-core/interface.rkt")
+  "../../fsm-core/private/fsa.rkt"
+  "../../fsm-core/private/pda.rkt"
+  "../../fsm-core/private/tm.rkt" 
+  "../../fsm-core/private/constants.rkt"
+  "../../fsm-core/private/mtape-tm.rkt"
+  "../../fsm-core/private/sm-getters.rkt"
+  "../../fsm-core/private/cfg-struct.rkt"
+  "sm-viz.rkt")
 
 (define (ndfa->pda M)
   (let [(states (sm-states M))
@@ -9,7 +16,7 @@
         (start (sm-start M))
         (finals (sm-finals M))
         (rules (sm-rules M))]
-    (make-ndpda states
+    (make-unchecked-ndpda states
                 sigma
                 '()
                 start
@@ -18,12 +25,12 @@
                                   (list (third r) EMP)))
                      rules))))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; L = ab* U (ab)*
-(define M (make-ndfa '(S A B C D E F G H I)
+(define M (make-unchecked-ndfa '(S A B C D E F G H I)
                      '(a b)
                      'S
                      '(A B C D)
@@ -40,16 +47,16 @@
                        (H ,EMP D))))
 
 ;; L = ab* U (ab)*b*
-(define L (make-ndfa '(S A B C D E)
+(define L (make-unchecked-ndfa '(S A B C D E)
                      '(a b)
                      'S
                      '(S B C E)
                      `((S ,EMP A) (S ,EMP C) (A a B) (B b B)
                                   (C a D) (C b E) (D b C) (E b E))))
 
-(define ML (sm-rename-states '(S A B C D E) L))
+(define ML (rename-states-fsa '(S A B C D E) L))
 
-(define MM1 (make-ndfa '(S A B C D E G H I J K)
+(define MM1 (make-unchecked-ndfa '(S A B C D E G H I J K)
                        '(a b)
                        'S
                        '(S B C E H I K)
@@ -62,7 +69,7 @@
 
 
 ;;L = aa* U ab*
-(define aa*Uab* (make-ndfa '(K B D)
+(define aa*Uab* (make-unchecked-ndfa '(K B D)
                            '(a b)
                            'K
                            '(B D)
@@ -72,7 +79,7 @@
 
 ;;L = {w | w in L has a at least an {a b c}}
 (define AT-LEAST-ONE-MISSING
-  (make-ndfa '(S A B C)
+  (make-unchecked-ndfa '(S A B C)
              '(a b c)
              'S
              '(A B C)
@@ -82,7 +89,7 @@
                           (C a C) (C b C))))
 ;;L = ab* U (ab)*b*
 (define p2-ndfa
-  (make-ndfa '(S A B C D E)
+  (make-unchecked-ndfa '(S A B C D E)
              '(a b)
              'S
              '(C E)
@@ -94,7 +101,7 @@
                           (E b E))))
 ;;L = ab* U (ab)*b*
 (define AB*B*UAB*
-  (make-ndfa '(S K B C H)
+  (make-unchecked-ndfa '(S K B C H)
              '(a b)
              'S
              '(H)
@@ -105,7 +112,7 @@
                           (H b H))))
 ;;L = a*(ab* U ab*b*) 
 (define AB*B*UAB*2
-  (make-ndfa '(S K B C H)
+  (make-unchecked-ndfa '(S K B C H)
              '(a b)
              'S
              '(H)
@@ -116,7 +123,7 @@
                           (H b H) (H a S))))
 ;;L = aa* U ab* U emp
 (define aa-ab
-  (make-ndfa `(S A B F)
+  (make-unchecked-ndfa `(S A B F)
              '(a b)
              'S
              '(A B F)
@@ -126,7 +133,7 @@
 
 ;;L = {w | w end with two bs}
 (define ends-with-two-bs
-  (make-ndfa `(S A B)
+  (make-unchecked-ndfa `(S A B)
              '(a b)
              'S
              '(B)
@@ -136,7 +143,7 @@
 
 ;;L = {w | w end with two bs}
 (define ENDS-WITH-TWO-Bs
-  (make-ndfa `(S A B)
+  (make-unchecked-ndfa `(S A B)
              '(a b)
              'S
              '(B)
@@ -145,7 +152,7 @@
                        (B b B) (B a S))))
 
 ;;L = a*
-(define nd-a* (make-ndfa '(K H)
+(define nd-a* (make-unchecked-ndfa '(K H)
                          '(a b)
                          'K
                          '(H)
@@ -154,7 +161,7 @@
 
 ;;L = {w | w in L is missing exactly one {a b c}}
 (define missing-exactly-one
-  (make-ndfa '(S A B C D E F G H I J K L M N O P)
+  (make-unchecked-ndfa '(S A B C D E F G H I J K L M N O P)
              '(a b c)
              'S
              '(E G I K M O)
@@ -177,7 +184,7 @@
                           (P a P) (P b P) (P c P))))
 
 ;;L = baa
-(define nd (make-ndfa '(S Z Y A B)
+(define nd (make-unchecked-ndfa '(S Z Y A B)
                       '(a b)
                       'S
                       '(B)
@@ -188,7 +195,7 @@
                         (A a B))))
 
 ;;L = ba
-(define n (make-ndfa '(K H F M I)
+(define n (make-unchecked-ndfa '(K H F M I)
                      '(a b)
                      'K
                      '(I)
@@ -198,7 +205,7 @@
                        (F a I)
                        (M a I))))
 ;;L = b
-(define nk (make-ndfa '(K H F M I)
+(define nk (make-unchecked-ndfa '(K H F M I)
                       '(a b)
                       'K
                       '(I)
@@ -209,14 +216,37 @@
                         (I ,EMP H))))
 ;; L = ab* U ab*b*
 (define ab*-U-ab*b*-ndfa 
-  (make-ndfa '(S A B C D E)
+  (make-unchecked-ndfa '(S A B C D E)
              '(a b)
              'S
              '(C E)
              `((S ,EMP A) (S ,EMP D) (A a B) (A ,EMP C)
                           (B b A) (C b C) (D a E) (E b E))))
+
+
+;; Let Σ = {a b}
+;; L = {w | w does contains aabab 
+
+;; State Documentation
+;; S: none of the pattern detected, starting state
+;; A: a detected and no other prefix detected 
+;; B: aa detected and no other prefix detected 
+;; C: aab detected and no other prefix detected 
+;; D: aaba detected and no other prefix detected 
+;; E: pattern detected, final state
+(define CONTAINS-aabab (make-unchecked-dfa '(S A B C D E)
+                                 '(a b)
+                                 'S
+                                 '(E)
+                                 `((S a A) (S b S) (A a B) (A b S)
+                                           (B a B) (B b C) (C a D) (C b S)
+                                           (D a A) (D b E) (E a E) (E b E))
+                                 'no-dead))
+
+
+
 ;;L = 0 U 1(0 U 1)*
-(define PROP-BI (make-dfa '(S M N)
+(define PROP-BI (make-unchecked-dfa '(S M N)
                           '(0 1)
                           'S
                           '(N M)
@@ -226,7 +256,7 @@
                             (M 1 M))))
 
 ;;L = (CG U AT U TA U GC)*
-(define DNA-SEQUENCE (make-dfa '(K H F M I D B S R)
+(define DNA-SEQUENCE (make-unchecked-dfa '(K H F M I D B S R)
                                '(a t c g)
                                'K
                                '(K F I B R)
@@ -237,7 +267,7 @@
 
 ;; L = (aba)* U (ab)*
 (define ND
-  (make-ndfa '(S A B C D E)
+  (make-unchecked-ndfa '(S A B C D E)
              '(a b)
              'S
              '(S)
@@ -250,7 +280,7 @@
 
 ;;L = b* U ba(b U a)*
 (define ND2
-  (make-ndfa
+  (make-unchecked-ndfa
    '(S A B C D E F)
    '(a b)
    'S
@@ -263,7 +293,7 @@
 
 ;;L = a*b*
 (define ND3
-  (make-ndfa '(S A B C D)
+  (make-unchecked-ndfa '(S A B C D)
              '(a b)
              'S
              '(B)
@@ -273,7 +303,7 @@
                           (D ,EMP B)
                           (B b B))))
 ;;L = a+
-(define ND4 (make-ndfa '(S ds)
+(define ND4 (make-unchecked-ndfa '(S ds)
                        '(a b)
                        'S
                        '(ds)
@@ -281,7 +311,7 @@
                          (ds a ds))))
 ;;L = emp
 (define ND5
-  (make-ndfa '(S A B C D)
+  (make-unchecked-ndfa '(S A B C D)
              '(a b)
              'S
              '(B)
@@ -291,9 +321,8 @@
                (C ,EMP D)
                (D ,EMP S))))
 
-;;L = {w | w has even # of bs}
 (define EVEN-NUM-Bs
-  (make-dfa '(S F)
+  (make-unchecked-dfa '(S F)
             '(a b)
             'S
             '(S)
@@ -302,7 +331,7 @@
             'no-dead))
 
 ;;L = ab+
-(define M2 (make-dfa `(S A F ,DEAD)
+(define M2 (make-unchecked-dfa `(S A F ,DEAD)
                      '(a b)
                      'S
                      '(F)
@@ -490,12 +519,13 @@
     (= num-g num-c)))
 
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; L = {w | w has equal # of a's & b's}
-(define SCHIZO-SAME-NUM-AB (make-ndpda '(K H I)
+(define SCHIZO-SAME-NUM-AB (make-unchecked-ndpda '(K H I)
                                        '(a b)
                                        '(a b)
                                        'K
@@ -508,9 +538,9 @@
                                          ((H a (a))(H ,EMP))
                                          ((H ,EMP ,EMP)(I ,EMP)))))
 
-(define MM2 (sm-rename-states '(K H I) SCHIZO-SAME-NUM-AB))
+(define MM2 (rename-states-pda '(K H I) SCHIZO-SAME-NUM-AB))
 
-(define MM3 (make-ndpda '(K H I B C)
+(define MM3 (make-unchecked-ndpda '(K H I B C)
                         '(a b)
                         '(a b)
                         'K
@@ -531,7 +561,7 @@
 
 
 ;; L = {a^m b^n c^p z | m, n, p ≥ 0 and m ≤ n and m ≤ p}
-(define ambncp (make-ndpda '(S A B C D E F G)
+(define ambncp (make-unchecked-ndpda '(S A B C D E F G)
                            '(a b c z)
                            '(a y)
                            'S
@@ -553,7 +583,7 @@
                              ((G ,EMP (y)) (F ,EMP)))))
 
 ;;L = a^ib^j i <= j <= 2i buggy
-(define P2 (make-ndpda '(S H)
+(define P2 (make-unchecked-ndpda '(S H)
                        '(a b)
                        '(b)
                        'S
@@ -562,7 +592,7 @@
                          ((S a ε)(S (b b)))
                          ((H b (b b))(H ε)) ((H ε (b))(H ε)))))
 ;;L = a^ib^j i <= j <= 2i
-(define P3 (make-ndpda '(S H)
+(define P3 (make-unchecked-ndpda '(S H)
                        '(a b)
                        '(b)
                        'S
@@ -572,7 +602,7 @@
                          ((H b (b b))(H ε)) ((H b (b))(H ε)))))
 
 ;;L = w c w^r reverse
-(define wcw^r (make-ndpda '(S P Q F)
+(define wcw^r (make-unchecked-ndpda '(S P Q F)
                           '(a b c)
                           '(a b)
                           'S
@@ -586,7 +616,7 @@
                             ((Q ,EMP ,EMP) (F ,EMP)))))
 
 
-(define PUW (make-ndpda '(S P Q F  A B X)
+(define PUW (make-unchecked-ndpda '(S P Q F  A B X)
                         '(a b c)
                         '(a b)
                         'S
@@ -604,7 +634,7 @@
                           ((X b (b b))(X ε)) ((X b (b))(X ε)))))
 
 ;; L = {w | w has equal # of a's & b's} buggy
-(define BUGGY-SAME-NUM-AB (make-ndpda '(K H F M)
+(define BUGGY-SAME-NUM-AB (make-unchecked-ndpda '(K H F M)
                                       '(a b)
                                       '(a b)
                                       'K
@@ -622,7 +652,7 @@
                                         ((M b    ,EMP) (K ,EMP))
                                         )))
 ;; L = {w | w has equal # of a's & b's}
-(define SAME-NUM-AB (make-ndpda '(K H F M)
+(define SAME-NUM-AB (make-unchecked-ndpda '(K H F M)
                                 '(a b)
                                 '(a b)
                                 'K
@@ -637,7 +667,7 @@
                                   ((F ,EMP ,EMP) (M ,EMP)))))
 
 ;;L = {w | w contains a^ib^j i <= j <= 2i}
-(define P (make-ndpda '(S A B X)
+(define P (make-unchecked-ndpda '(S A B X)
                       '(a b)
                       '(b)
                       'S
@@ -647,7 +677,7 @@
                                        ((B ε ε)(A ε))
                                        ((X b (b b))(X ε)) ((X b (b))(X ε)))))
 ;;L = {w | w = a^nb^n}
-(define aˆnbˆn (make-ndpda '(S M F)
+(define aˆnbˆn (make-unchecked-ndpda '(S M F)
                            '(a b)
                            '(a)
                            'S
@@ -658,7 +688,7 @@
                              ((M ,EMP ,EMP) (F ,EMP)))))
 
 ;; L = {w | w = ba}
-(define p (make-ndpda '(K H F M I)
+(define p (make-unchecked-ndpda '(K H F M I)
                       '(a b)
                       '(a b)
                       'K
@@ -670,7 +700,7 @@
                         ((M a ,EMP)(I ,EMP)))))
 
 ;; L = {w | w = b}
-(define pk (make-ndpda '(K H F M I)
+(define pk (make-unchecked-ndpda '(K H F M I)
                        '(a b)
                        '(a b)
                        'K
@@ -681,7 +711,7 @@
                          ((M ,EMP ,EMP)(I ,EMP))
                          ((I ,EMP ,EMP)(H ,EMP)))))
 
-(define a* (make-ndpda '(K H)
+(define a* (make-unchecked-ndpda '(K H)
                        '(a b)
                        '(a)
                        'K
@@ -691,7 +721,7 @@
 
 
 
-(define aa* (make-ndpda '(K H)
+(define aa* (make-unchecked-ndpda '(K H)
                         '(a b)
                         '(a)
                         'K
@@ -699,14 +729,14 @@
                         `(((K a ,EMP)(H ,EMP))
                           ((H a ,EMP)(H ,EMP)))))
 
-(define inf-a (make-ndpda '(K)
+(define inf-a (make-unchecked-ndpda '(K)
                           '(a)
                           '(a)
                           'K
                           '(K)
                           `(((K ,EMP ,EMP) (K, '(a))))))
 
-(define more-a-than-b (make-ndpda '(S A)
+(define more-a-than-b (make-unchecked-ndpda '(S A)
                                   '(a b)
                                   '(a)
                                   'S
@@ -716,7 +746,7 @@
                                     ((A b (a)) (A ,EMP))
                                     ((A ,EMP (a)) (A ,EMP)))))
 
-(define numb>numa (make-cfg '(S A)
+(define numb>numa (make-unchecked-cfg '(S A)
                             '(a b)
                             `((S ,ARROW b)
                               (S ,ARROW AbA)
@@ -726,7 +756,7 @@
                               (A ,ARROW bA))
                             'S))
 
-(define pd (make-ndpda '(S A)
+(define pd (make-unchecked-ndpda '(S A)
                        '(a b)
                        '(a b)
                        'S
@@ -734,7 +764,7 @@
                        `(((S a ,EMP) (A (a)))
                          ((S a ,EMP) (A (b))))))
 
-(define pd-numb>numa (grammar->sm numb>numa))
+(define pd-numb>numa (cfg->pda numb>numa))
 
   
 ;;word stack-> boolean
@@ -836,9 +866,9 @@
       (not (= (length (filter (λ (w) (equal? w 'b)) wrd)) 2))))
 
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 
 
@@ -1010,7 +1040,7 @@
                            (λ (s) (not (eq? s BLANK)))))]
          (not (equal? back '(b))))))
 
-(define anbncn (make-tm
+(define anbncn (make-unchecked-tm
                 '(S A B C D E F G H I J K L Y)
                 '(a b c x)
                 `(((S ,BLANK) (J ,RIGHT))
@@ -1046,7 +1076,7 @@
                 '(Y)
                 'Y))
 
-(define FBR (make-tm '(S A F)
+(define FBR (make-unchecked-tm '(S A F)
                      '(a b)
                      `(((S a) (A ,RIGHT))
                        ((S b) (A ,RIGHT))
@@ -1057,7 +1087,7 @@
                      'S
                      '(F)))
 
-(define ADD (make-tm '(S A B C D E F G)
+(define ADD (make-unchecked-tm '(S A B C D E F G)
                      '(d)
                      `(((S ,BLANK) (A ,RIGHT))
                        ((A d) (A ,RIGHT))
@@ -1071,14 +1101,14 @@
                        ((G ,BLANK) (F ,RIGHT)))
                      'S
                      '(F)))
-(define minimal-tm (make-tm '(S)
+(define minimal-tm (make-unchecked-tm '(S)
                             '()
                             `(((S ,BLANK) (S L)))
                             'S
                             '()))
 
 
-(define PR^N (make-tm '(S A B D E F G H I J K M N Q Y)
+(define PR^N (make-unchecked-tm '(S A B D E F G H I J K M N Q Y)
                       '(a b h i r)
                       `(((S ,BLANK) (A ,RIGHT)) ;; start the simulation
                         ((A i) (Q ,RIGHT)) ;; move to next instruction if any
@@ -1362,9 +1392,9 @@
     (and (andmap (λ (s) (eq? s 'x)) w)
          (= (remainder (length w) 3) 0))))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define a^nb^n (make-mttm '(K H R E C O M T) ;;<--- states
+(define a^nb^n (make-unchecked-mttm '(K H R E C O M T) ;;<--- states
                           '(a b) ;;<--- alpha
                           'K ;;<-- start
                           '(T) ;; final
@@ -1395,7 +1425,7 @@
 
 ;;Pre-Condition: '(LM BLANK w) AND t0h = 1 AND tapes 1-3 are empty AND t1h-t3h = 0
 ;;L = {w | w ∈ a^nb^nc^n}
-(define a^nb^nc^n (make-mttm '(K H R E C O M T F)
+(define a^nb^nc^n (make-unchecked-mttm '(K H R E C O M T F)
                              '(a b c)
                              'K
                              '(F)
@@ -1429,7 +1459,7 @@
                              'F))
 
 
-(define a^nb^nc^nd^n (make-mttm '(K H R E C O M T F D U)
+(define a^nb^nc^nd^n (make-unchecked-mttm '(K H R E C O M T F D U)
                                 '(a b c d)
                                 'K
                                 '(F)
@@ -1468,7 +1498,7 @@
                                 5
                                 'F))
 
-(define a^nb^nc^nd^ne^n (make-mttm '(K H R E C O M T F D U X B)
+(define a^nb^nc^nd^ne^n (make-unchecked-mttm '(K H R E C O M T F D U X B)
                                    '(a b c d e)
                                    'K
                                    '(F)
@@ -1513,7 +1543,7 @@
                                    6
                                    'F))
 
-(define a^nb^nc^nd^ne^nf^n (make-mttm '(K H R E C O M T F D U X B I V) 
+(define a^nb^nc^nd^ne^nf^n (make-unchecked-mttm '(K H R E C O M T F D U X B I V) 
                                       '(a b c d e f)
                                       'K
                                       '(F)
@@ -1556,11 +1586,15 @@
                                        (list (list 'M (list 'f BLANK BLANK BLANK BLANK BLANK BLANK))
                                              (list 'V (list 'f BLANK BLANK BLANK BLANK BLANK 'f)))
                                         
-                                       (list (list 'M (list BLANK BLANK BLANK BLANK BLANK BLANK BLANK)) ;;<-- phase 4, matching as, bs, cs
+                                       (list (list 'M (list BLANK BLANK BLANK BLANK BLANK BLANK BLANK)) ;;<-- phase 4,
+                                                                                                         ;;matching as, bs, cs
                                              (list 'T (list BLANK LEFT LEFT LEFT LEFT LEFT LEFT)))
                                        (list (list 'T (list BLANK 'a 'b 'c 'd 'e 'f))
                                              (list 'T (list BLANK LEFT LEFT LEFT LEFT LEFT LEFT)))
-                                       (list (list 'T (list BLANK BLANK BLANK BLANK BLANK BLANK BLANK)) ;;<-phase 5, accept (if possible)
+
+                                       
+                                       (list (list 'T (list BLANK BLANK BLANK BLANK BLANK BLANK BLANK)) ;;<-phase 5,
+                                                                                                         ;;accept (if possible)
                                              (list 'F (list BLANK BLANK BLANK BLANK BLANK BLANK BLANK)))
                                        )
                                       7
@@ -1568,7 +1602,7 @@
 
 ;;Pre-Condition: '(LM BLANK w) AND t0h = 1 AND tape 1 is empty AND t1h = 0
 ;;compute f(w) = ww
-(define ww (make-mttm '(K H T F E B W D M)
+(define ww (make-unchecked-mttm '(K H T F E B W D M)
                       '(a b)
                       'K
                       '(M)
@@ -1714,12 +1748,12 @@
          (equal? readt0 (append readt1 readt1)))))
 
 (define EQABC-ND
-  (make-mttm
+  (make-unchecked-mttm
    '(S Y C D G)
    `(a b c)
    'S
    '(Y)
-   (list
+   (list    
     (list '(S (_ _ _ _))  '(C (R R R R)))
     (list '(S (_ _ _ _))  '(G (R R R R)))
 
@@ -1760,28 +1794,38 @@
    'Y))
 
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-;(sm-viz EVEN-AS-&-BS '(@ a b a b) #:head-pos 0)
-;(sm-viz minimal-tm '(@ _ a a))
-;(sm-viz more-a-than-b '(a a a a a b b))
-;(sm-viz DNA-SEQUENCE '(c g c g a t a t g c t a g c a t))
-;(sm-viz anbncn `(,LM ,BLANK a b c) #:head-pos 1 #:cut-off 15)
-;(sm-viz EQABC-ND `(,LM ,BLANK a a b b c c) #:head-pos 1)
-#;(sm-viz EVEN-AS-&-BS `(,LM b a b a) #:head-pos 0 (list 'K EVEN-K-INV)
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+#|
+(sm-viz EVEN-AS-&-BS '(@ a b a b) #:head-pos 0)
+(sm-viz minimal-tm '(@ _ _ _))
+(sm-viz more-a-than-b '(a a a a a b b))
+(sm-viz DNA-SEQUENCE '(c g c g a t a t g c t a g c a t))
+(sm-viz anbncn `(,LM ,BLANK a b c) #:head-pos 1 #:cut-off 15)
+(sm-viz EQABC-ND `(,LM ,BLANK a a b b c c) #:head-pos 1)
+(sm-viz EVEN-AS-&-BS `(,LM b a b a) #:head-pos 0 (list 'K EVEN-K-INV)
           (list 'H EVEN-H-INV)
           (list 'I BRK-EVEN-I-INV)
           (list 'B EVEN-B-INV)
           (list 'S EVEN-S-INV))
-;(sm-viz ADD `(,LM ,BLANK d d ,BLANK d d d) #:head-pos 1)
-#;(sm-viz anbncn `(,LM ,BLANK a b c) #:head-pos 1 (list 'S S-INV)
+(sm-viz ADD `(,LM ,BLANK d d ,BLANK d d d) #:head-pos 1)
+(sm-viz anbncn `(,LM ,BLANK a b c) #:head-pos 1 (list 'S tm-S-INV)
           (list 'A A-INV)
-          (list 'B B-INV)
-          (list 'C C-INV)
+          (list 'B tm-B-INV)
+          (list 'C tm-C-INV)
           (list 'Y Y-INV)
-          (list 'N N-INV))
-
-#;(parameterize ([testing? #t])
+          #;(list 'N N-INV))
+(sm-viz pd-numb>numa '(a b) #:cut-off 1)
+(sm-viz EQABC-ND `(,LM ,BLANK a a b b c c) #:head-pos 0)
+(sm-viz ww `(,LM ,BLANK a a)  (list 'K k-inv) 
+        (list 'H h-inv)
+        (list 'T t-inv)
+        (list 'F f-inv)
+        (list 'E e-inv)
+        (list 'B b-inv)
+        (list 'W w-inv)
+        (list 'D d-inv)
+        (list 'M m-inv))
+;(parameterize ([testing? #t])
   
     (sm-viz pd-numb>numa '(a b) #:cut-off 5)
     (sm-viz pd-numb>numa '(a b) #:cut-off 1)
@@ -1847,27 +1891,44 @@
     (sm-viz n '(b a a))
     (sm-viz nk '(b a a))
     (sm-viz aa-ab '(a a a a b a))
-    (sm-viz aa-ab '(a a a a b a) #:add-dead #t)
-    (sm-viz aa-ab '(a a a a b a) #:add-dead 3)
+    (sm-viz aa-ab '(a a a a b a) #:add-dead #t (list 'A (λ (w) #t)) (list 'B (λ (w) #f)))
+    (sm-viz aa-ab '(a a a a b a) #:add-dead #f)
 
     (sm-viz aa-ab '(a a a a a a a))
     (sm-viz ends-with-two-bs '(a a a a b b a b b b))
-    (sm-viz aa-ab '(a a a a a a a) (list 'S AB*B*UAB*-S-INV) (list 'A aa-ab-A-INV1) (list 'B aa-ab-B-INV1) (list 'F aa-ab-F-INV) #:add-dead #t)
+    (sm-viz aa-ab '(a a a a a a a) (list 'S AB*B*UAB*-S-INV) (list 'A aa-ab-A-INV1) (list 'B aa-ab-B-INV1) (list 'F aa-ab-F-INV)
+ #:add-dead #t)
     (sm-viz DNA-SEQUENCE '(a t c g t a c) (list 'K DNA-K-INV) (list 'H DNA-H-INV) (list 'F DNA-F-INV)
-            (list 'M DNA-M-INV) (list 'I DNA-I-INV) (list 'D DNA-D-INV)  (list 'B DNA-B-INV) (list 'S DNA-S-INV) (list 'R DNA-R-INV))
-    (sm-viz DNA-SEQUENCE '(c g c g a t a t g c t a g c a t)  (list 'K DNA-K-INV) (list 'H DNA-H-INV) (list 'F DNA-F-INV)
-            (list 'M DNA-M-INV) (list 'I DNA-I-INV) (list 'D DNA-D-INV)  (list 'B DNA-B-INV) (list 'S DNA-S-INV) (list 'R DNA-R-INV))
+            (list 'M DNA-M-INV)
+            (list 'I DNA-I-INV) (list 'D DNA-D-INV)  (list 'B DNA-B-INV) (list 'S DNA-S-INV) (list 'R DNA-R-INV))
+
+(sm-viz DNA-SEQUENCE '(c g c g a t a t g c t a g c a t)  (list 'K DNA-K-INV) (list 'H DNA-H-INV) (list 'F DNA-F-INV)
+            (list 'M DNA-M-INV)
+            (list 'I DNA-I-INV) (list 'D DNA-D-INV)  (list 'B DNA-B-INV) (list 'S DNA-S-INV) (list 'R DNA-R-INV))
 
     (sm-viz ND4 '(a b b b) #:add-dead #t)
 
     (sm-viz M2 '(a a b b b b) #:add-dead #t)
 
     (sm-viz DNA-SEQUENCE '(c g c g a t a t g c t a g c a t)  (list 'K DNA-K-INV) (list 'H DNA-H-INV) (list 'F DNA-F-INV)
-            (list 'M DNA-M-INV) (list 'I DNA-I-INV) (list 'D DNA-D-INV)  (list 'B DNA-B-INV) (list 'S DNA-S-INV) (list 'R DNA-R-INV))
+            (list 'M DNA-M-INV)
+            (list 'I DNA-I-INV) (list 'D DNA-D-INV)  (list 'B DNA-B-INV) (list 'S DNA-S-INV) (list 'R DNA-R-INV))
 
     (sm-viz DNA-SEQUENCE '(c g c g a t a t g c t a g c a t)  (list 'K DNA-K-INV) (list 'F DNA-F-INV)
-            (list 'M DNA-M-INV) (list 'I DNA-I-INV) (list 'D DNA-D-INV)  (list 'B DNA-B-INV) (list 'S DNA-S-INV) (list 'R DNA-R-INV))
+            (list 'M DNA-M-INV)
+            (list 'I DNA-I-INV) (list 'D DNA-D-INV)  (list 'B DNA-B-INV) (list 'S DNA-S-INV) (list 'R DNA-R-INV))
 
-    (sm-viz DNA-SEQUENCE '(c g c g a t a t g c t a g c a t)))
+    (sm-viz DNA-SEQUENCE '(c g c g a t a t g c t a g c a t))
+;)
 
 
+|#
+
+
+#;(sm-viz AT-LEAST-ONE-MISSING '(a b c z)
+            (list 'Z AB*B*UAB*-S-INV)
+            (list 'A (λ (x) x))
+            (list 'B ALON-B-INV)
+            (list 'C ALON-C-INV))
+
+#;(sm-viz P2 '(a a a b b) (list 'z P-S-INV) (list 'H (λ (w s) s) #;P-H-INV))

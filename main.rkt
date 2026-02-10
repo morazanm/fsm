@@ -24,6 +24,22 @@
    check-machine
    empties
 
+
+   ;;cfexp constructors
+   make-cfe null-cfexp empty-cfexp singleton-cfexp
+   concat-cfexp union-cfexp kleenestar-cfexp 
+
+   ; cfexp observers
+   cfg->cfe cfe->cfg
+   cfexp? null-cfexp? empty-cfexp? singleton-cfexp?
+   concat-cfexp? union-cfexp? kleenestar-cfexp?
+   gen-cfexp-word pick-cfexp singleton-cfexp-a
+   union-cfexp-cfes concat-cfexp-cfes kleenestar-cfexp-c1
+   #;pda->cfe #;cfe->pda #;printable-cfexp
+
+   ;;fsa minimization
+   minimization-viz
+   
    ; sm constructors
    sm-test-invs
    sm-quickcheck
@@ -32,6 +48,7 @@
    sm-rename-states 
    sm-union sm-concat sm-kleenestar sm-complement sm-intersection grammar->sm
    make-mttm
+   fsa-minimize
 
    ; sm observers
    sm-apply sm-showtransitions sm-type

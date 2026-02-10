@@ -1,10 +1,15 @@
-#lang racket
+#lang racket/base
 
 (require "../../fsm-gviz/private/lib.rkt"
          "../2htdp/image.rkt"
          "../viz-lib/viz.rkt"
          "../viz-lib/zipper.rkt"
          racket/treelist
+         racket/list
+         racket/set
+         racket/function
+         racket/contract
+         "sm-viz-contracts/sm-viz-contracts.rkt"
          "../viz-lib/bounding-limits.rkt"
          "../viz-lib/viz-state.rkt"
          "../viz-lib/viz-macros.rkt"
@@ -14,12 +19,12 @@
          "../viz-lib/viz-imgs/keyboard_bitmaps.rkt"
          "../../fsm-core/private/constants.rkt"
          "../../fsm-core/private/mtape-tm.rkt" 
-         "david-imsg-state.rkt"
-         (except-in "david-viz-constants.rkt"
+         "sm-viz-helpers/david-imsg-state.rkt"
+         (except-in "sm-viz-helpers/david-viz-constants.rkt"
                     remake-mttm)
-         (except-in "david-imsg-dimensions.rkt"
+         (except-in "sm-viz-helpers/david-imsg-dimensions.rkt"
                     FONT-SIZE)
-         "default-informative-messages.rkt")
+         "sm-viz-helpers/default-informative-messages.rkt")
 
 (provide mttm-viz)
 
@@ -62,8 +67,14 @@ destination -> the rest of a mttm rule | half-rule
 
 (define DUMMY-RULE (rule (half-rule LM LM) (half-rule LM LM)))
 
-(define init-aux-tape (tape-config 0 (list BLANK)))
-(define MIN-AUX-TAPE-INDEX 1) 
+
+(define INIT-COMPUTATION-LENGTH 1)
+(define INIT-TAPE-CONFIG-INDEX 0)
+(define MIN-AUX-TAPE-INDEX 1)
+(define MAX-TAPES-SHOWN 4)
+(define INIT-REACHED-FINAL #f)
+(define INIT-REACHED-CUTOFF #f)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 
@@ -75,6 +86,7 @@ destination -> the rest of a mttm rule | half-rule
   ;; -> (listof tape-configs)
   ;;Purpose: Makes the initial tape configurations
   (define (make-init-tape-config)
+    (define init-aux-tape (tape-config INIT-TAPE-CONFIG-INDEX (list BLANK)))
     (cons (tape-config head-pos a-word)
           (make-list (sub1 tape-amount) init-aux-tape)))
 
@@ -138,10 +150,25 @@ destination -> the rest of a mttm rule | half-rule
   ;;the set of final states
   (define finals-set (list->seteq finals))
 
+  ;;(setof mttm-config) mttm-config -> boolean
+  ;;Purpose: Determines if the given mttm-config is a member of the given set
+  (define (set-member? st val)
+    (for/or ([elem (in-set st)])
+      (and (equal? (mttm-config-state elem) (mttm-config-state val))
+           (equal? (mttm-config-lotc  elem) (mttm-config-lotc  val)))))
+
   ;;(queueof computation) (treelistof computation) -> (listof computation)
   ;;Purpose: Makes all the computations based around the (queueof computation) and (listof rule)
   ;;     that are within the bounds of the max computation limit
   (define (make-computations QoC path)
+
+    (define (update-computation a-comp)
+      a-comp #;(if (> head-pos (computation-length a-comp))
+          (struct-copy computation a-comp
+               [LoC (treelist-drop (computation-LoC a-comp) head-pos)]
+               [LoR (treelist-drop (computation-LoR a-comp) head-pos)])
+          a-comp))
+    
     (if (qempty? QoC)
         path
         (let* ([current-config (treelist-last (computation-LoC (qfirst QoC)))]
@@ -152,7 +179,7 @@ destination -> the rest of a mttm rule | half-rule
           (if (or reached-threshold? member-of-finals?)
               (make-computations (dequeue QoC) (if (eq? current-state accepting-final)
                                                    (struct-copy paths path
-                                                                [accepting (treelist-add (paths-accepting path) (qfirst QoC))]
+                                                                [accepting (treelist-add (paths-accepting path) (update-computation (qfirst QoC)))]
                                                                 [reached-final? (cond [(paths-reached-final? path) (paths-reached-final? path)]
                                                                                       [member-of-finals? #t]
                                                                                       [else (paths-reached-final? path)])]
@@ -160,7 +187,7 @@ destination -> the rest of a mttm rule | half-rule
                                                                                 [reached-threshold? #t]
                                                                                 [else (paths-cut-off? path)])])
                                                    (struct-copy paths path
-                                                                [rejecting (treelist-add (paths-rejecting path) (qfirst QoC))]
+                                                                [rejecting (treelist-add (paths-rejecting path) (update-computation (qfirst QoC)))]
                                                                 [reached-final? (cond [(paths-reached-final? path) (paths-reached-final? path)]
                                                                                       [member-of-finals? #t]
                                                                                       [else (paths-reached-final? path)])]
@@ -179,15 +206,19 @@ destination -> the rest of a mttm rule | half-rule
                                                    (treelist-map connected-read-rules (λ (rule) (apply-rule (qfirst QoC) rule))))])
                 ;new-configs
                 (if (treelist-empty? new-configs)
-                    (make-computations (dequeue QoC) (struct-copy paths path [rejecting (treelist-add (paths-rejecting path) (qfirst QoC))]))
+                    (make-computations (dequeue QoC)
+                                       (struct-copy paths path
+                                                    [rejecting (treelist-add (paths-rejecting path)
+                                                                             (update-computation (qfirst QoC)))]))
                     (make-computations (enqueue new-configs (dequeue QoC)) path)))))))
   (let (;;computation
         ;;Purpose: The starting computation
-        [starting-computation (computation (treelist (mttm-config start (make-init-tape-config) 0))
+        [starting-computation (computation (treelist (mttm-config start (make-init-tape-config) INIT-TAPE-CONFIG-INDEX))
                                            empty-treelist
                                            (set)
-                                           1)])
-    (make-computations (enqueue (treelist starting-computation) E-QUEUE) (paths empty-treelist empty-treelist #f #f))))
+                                           INIT-COMPUTATION-LENGTH)])
+    (make-computations (enqueue (treelist starting-computation) E-QUEUE)
+                       (paths empty-treelist empty-treelist INIT-REACHED-FINAL INIT-REACHED-CUTOFF))))
 
 ;;(listof rules)
 ;;Purpose: Transforms the pda rules into triples similiar to an ndfa 
@@ -302,10 +333,8 @@ destination -> the rest of a mttm rule | half-rule
                                                 [found-accept-rule?   (color-palette-other-accept-color color-scheme)]
                                                 [found-reject-rule?   (color-palette-other-reject-color color-scheme)]
                                                 [else (color-palette-font-color color-scheme)])
-                                   'style (cond [found-tracked-rule? #;(and found-tracked-rule? accepted?)
-                                                 (edge-data-accept-edge graph-attributes)]
-                                                [(or found-reject-rule? found-accept-rule?) #;(or found-tracked-rule? found-reject-rule?)                                                 
-                                                 (edge-data-reject-edge graph-attributes)]
+                                   'style (cond [found-tracked-rule? (edge-data-accept-edge graph-attributes)]
+                                                [(or found-reject-rule? found-accept-rule?) (edge-data-reject-edge graph-attributes)]
                                                 [else (edge-data-regular-edge graph-attributes)])
                                    'fontsize FONT-SIZE))))
          dgraph
@@ -720,8 +749,8 @@ destination -> the rest of a mttm rule | half-rule
 (define (f-key-pressed a-vs)
   (let ([imsg-state-aux-tape-index (imsg-state-mttm-aux-tape-index (informative-messages-component-state (viz-state-informative-messages a-vs)))]
         [imsg-state-M (imsg-state-mttm-M (informative-messages-component-state (viz-state-informative-messages a-vs)))])
-    (if (and (>= (mttm-tape-amount imsg-state-M) 4)
-             (= imsg-state-aux-tape-index (- (mttm-tape-amount imsg-state-M) 3)))
+    (if (and (>= (mttm-tape-amount imsg-state-M) MAX-TAPES-SHOWN)
+             (= imsg-state-aux-tape-index (- (mttm-tape-amount imsg-state-M) (sub1 MAX-TAPES-SHOWN))))
         a-vs
         (struct-copy
          viz-state
@@ -742,7 +771,7 @@ destination -> the rest of a mttm rule | half-rule
 (define (e-key-pressed a-vs)
   (let ([imsg-state-aux-tape-index (imsg-state-mttm-aux-tape-index (informative-messages-component-state (viz-state-informative-messages a-vs)))]
         [imsg-state-M (imsg-state-mttm-M (informative-messages-component-state (viz-state-informative-messages a-vs)))])
-    (if (and (>= (mttm-tape-amount imsg-state-M) 4) (= imsg-state-aux-tape-index MIN-AUX-TAPE-INDEX))
+    (if (and (>= (mttm-tape-amount imsg-state-M) MAX-TAPES-SHOWN) (= imsg-state-aux-tape-index MIN-AUX-TAPE-INDEX))
         a-vs
         (struct-copy
          viz-state
@@ -915,7 +944,8 @@ destination -> the rest of a mttm rule | half-rule
 ;;mttm tape natnum [natnum] [symbol] . (listof (list state (tape-config -> boolean))) -> (void)
 ;;Purpose: Visualizes the given mttm processing the given tape
 ;;Assumption: The given machine is an mttm
-(define (mttm-viz M a-word head-pos #:cut-off [cut-off 100] #:palette [palette 'default] invs)
+(define/contract (mttm-viz M a-word head-pos #:cut-off [cut-off 100] #:palette [palette 'default] invs)
+  mttm-viz/c
   ;;Mttm -> mttm-struct
   ;;Purpose: Converts a mttm interface into the mttm structure
   (define (remake-mttm M)
@@ -938,7 +968,8 @@ destination -> the rest of a mttm rule | half-rule
   ;;Purpose: Returns a propers trace for the given (listof configurations) that accurately
   ;;         tracks each transition
   (define (make-trace configs rules acc)
-    (cond [(treelist-empty? rules) (reverse acc)]
+    (cond [(and (empty? acc) (= (treelist-length configs) 1)) (list (trace (treelist-first configs) DUMMY-RULE))]
+          [(treelist-empty? rules) (reverse acc)]
           [(and (empty? acc)
                 (or (not (eq? (first (half-rule-lota (rule-source (treelist-first rules)))) BLANK))
                     (not (eq? (first (half-rule-lota (rule-source (treelist-first rules)))) LM))))
@@ -1060,9 +1091,10 @@ destination -> the rest of a mttm rule | half-rule
                                  
                              
          [all-head-pos (list->zipper tracked-head-pos)]
-         [machine-decision (if (not rejected?)
-                               'accept
-                               'reject)]
+         [machine-decision (cond [(not rejected?) 'accept]
+                                 [(and reached-final? (eq? (mttm-type M) 'mttm)) 'reached-final]
+                                 [(and (not reached-final?) (eq? (mttm-type M) 'mttm)) 'halted]
+                                 [else 'reject])]
          
          [tracked-trace (list (if (not rejected?) accepting-trace rejecting-trace))]
          ;;(listof (list config boolean)) ;;Purpose: Gets all the invariant configurations
@@ -1123,9 +1155,11 @@ destination -> the rest of a mttm rule | half-rule
                                    (text "Accept not traced" 20 (color-palette-legend-other-accept-color color-scheme))
                                    spacer
                                    (text "Reject not traced" 20 (color-palette-legend-other-reject-color color-scheme)))))])
+    #;
+    (void)
+    ;#;
     (run-viz graphs
              (list->vector (map (λ (x) (λ (grph) grph)) graphs))
-             #;(lambda () (list (graph->bitmap (first graphs))))
              (posn (/ E-SCENE-WIDTH 2) (/ MTTM-E-SCENE-HEIGHT 2))
               E-SCENE-WIDTH MTTM-E-SCENE-HEIGHT PERCENT-BORDER-GAP
              DEFAULT-ZOOM
