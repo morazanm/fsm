@@ -1216,6 +1216,8 @@ A Path is a (treelistof dfa-rule)
   ;; (listof dfa) (listof merged-state) (vectorof (vectorof marking)) -> (listof phase)
   ;; Purpose: Pairs a merged-state with a rebuild dfa that contains either the new merged state symbol or one of the states that got merged
   (define (make-phase-5 unminimized-M loRM loMS state-pairing-table states assoc-table)
+    (define reverse-assoc-table (hash-map/copy assoc-table
+                                               (λ (k v) (values v k))))
     ;;(listof dfa) (listof merged-state) (listof phase)
     ;;Purpose: Associates the given rebuilt dfa with a merged-state if any of the components a merged-state has been found
     (define (make-phase-5-helper loRM loMS states acc)
@@ -1231,8 +1233,8 @@ A Path is a (treelistof dfa-rule)
                  [remaining-states (filter-not (λ (st)
                                                  (or (set-member? (if found-merged-state?
                                                                       (merged-state-old-symbols (first merged-state))
-                                                                      merged-state) st)
-                                                     (member st (dfa-states rebuild-M))))
+                                                                      merged-state) (hash-ref reverse-assoc-table st st))
+                                                     (member (hash-ref reverse-assoc-table st 'ds) (dfa-states rebuild-M))))
                                                states)]
                  [new-phase (phase PHASE-5
                                    unminimized-M
@@ -1310,7 +1312,7 @@ A Path is a (treelistof dfa-rule)
          [rebuilding-machines (reconstruct-machine minimized-M merged-states)]
          
          [phase-5 (if can-be-minimized?
-                      (make-phase-5 no-unreachables-M rebuilding-machines merged-states filled-table (dfa-states minimized-M)
+                      (make-phase-5 no-unreachables-M rebuilding-machines merged-states filled-table (dfa-states original-M)
                        (minimization-results-state-assoc results-from-minimization))
                       empty)]
          [phase-6 (list (phase PHASE-6 (last rebuilding-machines) filled-table (phase-6-attributes can-be-minimized?)))]
