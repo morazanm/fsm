@@ -159,7 +159,10 @@
                      (build-list
                       (random (add1 reps))
                       (λ (i) (gen-function (mk-kleene-cfexp-cfe kleene-cfexp) reps))))))]
-    (if (null? lst-words) EMP (append-map append lst-words))))
+    (if (null? lst-words) EMP (foldr (λ (str acc)
+                                       (string-append str acc))
+                                     ""
+                                     lst-words))))
 
 ;;string -> Boolean
 ;;Purpose: Determines if the given string is empty
@@ -187,7 +190,7 @@
   (cond [(mk-null-cfexp? cfe) (error "A word cannot be generated using the null-regexp.")]
         [(mk-empty-cfexp? cfe) EMP]
         [(mk-singleton-cfexp? cfe) (list (string->symbol (mk-singleton-cfexp-char cfe)))]
-        [(box? cfe) (gen-cfexp-word-helper (unbox cfe) reps)]
+        #;[(box? cfe) (gen-cfexp-word-helper (unbox cfe) reps)]
         [else (let ([res (gen-cfexp-word-helper cfe reps)])
                 (if (string-empty? res)
                     EMP
