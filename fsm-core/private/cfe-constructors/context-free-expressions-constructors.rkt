@@ -181,14 +181,14 @@
 
 ;; cfe [natnum] -> word
 ;; Purpose: Generates a word using 
-(define/contract (gen-cfexp-word cfe . reps)
+(define/contract (gen-cfexp-word cfe [reps MAX-KLEENESTAR-LIMIT])
   gen-cfexp-word/c
-  (define MAX-KLEENESTAR-REPS (if (null? reps) MAX-KLEENESTAR-LIMIT (car reps)))
+  #;(define MAX-KLEENESTAR-REPS (if (null? reps) MAX-KLEENESTAR-LIMIT (car reps)))
   (cond [(mk-null-cfexp? cfe) (error "A word cannot be generated using the null-regexp.")]
         [(mk-empty-cfexp? cfe) EMP]
         [(mk-singleton-cfexp? cfe) (list (string->symbol (mk-singleton-cfexp-char cfe)))]
-        [(box? cfe) (gen-cfexp-word (unbox cfe) reps)]
-        [else (let ([res (gen-cfexp-word-helper cfe MAX-KLEENESTAR-REPS)])
+        [(box? cfe) (gen-cfexp-word-helper (unbox cfe) reps)]
+        [else (let ([res (gen-cfexp-word-helper cfe reps)])
                 (if (string-empty? res)
                     EMP
                     (string->word res)))]))
