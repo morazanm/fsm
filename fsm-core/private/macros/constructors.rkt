@@ -4,7 +4,7 @@
          "validation/validation-flat-contracts.rkt"
          "../constants.rkt"
          "shared/shared-predicates.rkt"
-         racket/contract
+         racket/contract/base
          racket/list
          )
 (provide make-dfa/c
@@ -22,7 +22,7 @@
 (define (add-dead-state-rules rules states sigma)
   (define all-state-sigma-pairs (cartesian-product states sigma))
   (define existing-state-sigma-pairs
-    (map (lambda (rule) (list (first rule) (second rule))) rules))
+    (map (lambda (rule) (list (car rule) (cadr rule))) rules))
   (define missing-state-sigma-pairs
     (filter
      (lambda (pair) (not (member pair existing-state-sigma-pairs)))

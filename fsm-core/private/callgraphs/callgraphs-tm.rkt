@@ -61,17 +61,17 @@
                                     (eq? (tape-at-i stuci) (tm-Edge-read e))))
                    edges)))
     (cut-off
-     (if (empty? to-visit)
+     (if (null? to-visit)
          '()
-         (let* [(new-stucis (add-to-stucis-helper edges (first to-visit)))]
-           (if (or (empty? new-stucis)
+         (let* [(new-stucis (add-to-stucis-helper edges (car to-visit)))]
+           (if (or (null? new-stucis)
                    (ormap (lambda (s) 
                             (ormap (lambda (s2) (tm-stucis-equal? s s2)) 
                                    new-stucis))
                           visited))
-               (add-to-stucis edges (rest to-visit) visited)
+               (add-to-stucis edges (cdr to-visit) visited)
                (append new-stucis
-                       (add-to-stucis edges (rest to-visit)
+                       (add-to-stucis edges (cdr to-visit)
                                       (append new-stucis
                                               visited))))))
      threshold)) 
@@ -94,7 +94,7 @@
       ;; rule -> Boolean
       ;; Purpose: Given a rule, determines whether the machine halts
       (define (machine-halts? rule)
-        (empty? (future-rules rule)))
+        (null? (future-rules rule)))
       ;; rule -> tm-Edge
       ;; Purpose: Given a machine rule, determines which tm-Edge subtype to use
       ;; How: If the machine halts in the state, we use a tm-spedge.
@@ -115,7 +115,7 @@
                              (tm-rule-read rule)
                              (tm-rule-tost rule)
                              (tm-rule-action rule))]))
-      (if (empty? new-rules)
+      (if (null? new-rules)
           '()
           (map (lambda (e) (tm-Edge e)) new-rules))))
   ;; (listof tm-stuci) (listof tm-stuci) -> (listof tm-Edge)
@@ -133,7 +133,7 @@
   (define (tm-computation-tree->cg-edges to-visit visited)
     (let* [(new-edges (append-map (lambda (s) (add-to-edges s)) to-visit))
            (new-stucis (add-to-stucis (remove-duplicates new-edges) to-visit visited))]
-      (if (empty? new-stucis)
+      (if (null? new-stucis)
           new-edges
           (append
            new-edges
@@ -155,18 +155,18 @@
     ;; (listof sm-showtransitions) -> (listof tm-Edge)
     ;; Purpose: Given sm-showtransitions, makes a list of edges according to that one accepting computation
     (define (edges-on-accept st)
-      (let* [(fromst (first (first st)))]      
+      (let* [(fromst (car (car st)))]      
         (if (or (and (eq? (sm-type M) 'tm-language-recognizer)
                      (eq? fromst (sm-accept M)))
                 (and (eq? (sm-type M) 'tm)
                      (member fromst (sm-finals M))))
             '()
-            (let* [(tost (first (second st)))
-                   (head-from (second (first st)))
-                   (head-to (second (second st)))
-                   (read (list-ref (third (first st)) head-from))
+            (let* [(tost (car (cadr st)))
+                   (head-from (cadr (car st)))
+                   (head-to (cadr (cadr st)))
+                   (read (list-ref (caddr (car st)) head-from))
                    (action (cond [(eq? head-from head-to)
-                                  (list-ref (third (second st)) head-to)]
+                                  (list-ref (caddr (cadr st)) head-to)]
                                  [(< head-from head-to) 'R]
                                  [else 'L]))]
               (if (or (and (eq? (sm-type M) 'tm-language-recognizer)
@@ -174,9 +174,9 @@
                       (and (eq? (sm-type M) 'tm)
                            (member tost (sm-finals M))))
                   (cons (tm-spedge fromst read tost action)
-                        (edges-on-accept (rest st)))
+                        (edges-on-accept (cdr st)))
                   (cons (tm-edge fromst read tost action)
-                        (edges-on-accept (rest st))))))))
+                        (edges-on-accept (cdr st))))))))
     (if (or (and (eq? (sm-type M) 'tm-language-recognizer)
                  (ormap (lambda (r) (eq? (tm-Edge-tost r) (sm-accept M)))
                         (append (filter tm-spedge? edges)
@@ -256,7 +256,7 @@
          (edge-states (remove-duplicates (append (map (lambda (r) (tm-Edge-fromst r)) new-rules)
                                                 (map (lambda (r) (tm-Edge-tost r)) new-rules))))
          (all-states
-          (if (empty? edge-states)
+          (if (null? edge-states)
               (list (sm-start M))
               edge-states))
          (end-states
@@ -276,36 +276,36 @@
     ;; Purpose: Given a list of all states in a machine after a word
     ;;          has been consumed, returns a list of nodes 
     (define (new-node los)
-      (if (empty? los)
+      (if (null? los)
           '()
           (let* [(a-color
                   (cond [(= 1 (length all-states)) "crimson"] 
-                        [(member (first los) end-states) "crimson"]
+                        [(member (car los) end-states) "crimson"]
                         [(and (eq? color-blindness 'default)
-                              (eq? (first los) start-state)) "forestgreen"]
+                              (eq? (car los) start-state)) "forestgreen"]
                         [(and (eq? color-blindness 'deut)
-                              (eq? (first los) start-state)) "dodgerblue"]
+                              (eq? (car los) start-state)) "dodgerblue"]
                         [else "black"]))
                  (a-shape
                   (cond [(and (eq? (sm-type M) 'tm-language-recognizer)
-                              (eq? (first los) (sm-accept M))) "doubleoctagon"]
-                        [(member (first los) final-states) "doublecircle"]
+                              (eq? (car los) (sm-accept M))) "doubleoctagon"]
+                        [(member (car los) final-states) "doublecircle"]
                         [else "circle"]))
                  (a-label
-                  (symbol->string (first los)))
+                  (symbol->string (car los)))
                  (a-fontcolor
-                  (cond [(or (and (eq? (first los) start-state)
-                                  (member (first los) end-states))
+                  (cond [(or (and (eq? (car los) start-state)
+                                  (member (car los) end-states))
                              (= 1 (length all-states)))
                          (cond [(eq? color-blindness 'default) "forestgreen"]
                                [(eq? color-blindness 'deut) "dodgerblue"])]
                         [else "black"]))
                  (a-fillcolor
-                  (if (member (first los) cutoff-states)
+                  (if (member (car los) cutoff-states)
                       "gold"
                       "white"))]
-            (cons (list (first los) `((color ,a-color) (shape ,a-shape) (label ,a-label) (fontcolor ,a-fontcolor) (fillcolor ,a-fillcolor))) 
-                  (new-node (rest los))))))
+            (cons (list (car los) `((color ,a-color) (shape ,a-shape) (label ,a-label) (fontcolor ,a-fontcolor) (fillcolor ,a-fillcolor))) 
+                  (new-node (cdr los))))))
     (new-node all-states)))
 
 ;.................................................
@@ -322,10 +322,10 @@
     ;; Purpose: Given a list of components within an edge returns a transition
     (define (new-trans loc)      
       (list (tm-Edge-fromst loc) (tm-Edge-tost loc) `((fontsize 15) (label ,(string-append "[" (symbol->string (tm-Edge-read loc)) " " (symbol->string (tm-Edge-action loc)) "]")))))
-    (if (empty? loes)
+    (if (null? loes)
         '()
-        (cons (new-trans (first loes))
-              (all-trans (rest loes)))))
+        (cons (new-trans (car loes))
+              (all-trans (cdr loes)))))
   (all-trans new-rules))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -365,38 +365,38 @@
   (define DEFAULT-THRESH 8)
   (define MIN-THRESH 2)
   (define threshold
-    (cond [(empty? optargs) DEFAULT-THRESH]
-          [(and (integer? (first optargs))
-                (>= (first optargs) MIN-THRESH))
-           (first optargs)]
+    (cond [(null? optargs) DEFAULT-THRESH]
+          [(and (integer? (car optargs))
+                (>= (car optargs) MIN-THRESH))
+           (car optargs)]
           [(and (> (length optargs) 1)
-                (integer? (second optargs))
-                (>= (second optargs) MIN-THRESH))
-           (second optargs)]
+                (integer? (cadr optargs))
+                (>= (cadr optargs) MIN-THRESH))
+           (cadr optargs)]
           [else DEFAULT-THRESH]))
   ;; Definitions for Color Blindness
   (define DEFAULT-COLOR 'default)
   (define DEUTERANOPIA 'deut)
   (define COLOR-LIST (list DEFAULT-COLOR DEUTERANOPIA))
   (define color-blindness 
-    (cond [(empty? optargs) DEFAULT-COLOR]
-          [(and (symbol? (first optargs))
-                (member (first optargs) COLOR-LIST))
-           (first optargs)]
+    (cond [(null? optargs) DEFAULT-COLOR]
+          [(and (symbol? (car optargs))
+                (member (car optargs) COLOR-LIST))
+           (car optargs)]
           [(and (> (length optargs) 1)
-                (symbol? (second optargs))
-                (member (second optargs) COLOR-LIST))
-           (second optargs)]
+                (symbol? (cadr optargs))
+                (member (cadr optargs) COLOR-LIST))
+           (cadr optargs)]
           [else DEFAULT-COLOR]))
   (let* [(new-rules (make-tm-cg-edges M word head threshold))]
     ;; image
     ;; Purpose: Stores a computation graph image 
     (define cgraph (create-graph 'cgraph #:atb (hash 'rankdir "LR" 'label (cond [(and (eq? (sm-type M) 'tm)
-                                                                                      (not (empty? (append (filter tm-cutoff-edge? new-rules)
+                                                                                      (not (null? (append (filter tm-cutoff-edge? new-rules)
                                                                                                            (filter tm-cutoff-spedge? new-rules)))))
                                                                                  (format "All computations on '~a cut off at threshold ~a" word threshold)]
                                                                                 [(and (eq? (sm-type M) 'tm-language-recognizer)
-                                                                                      (not (empty? (append (filter tm-cutoff-edge? new-rules)
+                                                                                      (not (null? (append (filter tm-cutoff-edge? new-rules)
                                                                                                            (filter tm-cutoff-spedge? new-rules)))))
                                                                                  (format "All computations on '~a cut off at threshold ~a" word threshold)]
                                                                                 [(and (eq? (sm-type M) 'tm)
@@ -419,23 +419,23 @@
       (set! cgraph
             (foldl
              (lambda (a-node a-graph)
-               (let* [(state (first a-node))
-                      (color (second (first (second a-node))))
-                      (shape (second (second (second a-node))))
-                      (label (second (third (second a-node)))) 
-                      (fontcolor (second (fourth (second a-node))))
+               (let* [(state (car a-node))
+                      (color (cadr (car (cadr a-node))))
+                      (shape (cadr (cadr (cadr a-node))))
+                      (label (cadr (caddr (cadr a-node)))) 
+                      (fontcolor (cadr (cadddr (cadr a-node))))
                       (style "filled")
-                      (fillcolor (second (fifth (second a-node))))]
+                      (fillcolor (cadr (car (cddddr (cadr a-node)))))]
                  (add-node a-graph state #:atb (hash 'color color 'shape shape 'label label 'fontcolor fontcolor 'style style 'fillcolor fillcolor)))) 
              cgraph   
              (dot-nodes-tm M word new-rules color-blindness)))
       (set! cgraph
             (foldl
              (lambda (a-trans a-graph)
-               (let* [(state1 (first a-trans))
-                      (state2 (second a-trans))
-                      (fontsize (second (first (third a-trans))))
-                      (label (second (second (third a-trans))))]
+               (let* [(state1 (car a-trans))
+                      (state2 (cadr a-trans))
+                      (fontsize (cadr (car (caddr a-trans))))
+                      (label (cadr (cadr (caddr a-trans))))]
                  (add-edge a-graph label state1 state2 #:atb (hash 'fontsize fontsize))))
              cgraph
              (dot-trans-tm new-rules)))

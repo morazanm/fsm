@@ -1,7 +1,5 @@
 #lang racket/base
-(require rackunit
-         "rules/rules-predicates.rkt"
-         racket/list)
+(require "rules/rules-predicates.rkt")
 (provide format-error
          format-finals-error
          format-duplicates-error
@@ -10,7 +8,8 @@
          format-accepts-error
          format-missing-rule-error
          format-rule-format-error
-         format-incorrect-rules-error)
+         format-incorrect-rules-error
+         format-incorrect-rule-error)
 
 (define (format-error blame value message)
   (if (string? value)
@@ -58,7 +57,7 @@
   (define (make-string los prefix separator suffix)
     (string-append
      prefix
-     (string-append (first los) (foldr string-append "" (map (lambda (s) (string-append separator s)) (rest los))))
+     (string-append (car los) (foldr string-append "" (map (lambda (s) (string-append separator s)) (cdr los))))
      suffix)
     )
   (define rule (invalid-rule-rule rule-with-errors))
@@ -69,13 +68,5 @@
   
 
 
-(module+ test
 
-  ;format-incorrect-rule-error tests
-  (check-equal? (format-incorrect-rule-error (make-invalid-rule '(A b C)
-                                                                '("This is the first error message."
-                                                                  "This is the second error message."
-                                                                  "This is the third error message.")))
-                "Rule (A b C):\n  This is the first error message.\n  This is the second error message.\n  This is the third error message.\n")
-  )
 

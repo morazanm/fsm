@@ -3,7 +3,7 @@
 
 #lang scribble/manual
 
-@(require (for-label 2htdp/image typed/racket/base))
+@(require (for-label typed/racket/base 2htdp/image racket/undefined racket/shared) setup/collects scribble/eval)
 
 @title{FSM}
 @author[(author+email "Marco T. Morazán" "morazanm@shu.edu")]

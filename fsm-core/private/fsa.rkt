@@ -33,7 +33,7 @@
     (lambda (w . l)    
       ; wi state --> config
       (define (make-transition a-wi s)
-        (cond [(word-consumed? a-wi w) empty]
+        (cond [(word-consumed? a-wi w) '()]
               [else (mk-config (+ a-wi 1)
                                (get-next-state (get-symb-word w a-wi) s deltas))]))
       ; symbol state rules --> state
@@ -176,7 +176,7 @@
   ;; Purpose: Extract the empties of the given state
   ;; Assume: Given state is in the given table
   (define (extract-empties st empties)
-    (second (first (filter (λ (e) (eq? (first e) st)) empties))))
+    (cadr (car (filter (λ (e) (eq? (car e) st)) empties))))
 
   ;; (listof ss) alphabet emps-tbl (listof ndfa-rule) (listof ss) --> (listof ss-dfa-rule)
   ;; Purpose: Compute the dfa rules
@@ -187,9 +187,9 @@
     ;; state symbol (listof ndfa-rule) emps-tbl --> ss
     ;; Purpose: Find the reachable super state from the given state and the given alphabet element
     (define (find-reachables-from-st-on-a st a rules empties)
-      (let* [(rls (filter (λ (r) (and (eq? (first r) st) (eq? (second r) a)))
+      (let* [(rls (filter (λ (r) (and (eq? (car r) st) (eq? (cadr r) a)))
                           rules))
-             (to-states (map third rls))]
+             (to-states (map caddr rls))]
         (remove-duplicates (append-map (λ (st) (extract-empties st empties)) to-states))))
 
     ;; state alphabet (listof ndfa-rule) emps-tbl --> (listof ss)
@@ -208,9 +208,9 @@
     (define (get-reachable i reachables)
       (remove-duplicates (append-map (λ (reached) (list-ref reached i))
                                      reachables)))
-    (if (empty? to-search-ssts)
+    (if (null? to-search-ssts)
         '()
-        (let* [(curr-ss (first to-search-ssts))
+        (let* [(curr-ss (car to-search-ssts))
                (reachables (find-reachables curr-ss sigma rules empties))
                (to-super-states (build-list (length sigma)
                                             (λ (i) (get-reachable i reachables))))
@@ -218,7 +218,7 @@
                                to-super-states
                                sigma))]
           (append new-rules (compute-ss-dfa-rules
-                             (append (rest to-search-ssts)
+                             (append (cdr  to-search-ssts)
                                      (filter (λ (ss) (not (member ss (append to-search-ssts ssts))))
                                              (remove-duplicates to-super-states))) ;; to-super-states may have duplicates
                              sigma
@@ -227,7 +227,7 @@
                              (cons curr-ss ssts))))))
 
   (define (compute-ss-name-tbl super-states m-states)
-    (foldr (λ (ss acc) (cons (list ss (gen-state (append m-states (map second acc)))) acc))
+    (foldr (λ (ss acc) (cons (list ss (gen-state (append m-states (map cadr acc)))) acc))
            '()
            super-states))
 
@@ -243,9 +243,9 @@
     ;; state (listof state) (listof ndfa-rule) --> (listof ndfa-rule)
     ;; Purpose: Extract empty transitions to non-generated states for the given state
     (define (get-e-trans state gen-states rules)
-      (filter (λ (r) (and (eq? (first r) state)
-                          (eq? (second r) EMP)
-                          (not (member (third r) gen-states))))
+      (filter (λ (r) (and (eq? (car r) state)
+                          (eq? (cadr r) EMP)
+                          (not (member (caddr r) gen-states))))
               rules))
     
     ;; (listof state) (listof ndfa-rules) (listof state) --> (listof state)
@@ -254,11 +254,11 @@
     ;;     to-search = states reachable by consuming no input that have not been visited
     ;;       visited = states reachable by consuming no input
     (define (compute-empties to-search rules visited)
-      (if (empty? to-search)
+      (if (null? to-search)
           visited
-          (let* [(curr (first to-search))
+          (let* [(curr (car to-search))
                  (curr-e-rules (get-e-trans curr (append to-search visited) rules))]
-            (compute-empties (append (rest to-search) (map third curr-e-rules))
+            (compute-empties (append (cdr  to-search) (map caddr curr-e-rules))
                              rules
                              (cons curr visited)))))
     (map (λ (st) (list st (compute-empties (list st) rules '()))) states))
@@ -275,20 +275,20 @@
                                   '())) ;; the first rule(s) are for the starting ss
            (super-states (remove-duplicates
                           (append-map
-                           (λ (r) (list (first r) (third r)))
+                           (λ (r) (list (car r) (caddr r)))
                            ss-dfa-rules)))
            (ss-name-tbl (compute-ss-name-tbl super-states states))
            ]
-      (make-unchecked-dfa (map (λ (ss) (second (assoc ss ss-name-tbl)))
+      (make-unchecked-dfa (map (λ (ss) (cadr (assoc ss ss-name-tbl)))
                                super-states)
                           sigma
-                          (second (assoc (first super-states) ss-name-tbl))
-                          (map (λ (ss) (second (assoc ss ss-name-tbl)))
+                          (cadr (assoc (car super-states) ss-name-tbl))
+                          (map (λ (ss) (cadr (assoc ss ss-name-tbl)))
                                (filter (λ (ss) (ormap (λ (s) (member s finals)) ss))
                                        super-states))
-                          (map (λ (r) (list (second (assoc (first r) ss-name-tbl))
-                                            (second r)
-                                            (second (assoc (third r) ss-name-tbl))))
+                          (map (λ (r) (list (cadr (assoc (car r) ss-name-tbl))
+                                            (cadr r)
+                                            (cadr (assoc (caddr r) ss-name-tbl))))
                                ss-dfa-rules)
                           'no-dead)))
   
@@ -333,11 +333,11 @@
 ; (listof state) fsa --> fsa
 (define (rename-states-fsa los m)
   (define (generate-rename-table disallowed sts)
-    (if (empty? sts)
+    (if (null? sts)
         '()
         (let ((new-st (gen-state disallowed)))
-          (cons (list (first sts) new-st)
-                (generate-rename-table (cons new-st disallowed) (rest sts))))))
+          (cons (list (car sts) new-st)
+                (generate-rename-table (cons new-st disallowed) (cdr  sts))))))
     
   (let* ((mstates (fsa-getstates m))
          (sts mstates #;(if (member DEAD mstates) mstates (cons DEAD mstates)))
@@ -486,10 +486,10 @@
 (define (fsa->regexp m)
 
   (define (degree-in s rules)
-    (length (filter (λ (r) (eq? s (third r))) rules)))
+    (length (filter (λ (r) (eq? s (caddr r))) rules)))
 
   (define (degree-out s rules) 
-    (length (filter (λ (r) (eq? s (first r))) rules)))
+    (length (filter (λ (r) (eq? s (car r))) rules)))
 
   ;; nonempty-(listof edges) --> edge
   ;; Purpose: Merge given edges into a single edge
@@ -500,25 +500,25 @@
             [(and (empty-regexp? r2) (kleenestar-regexp? r1)) r1]
             [else (make-unchecked-union r1 r2)]))
     
-    (cond [(empty? (rest edges)) (first edges)] ;; only 1 edge
-          [(empty? (rest (rest edges))) ;; only two edges
-           (list (first (first edges))
-                 (mk-union-label (second (first edges)) (second (second edges)))
-                 (third (first edges)))]
-          [else (let ((u1 (second (first edges)))
-                      (u2 (merge-edges (rest edges))))
-                  (list (first (first edges))
-                        (mk-union-label u1 (second u2))
-                        (third (first edges))))]))
+    (cond [(null? (cdr  edges)) (car edges)] ;; only 1 edge
+          [(null? (cdr  (cdr  edges))) ;; only two edges
+           (list (car (car edges))
+                 (mk-union-label (cadr (car edges)) (cadr (cadr edges)))
+                 (caddr (car edges)))]
+          [else (let ((u1 (cadr (car edges)))
+                      (u2 (merge-edges (cdr  edges))))
+                  (list (car (car edges))
+                        (mk-union-label u1 (cadr u2))
+                        (caddr (car edges))))]))
 
   (define (merge-medges G ne)
-    (if (empty? G)
+    (if (null? G)
         ne
-        (let* ((frule (first G))
-               (ffrom (first frule))
-               (fto (third frule))
-               (medges (filter (λ (e) (and (eq? (first e) ffrom) (eq? (third e) fto))) G)))
-          (merge-medges (filter (λ (e) (not (and (eq? (first e) ffrom) (eq? (third e) fto))))
+        (let* ((frule (car G))
+               (ffrom (car frule))
+               (fto (caddr frule))
+               (medges (filter (λ (e) (and (eq? (car e) ffrom) (eq? (caddr e) fto))) G)))
+          (merge-medges (filter (λ (e) (not (and (eq? (car e) ffrom) (eq? (caddr e) fto))))
                                 G)
                         (cons (merge-edges medges) ne)))))
     
@@ -540,33 +540,33 @@
 
         (define (merge-out-edge e ins)
           (map (λ (ie)
-                 (list (first ie)
-                       (let* ((self-loop-lst (filter (λ (e) (and (eq? s (first e)) (eq? s (third e))))
+                 (list (car ie)
+                       (let* ((self-loop-lst (filter (λ (e) (and (eq? s (car e)) (eq? s (caddr e))))
                                                      G))
-                              (self-loop-edge (if (null? self-loop-lst) '() (first self-loop-lst))))
+                              (self-loop-edge (if (null? self-loop-lst) '() (car self-loop-lst))))
                          (if (null? self-loop-edge)
-                             (mk-concat-regexp (second ie) (second e)) ;; s does not have a self-loop
-                             (mk-concat-regexp (second ie)
+                             (mk-concat-regexp (cadr ie) (cadr e)) ;; s does not have a self-loop
+                             (mk-concat-regexp (cadr ie)
                                                (mk-concat-regexp
-                                                (make-unchecked-kleenestar (second self-loop-edge))
-                                                (second e)))))
-                       (third e)))
+                                                (make-unchecked-kleenestar (cadr self-loop-edge))
+                                                (cadr e)))))
+                       (caddr e)))
                ins))
           
         (define (merge-into-edge e outs)
 
           (define res (map (λ (eo)
-                             (list (first e)
-                                   (let* ((self-loop-lst (filter (λ (e) (and (eq? s (first e)) (eq? s (third e))))
+                             (list (car e)
+                                   (let* ((self-loop-lst (filter (λ (e) (and (eq? s (car e)) (eq? s (caddr e))))
                                                                  G))
-                                          (self-loop-edge (if (null? self-loop-lst) '() (first self-loop-lst))))
+                                          (self-loop-edge (if (null? self-loop-lst) '() (car self-loop-lst))))
                                      (if (null? self-loop-edge)
-                                         (mk-concat-regexp (second e) (second eo)) ;; s does not have a self-loop
-                                         (mk-concat-regexp (second e)
+                                         (mk-concat-regexp (cadr e) (cadr eo)) ;; s does not have a self-loop
+                                         (mk-concat-regexp (cadr e)
                                                            (mk-concat-regexp
-                                                            (make-unchecked-kleenestar (second self-loop-edge))
-                                                            (second eo)))))
-                                   (third eo)))
+                                                            (make-unchecked-kleenestar (cadr self-loop-edge))
+                                                            (cadr eo)))))
+                                   (caddr eo)))
                            outs))
           res)
         (let* ((mins (append-map (λ (e)
@@ -579,61 +579,61 @@
                                   out-s-edges)))
           (append mins mouts)))
 
-      (define (remove-self-loops g) (filter (λ (e) (not (eq? (first e) (third e)))) g))
+      (define (remove-self-loops g) (filter (λ (e) (not (eq? (car e) (caddr e)))) g))
       
-      (let* ((out-s-edges (remove-self-loops (filter (λ (e) (eq? (first e) s)) G)))
-             (into-s-edges (remove-self-loops (filter (λ (e) (eq? (third e) s)) G))))
+      (let* ((out-s-edges (remove-self-loops (filter (λ (e) (eq? (car e) s)) G)))
+             (into-s-edges (remove-self-loops (filter (λ (e) (eq? (caddr e) s)) G))))
         (make-new-rem-edges s G into-s-edges out-s-edges)))
     (cond [(null? istates) G]
-          [(or (eq? (first istates) strt) (eq? (first istates) fnl))
-           (remove-internal-states G (rest istates) strt fnl)]
-          [else (let* ((rems (first istates))
+          [(or (eq? (car istates) strt) (eq? (car istates) fnl))
+           (remove-internal-states G (cdr  istates) strt fnl)]
+          [else (let* ((rems (car istates))
                        (removed-state-edges (remove-state rems))
                        (new-G (remove-duplicates
                                (append removed-state-edges
                                        (filter (λ (e)
-                                                 (and (not (eq? (first e) rems))
-                                                      (not (eq? (third e) rems))))
+                                                 (and (not (eq? (car e) rems))
+                                                      (not (eq? (caddr e) rems))))
                                                G))))
                        (mme-G (merge-medges  new-G '())))
-                  (remove-internal-states mme-G (rest istates) strt fnl))]))
+                  (remove-internal-states mme-G (cdr  istates) strt fnl))]))
   
   (let* ((rules (fsa-getrules m)) ;; edge representation of a graph
          (start (fsa-getstart m))
          (states (fsa-getstates m))
          (finals (fsa-getfinals m))
          (trules (map (λ (r)
-                        (list (first r)
-                              (if (eq? (second r) EMP)
+                        (list (car r)
+                              (if (eq? (cadr r) EMP)
                                   (empty-regexp)
-                                  (make-unchecked-singleton (symbol->string (second r))))
-                              (third r)))
+                                  (make-unchecked-singleton (symbol->string (cadr r))))
+                              (caddr r)))
                       rules)) ;; edges with singleton regexp
          (new-start (if (= (degree-in (fsa-getstart m) rules) 0)
                         start
                         (generate-symbol start states)))
          (new-final (if (and (= (length finals) 1)
-                             (= (degree-out (first finals) rules) 0))
-                        (first finals)
+                             (= (degree-out (car finals) rules) 0))
+                        (car finals)
                         (generate-symbol 'F states)))
          (new-states (cond [(and (not (eq? start new-start))
-                                 (not (eq? new-final (first finals))))
+                                 (not (eq? new-final (car finals))))
                             (cons new-start (cons new-final states))]
-                           [(and (eq? start new-start) (eq? new-final (first finals)))
+                           [(and (eq? start new-start) (eq? new-final (car finals)))
                             states]
                            
                            [(eq? start new-start) (cons new-final states)]
                            [else (cons new-start states)]))
          (new-finals (list new-final))
          (new-graph (cond [(and (not (eq? start new-start))
-                                (not (eq? (first finals) new-final))) ;; need new start and final states
+                                (not (eq? (car finals) new-final))) ;; need new start and final states
                            (cons (list new-start (empty-regexp) start)
                                  (append (map (λ (fs) (list fs (empty-regexp) new-final))
                                               finals)
                                          trules))]
                           [(not (eq? start new-start)) ;; need new start state
                            (cons (list new-start (empty-regexp) start) trules)]
-                          [(not (eq? (first finals) new-final)) ;; need new final state
+                          [(not (eq? (car finals) new-final)) ;; need new final state
                            (append (map (λ (fs) (list fs (empty-regexp) new-final))
                                         finals)
                                    trules)]
@@ -647,7 +647,7 @@
                                   new-final)))
     (if (null? final-graph)
         (null-regexp)
-        (simplify-regexp (second (first final-graph))))))
+        (simplify-regexp (cadr (car final-graph))))))
   
 ; regexp --> fsa
 (define (regexp->fsa r)

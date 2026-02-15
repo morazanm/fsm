@@ -29,10 +29,10 @@
   ;; natnum (listof states) --> state
   ;; Purpose: Generate an allowed state
   (define (gen-helper n s-choices)
-    (if (not (empty? s-choices))
+    (if (not (null? s-choices))
         (begin
-          (set-add! disallowed (first s-choices))
-          (first s-choices))
+          (set-add! disallowed (car s-choices))
+          (car s-choices))
         (gen-helper (add1 n)
                     (filter (λ (s) (not (set-member? disallowed s)))
                             (map (λ (s) (concat-n s n)) STS)))))
@@ -61,13 +61,13 @@
         (hash-set! ht sigma-elem new-nt)))
 
     (define (convert-non-solitary rule ht)
-      (list (first rule)
+      (list (car rule)
             ARROW
             (los->symbol (map (λ (s)
                                 (if (set-member? alphabet-set s)
                                     (hash-ref ht s)
                                     s))
-                              (symbol->fsmlos (third rule))))))
+                              (symbol->fsmlos (caddr rule))))))
     (populate-hash!)
     (make-cfg (append (cfg-get-v G) (hash-values ht))
               (cfg-get-alphabet G)
@@ -92,15 +92,15 @@
               (cons (list lhs ARROW (los->symbol (list (car rhs) new-nt)))
                     (convert-rule new-nt (cdr rhs)
                                   (sub1 count))))))
-      (if (empty? rules)
+      (if (null? rules)
           '()
           (let* ([rhs (symbol->fsmlos (caddr (car rules)))]
                  [rhs-len (length rhs)])
             (if (> rhs-len 2)
                 (append (convert-rule (caar rules) rhs (- rhs-len 2))
-                        (convert-rules (rest rules)))
+                        (convert-rules (cdr rules)))
                 (cons (car rules)
-                      (convert-rules (rest rules)))))))
+                      (convert-rules (cdr rules)))))))
     (let ([new-rules (convert-rules (cfg-get-rules G))])
       (make-cfg (set->list nts)
                 (cfg-get-alphabet G)
@@ -114,52 +114,52 @@
                         (list (car r) (cadr r) (symbol->fsmlos (caddr r))))
                       (cfg-get-rules G)))
     
-    (define nulls (list->mutable-seteq (filter (lambda (r) (equal? (third r) (list EMP))) trls)))
+    (define nulls (list->mutable-seteq (filter (lambda (r) (equal? (caddr r) (list EMP))) trls)))
     
     (define (new-compute-nullables trls)
       (define (compute-any-nullables rules)
-        (if (empty? (for/list ([rule (in-list rules)]
+        (if (null? (for/list ([rule (in-list rules)]
                                #:when (and (not (set-member? nulls (car rule)))
                                            (andmap (lambda (elem) (set-member? nulls elem)) rule)))
-                      (set-add! nulls (first rule))
-                      (first rule)))
+                      (set-add! nulls (car rule))
+                      (car rule)))
             (set->list nulls)
             (compute-any-nullables rules)))
       (compute-any-nullables trls))
 
     (define (remove-nts null-elem idx-lst count word)
-      (if (empty? word)
+      (if (null? word)
           '()
-          (if (eq? (first word) null-elem)
+          (if (eq? (car word) null-elem)
               (if (member count idx-lst)
-                  (remove-nts null-elem idx-lst (add1 count) (rest word))
-                  (cons (first word) (remove-nts null-elem idx-lst (add1 count) (rest word))))
-              (cons (first word) (remove-nts null-elem idx-lst count (rest word))))))
+                  (remove-nts null-elem idx-lst (add1 count) (cdr word))
+                  (cons (car word) (remove-nts null-elem idx-lst (add1 count) (cdr word))))
+              (cons (car word) (remove-nts null-elem idx-lst count (cdr word))))))
     
     (define (convert-rules rules nulls-list)
       (for/fold ([new-rules rules])
                 ([null-elem (in-list nulls-list)])
         (let-values ([(null-rules rest-rules)
-                      (filter-save (lambda (rule) (ormap (lambda (elem) (eq? elem null-elem)) (third rule))) new-rules)])
+                      (filter-save (lambda (rule) (ormap (lambda (elem) (eq? elem null-elem)) (caddr rule))) new-rules)])
           (for/fold ([new-rules rest-rules])
                     ([null-rule (in-list null-rules)])
             (append
-             (for/list ([removed-elems (in-combinations (range (count (lambda (elem) (eq? elem null-elem)) (third null-rule))))]
-                        #:do [(define new-rhs (remove-nts null-elem removed-elems 0 (third null-rule)))]
-                        #:when (not (empty? new-rhs)))
-               (list (first null-rule)
+             (for/list ([removed-elems (in-combinations (range (count (lambda (elem) (eq? elem null-elem)) (caddr null-rule))))]
+                        #:do [(define new-rhs (remove-nts null-elem removed-elems 0 (caddr null-rule)))]
+                        #:when (not (null? new-rhs)))
+               (list (car null-rule)
                      ARROW
                      new-rhs))
              new-rules)))))
     
     (let ([new-rules (map (λ (r)
-                            (list (first r) ARROW (los->symbol (third r))))
+                            (list (car r) ARROW (los->symbol (caddr r))))
                           (remove-duplicates (filter (λ (r)
-                                                       (or (eq? (first r) (cfg-get-start G))
-                                                           (and (not (eq? (first r) (cfg-get-start G)))
-                                                                (not (equal? (third r) (list EMP))))))
-                                                     (convert-rules trls (map first (new-compute-nullables trls))))))])
-      (make-cfg (remove-duplicates (map first new-rules))
+                                                       (or (eq? (car r) (cfg-get-start G))
+                                                           (and (not (eq? (car r) (cfg-get-start G)))
+                                                                (not (equal? (caddr r) (list EMP))))))
+                                                     (convert-rules trls (map car (new-compute-nullables trls))))))])
+      (make-cfg (remove-duplicates (map car new-rules))
                 (cfg-get-alphabet G)
                 new-rules
                 (cfg-get-start G))))
@@ -170,26 +170,26 @@
     (define nts (list->mutable-seteq (cfg-get-v G)))
     (define (rm-unit-rules rls)
       (let-values ([(urules rest-rules)
-                    (filter-save (λ (r) (and (= (length (third r)) 1)
-                                             (set-member? nts (first (third r)))))
+                    (filter-save (λ (r) (and (= (length (caddr r)) 1)
+                                             (set-member? nts (car (caddr r)))))
                                  rls)])
-        (if (empty? urules)
+        (if (null? urules)
             rest-rules
             (rm-unit-rules (for/fold ([new-rules rest-rules])
                                      ([urule (in-list urules)])
                              (append (for/list ([rule (in-list rls)]
-                                                #:when (and (eq? (first (third urule)) (first rule))
-                                                            (not (equal? (list (first (third urule))) (third rule)))))
-                                       (list (first urule) ARROW (third rule)))
+                                                #:when (and (eq? (car (caddr urule)) (car rule))
+                                                            (not (equal? (list (car (caddr urule))) (caddr rule)))))
+                                       (list (car urule) ARROW (caddr rule)))
                                      new-rules))))))
     (let [(new-rules
            (remove-duplicates
             (map (λ (r)
-                   (list (first r) ARROW (los->symbol (third r))))
+                   (list (car r) ARROW (los->symbol (caddr r))))
                  (rm-unit-rules (map (lambda (r)
                                        (list (car r) (cadr r) (symbol->fsmlos (caddr r))))
                                      (cfg-get-rules G))))))]
-      (make-cfg (remove-duplicates (map first new-rules))
+      (make-cfg (remove-duplicates (map car new-rules))
                 (cfg-get-alphabet G)
                 new-rules
                 (cfg-get-start G))))

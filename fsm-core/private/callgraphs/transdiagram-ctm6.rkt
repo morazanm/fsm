@@ -217,7 +217,7 @@
                                                  (list (cons 'BRANCH
                                                              (filter (lambda (x) (equal? (car x) (car (cadr (car l)))))
                                                                      (cdr (cadr (cadr (car l))))))))))
-                       (if (empty? (cdr (cdr (car l))))
+                       (if (null? (cdr (cdr (car l))))
                            '()
                            (branch-helper2 (list (cons 'BRANCH (cdr (cdr (car l))))))))
                (branch-helper2 (cdr l))))
@@ -371,7 +371,7 @@
 ;; list -> exp
 ;; Purpose: Find the first exp that is not a label
 (define (first-elem l)
-  (cond ((empty? l) (error "invalid ctm syntax: add machines to syntax"))
+  (cond ((null? l) (error "invalid ctm syntax: add machines to syntax"))
         ((label-exp? (car l)) (first-elem (cdr l)))
         (else (car l))))
   
@@ -442,26 +442,26 @@
     (set! cgraph
           (foldl
            (lambda (a-node a-graph)
-             (let* [(state (string->symbol (first a-node)))
-                    (color (second (first (second a-node))))
-                    (shape (second (second (second a-node))))
-                    (label (second (third (second a-node))))]
+             (let* [(state (string->symbol (car a-node)))
+                    (color (cadr (car (cadr a-node))))
+                    (shape (cadr (cadr (cadr a-node))))
+                    (label (cadr (caddr (cadr a-node))))]
                (add-node a-graph state #:atb (hash 'color color 'shape shape 'label label)))) 
            cgraph   
            (clean-list (dot-nodes parsed-program))))
     (set! cgraph
           (foldl
            (lambda (a-trans a-graph)
-             (let* [(state1 (string->symbol (first a-trans)))
-                    (state2 (string->symbol (second a-trans)))
-                    (label (cond ((equal? "_" (second (first (third a-trans)))) "BLANK")
-                                 ((symbol? (second (first (third a-trans))))
-                                  (symbol->string (second (first (third a-trans)))))
+             (let* [(state1 (string->symbol (car a-trans)))
+                    (state2 (string->symbol (cadr a-trans)))
+                    (label (cond ((equal? "_" (cadr (car (caddr a-trans)))) "BLANK")
+                                 ((symbol? (cadr (car (caddr a-trans))))
+                                  (symbol->string (cadr (car (caddr a-trans)))))
                                  (else 
-                                  (second (first (third a-trans))))))
-                    (style (second (second (third a-trans))))
-                    (color (second (third (third a-trans))))
-                    (headlabel (second (fourth (third a-trans))))] 
+                                  (cadr (car (caddr a-trans))))))
+                    (style (cadr (cadr (caddr a-trans))))
+                    (color (cadr (caddr (caddr a-trans))))
+                    (headlabel (cadr (cadddr (caddr a-trans))))] 
                (add-edge a-graph label state1 state2 #:atb (hash 'style style 'color color 'headlabel headlabel))))
            cgraph
            (clean-list (dot-edges parsed-program))))
@@ -480,14 +480,14 @@
   ;;  stored-val = stores the destination state, which is the source state of the following edge
   ;;  edges = list of all edges
   (define (follow-trace trace edges stored-val bool)
-    (cond [(or (empty? trace)
-               (empty? (cdr trace))
+    (cond [(or (null? trace)
+               (null? (cdr trace))
                (equal? stored-val "")) '()]
           [(and (struct? (car trace))
                 (struct? (cadr trace)))
            (let ((new-edge (filter (lambda (x) (equal? (car x) stored-val)) edges)))
              (append new-edge
-                     (follow-trace (cdr trace) edges (if (empty? new-edge)
+                     (follow-trace (cdr trace) edges (if (null? new-edge)
                                                          ""
                                                          (cadr (car new-edge))) #f)))]
           [(and (struct? (car trace))
@@ -498,13 +498,13 @@
                                                             (equal? (cadr (car (caddr x))) "BLANK"))
                                                         (equal? (string->symbol (cadr (car (caddr x)))) (cadr (cadr trace)))))) edges)))
              (append new-edge
-                     (follow-trace (cdr trace) edges (if (empty? new-edge)
+                     (follow-trace (cdr trace) edges (if (null? new-edge)
                                                          ""
                                                          (cadr (car new-edge))) #f)))]
           [(struct? (car trace))
            (let ((new-edge (filter (lambda (x) (equal? (car x) stored-val)) edges)))
              (append new-edge
-                     (follow-trace (cdr trace) edges (if (empty? new-edge)
+                     (follow-trace (cdr trace) edges (if (null? new-edge)
                                                          ""
                                                          (cadr (car new-edge))) #f)))]
           [(and (equal? 'BRANCH (car (car trace)))
@@ -515,12 +515,12 @@
                                                             (equal? (cadr (car (caddr x))) "BLANK"))
                                                         (equal? (string->symbol (cadr (car (caddr x)))) (cadr (car trace)))))) edges)))
              (append new-edge
-                     (follow-trace (cdr trace) edges (if (empty? new-edge)
+                     (follow-trace (cdr trace) edges (if (null? new-edge)
                                                          ""
                                                          (cadr (car new-edge))) #f)))]
           [else 
            (follow-trace (cdr trace) edges stored-val #f)]))
-  (if (empty? (clean-list (dot-edges (parse-program ctmlist))))
+  (if (null? (clean-list (dot-edges (parse-program ctmlist))))
       '()
       (follow-trace (filter (lambda (x) (or (struct? x)
                                             (and (not (equal? (car x) 'GOTO))

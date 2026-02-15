@@ -1,5 +1,5 @@
 #lang racket/base
-(require rackunit
+(require 
          "../../constants.rkt"
          "../shared/shared-predicates.rkt"
          "../../misc.rkt"
@@ -60,7 +60,7 @@
 (define (add-dead-state-rules rules states sigma)
   (define all-state-sigma-pairs (cartesian-product states sigma))
   (define existing-state-sigma-pairs
-    (map (lambda (rule) (list (first rule) (second rule))) rules))
+    (map (lambda (rule) (list (car rule) (cadr rule))) rules))
   (define missing-state-sigma-pairs
     (filter
      (lambda (pair) (not (member pair existing-state-sigma-pairs)))
@@ -114,10 +114,10 @@
 (define (valid-tm-rule-structure? rule)
   (and (list? rule)
        (= (length rule) 2)
-       (list? (first rule))
-       (= (length (first rule)) 2)
-       (list? (second rule))
-       (= (length (second rule)) 2))
+       (list? (car rule))
+       (= (length (car rule)) 2)
+       (list? (cadr rule))
+       (= (length (cadr rule)) 2))
   )
 
 ;valid-mttm-rule-structure?: integer --> (mttm-rule --> boolean)
@@ -127,14 +127,14 @@
 (define ((valid-mttm-rule-structure? num-tapes) rule)
   (and (list? rule)
        (= (length rule) 2)
-       (list? (first rule))
-       (= (length (first rule)) 2)
-       (list? (second rule))
-       (= (length (second rule)) 2)
-       (list? (second (first rule)))
-       (= (length (second (first rule))) num-tapes)
-       (list? (second (second rule)))
-       (= (length (second (second rule))) num-tapes)))
+       (list? (car rule))
+       (= (length (car rule)) 2)
+       (list? (cadr rule))
+       (= (length (cadr rule)) 2)
+       (list? (cadr (car rule)))
+       (= (length (cadr (car rule))) num-tapes)
+       (list? (cadr (cadr rule)))
+       (= (length (cadr (cadr rule))) num-tapes)))
 
 
 ;functional?: (listof dfa-rules) (listof states) sigma boolean --> boolean
@@ -142,7 +142,7 @@
 ; the rules. The exception to this is if add-dead is true. Then it will
 ; automatically become functional later
 (define (functional? rules states sigma add-dead)
-  (define pairs (map (lambda (x) (list (first x) (second x))) rules))
+  (define pairs (map (lambda (x) (list (car x) (cadr x))) rules))
   (define cart-prod (cartesian-product states sigma))
   (or (not (equal? add-dead 'no-dead)) (if (andmap (lambda (x) (member x pairs)) cart-prod) #t #f))
   )
@@ -151,7 +151,7 @@
 ;purpose: returns all the state/alphabet letter pairs that do not
 ; already exist in the list of rules
 (define (missing-functional rules states sigma)
-  (define pairs (map (lambda (x) (list (first x) (second x))) rules))
+  (define pairs (map (lambda (x) (list (car x) (cadr x))) rules))
   (define cart-prod (cartesian-product states sigma))
   (filter (lambda (x) (not (member x pairs))) cart-prod)
   )
@@ -163,12 +163,12 @@
 (define (check-duplicates-dfa rules)
   (define starts (map (lambda (x) (list (car x) (cadr x))) rules))
   (define (helper input acc)
-    (cond [(empty? input) acc]
+    (cond [(null? input) acc]
           [(member (car input) (cdr input)) (helper (cdr input) (cons (car input) acc))]
           [else (helper (cdr input) acc)])
     )
   (define duplicates (helper starts '()))
-  (if (empty? duplicates) #f duplicates)
+  (if (null? duplicates) #f duplicates)
   )
 
 ;correct-members-dfa?: (listof states) sigma (listof dfa-rules) --> boolean
@@ -216,10 +216,10 @@
 ; not in the sigma.
 (define (valid-mttm-rule? states sigma rule)
   (define actions (cons RIGHT (cons LEFT (cons BLANK sigma))))
-  (and (member (first (first rule)) states)
-       (andmap (lambda (letter) (member letter (cons LM (cons BLANK sigma)))) (second (first rule)))
-       (member (first (second rule)) states)
-       (andmap (lambda (letter) (member letter actions)) (second (second rule))))
+  (and (member (car (car rule)) states)
+       (andmap (lambda (letter) (member letter (cons LM (cons BLANK sigma)))) (cadr (car rule)))
+       (member (car (cadr rule)) states)
+       (andmap (lambda (letter) (member letter actions)) (cadr (cadr rule))))
   )
 
 ;correct-members-mttm?: (listof state) (listof alpha) (listof mttm-rule) --> boolean
@@ -251,18 +251,18 @@
       (cond [(or (not (list? elem)) (not (= (length elem) 3)))
              (list (format "The given rule, ~a, does not have the correct structure. A DFA rule must be a list with three elements." elem))]
             [else
-             (append (if (valid-state? (first elem))
+             (append (if (valid-state? (car elem))
                          '()
-                         (list (format "The first element in the rule, ~a, is not a valid state." (first elem))))
-                     (if (valid-dfa-symbol? (second elem))
+                         (list (format "The first element in the rule, ~a, is not a valid state." (car elem))))
+                     (if (valid-dfa-symbol? (cadr elem))
                          '()
-                         (list (format "The second element in the rule, ~a, is not a valid alphabet element." (second elem))))
-                     (if (valid-state? (third elem))
+                         (list (format "The second element in the rule, ~a, is not a valid alphabet element." (cadr elem))))
+                     (if (valid-state? (caddr elem))
                          '()
-                         (list (format "The third element in the rule, ~a, is not a valid state." (third elem)))))]
+                         (list (format "The third element in the rule, ~a, is not a valid state." (caddr elem)))))]
             )
       )
-    (if (empty? all-errors) '() (list (make-invalid-rule elem all-errors)))
+    (if (null? all-errors) '() (list (make-invalid-rule elem all-errors)))
     )
   (flatten (map rule-with-errors elems))
   )
@@ -277,9 +277,9 @@
   ; appropriate error messages for that rule. If the rule is valid, returns
   ; an empty list.
   (define (rule-with-errors rule)
-    (define from-state (first rule))
-    (define consumed (second rule))
-    (define to-state (third rule))
+    (define from-state (car rule))
+    (define consumed (cadr rule))
+    (define to-state (caddr rule))
     (define all-errors
       (append (if (not (member from-state states))
                   (list (format "The from state, ~a, is not in the given list of states." from-state))
@@ -290,7 +290,7 @@
               (if (not (member to-state states))
                   (list (format "The to state, ~a, is not in the given list of states." to-state))
                   '())))
-    (if (empty? all-errors) '() (list (make-invalid-rule rule all-errors))))
+    (if (null? all-errors) '() (list (make-invalid-rule rule all-errors))))
   (flatten (map rule-with-errors rules)))
 
 ;with-indices: (listof x) --> (listof (list x natnum))
@@ -313,18 +313,18 @@
     (cond [(or (not (list? rule)) (not (= (length rule) 3)))
            (list (format "The first part of the rule, ~a, does not have the correct structure. It must be a list with three elements." rule))]
           [else
-           (append (if (valid-state? (first rule))
+           (append (if (valid-state? (car rule))
                        '()
-                       (list (format "The first element in the first part of the rule, ~a, is not a valid state." (first rule))))
-                   (if (or (valid-dfa-symbol? (second rule))
-                           (equal? (second rule) EMP))
+                       (list (format "The first element in the first part of the rule, ~a, is not a valid state." (car rule))))
+                   (if (or (valid-dfa-symbol? (cadr rule))
+                           (equal? (cadr rule) EMP))
                        '()
-                       (list (format "The second element in the first part of the rule, ~a, is not a valid alphabet element." (second rule))))
-                   (if (or (equal? (third rule) EMP)
-                           (and (list? (third rule))
-                                (andmap valid-gamma? (third rule))))
+                       (list (format "The second element in the first part of the rule, ~a, is not a valid alphabet element." (cadr rule))))
+                   (if (or (equal? (caddr rule) EMP)
+                           (and (list? (caddr rule))
+                                (andmap valid-gamma? (caddr rule))))
                        '()
-                       (list (format "The third element in the first part of the rule, ~a, is not EMP or a list of valid gamma elements." (third rule)))))]))
+                       (list (format "The third element in the first part of the rule, ~a, is not EMP or a list of valid gamma elements." (caddr rule)))))]))
   ;validate-ndpda-rule-push: any --> (listof string)
   ;purpose: Takes as input an element which is meant to be the pop fragment of
   ; an ndpda rule, and returns a list of any structure errors associated with
@@ -334,14 +334,14 @@
     (cond [(or (not (list? rule)) (not (= (length rule) 2)))
            (list (format "The second part of the rule, ~a, does not have the correct structure. It must be a list with two elements."))]
           [else
-           (append (if (valid-state? (first rule))
+           (append (if (valid-state? (car rule))
                        '()
-                       (list (format "The first element in the second part of the rule, ~a, is not a valid state." (first rule))))
-                   (if (or (equal? (second rule) EMP)
-                           (and (list? (second rule))
-                                (andmap valid-gamma? (second rule))))
+                       (list (format "The first element in the second part of the rule, ~a, is not a valid state." (car rule))))
+                   (if (or (equal? (cadr rule) EMP)
+                           (and (list? (cadr rule))
+                                (andmap valid-gamma? (cadr rule))))
                        '()
-                       (list (format "The second element in the second part of the rule, ~a, is not EMP or a list of valid gamma elements." (second rule)))))]
+                       (list (format "The second element in the second part of the rule, ~a, is not EMP or a list of valid gamma elements." (cadr rule)))))]
           )
     )
   ;rule-with-errors: any -> (listof invalid-rule)
@@ -353,8 +353,8 @@
     (define all-errors
       (cond [(or (not (list? elem)) (not (= (length elem) 2)))
              (list (format "The given rule, ~a, does not have the correct structure. An NDPDA rule must be a list with two elements." elem))]
-            [else (append (validate-ndpda-rule-pop (first elem)) (validate-ndpda-rule-push (second elem)))]))
-    (if (empty? all-errors) '() (list (make-invalid-rule elem all-errors))))
+            [else (append (validate-ndpda-rule-pop (car elem)) (validate-ndpda-rule-push (cadr elem)))]))
+    (if (null? all-errors) '() (list (make-invalid-rule elem all-errors))))
   (flatten (map rule-with-errors elems)))
 
 ;incorrect-ndpda-rules: (listof state) (listof alpha) (listof symbol) (listof pda-rule) --> (listof invalid-rule)
@@ -367,12 +367,12 @@
   ; appropriate error messages for that rule. If the rule is valid, returns
   ; an empty list.
   (define (rule-with-errors rule)
-    (define rule-pop (first rule))
-    (define rule-push (second rule))
+    (define rule-pop (car rule))
+    (define rule-push (cadr rule))
     (define pop-errors
-      (let [(state (first rule-pop))
-            (consumed (second rule-pop))
-            (pop-elems (third rule-pop))]
+      (let [(state (car rule-pop))
+            (consumed (cadr rule-pop))
+            (pop-elems (caddr rule-pop))]
         (append (if (not (member state states))
                     (list (format "The from state, ~a, is not in the given list of states." state))
                     '())
@@ -381,22 +381,22 @@
                     '())
                 (if (equal? pop-elems EMP)
                     '()
-                    (map (lambda (x) (format "The ~a at index ~a of the pop list is not in the given stack alphabet." (first x) (second x)))
-                         (filter (lambda (p) (not (member (first p) gamma))) (with-indices pop-elems))))))
+                    (map (lambda (x) (format "The ~a at index ~a of the pop list is not in the given stack alphabet." (car x) (cadr x)))
+                         (filter (lambda (p) (not (member (car p) gamma))) (with-indices pop-elems))))))
       )
     (define push-errors
-      (let [(state (first rule-push))
-            (push-elems (second rule-push))]
+      (let [(state (car rule-push))
+            (push-elems (cadr rule-push))]
         (append (if (not (member state states))
                     (list (format "The to state, ~a, is not in the given list of states." state))
                     '())
                 (if (equal? push-elems EMP)
                     '()
-                    (map (lambda (x) (format "The ~a at index ~a of the push list is not in the given stack alphabet." (first x) (second x)))
-                         (filter (lambda (p) (not (member (first p) gamma))) (with-indices push-elems))))))
+                    (map (lambda (x) (format "The ~a at index ~a of the push list is not in the given stack alphabet." (car x) (cadr x)))
+                         (filter (lambda (p) (not (member (car p) gamma))) (with-indices push-elems))))))
       )
     (define all-errors (append pop-errors push-errors))
-    (if (empty? all-errors) '() (list (make-invalid-rule rule all-errors))))
+    (if (null? all-errors) '() (list (make-invalid-rule rule all-errors))))
   (flatten (map rule-with-errors rules)))
 
 (define (valid-tm-action? x)
@@ -415,22 +415,22 @@
     (cond [(or (not (list? rule)) (not (= (length rule) 2)))
            (list (format "The first part of the rule, ~a, does not have the correct structure. It must be a list with two elements." rule))]
           [else
-           (append (if (valid-state? (first rule))
+           (append (if (valid-state? (car rule))
                        '()
-                       (list (format "The first element in the first part of the rule, ~a, is not a valid state." (first rule))))
-                   (if (valid-tm-action? (second rule))
+                       (list (format "The first element in the first part of the rule, ~a, is not a valid state." (car rule))))
+                   (if (valid-tm-action? (cadr rule))
                        '()
-                       (list (format "The second element in the first part of the rule, ~a, is not a symbol." (second rule)))))]))
+                       (list (format "The second element in the first part of the rule, ~a, is not a symbol." (cadr rule)))))]))
   (define (validate-tm-write rule)
     (cond [(or (not (list? rule)) (not (= (length rule) 2)))
            (list (format "The second part of the rule, ~a, does not have the correct structure. It must be a list with two elements." rule))]
           [else
-           (append (if (valid-state? (first rule))
+           (append (if (valid-state? (car rule))
                        '()
-                       (list (format "The first element in the second part of the rule, ~a, is not a valid state." (first rule))))
-                   (if (valid-tm-action? (second rule))
+                       (list (format "The first element in the second part of the rule, ~a, is not a valid state." (car rule))))
+                   (if (valid-tm-action? (cadr rule))
                        '()
-                       (list (format "The second element in the second part of the rule, ~a, is not a symbol." (second rule)))))]))
+                       (list (format "The second element in the second part of the rule, ~a, is not a symbol." (cadr rule)))))]))
   ;rule-with-errors: any --> (listof invalid-rule)
   ;purpose: If there is anything wrong with the structure of the given element,
   ; which makes it an improperly formatted tm rule, returns a list containing
@@ -440,8 +440,8 @@
     (define all-errors
       (cond [(or (not (list? elem)) (not (= (length elem) 2)))
              (list (format "The given rule, ~a, does not have the correct structure. A TM rule must be a list with two elements." elem))]
-            [else (append (validate-tm-read (first elem)) (validate-tm-write (second elem)))]))
-    (if (empty? all-errors) '() (list (make-invalid-rule elem all-errors))))
+            [else (append (validate-tm-read (car elem)) (validate-tm-write (cadr elem)))]))
+    (if (null? all-errors) '() (list (make-invalid-rule elem all-errors))))
   (flatten (map rule-with-errors elems)))
 
 ;incorrect-tm-rules: (listof state) (listof alpha) (listof tm-rule) --> (listof invalid-rule)
@@ -455,24 +455,24 @@
   ; appropriate error messages for that rule. If the rule is valid, returns
   ; an empty list.
   (define (rule-with-errors rule)
-    (define rule-from (first rule))
-    (define rule-to (second rule))
+    (define rule-from (car rule))
+    (define rule-to (cadr rule))
     (define from-errors
-      (append (if (not (member (first rule-from) states))
-                  (list (format "The from state, ~a, is not in the given list of states." (first rule-from)))
+      (append (if (not (member (car rule-from) states))
+                  (list (format "The from state, ~a, is not in the given list of states." (car rule-from)))
                   '())
-              (if (not (member (second rule-from) (cons BLANK (cons LM sigma))))
-                  (list (format "The read symbol, ~a, must be in the given input alphabet, BLANK, or LM." (second rule-from)))
+              (if (not (member (cadr rule-from) (cons BLANK (cons LM sigma))))
+                  (list (format "The read symbol, ~a, must be in the given input alphabet, BLANK, or LM." (cadr rule-from)))
                   '())))
     (define to-errors
-      (append (if (not (member (first rule-to) states))
-                  (list (format "The to state, ~a, is not in the given list of states." (first rule-to)))
+      (append (if (not (member (car rule-to) states))
+                  (list (format "The to state, ~a, is not in the given list of states." (car rule-to)))
                   '())
-              (if (not (member (second rule-to) (cons RIGHT (cons LEFT (cons BLANK sigma)))))
-                  (list (format "The action ~a must be in the given input alphabet, LEFT, RIGHT, or BLANK." (second rule-to)))
+              (if (not (member (cadr rule-to) (cons RIGHT (cons LEFT (cons BLANK sigma)))))
+                  (list (format "The action ~a must be in the given input alphabet, LEFT, RIGHT, or BLANK." (cadr rule-to)))
                   '())))
     (define all-errors (append from-errors to-errors))
-    (if (empty? all-errors) '() (list (make-invalid-rule rule all-errors))))
+    (if (null? all-errors) '() (list (make-invalid-rule rule all-errors))))
   (flatten (map rule-with-errors rules)))
 
 ;incorrect-mttm-rule-structures: (listof any) natnum --> (listof invalid-rule)
@@ -484,26 +484,26 @@
     (cond [(or (not (list? rule)) (not (= (length rule) 2)))
            (list (format "The first part of the rule, ~a, does not have the correct structure. It must be a list with two elements." rule))]
           [else
-           (append (if (valid-state? (first rule))
+           (append (if (valid-state? (car rule))
                        '()
-                       (list (format "The first element in the first part of the rule, ~a, is not a valid state." (first rule))))
-                   (if (and (list? (second rule))
-                            (= (length (second rule)) num-tapes)
-                            (andmap valid-tm-action? (second rule)))
+                       (list (format "The first element in the first part of the rule, ~a, is not a valid state." (car rule))))
+                   (if (and (list? (cadr rule))
+                            (= (length (cadr rule)) num-tapes)
+                            (andmap valid-tm-action? (cadr rule)))
                        '()
-                       (list (format "The second element in the first part of the rule, ~a, is not a list of ~a symbols." (second rule) num-tapes))))]))
+                       (list (format "The second element in the first part of the rule, ~a, is not a list of ~a symbols." (cadr rule) num-tapes))))]))
   (define (validate-mttm-write rule)
     (cond [(or (not (list? rule)) (not (= (length rule) 2)))
            (list (format "The second part of the rule, ~a, does not ahve the correct structure. It must be a list with two elements." rule))]
           [else
-           (append (if (valid-state? (first rule))
+           (append (if (valid-state? (car rule))
                        '()
-                       (list (format "The first element in the second part of the rule, ~a, is not a valid state." (first rule))))
-                   (if (and (list (second rule))
-                            (= (length (second rule)) num-tapes)
-                            (andmap valid-tm-action? (second rule)))
+                       (list (format "The first element in the second part of the rule, ~a, is not a valid state." (car rule))))
+                   (if (and (list (cadr rule))
+                            (= (length (cadr rule)) num-tapes)
+                            (andmap valid-tm-action? (cadr rule)))
                        '()
-                       (list (format "The second element in the second part of the rule, ~a, is not a list of ~a symbols." (second rule) num-tapes))))]))
+                       (list (format "The second element in the second part of the rule, ~a, is not a list of ~a symbols." (cadr rule) num-tapes))))]))
   ;rule-with-errors: any --> (listof invalid-rule)
   ;purpose: If there is anything wrong with the structure of the given element,
   ; which makes it an improperly formatted ndpda rule, returns a list containing
@@ -513,8 +513,8 @@
     (define all-errors
       (cond [(or (not (list? elem)) (not (= (length elem) 2)))
              (list (format "The given rule, ~a, does not have the correct structure. A MTTM rule must be a list with two elements." elem))]
-            [else (append (validate-mttm-read (first elem)) (validate-mttm-write (second elem)))]))
-    (if (empty? all-errors) '() (list (make-invalid-rule elem all-errors))))
+            [else (append (validate-mttm-read (car elem)) (validate-mttm-write (cadr elem)))]))
+    (if (null? all-errors) '() (list (make-invalid-rule elem all-errors))))
   (flatten (map rule-with-errors elems)))
     
 ;incorrect-mttm-rules: (listof state) (listof alpha) (listof mttm-rule) --> (listof invalid-rule)
@@ -529,34 +529,34 @@
   ; appropriate error messages for that rule. If the rule is valid, returns
   ; an empty list.
   (define (rule-with-errors rule)
-    (define rule-from (first rule))
-    (define rule-to (second rule))
+    (define rule-from (car rule))
+    (define rule-to (cadr rule))
     (define from-errors
-      (let [(state (first rule-from))
-            (tape-reads (second rule-from))]
+      (let [(state (car rule-from))
+            (tape-reads (cadr rule-from))]
         (append (if (not (member state states))
                     (list (format "The from state, ~a, is not in the given list of states." state))
                     '())
                 (map (lambda (x)
                        (format "The read symbol, ~a, on tape ~a must be in the given input alphabet, BLANK, or LM."
-                               (first x)
-                               (second x)))
-                     (filter (lambda (r) (not (member (first r) (cons BLANK (cons LM sigma))))) (with-indices tape-reads)))))
+                               (car x)
+                               (cadr x)))
+                     (filter (lambda (r) (not (member (car r) (cons BLANK (cons LM sigma))))) (with-indices tape-reads)))))
       )
     (define to-errors
-      (let [(state (first rule-to))
-            (tm-actions (second rule-to))]
+      (let [(state (car rule-to))
+            (tm-actions (cadr rule-to))]
         (append (if (not (member state states))
                     (list (format "The to state, ~a, is not in the given list of states." state))
                     '())
                 (map (lambda (x)
                        (format "The action ~a on tape ~a must be in the given input alphabet, LEFT, RIGHT, or BLANK."
-                               (first x)
-                               (second x)))
-                     (filter (lambda (r) (not (member (first r) (cons RIGHT (cons LEFT (cons BLANK sigma)))))) (with-indices tm-actions)))))
+                               (car x)
+                               (cadr x)))
+                     (filter (lambda (r) (not (member (car r) (cons RIGHT (cons LEFT (cons BLANK sigma)))))) (with-indices tm-actions)))))
       )
     (define all-errors (append from-errors to-errors))
-    (if (empty? all-errors) '() (list (make-invalid-rule rule all-errors))))
+    (if (null? all-errors) '() (list (make-invalid-rule rule all-errors))))
   (flatten (map rule-with-errors rules)))
 
 ;incorrect-members-ndpda (listof states) sigma gamma (listof ndpda-rules) --> listof ndpdarules
@@ -641,18 +641,18 @@
       (cond [(or (not (list? elem)) (not (= (length elem) 3)))
              (list (format "The given rule, ~a, does not have the correct structure. A grammar rule must be a list with three elements." elem))]
             [else
-             (append (if (symbol? (first elem))
+             (append (if (symbol? (car elem))
                          '()
-                         (list (format "The first element in the rule, ~a, is not a symbol." (first elem))))
-                     (if (equal? ARROW (second elem))
+                         (list (format "The first element in the rule, ~a, is not a symbol." (car elem))))
+                     (if (equal? ARROW (cadr elem))
                          '()
-                         (list (format "The second element in the rule, ~a, is not the expected ARROW symbol." (second elem))))
-                     (if (symbol? (third elem))
+                         (list (format "The second element in the rule, ~a, is not the expected ARROW symbol." (cadr elem))))
+                     (if (symbol? (caddr elem))
                          '()
-                         (list (format "The third element in the rule, ~a, is not a symbol with 2 or less elements." (third elem)))))]
+                         (list (format "The third element in the rule, ~a, is not a symbol with 2 or less elements." (caddr elem)))))]
             )
       )
-    (if (empty? all-errors) '() (list (make-invalid-rule elem all-errors)))
+    (if (null? all-errors) '() (list (make-invalid-rule elem all-errors)))
     )
   (flatten (map rule-with-errors elems))
   )
@@ -674,8 +674,8 @@
   ; appropriate error messages for that rule. If the rule is valid, returns
   ; an empty list.
   (define (rule-with-errors rule)
-    (define from-state (first rule))
-    (define to-state (third rule))
+    (define from-state (car rule))
+    (define to-state (caddr rule))
     (define all-errors
       (append (if (not (member from-state states))
                   (list (format "The left hand side, ~a, is not a single nonterminal from the list of nonterminals." from-state))
@@ -683,7 +683,7 @@
               (if (not (valid-rg-right? to-state states sigma))
                   (list (format "The right hand side, ~a, is not an alphabet character, or combination of valid defined nonterminals and terminals." to-state))
                   '())))
-    (if (empty? all-errors) '() (list (make-invalid-rule rule all-errors))))
+    (if (null? all-errors) '() (list (make-invalid-rule rule all-errors))))
   (flatten (map rule-with-errors rules)))
 
 ;;correct-members-cfg?: (listof nonterminals) sigma (listof dfa-rules) --> boolean
@@ -703,8 +703,8 @@
   ; appropriate error messages for that rule. If the rule is valid, returns
   ; an empty list.
   (define (rule-with-errors rule)
-    (define from-state (first rule))
-    (define to-state (third rule))
+    (define from-state (car rule))
+    (define to-state (caddr rule))
     (define all-errors
       (append (if (not (member from-state states))
                   (list (format "The left hand side, ~a, is not a single nonterminal from the list of nonterminals." from-state))
@@ -714,7 +714,7 @@
                                 (invalid-cfg-right? to-state states sigma)
                                 to-state))
                   '())))
-    (if (empty? all-errors) '() (list (make-invalid-rule rule all-errors))))
+    (if (null? all-errors) '() (list (make-invalid-rule rule all-errors))))
   (flatten (map rule-with-errors rules)))
 
 ;;correct-members-csg?: (listof nonterminals) sigma (listof dfa-rules) --> boolean
@@ -734,8 +734,8 @@
   ; appropriate error messages for that rule. If the rule is valid, returns
   ; an empty list.
   (define (rule-with-errors rule)
-    (define from-state (first rule))
-    (define to-state (third rule))
+    (define from-state (car rule))
+    (define to-state (caddr rule))
     (define all-errors
       (append (if (not (valid-csg-left? from-state states sigma))
                   (list (format "The following members ~a of the left hand side, ~a, is not a combination of valid defined nonterminals and terminals."
@@ -747,318 +747,5 @@
                                 (invalid-cfg-right? to-state states sigma)
                                 to-state))
                   '())))
-    (if (empty? all-errors) '() (list (make-invalid-rule rule all-errors))))
+    (if (null? all-errors) '() (list (make-invalid-rule rule all-errors))))
   (flatten (map rule-with-errors rules)))
-  
-(module+ test
-  ;add-dead-state-rules tests
-  (check-equal? (add-dead-state-rules `((A a B) (A b B)) '(A B) '(a b))
-                `((A a B) (A b B) (B a ,DEAD) (B b ,DEAD)))
-  (check-equal? (add-dead-state-rules `((A a B) (A b B)) '(A B C) '(a b))
-                `((A a B) (A b B) (B a ,DEAD) (B b ,DEAD) (C a ,DEAD) (C b ,DEAD)))
-    
-  ;valid-rules? tests
-  (check-equal? (valid-rules? (lambda (x) (symbol? x)) '(A B C D)) #t)
-  (check-equal? (valid-rules? (lambda (x) (symbol? x)) `(A (B) C D)) #f)
-    
-  ;invalid-rules tests
-  (check-equal? (invalid-rules (lambda (x) (symbol? x)) '(A B C D)) '())
-  (check-equal? (invalid-rules (lambda (x) (symbol? x)) `(A (B) C D)) `((B)))
-    
-  ;valid-dfa-rule-structure? tests
-  (check-equal? (valid-dfa-rule-structure? '(A a B)) #t)
-  (check-equal? (valid-dfa-rule-structure? '(A a a B)) #f)
-  (check-equal? (valid-dfa-rule-structure? '(a a a)) #t)
-  (check-equal? (valid-dfa-rule-structure? `((A) b b)) #t)
-    
-  ;valid-ndpda-rule-structure? tests
-  (check-equal? (valid-ndpda-rule-structure? `((A a (B)) (A (b)))) #t)
-  (check-equal? (valid-ndpda-rule-structure? `((a a (a)) (1 (b)))) #t)
-  (check-equal? (valid-ndpda-rule-structure? `((1 1 a) (A (b)))) #f)
-  (check-equal? (valid-ndpda-rule-structure? `((1 1 (a)) (A ))) #f)
-  (check-equal? (valid-ndpda-rule-structure? `((A a) (A b))) #f)
-    
-  ;valid-tm-rule-structure? tests
-  (check-equal? (valid-tm-rule-structure? `((A a) (A b))) #t)
-  (check-equal? (valid-tm-rule-structure? `(((A) a) (A 1))) #t)
-  (check-equal? (valid-tm-rule-structure? `((A a (A b)))) #f)
-  (check-equal? (valid-tm-rule-structure? `(a a a)) #f)
-
-  ;valid-mttm-rule-structure? tests
-  (check-equal? ((valid-mttm-rule-structure? 3) `((A (a b ,BLANK)) (B (,RIGHT ,BLANK b)))) #t)
-  (check-equal? ((valid-mttm-rule-structure? 2) `(a b)) #f)
-  (check-equal? ((valid-mttm-rule-structure? 1) `((A a) (B b))) #f)
-
-  ;functional? tests
-  (check-equal? (functional? `((A a B) (A b B)) '(A B) '(a b) '()) #t)
-  (check-equal? (functional? `((A a B) (A b B)) '(A B) '(a b) 'no-dead) #f)
-  (check-equal? (functional? `((A a B) (A b B) (B a B) (B b A)) '(A B) '(a b) 'no-dead) #t)
-
-
-  ;missing-functional tests
-  (check-equal? (missing-functional `((A a B) (A b B)) '(A B) '(a b)) `((B a) (B b)))
-  (check-equal? (missing-functional `((A a B) (A b B) (B a B) (B b A)) '(A B) '(a b)) '())
-    
-  ;check-duplicates-dfa tests
-  (check-equal? (check-duplicates-dfa `((A a B) (A b B) (B a B) (B b A))) #f)
-  (check-equal? (check-duplicates-dfa `((A a B) (A b B) (B a B) (B b A) (B b B))) `((B b)))
-    
-  ;correct-members-dfa? tests
-  (check-equal? (correct-members-dfa? '(A B) '(a b) `((A b B) (B a A))) #t)
-  (check-equal? (correct-members-dfa? '(A B) '(a b) `()) #t)
-  (check-equal? (correct-members-dfa? '(A B) '(a b) `((A b B) (B a A) (C b A))) #f)
-    
-  ;correct-members-ndpda? tests
-  (check-equal? (correct-members-ndpda? '(A B)
-                                        '(a b)
-                                        '(c d)
-                                        `(((A b (c)) (B (d))))
-                                        ) #t)
-  (check-equal? (correct-members-ndpda? '(A B)
-                                        '(a b)
-                                        '(c d)
-                                        `(((C b (c)) (B (d))))
-                                        ) #f)
-  (check-equal? (correct-members-ndpda? '(A B)
-                                        '(a b)
-                                        '(c d)
-                                        `(((A c (c)) (B (d))))
-                                        ) #f)
-  (check-equal? (correct-members-ndpda? '(A B)
-                                        '(a b)
-                                        '(c d)
-                                        `(((A b (b)) (B (d))))
-                                        ) #f)
-  (check-equal? (correct-members-ndpda? '(A B)
-                                        '(a b)
-                                        '(c d)
-                                        `(((A b (c)) (C (d))))
-                                        ) #f)
-  (check-equal? (correct-members-ndpda? '(A B)
-                                        '(a b)
-                                        '(c d)
-                                        `(((A b (c)) (B (a))))
-                                        ) #f)
-
-  ;correct-members-tm? tests
-  (check-equal? (correct-members-tm? '(A B)
-                                     '(a b)
-                                     `(((A b) (B b)))) #t)
-  (check-equal? (correct-members-tm? '(A B)
-                                     '(a b)
-                                     `(((A b) (B ,RIGHT)))) #t)
-  (check-equal? (correct-members-tm? '(A B)
-                                     '(a b)
-                                     `(((A b) (B ,LEFT)))) #t)
-  (check-equal? (correct-members-tm? '(A B)
-                                     '(a b)
-                                     `(((A b) (B ,BLANK)))) #t)
-  (check-equal? (correct-members-tm? '(A B)
-                                     '(a b)
-                                     `(((A c) (B ,BLANK)))) #f)
-  (check-equal? (correct-members-tm? '(A B)
-                                     '(a b)
-                                     `(((C b) (B ,BLANK)))) #f)
-  (check-equal? (correct-members-tm? '(A B)
-                                     '(a b)
-                                     `(((A c) (C ,BLANK)))) #f)
-
-  ;correct-members-mttm? tests
-  (check-equal? (correct-members-mttm? '(A B)
-                                       '(a b)
-                                       '(((A (b b)) (B (a b))))) #t)
-  (check-equal? (correct-members-mttm? '(A B)
-                                       '(a b)
-                                       `(((A (b)) (B (,RIGHT))))) #t)
-  (check-equal? (correct-members-mttm? '(A B)
-                                       '(a b)
-                                       `(((A (b)) (B (,LEFT))))) #t)
-  (check-equal? (correct-members-mttm? '(A B)
-                                       '(a b)
-                                       `(((A (b)) (B (,BLANK))))) #t)
-  (check-equal? (correct-members-mttm? '(A B)
-                                       '(a b)
-                                       `(((A (b)) (B (,BLANK)))
-                                         ((A (c)) (B (,BLANK))))) #f)
-  (check-equal? (correct-members-mttm? '(A B)
-                                       '(a b)
-                                       `(((A (b)) (B (,BLANK)))
-                                         ((C (b)) (B (,BLANK))))) #f)
-  (check-equal? (correct-members-mttm? '(A B)
-                                       '(a b)
-                                       `(((A (b)) (B (,BLANK)))
-                                         ((A (c)) (C (,BLANK))))) #f)
-  (check-equal? (correct-members-mttm? '(A B)
-                                       '(a b)
-                                       `(((A (b)) (B (,BLANK)))
-                                         ((A (c)) (B (d))))) #f)
-    
-  ;incorrect-members-dfa tests
-  (check-equal? (incorrect-members-dfa '(A B) '(a b) `((A b B) (B a A))) '())
-  (check-equal? (incorrect-members-dfa '(A B) '(a b) `()) '())
-  (check-equal? (incorrect-members-dfa '(A B) '(a b) `((A b B) (B a A) (C b A))) '((C b A)))
-
-  ;incorrect-dfa-rules tests
-  (check-equal? (incorrect-dfa-rules '(A B) '(a b) `((A b B) (B a A))) '())
-  (check-equal? (incorrect-dfa-rules '(A B) '(a b) `((C d E) (A f G)))
-                (list
-                 (make-invalid-rule '(C d E)
-                                    '("The from state, C, is not in the given list of states."
-                                      "The consumed letter, d, is not in the given input alphabet."
-                                      "The to state, E, is not in the given list of states."))
-                 (make-invalid-rule '(A f G)
-                                    '("The consumed letter, f, is not in the given input alphabet."
-                                      "The to state, G, is not in the given list of states."))))
-    
-  ;incorrect-members-ndpda tests
-  (check-equal? (incorrect-members-ndpda '(A B)
-                                         '(a b)
-                                         '(c d)
-                                         `(((A b (c)) (B (d))))
-                                         ) '())
-  (check-equal? (incorrect-members-ndpda '(A B)
-                                         '(a b)
-                                         '(c d)
-                                         `(((A b (c)) (B (d)))
-                                           ((C b (c)) (B (d))))
-                                         ) `(((C b (c)) (B (d)))))
-  (check-equal? (incorrect-members-ndpda '(A B)
-                                         '(a b)
-                                         '(c d)
-                                         `(((A b (c)) (B (d)))
-                                           ((A c (c)) (B (d))))
-                                         ) `(((A c (c)) (B (d)))))
-  (check-equal? (incorrect-members-ndpda '(A B)
-                                         '(a b)
-                                         '(c d)
-                                         `(((A b (c)) (B (d)))
-                                           ((A b (b)) (B (d))))
-                                         ) `(((A b (b)) (B (d)))))
-  (check-equal? (incorrect-members-ndpda '(A B)
-                                         '(a b)
-                                         '(c d)
-                                         `(((A b (c)) (B (d)))
-                                           ((A b (c)) (C (d))))
-                                         ) `(((A b (c)) (C (d)))))
-  (check-equal? (incorrect-members-ndpda '(A B)
-                                         '(a b)
-                                         '(c d)
-                                         `(((A b (c)) (B (d)))
-                                           ((A b (c)) (B (a))))
-                                         ) `(((A b (c)) (B (a)))))
-
-  ;incorrect-ndpda-rules tests
-  (check-equal? (incorrect-ndpda-rules '(A B)
-                                       '(a b)
-                                       '(c d)
-                                       `(((A b (c)) (B (d)))))
-                '())
-  (check-equal? (incorrect-ndpda-rules '(A B)
-                                       '(a b)
-                                       '(c d)
-                                       `(((D e (f)) (G (,EMP)))))
-                (list (make-invalid-rule `((D e (f)) (G (,EMP)))
-                                         (list
-                                          "The from state, D, is not in the given list of states."
-                                          "e is not in the given input alphabet."
-                                          "The f at index 0 of the pop list is not in the given stack alphabet."
-                                          "The to state, G, is not in the given list of states."
-                                          "The ε at index 0 of the push list is not in the given stack alphabet."))))
-
-  ;incorrect-tm-rules tests
-  (check-equal? (incorrect-tm-rules '(A B C)
-                                    '(a b)
-                                    `(((A b) (B b))
-                                      ((B ,LM) (A ,LEFT))
-                                      ((C ,BLANK) (B ,RIGHT))))
-                '())
-  (check-equal? (incorrect-tm-rules '(A B C)
-                                    '(a b)
-                                    `(((D ,LEFT) (E ,EMP))))
-                (list (make-invalid-rule `((D ,LEFT) (E ,EMP))
-                                         '("The from state, D, is not in the given list of states."
-                                           "The read symbol, L, must be in the given input alphabet, BLANK, or LM."
-                                           "The to state, E, is not in the given list of states."
-                                           "The action ε must be in the given input alphabet, LEFT, RIGHT, or BLANK."))))
-
-  ;incorrect-mttm-rules tests
-  (check-equal? (incorrect-mttm-rules '(A B C)
-                                      '(a b)
-                                      `(((A (,LM ,BLANK)) (B (a b)))
-                                        ((B (a b)) (C (,LEFT ,RIGHT)))))
-                '())
-  (check-equal? (incorrect-mttm-rules '(A B C)
-                                      '(a b)
-                                      `(((D (,LEFT ,EMP)) (E (f g)))))
-                (list (make-invalid-rule `((D (,LEFT ,EMP)) (E (f g)))
-                                         '("The from state, D, is not in the given list of states."
-                                           "The read symbol, L, on tape 0 must be in the given input alphabet, BLANK, or LM."
-                                           "The read symbol, ε, on tape 1 must be in the given input alphabet, BLANK, or LM."
-                                           "The to state, E, is not in the given list of states."
-                                           "The action f on tape 0 must be in the given input alphabet, LEFT, RIGHT, or BLANK."
-                                           "The action g on tape 1 must be in the given input alphabet, LEFT, RIGHT, or BLANK."))))
-    
-  ;incorrect-members-tm tests
-  (check-equal? (incorrect-members-tm '(A B)
-                                      '(a b)
-                                      `(((A b) (B b)))) '())
-  (check-equal? (incorrect-members-tm '(A B)
-                                      '(a b)
-                                      `(((A b) (B ,RIGHT)))) '())
-  (check-equal? (incorrect-members-tm '(A B)
-                                      '(a b)
-                                      `(((A b) (B ,LEFT)))) '())
-  (check-equal? (incorrect-members-tm '(A B)
-                                      '(a b)
-                                      `(((A b) (B ,BLANK)))) '())
-  (check-equal? (incorrect-members-tm '(A B)
-                                      '(a b)
-                                      `(((A b) (B ,BLANK))
-                                        ((A c) (B ,BLANK)))) `(((A c) (B ,BLANK))))
-  (check-equal? (incorrect-members-tm '(A B)
-                                      '(a b)
-                                      `(((A b) (B ,BLANK))
-                                        ((C b) (B ,BLANK)))) `(((C b) (B ,BLANK))))
-  (check-equal? (incorrect-members-tm '(A B)
-                                      '(a b)
-                                      `(((A b) (B ,BLANK))
-                                        ((A c) (C ,BLANK)))) `(((A c) (C ,BLANK))))
-  (check-equal? (incorrect-members-tm '(A B)
-                                      '(a b)
-                                      `(((A b) (B ,BLANK))
-                                        ((A c) (B d)))) `(((A c) (B d))))
-
-  ;incorrect-members-mttm tests
-  (check-equal? (incorrect-members-mttm '(A B)
-                                        '(a b)
-                                        '(((A (b b)) (B (a b))))) '())
-  (check-equal? (incorrect-members-mttm '(A B)
-                                        '(a b)
-                                        `(((A (b)) (B (,RIGHT))))) '())
-  (check-equal? (incorrect-members-mttm '(A B)
-                                        '(a b)
-                                        `(((A (b)) (B (,LEFT))))) '())
-  (check-equal? (incorrect-members-mttm '(A B)
-                                        '(a b)
-                                        `(((A (b)) (B (,BLANK))))) '())
-  (check-equal? (incorrect-members-mttm '(A B)
-                                        '(a b)
-                                        `(((A (b)) (B (,BLANK)))
-                                          ((A (c)) (B (,BLANK)))))
-                `(((A (c)) (B (,BLANK)))))
-  (check-equal? (incorrect-members-mttm '(A B)
-                                        '(a b)
-                                        `(((A (b)) (B (,BLANK)))
-                                          ((C (b)) (B (,BLANK)))))
-                `(((C (b)) (B (,BLANK)))))
-  (check-equal? (incorrect-members-mttm '(A B)
-                                        '(a b)
-                                        `(((A (b)) (B (,BLANK)))
-                                          ((A (c)) (C (,BLANK)))))
-                `(((A (c)) (C (,BLANK)))))
-  (check-equal? (incorrect-members-mttm '(A B)
-                                        '(a b)
-                                        `(((A (b)) (B (,BLANK)))
-                                          ((A (c)) (B (d)))))
-                `(((A (c)) (B (d)))))
-  )

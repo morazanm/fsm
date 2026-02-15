@@ -1,8 +1,7 @@
 #lang racket/base
 
 (require "constants.rkt"
-         "misc.rkt"
-         "word.rkt")
+         "misc.rkt")
 
 (provide (struct-out cfg-rule)
          (struct-out cfg)

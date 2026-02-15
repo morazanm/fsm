@@ -1,7 +1,11 @@
 #lang racket/base
 (require (for-syntax syntax/parse
                      racket/base
-                     "viz-state.rkt")
+                     "viz-state.rkt"
+                     )
+         (only-in racket/gui
+                  get-display-size
+                  get-display-count)
          "../2htdp/universe.rkt"
          "../2htdp/image.rkt"
          "viz-state.rkt"

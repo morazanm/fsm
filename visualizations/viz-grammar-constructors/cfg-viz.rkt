@@ -67,8 +67,8 @@
 (define (create-yield-tree levels g-start)
   (foldl (lambda (val accum)
            (begin
-             (set-tree-subtrees! (dfs accum (first (first val)))
-                                 (map (lambda (edge) (tree (second edge) '())) val))
+             (set-tree-subtrees! (dfs accum (car (car val)))
+                                 (map (lambda (edge) (tree (cadr edge) '())) val))
              accum))
          (tree g-start '())
          levels))
@@ -91,7 +91,7 @@
     (foldl (lambda (node yield)
              (cond
                [(equal? (undo-renaming (tree-value node)) EMP) yield]
-               [(empty? (tree-subtrees node)) (append yield (list (tree-value node)))]
+               [(null? (tree-subtrees node)) (append yield (list (tree-value node)))]
                [else (append yield (get-yield-helper node))]))
            '()
            (tree-subtrees subtree)))
@@ -99,7 +99,7 @@
           (foldl (lambda (node yield)
                    (cond
                      [(equal? (undo-renaming (tree-value node)) EMP) yield]
-                     [(empty? (tree-subtrees node)) (append yield (list (tree-value node)))]
+                     [(null? (tree-subtrees node)) (append yield (list (tree-value node)))]
                      [else (append yield (get-yield-helper node))]))
                  '()
                  (tree-subtrees subtree))))
@@ -115,34 +115,34 @@
 (define (check-all-invariants tree nonterminals-to-check invariants)
   (define (check-invariant invariant-nt invariant-func)
     (define (find-all-invariant-nodes nts)
-      (if (empty? nts)
+      (if (null? nts)
           '()
-          (if (equal? invariant-nt (undo-renaming (first nts)))
-              (cons (first nts) (find-all-invariant-nodes (rest nts)))
-              (find-all-invariant-nodes (rest nts)))))
+          (if (equal? invariant-nt (undo-renaming (car nts)))
+              (cons (car nts) (find-all-invariant-nodes (cdr nts)))
+              (find-all-invariant-nodes (cdr nts)))))
     (define (check-all-invariant-nodes nonterminals invar-func broken-nodes)
-      (if (empty? nonterminals)
-          (if (empty? broken-nodes) #t broken-nodes)
-          (if (invariant-holds? (dfs tree (first nonterminals)) invar-func)
-              (check-all-invariant-nodes (rest nonterminals) invar-func broken-nodes)
-              (check-all-invariant-nodes (rest nonterminals)
+      (if (null? nonterminals)
+          (if (null? broken-nodes) #t broken-nodes)
+          (if (invariant-holds? (dfs tree (car nonterminals)) invar-func)
+              (check-all-invariant-nodes (cdr nonterminals) invar-func broken-nodes)
+              (check-all-invariant-nodes (cdr nonterminals)
                                          invar-func
-                                         (cons (first nonterminals) broken-nodes)))
+                                         (cons (car nonterminals) broken-nodes)))
           ))
     (check-all-invariant-nodes (find-all-invariant-nodes nonterminals-to-check)
                                invariant-func
                                '()))
   (define (check-all-invariants-helper nonterminals-to-check invariants broken-nodes)
-    (if (empty? invariants)
-        (if (empty? broken-nodes) '() broken-nodes)
-        (let ([result (check-invariant (first (first invariants))
-                                       (second (first invariants)))])
+    (if (null? invariants)
+        (if (null? broken-nodes) '() broken-nodes)
+        (let ([result (check-invariant (car (car invariants))
+                                       (cadr (car invariants)))])
           (if (list? result)
               (check-all-invariants-helper nonterminals-to-check
-                                           (rest invariants)
+                                           (cdr invariants)
                                            (append result broken-nodes))
               (check-all-invariants-helper nonterminals-to-check
-                                           (rest invariants)
+                                           (cdr invariants)
                                            broken-nodes)))))
   (check-all-invariants-helper nonterminals-to-check invariants '()))
 
@@ -152,7 +152,7 @@
   ;; levels -> (listof levels)
   ;; Purpose: creates a list containing the levels used for each graph generated in reverse
   (define (create-list-of-levels-helper lvls)
-    (if (empty? lvls) '() (cons lvls (create-list-of-levels-helper (rest lvls)))))
+    (if (null? lvls) '() (cons lvls (create-list-of-levels-helper (cdr lvls)))))
   (create-list-of-levels-helper (reverse levels)))
 
 ;; nonterminal?
@@ -160,16 +160,16 @@
 ;; Purpose: Determines if the first character within the symbol is a uppercase letter,
 ;; and hence a nonterminal
 (define (nonterminal? symb)
-  (char-upper-case? (first (string->list (symbol->string symb)))))
+  (char-upper-case? (car (string->list (symbol->string symb)))))
 
 ;; find-leftmost-nt
 ;; (listof symbol) -> (U #f Symbol)
 ;; Purpose: If it exists, returns the leftmost-nt in the state given. Otherwise, returns false
 (define (find-leftmost-nt state)
-  (if (empty? state)
+  (if (null? state)
       #f
       (if (list? state)
-          (if (nonterminal? (first state)) (first state) (find-leftmost-nt (rest state)))
+          (if (nonterminal? (car state)) (car state) (find-leftmost-nt (cdr state)))
           (if (nonterminal? state) state #f))))
 
 ;; (listof symbol) -> (U #f Symbol)
@@ -182,26 +182,26 @@
 ;; Purpose: To create the rules for leftmost derivation
 (define (create-rules-leftmost w-der)
   (cond
-    [(empty? w-der) '()]
+    [(null? w-der) '()]
     [(= 1 (length w-der)) '()]
     [else
-     (append (list (string-append (symbol->string (find-leftmost-nt (first (first w-der))))
+     (append (list (string-append (symbol->string (find-leftmost-nt (car (car w-der))))
                                   " → "
-                                  (string-join (map symbol->string (second (first w-der))))))
-             (create-rules-leftmost (rest w-der)))]))
+                                  (string-join (map symbol->string (cadr (car w-der))))))
+             (create-rules-leftmost (cdr w-der)))]))
 
 ;; create-rules
 ;; (listof symbol) -> (listof string)
 ;; Purpose: To create the rules for rightmost derivation
 (define (create-rules-rightmost w-der)
   (cond
-    [(empty? w-der) '()]
+    [(null? w-der) '()]
     [(= 1 (length w-der)) '()]
     [else
-     (append (list (string-append (symbol->string (find-rightmost-nt (first (first w-der))))
+     (append (list (string-append (symbol->string (find-rightmost-nt (car (car w-der))))
                                   " → "
-                                  (string-join (map symbol->string (second (first w-der))))))
-             (create-rules-rightmost (rest w-der)))]))
+                                  (string-join (map symbol->string (cadr (car w-der))))))
+             (create-rules-rightmost (cdr w-der)))]))
 
 ;; extract-nodes
 ;; (listof level) -> (listof node)
@@ -257,8 +257,8 @@
   (if (= (length lvl) 1)
       graph
       (make-invis-edges
-       (add-edge graph "" (first lvl) (second lvl) #:atb (hash 'style 'invisible 'arrowhead 'none))
-       (rest lvl))))
+       (add-edge graph "" (car lvl) (cadr lvl) #:atb (hash 'style 'invisible 'arrowhead 'none))
+       (cdr lvl))))
 
 ;; graph (listof edges) -> graph
 ;; Creates invisible edges so that ordering of the yield nodes is always maintained
@@ -270,13 +270,13 @@
 ;; Purpose: To make an edge graph
 (define (make-edge-graph graph loe hedges)
   (foldl (lambda (rules result)
-           (if (empty? (first rules))
+           (if (null? (car rules))
                result
                (foldl (lambda (rule result)
                         (add-edge result
                                   ""
-                                  (first rule)
-                                  (second rule)
+                                  (car rule)
+                                  (cadr rule)
                                   #:atb (hash 'fontsize
                                               FONT-SIZE
                                               'style
@@ -299,12 +299,12 @@
          [reversed-levels (reverse levels)]
          [hedges (dgrph-hedges a-dgrph)]
          [invariant-nts (map first invariants)]
-         [producing-nodes (map (lambda (edge) (first edge)) (append* levels))]
+         [producing-nodes (map (lambda (edge) (car edge)) (append* levels))]
          [invariant-nodes
           (cons root-node
                 (append-map
                  (lambda (lvl)
-                   (let* ([nodes (map (lambda (edge) (second edge)) lvl)]
+                   (let* ([nodes (map (lambda (edge) (cadr edge)) lvl)]
                           [invar-nodes (filter (lambda (node) (member node producing-nodes)) nodes)])
                      (cond
                        [(equal? derv-order 'left) (reverse invar-nodes)]
@@ -312,9 +312,9 @@
                        [else invar-nodes])))
                  levels))]
          [broken-invariant?
-          (check-all-invariants (first (dgrph-p-yield-trees a-dgrph)) invariant-nodes invariants)]
-         [hedge-nodes (map (λ (x) (if (empty? x) '() (second x))) hedges)]
-         [yield-node (map (λ (x) (if (empty? x) '() (first x))) hedges)])
+          (check-all-invariants (car (dgrph-p-yield-trees a-dgrph)) invariant-nodes invariants)]
+         [hedge-nodes (map (λ (x) (if (null? x) '() (cadr x))) hedges)]
+         [yield-node (map (λ (x) (if (null? x) '() (car x))) hedges)])
     (make-invisible-edge-graph
      (make-edge-graph
       (make-node-graph (create-graph 'dgraph #:atb (hash 'rankdir "TB" 'font "Sans" 'ordering "in"))
@@ -333,12 +333,12 @@
 (define (create-invariant-nodes a-dgrph invariants root-node derv-order)
   (let* ([nodes (dgrph-nodes a-dgrph)]
          [levels (map reverse (dgrph-ad-levels a-dgrph))]
-         [producing-nodes (map (lambda (edge) (first edge)) (append* levels))]
+         [producing-nodes (map (lambda (edge) (car edge)) (append* levels))]
          [invariant-nodes
           (let ([all-but-starting-nt
                  (append-map
                   (lambda (lvl)
-                    (let* ([nodes (map (lambda (edge) (second edge)) lvl)]
+                    (let* ([nodes (map (lambda (edge) (cadr edge)) lvl)]
                            [invar-nodes (filter (lambda (node) (member node producing-nodes)) nodes)])
                       (cond
                         [(equal? derv-order 'left) (reverse invar-nodes)]
@@ -350,23 +350,23 @@
                 (cons root-node all-but-starting-nt)
                 all-but-starting-nt))]
          [broken-invariants
-          (check-all-invariants (first (dgrph-p-yield-trees a-dgrph)) invariant-nodes invariants)])
+          (check-all-invariants (car (dgrph-p-yield-trees a-dgrph)) invariant-nodes invariants)])
     broken-invariants))
 
 ;; create-dgraphs
 ;; dgrph (listof dgrph) -> (listof dgrph)
 ;; Purpose: To create all the dgrphs for graph imgs
 (define (create-dgrphs a-dgrph lod)
-  (if (empty? (dgrph-up-levels a-dgrph))
+  (if (null? (dgrph-up-levels a-dgrph))
       (cons a-dgrph lod)
-      (let* ([new-up-levels (rest (dgrph-up-levels a-dgrph))]
-             [new-ad-levels (cons (first (dgrph-up-levels a-dgrph)) (dgrph-ad-levels a-dgrph))]
+      (let* ([new-up-levels (cdr (dgrph-up-levels a-dgrph))]
+             [new-ad-levels (cons (car (dgrph-up-levels a-dgrph)) (dgrph-ad-levels a-dgrph))]
              [new-nodes (extract-nodes new-ad-levels)]
-             [new-hedges (first (dgrph-up-levels a-dgrph))]
-             [new-up-rules (rest (dgrph-up-rules a-dgrph))]
-             [new-p-rules (cons (first (dgrph-up-rules a-dgrph)) (dgrph-p-rules a-dgrph))]
-             [new-up-yield-trees (rest (dgrph-up-yield-trees a-dgrph))]
-             [new-p-yield-trees (cons (first (dgrph-up-yield-trees a-dgrph))
+             [new-hedges (car (dgrph-up-levels a-dgrph))]
+             [new-up-rules (cdr (dgrph-up-rules a-dgrph))]
+             [new-p-rules (cons (car (dgrph-up-rules a-dgrph)) (dgrph-p-rules a-dgrph))]
+             [new-up-yield-trees (cdr (dgrph-up-yield-trees a-dgrph))]
+             [new-p-yield-trees (cons (car (dgrph-up-yield-trees a-dgrph))
                                       (dgrph-p-yield-trees a-dgrph))])
         (create-dgrphs (dgrph new-up-levels
                               new-ad-levels
@@ -382,7 +382,7 @@
 ;; derivation -> derivation-list
 ;; Purpose: To turn the derivation into a list
 (define (w-der-with-rules derivation)
-  (map (lambda (state) (list (symbol->fsmlos (first state)) (symbol->fsmlos (second state))))
+  (map (lambda (state) (list (symbol->fsmlos (car state)) (symbol->fsmlos (cadr state))))
        (filter (λ (x) (not (equal? x '->))) derivation)))
 
 ;; rename-symb
@@ -405,51 +405,53 @@
 (define (generate-levels-list-helper current-state rules prev-states used-names find-nt-func)
   ;; The list of generated rules used contains an empty list denoting no more rules, hence
   ;; the need to call "first" first
-  (if (empty? (first rules))
-      ;; If theres no more rules to apply than computation is done
-      '()
-      (let ([current-nt (find-nt-func current-state)])
-        (cond [(boolean? current-nt)
-               ;; If its fails to find a nonterminal in the current state, attempt to go back up
-               ;; the stack to a previous state
-               (if (empty? prev-states)
-                   ;; If there are no more previous states, than the computation is done
-                   '()
-                   (let* ([prev-state (first prev-states)]
-                          [prev-current-nt (find-nt-func prev-state)]
-                          ;; Need to remove the leftmost-nt from the previous state since we just went
-                          ;; down its respective path
-                          ;; when we call the function again with it removed, the next nt will be processed
-                          [updated-states (filter (lambda (x) (not (eq? prev-current-nt x)))
-                                                  prev-state)])
-                     ;; Don't reduce the number of rules here since one was not sucessfully applied, only
-                     ;; remove the state we popped off the stack
-                     (generate-levels-list-helper updated-states
-                                                  rules
-                                                  (rest prev-states)
-                                                  used-names
-                                                  find-nt-func)))]
-              [else
-               ;; Just sticks a number after the symbol itself, uses a hash table to keep track of what numbers
-               ;; were already used for a specific symbol
-               (define renamed-states (map (lambda (st) (rename-symb used-names st)) (first rules)))
-               ;; Creates a new level by taking the current rule that is meant to be applied at this point of
-               ;; the derivation
-               ;; and creating an edge between each of the elements within and the current nonterminal being
-               ;;processed
-               (define (new-level start)
-                 (map (lambda (st) (list start st)) renamed-states))
-               (cons (new-level current-nt)
-                     (generate-levels-list-helper renamed-states
-                                                  (rest rules)
-                                                  (cons current-state prev-states)
-                                                  used-names
-                                                  find-nt-func))]))))
+  (cond [(null? (car rules))
+         ;; If theres no more rules to apply than computation is done
+         '()]
+        [else
+         (define current-nt (find-nt-func current-state))
+         (cond [(boolean? current-nt)
+                ;; If its fails to find a nonterminal in the current state, attempt to go back up
+                ;; the stack to a previous state
+                (cond [(null? prev-states)
+                       ;; If there are no more previous states, than the computation is done
+                       '()]
+                      [else
+                       (define prev-state (car prev-states))
+                       (define prev-current-nt (find-nt-func prev-state))
+                       ;; Need to remove the leftmost-nt from the previous state since we just went
+                       ;; down its respective path
+                       ;; when we call the function again with it removed, the next nt will be processed
+                       (define updated-states (filter (lambda (x) (not (eq? prev-current-nt x)))
+                                                      prev-state))
+                       ;; Don't reduce the number of rules here since one was not sucessfully applied, only
+                       ;; remove the state we popped off the stack
+                       (generate-levels-list-helper updated-states
+                                                    rules
+                                                    (cdr prev-states)
+                                                    used-names
+                                                    find-nt-func)])]
+               [else
+                ;; Just sticks a number after the symbol itself, uses a hash table to keep track of what numbers
+                ;; were already used for a specific symbol
+                (define renamed-states (map (lambda (st) (rename-symb used-names st)) (car rules)))
+                ;; Creates a new level by taking the current rule that is meant to be applied at this point of
+                ;; the derivation
+                ;; and creating an edge between each of the elements within and the current nonterminal being
+                ;;processed
+                (define (new-level start)
+                  (map (lambda (st) (list start st)) renamed-states))
+                (cons (new-level current-nt)
+                      (generate-levels-list-helper renamed-states
+                                                   (cdr rules)
+                                                   (cons current-state prev-states)
+                                                   used-names
+                                                   find-nt-func))])]))
 
 ;; list any -> list
 ;; Purpose: Returns the list up until and excluding the value given
 (define (take-until lst val)
-  (if (eq? (first lst) val) '() (cons (first lst) (take-until (rest lst) val))))
+  (if (eq? (car lst) val) '() (cons (car lst) (take-until (cdr lst) val))))
 
 ;; generate-levels-list
 ;; (listof symbol) (listof (listof symbol)) (listof (listof symbol)) MutableHashTable (U 'left 'right 'level) ->
@@ -466,8 +468,8 @@
 ;; Purpose: Returns the leftmost nonterminal held within the list of symbols
 (define (get-leftmost-nt st)
   (cond
-    [(empty? st) #f]
-    [(nonterminal? (first st)) (first st)]
+    [(null? st) #f]
+    [(nonterminal? (car st)) (car st)]
     [else (get-leftmost-nt (cdr st))]))
 
 ;; (listof symbol) -> symbol
@@ -483,7 +485,8 @@
                                          used-names
                                          find-nt-func
                                          derv-type)
-  (cond [(empty? rules) '()]
+  (cond [(null? rules)
+         '()]
         [else
          (define current-nt (find-nt-func unprocessed-yield))
          (cond [(not current-nt)
@@ -494,26 +497,26 @@
                                                  find-nt-func
                                                  derv-type)]
                [else
-                (define renamed-states (map (lambda (st) (rename-symb used-names st)) (first rules)))
+                (define renamed-states (map (lambda (st) (rename-symb used-names st)) (car rules)))
                 (define (new-level start)
                   (map (lambda (st) (list start st)) renamed-states))
                 (cons (new-level current-nt)
                       (generate-levels-bfs-list-helper
                        (if (eq? derv-type 'level-left)
-                           (rest (member current-nt unprocessed-yield))
+                           (cdr (member current-nt unprocessed-yield))
                            (take-until unprocessed-yield current-nt))
                        (if (eq? derv-type 'level-left)
                            (append (if (list? processed-yield) processed-yield (list processed-yield))
                                    (if (list? renamed-states) renamed-states (list renamed-states)))
                            (append (if (list? renamed-states) renamed-states (list renamed-states))
                                    (if (list? processed-yield) processed-yield (list processed-yield))))
-                       (rest rules)
+                       (cdr rules)
                        used-names
                        find-nt-func
                        derv-type))])]))
 
 (define (treelist-insert-list tl i lst)
-  (if (empty? lst) tl (treelist-insert-list (treelist-insert tl i (first lst)) (add1 i) (rest lst))))
+  (if (null? lst) tl (treelist-insert-list (treelist-insert tl i (car lst)) (add1 i) (cdr lst))))
 
 (define (get-first-nt st alphabet-ht)
   (define (get-first-nt-helper i)
@@ -525,25 +528,25 @@
   (get-first-nt-helper (yield-up st)))
 
 (define (generate-levels-bfs-leftmost curr-yield rules used-names alphabet-ht)
-  (if (empty? (first rules))
+  (if (null? (car rules))
       '()
       ;; Going to make this function return (list nt idx)
       (let ([current-nt (get-first-nt curr-yield alphabet-ht)])
-        (if (not (first current-nt))
+        (if (not (car current-nt))
             (generate-levels-bfs-leftmost (yield (yield-state curr-yield) 0)
                                           rules
                                           used-names
                                           alphabet-ht)
             (let ([renamed-chars (map (lambda (word-char) (rename-symb used-names word-char))
-                                      (third (first rules)))])
-              (cons (map (lambda (word-char) (list (first current-nt) word-char)) renamed-chars)
+                                      (caddr (car rules)))])
+              (cons (map (lambda (word-char) (list (car current-nt) word-char)) renamed-chars)
                     (generate-levels-bfs-leftmost
                      (yield (treelist-insert-list
-                             (treelist-delete (yield-state curr-yield) (second current-nt))
-                             (second current-nt)
+                             (treelist-delete (yield-state curr-yield) (cadr current-nt))
+                             (cadr current-nt)
                              (filter (lambda (x) (not (equal? EMP (undo-renaming x)))) renamed-chars))
-                            (+ (second current-nt) (length renamed-chars)))
-                     (rest rules)
+                            (+ (cadr current-nt) (length renamed-chars)))
+                     (cdr rules)
                      used-names
                      alphabet-ht)))))))
 
@@ -562,26 +565,26 @@
   (get-last-nt-helper st (yield-up st) alphabet-ht))
 
 (define (generate-levels-bfs-rightmost curr-yield rules used-names alphabet-ht)
-  (if (empty? (first rules))
+  (if (null? (car rules))
       '()
       ;; Going to make this function return (list nt idx)
       (let ([current-nt (get-last-nt curr-yield alphabet-ht)])
-        (if (not (first current-nt))
+        (if (not (car current-nt))
             (generate-levels-bfs-rightmost (yield (yield-state curr-yield)
                                                   (sub1 (treelist-length (yield-state curr-yield))))
                                            rules
                                            used-names
                                            alphabet-ht)
             (let ([renamed-chars (map (lambda (word-char) (rename-symb used-names word-char))
-                                      (third (first rules)))])
-              (cons (map (lambda (word-char) (list (first current-nt) word-char)) renamed-chars)
+                                      (caddr (car rules)))])
+              (cons (map (lambda (word-char) (list (car current-nt) word-char)) renamed-chars)
                     (generate-levels-bfs-rightmost
                      (yield (treelist-insert-list
-                             (treelist-delete (yield-state curr-yield) (second current-nt))
-                             (second current-nt)
+                             (treelist-delete (yield-state curr-yield) (cadr current-nt))
+                             (cadr current-nt)
                              (filter (lambda (x) (not (equal? EMP (undo-renaming x)))) renamed-chars))
-                            (sub1 (second current-nt)))
-                     (rest rules)
+                            (sub1 (cadr current-nt)))
+                     (cdr rules)
                      used-names
                      alphabet-ht)))))))
 
@@ -612,60 +615,60 @@
 ;; now the rule is next to where it will be applied
 (define (move-rule-applications-in-list lst)
   (if (= (length lst) 1)
-      (list (list (first (first lst)) '()))
-      (cons (list (first (first lst)) (second (second lst)))
-            (move-rule-applications-in-list (rest lst)))))
+      (list (list (car (car lst)) '()))
+      (cons (list (car (car lst)) (cadr (cadr lst)))
+            (move-rule-applications-in-list (cdr lst)))))
 
 ;; list-of-states
 ;; derivation-with-rules -> (listof rules)
 ;; Purpose: Separates the list of states from their rule applications in the list generated by w-der
 (define (list-of-states lst)
-  (map (lambda (x) (first x)) lst))
+  (map (lambda (x) (car x)) lst))
 
 ;; Separates the list of rules from their respective states in the list generated by w-der
 ;; derivation-with-rules -> derivation
 (define (list-of-rules lst)
-  (map (lambda (x) (second x)) lst))
+  (map (lambda (x) (cadr x)) lst))
 
 ;; (listof symbol) (listof yield) -> w-der
 ;; Purpose: Converts a yield derivation into the form of a word derivation that the viz expects
 (define (convert-yield-deriv-to-word-deriv input-word yield-deriv)
-  (remove-duplicates (map (lambda (x) (treelist->list (yield-state (first x)))) yield-deriv)))
+  (remove-duplicates (map (lambda (x) (treelist->list (yield-state (car x)))) yield-deriv)))
 
 ;; (listof yield) -> (listof symbol)
 ;; Purpose: Creates a list of rules for a leftmost bfs derivation that are used in the visualization
 (define (create-rules-levels-leftmost yield-deriv)
   (cond
-    [(empty? yield-deriv) '()]
+    [(null? yield-deriv) '()]
     [(= 1 (length yield-deriv)) '()]
-    [(symbol? (get-leftmost-nt (yield-up (first (first yield-deriv)))))
+    [(symbol? (get-leftmost-nt (yield-up (car (car yield-deriv)))))
      (append
-      (list (string-append (symbol->string (get-leftmost-nt (yield-up (first (first yield-deriv)))))
+      (list (string-append (symbol->string (get-leftmost-nt (yield-up (car (car yield-deriv)))))
                            " → "
-                           (string-join (map symbol->string (second (first yield-deriv))))))
-      (create-rules-levels-leftmost (rest yield-deriv)))]
-    [else (create-rules-levels-leftmost (rest yield-deriv))]))
+                           (string-join (map symbol->string (cadr (car yield-deriv))))))
+      (create-rules-levels-leftmost (cdr yield-deriv)))]
+    [else (create-rules-levels-leftmost (cdr yield-deriv))]))
 
 ;; (listof yield) -> (listof symbol)
 ;; Purpose: Creates a list of rules for a rightmost bfs derivation that are used in the visualization
 (define (create-rules-levels-rightmost yield-deriv)
   (cond
-    [(empty? yield-deriv) '()]
+    [(null? yield-deriv) '()]
     [(= 1 (length yield-deriv)) '()]
-    [(not (empty? (yield-up (first (first yield-deriv)))))
+    [(not (null? (yield-up (car (car yield-deriv)))))
      (append
-      (list (string-append (symbol->string (get-rightmost-nt (yield-up (first (first yield-deriv)))))
+      (list (string-append (symbol->string (get-rightmost-nt (yield-up (car (car yield-deriv)))))
                            " → "
-                           (string-join (map symbol->string (second (first yield-deriv))))))
-      (create-rules-levels-rightmost (rest yield-deriv)))]
-    [(empty? (yield-up (first (first yield-deriv))))
-     (create-rules-levels-rightmost (rest yield-deriv))]))
+                           (string-join (map symbol->string (cadr (car yield-deriv))))))
+      (create-rules-levels-rightmost (cdr yield-deriv)))]
+    [(null? (yield-up (car (car yield-deriv))))
+     (create-rules-levels-rightmost (cdr yield-deriv))]))
 
 (define (get-level-rightmost-order yt)
   (define (get-level-rightmost-order-helper q accum)
     (if (qempty? q)
         accum
-        (if (empty? (tree-subtrees (qpeek q)))
+        (if (null? (tree-subtrees (qpeek q)))
             (if (equal? (tree-value (qpeek q)) EMP)
                 (get-level-rightmost-order-helper (dequeue! q) accum)
                 (get-level-rightmost-order-helper (dequeue! q)
@@ -674,7 +677,7 @@
                                                      (dequeue! q)
                                                      (tree-subtrees (qpeek q)))
                                               (append (list (tree-value (qpeek q))) accum)))))
-  (if (empty? (tree-subtrees yt))
+  (if (null? (tree-subtrees yt))
       (list (tree-value yt))
       (get-level-rightmost-order-helper
        (foldr (lambda (val q-accum) (enqueue! q-accum val)) (make-queue) (tree-subtrees yt))
@@ -684,7 +687,7 @@
   (define (get-level-leftmost-order-helper q accum)
     (if (qempty? q)
         accum
-        (if (empty? (tree-subtrees (qpeek q)))
+        (if (null? (tree-subtrees (qpeek q)))
             (if (equal? (tree-value (qpeek q)) EMP)
                 (get-level-leftmost-order-helper (dequeue! q) accum)
                 (get-level-leftmost-order-helper (dequeue! q)
@@ -693,57 +696,57 @@
                                                     (dequeue! q)
                                                     (tree-subtrees (qpeek q)))
                                              (append accum (list (tree-value (qpeek q))))))))
-  (if (empty? (tree-subtrees yt))
+  (if (null? (tree-subtrees yt))
       (list (tree-value yt))
       (get-level-leftmost-order-helper
        (foldl (lambda (val q-accum) (enqueue! q-accum val)) (make-queue) (tree-subtrees yt))
        (list (tree-value yt)))))
 
 (define (get-leftmost-order-helper subtrees)
-  (if (empty? subtrees)
+  (if (null? subtrees)
       '()
-      (append (get-leftmost-order (first subtrees)) (get-leftmost-order-helper (rest subtrees)))))
+      (append (get-leftmost-order (car subtrees)) (get-leftmost-order-helper (cdr subtrees)))))
 
 (define (get-leftmost-order yt)
-  (if (empty? (tree-subtrees yt))
+  (if (null? (tree-subtrees yt))
       (if (eq? (tree-value yt) EMP) '() (list (tree-value yt)))
       (append (list (tree-value yt)) (get-leftmost-order-helper (tree-subtrees yt)))))
 
 (define (get-rightmost-order-helper subtrees)
-  (if (empty? subtrees)
+  (if (null? subtrees)
       '()
       (append (get-rightmost-order (last subtrees))
               (get-rightmost-order-helper (drop-right subtrees 1)))))
 
 (define (get-rightmost-order yt)
-  (if (empty? (tree-subtrees yt))
+  (if (null? (tree-subtrees yt))
       (if (eq? (tree-value yt) EMP) '() (list (tree-value yt)))
       (append (list (tree-value yt)) (get-rightmost-order-helper (tree-subtrees yt)))))
 
 (define (get-ordered-invariant-nodes ordered-nodes invar-nodes)
   (define (get-ordered-invariant-nodes-helper ordered-nodes invar-nodes)
     (filter (lambda (node) (member node invar-nodes)) ordered-nodes))
-  (if (empty? ordered-nodes)
+  (if (null? ordered-nodes)
       '()
-      (cons (get-ordered-invariant-nodes-helper (first ordered-nodes) (first invar-nodes))
-            (get-ordered-invariant-nodes (rest ordered-nodes) (rest invar-nodes)))))
+      (cons (get-ordered-invariant-nodes-helper (car ordered-nodes) (car invar-nodes))
+            (get-ordered-invariant-nodes (cdr ordered-nodes) (cdr invar-nodes)))))
 
 (define (accumulate-previous-ranks rank-node-lst accum)
-  (if (empty? rank-node-lst)
+  (if (null? rank-node-lst)
       '()
-      (let ([new-accum (append accum (list (first rank-node-lst)))])
-        (cons new-accum (accumulate-previous-ranks (rest rank-node-lst) new-accum)))))
+      (let ([new-accum (append accum (list (car rank-node-lst)))])
+        (cons new-accum (accumulate-previous-ranks (cdr rank-node-lst) new-accum)))))
 
 (define (remove-duplicate-yields yields)
   (define visited (make-hash))
   (define (remove-duplicate-yields-helper yields accum)
-    (if (empty? yields)
+    (if (null? yields)
         accum
-        (if (not (hash-ref visited (yield-state (first (first yields))) #f))
+        (if (not (hash-ref visited (yield-state (car (car yields))) #f))
             (begin
-              (hash-set! visited (yield-state (first (first yields))) #t)
-              (remove-duplicate-yields-helper (rest yields) (cons (first yields) accum)))
-            (remove-duplicate-yields-helper (rest yields) accum))))
+              (hash-set! visited (yield-state (car (car yields))) #t)
+              (remove-duplicate-yields-helper (cdr yields) (cons (car yields) accum)))
+            (remove-duplicate-yields-helper (cdr yields) accum))))
   (reverse (remove-duplicate-yields-helper yields '())))
 
 ;; cfg-viz
@@ -767,14 +770,14 @@
                                                       der-with-rules))]))]
                    [w-der (list-of-states der-with-rules)]
                    [renamed (generate-levels-list
-                             (first (first (first der-with-rules)))
+                             (car (car (car der-with-rules)))
                              (list-of-rules (move-rule-applications-in-list der-with-rules))
                              '()
                              (make-hash)
                              derv-type)]
                    [rank-node-lvls (cons (list (list (cfg-get-start cfg)))
                                          (accumulate-previous-ranks
-                                          (map (lambda (x) (map (lambda (y) (second y)) x)) renamed)
+                                          (map (lambda (x) (map (lambda (y) (cadr y)) x)) renamed)
                                           (list (list (cfg-get-start cfg)))))]
                    [yield-trees (map (lambda (x) (create-yield-tree x (cfg-get-start cfg))) (map reverse (create-list-of-levels renamed)))]
                    
@@ -782,9 +785,9 @@
                                   '()
                                   '()
                                   '()
-                                  (rest rules)
-                                  (list (first rules))
-                                  (map (lambda (x) (first yield-trees)) yield-trees)
+                                  (cdr rules)
+                                  (list (car rules))
+                                  (map (lambda (x) (car yield-trees)) yield-trees)
                                   (list (tree (cfg-get-start cfg) '())))]
                    [lod (reverse (create-dgrphs dgraph '()))]
                    [invar-nodes
@@ -795,12 +798,12 @@
                     (reverse (map (if (eq? derv-type 'left) get-leftmost-order get-rightmost-order)
                                   yield-trees))]
                    [broken-invariants
-                    (if (empty? invariants)
+                    (if (null? invariants)
                         'NO-INV
                         (list->zipper (cons '()
                                             (map (lambda (lst) (map undo-renaming lst))
                                                  (map reverse
-                                                      (rest (get-ordered-invariant-nodes
+                                                      (cdr (get-ordered-invariant-nodes
                                                              (cons (list (cfg-get-start cfg)) ordered-nodes)
                                                              invar-nodes)))))))]
                    [removed-dashed-rank-node-lvls (map (lambda (x)
@@ -829,18 +832,18 @@
                             (cfg-derive-level-rightmost cfg word))])
         (if (string? derivation)
             derivation
-            (let* ([rules (append (rest (map (lambda (x) (second x))
+            (let* ([rules (append (cdr (map (lambda (x) (cadr x))
                                              (remove-duplicate-yields derivation)))
                                   (list '()))]
                    [string-rules
                     (drop-right
                      (cons ""
                            (map (lambda (x)
-                                  (if (empty? x)
+                                  (if (null? x)
                                       ""
-                                      (string-join (list (symbol->string (first x))
+                                      (string-join (list (symbol->string (car x))
                                                          " → "
-                                                         (symbol->string (los->symbol (third x)))))))
+                                                         (symbol->string (los->symbol (caddr x)))))))
                                 rules))
                      1)]
                    [renamed (if (equal? derv-type 'level-left)
@@ -869,9 +872,9 @@
                                   '()
                                   '()
                                   '()
-                                  (append (rest rules) (list "" ""))
-                                  (list (first rules))
-                                  (map (lambda (x) (first yield-trees)) yield-trees)
+                                  (append (cdr rules) (list "" ""))
+                                  (list (car rules))
+                                  (map (lambda (x) (car yield-trees)) yield-trees)
                                   (list (tree (cfg-get-start cfg) '())))]
                    [lod (reverse (create-dgrphs dgraph '()))]
                    [invar-nodes
@@ -883,17 +886,17 @@
                                                     get-level-rightmost-order)
                                                 yield-trees))]
                    [broken-invariants
-                    (if (empty? invariants)
+                    (if (null? invariants)
                         'NO-INV
                         (list->zipper (cons '()
                                             (map (lambda (lst) (map undo-renaming lst))
                                                  (map reverse
-                                                      (rest (get-ordered-invariant-nodes
+                                                      (cdr (get-ordered-invariant-nodes
                                                              ordered-nodes
                                                              invar-nodes)))))))]
                    [rank-node-lvls (cons (list (list (cfg-get-start cfg)))
                                          (accumulate-previous-ranks
-                                          (map (lambda (x) (map (lambda (y) (second y)) x)) renamed)
+                                          (map (lambda (x) (map (lambda (y) (cadr y)) x)) renamed)
                                           (list (list (cfg-get-start cfg)))))]
                    [removed-dashed-rank-node-lvls (map (lambda (x)
                                                          (map (lambda (y)
