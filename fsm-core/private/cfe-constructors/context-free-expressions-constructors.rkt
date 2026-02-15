@@ -26,17 +26,18 @@
                      (mk-kleene-cfexp? kleenestar-cfexp?)
                      (mk-empty-cfexp? empty-cfexp?)
                      (mk-null-cfexp? null-cfexp?)
-                     (kleene-cfexp kleenestar-cfexp))
+                     (kleene-cfexp kleenestar-cfexp)         
+                     (mk-singleton-cfexp-char singleton-cfexp-a)
+                     (mk-union-cfexp-locfe union-cfexp-cfes)
+                     (mk-concat-cfexp-locfe concat-cfexp-cfes)
+                     (mk-kleene-cfexp-cfe kleenestar-cfexp-c1))
          gen-cfexp-word          
          cfg->cfe
          cfe->cfg
          pda->cfe
          cfe->pda
          pick-cfexp
-         singleton-cfexp-a
-         union-cfexp-cfes
-         concat-cfexp-cfes
-         kleenestar-cfexp-c1
+         printable-cfexp
          )
 
 (define MAX-KLEENESTAR-LIMIT 20)
@@ -68,20 +69,11 @@
   singleton-cfexp/c 
   (mk-singleton-cfexp a-char))
 
-(define singleton-cfexp-a mk-singleton-cfexp-char)
-
-(define union-cfexp-cfes mk-union-cfexp-locfe)
-
-(define concat-cfexp-cfes mk-concat-cfexp-locfe)
-
-(define kleenestar-cfexp-c1 mk-kleene-cfexp-cfe)
-
 ;;(listof X) -> boolean
 ;;Purpose: Determines if the (listof X) is of length 1
 (define (is-length-one? lox)
   (and (not (null? lox))
        (null? (cdr lox))))
-
 
 ;;(listof cfexp) -> boolean
 ;;Purpose: Determines if the given (listof cfexp) contains the null-cfexp
@@ -101,7 +93,7 @@
   (cond [(or (null? cfexps) (contains-null? cfexps)) (null-cfexp)] ;; no input cfes -> null
         [(andmap mk-empty-cfexp? cfexps) (empty-cfexp)] ;; only empty cfes -> empty
         [(is-length-one? cfexps) (car cfexps)] ;;only one cfe -> cfe
-        [else (mk-concat-cfexp (list->vector (map unnest-unions cfexps)))])) ;;otherwise box unboxed-union cfes -> concat
+        [else (mk-concat-cfexp (list->vector (map unnest-unions cfexps)))])) ;;otherwise box any unboxed-union cfes -> concat
 
 ;; . cfexp -> union-cfexp/null-cfexp/empty-cfexp/singleton-cfexp
 ;;Purpose: A wrapper to create a union-cfexp unless all the given cfexps are empty-cfexp
@@ -166,6 +158,27 @@
 (define (string-empty? str)
   (string=? str ""))
 
+
+;;string -> (listof symbol)
+;;Purpose: Converts the given string into a fsm word
+(define (string->word2 str)
+
+  (define (string-first str)
+    (substring str 0 1))
+  
+  (define (string-rest str)
+    (substring str 1))
+ 
+    ;;natnum (listof symbol) -> (listof symbol)
+    ;;Purpose: Converts the string into a fsm word
+    (define (string->word-helper str acc)
+      (if (string-empty? str)
+          (reverse acc)
+          (string->word-helper (string-rest str)
+                               (cons (string->symbol (string-first str)) acc))))
+    (string->word-helper str '()))
+
+
 ;;string -> (listof symbol)
 ;;Purpose: Converts the given string into a fsm word
 (define (string->word str)
@@ -210,27 +223,31 @@
   ;;(listof cfe) string (setof cfe) -> string
   ;;Purpose: Converts and appends all of the cfes in the given (listof cfe) 
   (define (printable-helper locfe connector seen)
-    (cond [(= (length locfe) 1) (printable-cfexp (car locfe) #:seen seen)]
+    (cond [(is-length-one? locfe) (printable-cfexp (car locfe) #:seen #;(set-add seen (car locfe)) seen)]
           [else (let ([new-seen (set-add seen (car locfe))])
                   (string-append (printable-cfexp (car locfe) #:seen new-seen)
                                  connector
                                  (printable-helper (cdr locfe) connector new-seen)))]))
 
-  ;;var-cfexp (setof cfe) -> string
+  ;;box (setof cfe) -> string
   ;;Purpose: Prints the variable 
-  (define (printable-var var-cfe seen)
-    seen)
+  (define (printable-box lang-box seen)
+   (printable-cfexp (unbox lang-box) #:seen seen))
+  
   (define NULL-REGEXP-STRING "∅")
   (define EMPTY-REGEXP-STRING (symbol->string EMP))
+  (displayln (format "cfe: ~a\nseen: ~a\n\n" cfe seen))
   (cond [(mk-null-cfexp? cfe) NULL-REGEXP-STRING]
         [(mk-empty-cfexp? cfe) EMPTY-REGEXP-STRING]
         [(mk-singleton-cfexp? cfe) (mk-singleton-cfexp-char cfe)]
-        [(box? cfe) (printable-var cfe (if (set-empty? seen)
-                                           (set)
-                                           seen))]
+        [(box? cfe) (if (set-member? seen cfe)
+                        "x"
+                        (string-append "" (printable-box cfe (set-add seen cfe))))]
         [(mk-concat-cfexp? cfe) (printable-helper (vector->list (mk-concat-cfexp-locfe cfe)) "" seen)]
-        [(mk-union-cfexp? cfe) (printable-helper (vector->list (mk-union-cfexp-locfe cfe)) " | " seen)]
-        [else (string-append (printable-cfexp (mk-kleene-cfexp cfe)) "*")]))
+        [(mk-union-cfexp? cfe) (string-append "(" (printable-helper (vector->list (mk-union-cfexp-locfe cfe)) " U " seen) ")")]
+        [else (if (set-member? seen cfe)
+                  ""
+                  (string-append (printable-cfexp (mk-kleene-cfexp-cfe cfe) #:seen (set-add seen cfe)) "*"))]))
   
 
 ;;context-free grammar -> cfe

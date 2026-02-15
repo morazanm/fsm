@@ -9,12 +9,6 @@
           "construct-cfe-macro.rkt"
           )
 
-(provide (all-defined-out))
-
-
-
-
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;CFEXP;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define EMPTY (make-cfe [(EMPTY (empty-cfexp))]
