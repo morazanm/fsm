@@ -43,7 +43,7 @@
   (define alphabet-set (list->seteq (cfg-get-alphabet G)))
   (define (start-grammar G)
     (let ((newS (gen-nt (cfg-get-v G))))
-      (make-cfg (cons newS (cfg-get-v G))
+      (make-unchecked-cfg (cons newS (cfg-get-v G))
                 (cfg-get-alphabet G)
                 (cons (list newS ARROW (cfg-get-start G))
                       (cfg-get-rules G))
@@ -69,7 +69,7 @@
                                     s))
                               (symbol->fsmlos (caddr rule))))))
     (populate-hash!)
-    (make-cfg (append (cfg-get-v G) (hash-values ht))
+    (make-unchecked-cfg (append (cfg-get-v G) (hash-values ht))
               (cfg-get-alphabet G)
               (append (map (λ (a) (list (hash-ref ht a) ARROW a))
                            (cfg-get-alphabet G))
@@ -102,7 +102,7 @@
                 (cons (car rules)
                       (convert-rules (cdr rules)))))))
     (let ([new-rules (convert-rules (cfg-get-rules G))])
-      (make-cfg (set->list nts)
+      (make-unchecked-cfg (set->list nts)
                 (cfg-get-alphabet G)
                 new-rules
                 (cfg-get-start G))))
@@ -159,7 +159,7 @@
                                                            (and (not (eq? (car r) (cfg-get-start G)))
                                                                 (not (equal? (caddr r) (list EMP))))))
                                                      (convert-rules trls (map car (new-compute-nullables trls))))))])
-      (make-cfg (remove-duplicates (map car new-rules))
+      (make-unchecked-cfg (remove-duplicates (map car new-rules))
                 (cfg-get-alphabet G)
                 new-rules
                 (cfg-get-start G))))
@@ -189,7 +189,7 @@
                  (rm-unit-rules (map (lambda (r)
                                        (list (car r) (cadr r) (symbol->fsmlos (caddr r))))
                                      (cfg-get-rules G))))))]
-      (make-cfg (remove-duplicates (map car new-rules))
+      (make-unchecked-cfg (remove-duplicates (map car new-rules))
                 (cfg-get-alphabet G)
                 new-rules
                 (cfg-get-start G))))

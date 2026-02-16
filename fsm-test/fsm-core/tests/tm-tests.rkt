@@ -1,16 +1,17 @@
-(module tm-tests racket
-  (require "../../../main.rkt"
-           racket/contract
+#lang racket/base
+(module+ tests
+  (require "../../../fsm-core/private/tm-constructors.rkt"
+           "../../../fsm-core/private/constants.rkt"
+           rackunit
            )
-  (local-require test-engine/racket-tests)
-  
-  (provide 
-   )
 
   ;;valid-listof/c tests
   ;;STATES
   ;;Invalid number
-  (check-error (make-tm '(S Y N 1)
+  (check-exn
+   #rx"Step three of the design recipe has not been successfully completed.
+The following: \\(1\\) are not valid machine states in the given list of machine states: \\(S Y N 1\\)"
+   (lambda () (make-tm '(S Y N 1)
                          `(a b)
                          `(((S a) (S ,RIGHT))
                            ((S b) (N b))
@@ -18,9 +19,12 @@
                          'S
                          '(Y N)
                          'Y
-                         ) (format "Step three of the design recipe has not been successfully completed.
-The following: (1) are not valid machine states in the given list of machine states: (S Y N 1)"))
-  (check-error (make-tm '(S Y N 1 2)
+                         ))
+     )
+  (check-exn
+   #rx"Step three of the design recipe has not been successfully completed.
+The following: \\(1 2\\) are not valid machine states in the given list of machine states: \\(S Y N 1 2\\)"
+   (lambda () (make-tm '(S Y N 1 2)
                          `(a b)
                          `(((S a) (S ,RIGHT))
                            ((S b) (N b))
@@ -28,10 +32,13 @@ The following: (1) are not valid machine states in the given list of machine sta
                          'S
                          '(Y N)
                          'Y
-                         ) (format "Step three of the design recipe has not been successfully completed.
-The following: (1 2) are not valid machine states in the given list of machine states: (S Y N 1 2)"))
+                         ))
+   )
   ;;Invalid letter
-  (check-error (make-tm '(S Y N a)
+  (check-exn
+   #rx"Step three of the design recipe has not been successfully completed.
+The following: \\(a\\) are not valid machine states in the given list of machine states: \\(S Y N a\\)"
+   (lambda () (make-tm '(S Y N a)
                          `(a b)
                          `(((S a) (S ,RIGHT))
                            ((S b) (N b))
@@ -39,9 +46,10 @@ The following: (1 2) are not valid machine states in the given list of machine s
                          'S
                          '(Y N)
                          'Y
-                         ) (format "Step three of the design recipe has not been successfully completed.
-The following: (a) are not valid machine states in the given list of machine states: (S Y N a)"))
-  (check-error (make-tm '(S Y N a b)
+                         )))
+  (check-exn #rx"Step three of the design recipe has not been successfully completed.
+The following: \\(a b\\) are not valid machine states in the given list of machine states: \\(S Y N a b\\)"
+             (lambda () (make-tm '(S Y N a b)
                          `(a b)
                          `(((S a) (S ,RIGHT))
                            ((S b) (N b))
@@ -49,10 +57,12 @@ The following: (a) are not valid machine states in the given list of machine sta
                          'S
                          '(Y N)
                          'Y
-                         ) (format "Step three of the design recipe has not been successfully completed.
-The following: (a b) are not valid machine states in the given list of machine states: (S Y N a b)"))
+                         )) )
   ;;Duplicate states
-  (check-error (make-tm '(S Y N S)
+  (check-exn
+   "Step three of the design recipe has not been successfully completed.
+The following values, \\(S\\), are duplicated in the given states: \\(S Y N S\\)"
+   (lambda () (make-tm '(S Y N S)
                          `(a b)
                          `(((S a) (S ,RIGHT))
                            ((S b) (N b))
@@ -60,9 +70,11 @@ The following: (a b) are not valid machine states in the given list of machine s
                          'S
                          '(Y N)
                          'Y
-                         ) (format "Step three of the design recipe has not been successfully completed.
-The following values, (S), are duplicated in the given states: (S Y N S)"))
-  (check-error (make-tm '(S Y N S S)
+                         )) )
+  (check-exn
+   #rx"Step three of the design recipe has not been successfully completed.
+The following values, \\(S\\), are duplicated in the given states: \\(S Y N S S\\)"
+   (lambda () (make-tm '(S Y N S S)
                          `(a b)
                          `(((S a) (S ,RIGHT))
                            ((S b) (N b))
@@ -70,9 +82,11 @@ The following values, (S), are duplicated in the given states: (S Y N S)"))
                          'S
                          '(Y N)
                          'Y
-                         ) (format "Step three of the design recipe has not been successfully completed.
-The following values, (S), are duplicated in the given states: (S Y N S S)"))
-  (check-error (make-tm '(S Y Y N S S)
+                         )) )
+  (check-exn
+   "Step three of the design recipe has not been successfully completed.
+The following values, \\(S Y\\), are duplicated in the given states: \\(S Y Y N S S\\)"
+   (lambda () (make-tm '(S Y Y N S S)
                          `(a b)
                          `(((S a) (S ,RIGHT))
                            ((S b) (N b))
@@ -80,12 +94,14 @@ The following values, (S), are duplicated in the given states: (S Y N S S)"))
                          'S
                          '(Y N)
                          'Y
-                         ) (format "Step three of the design recipe has not been successfully completed.
-The following values, (S Y), are duplicated in the given states: (S Y Y N S S)"))
+                         )) )
   ;;SIGMA
   ;invalid letter
   ;duplicate letter
-  (check-error (make-tm '(S Y N)
+  (check-exn
+   "Step one of the design recipe has not been successfully completed.
+The following values, \\(a\\), are duplicated in the given sigma: \\(a b a\\)"
+   (lambda () (make-tm '(S Y N)
                          `(a b a)
                          `(((S a) (S ,RIGHT))
                            ((S b) (N b))
@@ -93,9 +109,11 @@ The following values, (S Y), are duplicated in the given states: (S Y Y N S S)")
                          'S
                          '(Y N)
                          'Y
-                         ) (format "Step one of the design recipe has not been successfully completed.
-The following values, (a), are duplicated in the given sigma: (a b a)"))
-  (check-error (make-tm '(S Y N)
+                         )) )
+  (check-exn
+   #rx"Step one of the design recipe has not been successfully completed.
+The following values, \\(a\\), are duplicated in the given sigma: \\(a b a a\\)"
+   (lambda () (make-tm '(S Y N)
                          `(a b a a)
                          `(((S a) (S ,RIGHT))
                            ((S b) (N b))
@@ -103,9 +121,11 @@ The following values, (a), are duplicated in the given sigma: (a b a)"))
                          'S
                          '(Y N)
                          'Y
-                         ) (format "Step one of the design recipe has not been successfully completed.
-The following values, (a), are duplicated in the given sigma: (a b a a)"))
-  (check-error (make-tm '(S Y N)
+                         )) )
+  (check-exn
+   #rx"Step one of the design recipe has not been successfully completed.
+The following values, \\(a b\\), are duplicated in the given sigma: \\(a b a b\\)"
+   (lambda () (make-tm '(S Y N)
                          `(a b a b)
                          `(((S a) (S ,RIGHT))
                            ((S b) (N b))
@@ -113,11 +133,13 @@ The following values, (a), are duplicated in the given sigma: (a b a a)"))
                          'S
                          '(Y N)
                          'Y
-                         ) (format "Step one of the design recipe has not been successfully completed.
-The following values, (a b), are duplicated in the given sigma: (a b a b)"))
+                         )) )
   ;;FINALS
   ;invalid final state
-  (check-error (make-tm '(S Y N)
+  (check-exn
+   #rx"Step three of the design recipe has not been successfully completed.
+The following: \\(1\\) are not valid machine states in the given list of machine finals: \\(Y N 1\\)"
+   (lambda () (make-tm '(S Y N)
                          `(a b)
                          `(((S a) (S ,RIGHT))
                            ((S b) (N b))
@@ -125,9 +147,12 @@ The following values, (a b), are duplicated in the given sigma: (a b a b)"))
                          'S
                          '(Y N 1)
                          'Y
-                         ) (format "Step three of the design recipe has not been successfully completed.
-The following: (1) are not valid machine states in the given list of machine finals: (Y N 1)"))
-  (check-error (make-tm '(S Y N)
+                         ))
+   )
+  (check-exn
+   #rx"Step three of the design recipe has not been successfully completed.
+The following: \\(1 2\\) are not valid machine states in the given list of machine finals: \\(Y N 1 2\\)"
+   (lambda () (make-tm '(S Y N)
                          `(a b)
                          `(((S a) (S ,RIGHT))
                            ((S b) (N b))
@@ -135,10 +160,13 @@ The following: (1) are not valid machine states in the given list of machine fin
                          'S
                          '(Y N 1 2)
                          'Y
-                         ) (format "Step three of the design recipe has not been successfully completed.
-The following: (1 2) are not valid machine states in the given list of machine finals: (Y N 1 2)"))
+                         )))
   ;invalid letter
-  (check-error (make-tm '(S Y N)
+  (check-exn
+   #rx"Step three of the design recipe has not been successfully completed.
+The following: \\(a\\) are not valid machine states in the given list of machine finals: \\(Y N a\\)"
+   (lambda ()
+     (make-tm '(S Y N)
                          `(a b)
                          `(((S a) (S ,RIGHT))
                            ((S b) (N b))
@@ -146,9 +174,12 @@ The following: (1 2) are not valid machine states in the given list of machine f
                          'S
                          '(Y N a)
                          'Y
-                         ) (format "Step three of the design recipe has not been successfully completed.
-The following: (a) are not valid machine states in the given list of machine finals: (Y N a)"))
-  (check-error (make-tm '(S Y N)
+                         ))
+   )
+  (check-exn
+   #rx"Step three of the design recipe has not been successfully completed.
+The following: \\(a a\\) are not valid machine states in the given list of machine finals: \\(Y N a a\\)"
+   (lambda () (make-tm '(S Y N)
                          `(a b)
                          `(((S a) (S ,RIGHT))
                            ((S b) (N b))
@@ -156,9 +187,12 @@ The following: (a) are not valid machine states in the given list of machine fin
                          'S
                          '(Y N a a)
                          'Y
-                         ) (format "Step three of the design recipe has not been successfully completed.
-The following: (a a) are not valid machine states in the given list of machine finals: (Y N a a)"))
-  (check-error (make-tm '(S Y N)
+                         )) )
+  (check-exn
+   #rx"Step three of the design recipe has not been successfully completed.
+The following: \\(a b\\) are not valid machine states in the given list of machine finals: \\(Y N a b\\)"
+   (lambda ()
+     (make-tm '(S Y N)
                          `(a b)
                          `(((S a) (S ,RIGHT))
                            ((S b) (N b))
@@ -166,10 +200,13 @@ The following: (a a) are not valid machine states in the given list of machine f
                          'S
                          '(Y N a b)
                          'Y
-                         ) (format "Step three of the design recipe has not been successfully completed.
-The following: (a b) are not valid machine states in the given list of machine finals: (Y N a b)"))
+                         ))
+   )
   ;not in list of states
-  (check-error (make-tm '(S Y N)
+  (check-exn
+   "Step three of the design recipe has not been successfully completed.
+The following final states, \\(F\\), are not in your list of states: \\(S Y N\\)"
+   (lambda () (make-tm '(S Y N)
                          `(a b)
                          `(((S a) (S ,RIGHT))
                            ((S b) (N b))
@@ -177,9 +214,12 @@ The following: (a b) are not valid machine states in the given list of machine f
                          'S
                          '(Y N F)
                          'Y
-                         ) (format "Step three of the design recipe has not been successfully completed.
-The following final states, (F), are not in your list of states: (S Y N)"))
-  (check-error (make-tm '(S Y N)
+                         ))
+   )
+  (check-exn
+   #rx"Step three of the design recipe has not been successfully completed.
+The following final states, \\(F G\\), are not in your list of states: \\(S Y N\\)"
+   (lambda () (make-tm '(S Y N)
                          `(a b)
                          `(((S a) (S ,RIGHT))
                            ((S b) (N b))
@@ -187,10 +227,13 @@ The following final states, (F), are not in your list of states: (S Y N)"))
                          'S
                          '(Y N F G)
                          'Y
-                         ) (format "Step three of the design recipe has not been successfully completed.
-The following final states, (F G), are not in your list of states: (S Y N)"))
+                         ))
+   )
   ;duplicates
-  (check-error (make-tm '(S Y N)
+  (check-exn
+   #rx"Step three of the design recipe has not been successfully completed.
+The following values, \\(N\\), are duplicated in the given final states: \\(Y N N\\)"
+   (lambda () (make-tm '(S Y N)
                          `(a b)
                          `(((S a) (S ,RIGHT))
                            ((S b) (N b))
@@ -198,9 +241,12 @@ The following final states, (F G), are not in your list of states: (S Y N)"))
                          'S
                          '(Y N N)
                          'Y
-                         ) (format "Step three of the design recipe has not been successfully completed.
-The following values, (N), are duplicated in the given final states: (Y N N)"))
-  (check-error (make-tm '(S Y N)
+                         ))
+   )
+  (check-exn
+   #rx"Step three of the design recipe has not been successfully completed.
+The following values, \\(Y N\\), are duplicated in the given final states: \\(Y N N Y\\)"
+   (lambda () (make-tm '(S Y N)
                          `(a b)
                          `(((S a) (S ,RIGHT))
                            ((S b) (N b))
@@ -208,11 +254,13 @@ The following values, (N), are duplicated in the given final states: (Y N N)"))
                          'S
                          '(Y N N Y)
                          'Y
-                         ) (format "Step three of the design recipe has not been successfully completed.
-The following values, (Y N), are duplicated in the given final states: (Y N N Y)"))
+                         )) )
 
   ;;START STATE
-  (check-error (make-tm '(S Y N)
+  (check-exn
+   #rx"Step three of the design recipe has not been successfully completed.
+The given starting state: 1 is not a valid state"
+   (lambda () (make-tm '(S Y N)
                          `(a b)
                          `(((S a) (S ,RIGHT))
                            ((S b) (N b))
@@ -220,9 +268,11 @@ The following values, (Y N), are duplicated in the given final states: (Y N N Y)
                          '1
                          '(Y N)
                          'Y
-                         ) (format "Step three of the design recipe has not been successfully completed.
-The given starting state: 1 is not a valid state"))
-  (check-error (make-tm '(S Y N)
+                         )) )
+  (check-exn
+   #rx"Step three of the design recipe has not been successfully completed.
+The given starting state: a is not a valid state"
+   (lambda () (make-tm '(S Y N)
                          `(a b)
                          `(((S a) (S ,RIGHT))
                            ((S b) (N b))
@@ -230,9 +280,11 @@ The given starting state: 1 is not a valid state"))
                          'a
                          '(Y N)
                          'Y
-                         ) (format "Step three of the design recipe has not been successfully completed.
-The given starting state: a is not a valid state"))
-  (check-error (make-tm '(S Y N)
+                         )) )
+  (check-exn
+   #rx"Step three of the design recipe has not been successfully completed.
+The given starting state: \\(A\\) is not a valid state"
+   (lambda () (make-tm '(S Y N)
                          `(a b)
                          `(((S a) (S ,RIGHT))
                            ((S b) (N b))
@@ -240,9 +292,11 @@ The given starting state: a is not a valid state"))
                          '(A)
                          '(Y N)
                          'Y
-                         ) (format "Step three of the design recipe has not been successfully completed.
-The given starting state: (A) is not a valid state"))
-  (check-error (make-tm '(S Y N)
+                         )))
+  (check-exn
+   #rx"Step three of the design recipe has not been successfully completed.
+The following starting state, F, is not in the given list of states: \\(S Y N\\)"
+   (lambda () (make-tm '(S Y N)
                          `(a b)
                          `(((S a) (S ,RIGHT))
                            ((S b) (N b))
@@ -250,10 +304,12 @@ The given starting state: (A) is not a valid state"))
                          'F
                          '(Y N)
                          'Y
-                         ) (format "Step three of the design recipe has not been successfully completed.
-The following starting state, F, is not in the given list of states: (S Y N)"))
+                         ) ))
 
-(check-error (make-tm '(S A B C D E F G H I J K L Y)
+(check-exn
+ #rx"Step six of the design recipe has not been successfully completed.
+The constructed machine does not reject the following words: \\(\\(@ _ a b c\\)\\)"
+ (lambda () (make-tm '(S A B C D E F G H I J K L Y)
                         '(a b c x)
                         `(((S ,BLANK) (J ,RIGHT))
                           ((J ,BLANK) (Y ,BLANK))
@@ -288,11 +344,14 @@ The following starting state, F, is not in the given list of states: (S Y N)"))
                         '(Y)
                         'Y
                         #:accepts `((,LM ,BLANK a b c))
-                        #:rejects `((,LM ,BLANK a b c)))
-             (format "Step six of the design recipe has not been successfully completed.
-The constructed machine does not reject the following words: ((@ _ a b c))"))
+                        #:rejects `((,LM ,BLANK a b c))))
+             )
 
-  (check-error (make-tm '(S A B C D E F G H I J K L Y)
+  (check-exn
+   #rx"Step six of the design recipe has not been successfully completed.
+The constructed machine does not accept the following words: \\(\\(@ _ a b c c\\)\\)"
+   (lambda ()
+     (make-tm '(S A B C D E F G H I J K L Y)
                         '(a b c x)
                         `(((S ,BLANK) (J ,RIGHT))
                           ((J ,BLANK) (Y ,BLANK))
@@ -327,12 +386,14 @@ The constructed machine does not reject the following words: ((@ _ a b c))"))
                         '(Y)
                         'Y
                         #:accepts `((,LM ,BLANK a b c c))
-                        #:rejects `((,LM ,BLANK a b c)))
-               (format "Step six of the design recipe has not been successfully completed.
-The constructed machine does not accept the following words: ((@ _ a b c c))"))
+                        #:rejects `((,LM ,BLANK a b c))))
+               )
   
   ;;ACCEPTS/REJECTS
-  (check-error (make-tm '(S Y N)
+  (check-exn
+   #rx"Step two of the design recipe has not been successfully completed.
+The following words in the accept list contain symbols not included in sigma: \\(\\(c\\)\\)"
+   (lambda () (make-tm '(S Y N)
                     '(a b)
                     `(((S a) (S ,RIGHT))
                       ((S b) (N b))
@@ -340,11 +401,13 @@ The constructed machine does not accept the following words: ((@ _ a b c c))"))
                     'S
                     '(Y N)
                     'Y
-                    #:accepts '((c)))
-                (format "Step two of the design recipe has not been successfully completed.
-The following words in the accept list contain symbols not included in sigma: ((c))"))
+                    #:accepts '((c))))
+                )
 
-  (check-error (make-tm '(S Y N)
+  (check-exn
+   #rx"Step two of the design recipe has not been successfully completed.
+The expected accepts is not lists of symbols, or pairs of symbol lists and starting indexes: \\(a\\)"
+   (lambda () (make-tm '(S Y N)
                     '(a b)
                     `(((S a) (S ,RIGHT))
                       ((S b) (N b))
@@ -352,11 +415,13 @@ The following words in the accept list contain symbols not included in sigma: ((
                     'S
                     '(Y N)
                     'Y
-                    #:accepts '(a))
-                (format "Step two of the design recipe has not been successfully completed.
-The expected accepts is not lists of symbols, or pairs of symbol lists and starting indexes: (a)"))
+                    #:accepts '(a)))
+                )
 
-  (check-error (make-tm '(S Y N)
+  (check-exn
+   #rx"Step two of the design recipe has not been successfully completed.
+The following words in the reject list contain symbols not included in sigma: \\(\\(c\\)\\)"
+   (lambda () (make-tm '(S Y N)
                     '(a b)
                     `(((S a) (S ,RIGHT))
                       ((S b) (N b))
@@ -364,11 +429,13 @@ The expected accepts is not lists of symbols, or pairs of symbol lists and start
                     'S
                     '(Y N)
                     'Y
-                    #:rejects '((c)))
-                (format "Step two of the design recipe has not been successfully completed.
-The following words in the reject list contain symbols not included in sigma: ((c))"))
+                    #:rejects '((c))))
+                )
 
-  (check-error (make-tm '(S Y N)
+  (check-exn
+   "Step two of the design recipe has not been successfully completed.
+The expected rejects is not lists of symbols, or pairs of symbol lists and starting indexes: \\(a\\)"
+   (lambda () (make-tm '(S Y N)
                     '(a b)
                     `(((S a) (S ,RIGHT))
                       ((S b) (N b))
@@ -376,10 +443,7 @@ The following words in the reject list contain symbols not included in sigma: ((
                     'S
                     '(Y N)
                     'Y
-                    #:rejects '(a))
-                (format "Step two of the design recipe has not been successfully completed.
-The expected rejects is not lists of symbols, or pairs of symbol lists and starting indexes: (a)"))
-  
-  (test)
+                    #:rejects '(a)))
+                )
   
   )

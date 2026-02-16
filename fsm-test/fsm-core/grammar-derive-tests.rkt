@@ -1,9 +1,14 @@
 #lang racket/base
 
-(require "../../main.rkt")
-
 (module+ test
-  (require rackunit)
+  (require rackunit
+           "../../fsm-core/private/grammar-operations.rkt"
+           "../../fsm-core/private/rg-constructors.rkt"
+           "../../fsm-core/private/cfg-constructors.rkt"
+           "../../fsm-core/private/urg-constructors.rkt"
+           "../../fsm-core/private/grammar-getters.rkt"
+           "../../fsm-core/private/constants.rkt"
+           )
 (define rg-a* (make-rg '(S) '(a) `((S -> ,EMP) (S -> aS)) 'S))
 
   (check-equal? (grammar-derive? rg-a* '()) #t)

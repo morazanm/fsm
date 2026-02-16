@@ -427,7 +427,7 @@
                        (list (car r) (cadr r) (symbol->fsmlos (caddr r))))
                      (cfg-get-rules G)))
            (newS (generate-symbol start nts)))
-      (make-cfg (cons newS nts)
+      (make-unchecked-cfg (cons newS nts)
                 sigma
                 (cons (list newS ARROW start)
                       (map (λ (r)
@@ -470,7 +470,7 @@
            (solitary-new-rules (map (λ (a) (list (hash-ref ht a) ARROW (list a)))
                                     sigma))
            (new-rls (map (λ (r) (convert-non-solitary r sigma ht)) rls)))
-      (make-cfg (append nts
+      (make-unchecked-cfg (append nts
                         (map (λ (a) (hash-ref ht a)) sigma))
                 sigma
                 (map (λ (r)
@@ -519,7 +519,7 @@
            (new-rls (make-new-rls to-process-trls new-nts))
            ;(ddd (displayln (format "~s" (append nts new-nts))))
            )
-      (make-cfg (append nts new-nts)
+      (make-unchecked-cfg (append nts new-nts)
                 sigma
                 (map (λ (r)
                        (list (car r) ARROW (los->symbol (caddr r))))
@@ -606,7 +606,7 @@
                             sigma)))
            ;(dd (display (format "new rules: \n ~s \n" new-rules)))
            (new-nts (map car new-rules)))
-      (make-cfg new-nts
+      (make-unchecked-cfg new-nts
                 sigma
                 new-rules
                 start)))
@@ -654,7 +654,7 @@
            (new-nts (map car new-rules))
            ;(d (display (format "trls: \n ~s \n\n" trls)))
            )
-      (make-cfg (remove-duplicates new-nts)
+      (make-unchecked-cfg (remove-duplicates new-nts)
                 sigma
                 new-rules
                 start)
@@ -666,7 +666,7 @@
   (unit-grammar
    (del-grammar (bin-grammar (term-grammar (start-grammar G))))))
 
-(define G (make-cfg '(X Y Z A)
+(define G (make-unchecked-cfg '(X Y Z A)
                     '(a b c e)
                     (list '(X -> ε)
                           '(Y -> XXZ)
@@ -675,13 +675,13 @@
                           '(A -> e))
                     'Y))
 
-(define BPG (make-cfg '(S)
+(define BPG (make-unchecked-cfg '(S)
                       '(o c)
                       `((S ,ARROW ,EMP)
                         (S ,ARROW SS)
                         (S ,ARROW oSc))
                       'S))
-(define numb>numa (make-cfg '(S A)
+(define numb>numa (make-unchecked-cfg '(S A)
                             '(a b)
                             `((S ,ARROW b)
                               (S ,ARROW AbA)

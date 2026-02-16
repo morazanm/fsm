@@ -1,13 +1,14 @@
 #lang racket/base
 (require "constants.rkt"
          "misc.rkt"
-         racket/list)
+         racket/list
+         )
 (provide  check-rgrule check-cfgrule check-csgrule
           check-dfarule check-ndfarule check-pda-rules check-tmrules
           ;check-pdarule check-tmrule
 
           ;; experted for testing
-          allBoth oneAndOne allOne hasOne
+          #;allBoth oneAndOne allOne hasOne
             
           )
 

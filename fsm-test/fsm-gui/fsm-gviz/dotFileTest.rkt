@@ -1,10 +1,13 @@
-#lang racket
+#lang racket/base
 
 (require
  rackunit
+ racket/string
+ racket/sequence
+ racket/match
+ "../../../fsm-core/private/sm-getters.rkt"
+ "../../../fsm-core/private/constants.rkt"
  "../../test-machine.rkt"
- "../../../main.rkt"
- "../../../fsm-core/interface.rkt"
  "../../../fsm-gviz/interface.rkt"
  "../../../fsm-gui/globals.rkt"
  "../../../fsm-gui/structs/state.rkt"

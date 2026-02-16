@@ -13,6 +13,7 @@
            tm-union tm-concat tm-kleenestar tm-complement tm-intersection
            ctm-apply tmconfig-state tmconfig-index tmconfig-tape tmconfig?
            tm-apply tm-showtransitions tm-test
+           ctm-run
            )
   
   ; tmrule
@@ -535,6 +536,13 @@
                                        '(H)))
 
   (define tm-rename-sts-WriteI (tm-rename-states (tm-getstates tm-WriteI) tm-WriteI))
+
+; ctm word [trace Boolean] [natnum] --> (list state natnum tape)
+(define (ctm-run M w #:trace [trace #f] . l)
+  (let ((res (ctm-apply M w (if (null? l) 0 (car l)) trace)))
+    (if trace
+        res
+        (list (tmconfig-state res) (tmconfig-index res) (tmconfig-tape res)))))
 
   ;k(tm-apply tm-rename-sts-WriteI `(i ,BLANK i ,BLANK i i ,BLANK) 1)
 ; closes module

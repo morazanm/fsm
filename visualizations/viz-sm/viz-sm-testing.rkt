@@ -1,6 +1,6 @@
-#lang racket
+#lang racket/base
 
-(require ;"testing-parameter.rkt"
+(require
   "../../fsm-core/private/fsa.rkt"
   "../../fsm-core/private/pda.rkt"
   "../../fsm-core/private/tm.rkt" 
@@ -8,6 +8,7 @@
   "../../fsm-core/private/mtape-tm.rkt"
   "../../fsm-core/private/sm-getters.rkt"
   "../../fsm-core/private/cfg-struct.rkt"
+  racket/list
   "sm-viz.rkt")
 
 (define (ndfa->pda M)
@@ -21,8 +22,8 @@
                 '()
                 start
                 finals
-                (map (λ (r) (list (list (first r) (second r) EMP)
-                                  (list (third r) EMP)))
+                (map (λ (r) (list (list (car r) (cadr r) EMP)
+                                  (list (caddr r) EMP)))
                      rules))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -343,34 +344,34 @@
 ;;word -> boolean
 ;;Purpose: Determines if the given word is missing an a
 (define (ALON-A-INV a-word)
-  (empty? (filter (λ (w) (equal? w 'a))
+  (null? (filter (λ (w) (equal? w 'a))
                   a-word)))
 
 ;;word -> boolean
 ;;Purpose: Determines if the given word is missing an b
 (define (ALON-B-INV a-word)
-  (empty? (filter (λ (w) (equal? w 'b))
+  (null? (filter (λ (w) (equal? w 'b))
                   a-word)))
 ;;word -> boolean
 ;;Purpose: Determines if the given word is missing an c
 (define (ALON-C-INV a-word)
-  (empty? (filter (λ (w) (equal? w 'c))
+  (null? (filter (λ (w) (equal? w 'c))
                   a-word)))
 
 ;;word -> boolean
 ;;Purpose: Determines if the given word is empty
 (define (AB*B*UAB*-S-INV a-word)
-  (empty? a-word))
+  (null? a-word))
 
 ;;word -> boolean
 ;;Purpose: Determines if the last letter in the given word is an b
 (define (AB*B*UAB*-K-INV a-word)
-  (or (empty? a-word) (equal? (last a-word) 'b)))
+  (or (null? a-word) (equal? (last a-word) 'b)))
 
 ;;word -> boolean
 ;;Purpose: Determines if the last letter in the given word is an a
 (define (AB*B*UAB*-B-INV a-word)
-  (and (not (empty? a-word)) (not
+  (and (not (null? a-word)) (not
                               (equal? (last a-word) 'a))))
 ;)
 
@@ -383,7 +384,7 @@
 ;;Purpose: Determines if the given word is empty or if the last letter is an a or b
 (define (AB*B*UAB*-H-INV a-word)
   ;(not
-  (or (empty? a-word) (equal? (last a-word) 'a) (equal? (last a-word) 'b)))
+  (or (null? a-word) (equal? (last a-word) 'a) (equal? (last a-word) 'b)))
 ;)
 
 ;;word -> boolean
@@ -399,35 +400,35 @@
 ;;word -> boolean
 ;;Purpose: determines if w is empty
 (define (ab*-U-ab*b*-ndfa-s-inv a-word)
-  (empty? a-word))
+  (null? a-word))
 
 ;;word -> boolean
 ;;Purpose: determines if w has same # of a's and b's
 (define (ab*-U-ab*b*-ndfa-a-inv a-word)
-  (local [(define num-a (length (filter (λ (w) (equal? w 'a)) a-word)))
-          (define num-b (length (filter (λ (w) (equal? w 'b)) a-word)))]
-    (= num-a num-b)))
+  (define num-a (length (filter (λ (w) (equal? w 'a)) a-word)))
+          (define num-b (length (filter (λ (w) (equal? w 'b)) a-word)))
+    (= num-a num-b))
 
 ;;word -> boolean
 ;;Purpose: determines if w has more of a's and b's
 (define (ab*-U-ab*b*-ndfa-b-inv a-word)
-  (local [(define num-a (length (filter (λ (w) (equal? w 'a)) a-word)))
-          (define num-b (length (filter (λ (w) (equal? w 'b)) a-word)))]
-    (> num-a num-b)))
+  (define num-a (length (filter (λ (w) (equal? w 'a)) a-word)))
+          (define num-b (length (filter (λ (w) (equal? w 'b)) a-word)))
+    (> num-a num-b))
 
 ;;word -> boolean
 ;;Purpose: determines if w has more or equal of a's and b's
 (define (ab*-U-ab*b*-ndfa-c-inv a-word)
-  (local [(define num-a (length (filter (λ (w) (equal? w 'a)) a-word)))
-          (define num-b (length (filter (λ (w) (equal? w 'b)) a-word)))]
-    (>= num-b num-a)))
+  (define num-a (length (filter (λ (w) (equal? w 'a)) a-word)))
+          (define num-b (length (filter (λ (w) (equal? w 'b)) a-word)))
+    (>= num-b num-a))
 
 ;;word -> boolean
 ;;Purpose: determines if w has same # of a's and b's
 (define (ab*-U-ab*b*-ndfa-d-inv a-word)
-  (local [(define num-a (length (filter (λ (w) (equal? w 'a)) a-word)))
-          (define num-b (length (filter (λ (w) (equal? w 'b)) a-word)))]
-    (= num-a num-b)))
+  (define num-a (length (filter (λ (w) (equal? w 'a)) a-word)))
+          (define num-b (length (filter (λ (w) (equal? w 'b)) a-word)))
+    (= num-a num-b))
 
 ;;word -> boolean
 ;;Purpose: determines if (rest w) only contains bs 
@@ -437,30 +438,30 @@
 ;; word -> Boolean
 ;; Purpose: To determine whether ci = emp
 (define (aa-ab-S-INV1 ci)
-  (not (empty? ci)))
+  (not (null? ci)))
 
 ;; word -> Boolean
 ;; Purpose: To determine whether ci = aa*
 (define (aa-ab-A-INV1 ci)
-  #f #;(and (not (empty? ci))
+  #f #;(and (not (null? ci))
             (andmap (λ (w) (eq? w 'a)) ci)))
 
 ;; word -> Boolean
 ;; Purpose: To determine whether ci = ab*
 (define (aa-ab-B-INV1 ci)
-  (and (not (empty? ci))
-       (eq? (first ci) 'a)
+  (and (not (null? ci))
+       (eq? (car ci) 'a)
        (andmap (λ (el) (eq? el 'b)) ci)))
 
 ;;word -> Boolean
 ;;Purpose: To determine whether ci = emp
 (define (aa-ab-F-INV ci)
-  (empty? ci))
+  (null? ci))
 
 ;;word -> boolean
 ;;Purpose: Determines if the given word is empty
 (define (DNA-K-INV a-word)
-  (empty? a-word))
+  (null? a-word))
 
 ;;word -> boolean
 ;;Purpose: Determines if the given word has more a's than t's
@@ -771,7 +772,7 @@
 ;;purpose: Determine if the given word has an equal number of a's and b's
 ;;         and that the stack is empty
 (define (K-INV a-word stck)
-  (and (empty? stck)
+  (and (null? stck)
        (= (length (filter (λ (w) (equal? w 'a)) a-word))
           (length (filter (λ (w) (equal? w 'b)) a-word)))))
 
@@ -858,8 +859,8 @@
 
 
 (define (p-xds-inv wrd stck)
-  (and (empty? wrd)
-       (empty? stck)))
+  (and (null? wrd)
+       (null? stck)))
 
 (define (pd-a-inv wrd stck)
   (or (not (= (length (filter (λ (w) (equal? w 'a)) wrd)) 4))
@@ -1168,8 +1169,8 @@
               (w-as (drop w (length as)))
               (bs (front-symbs w-as 'b))]
          (and (equal? w (append as bs))
-              (not (empty? as))
-              (not (empty? bs))))))
+              (not (null? as))
+              (not (null? bs))))))
 
 ;; tape natnum → Boolean
 ;; Purpose: Determine head in position > 2 and
@@ -1181,8 +1182,8 @@
                    (w-as (drop w (length as)))
                    (bs (front-symbs w-as 'b))]
               (and (equal? w (append as bs))
-                   (not (empty? as))
-                   (not (empty? bs)))))))
+                   (not (null? as))
+                   (not (null? bs)))))))
 
 ;; tape natnum → Boolean
 ;; Purpose: Determine head in position > 3 and
@@ -1196,9 +1197,9 @@
               (w-asbs (drop w-as (length bs)))
               (cs (front-symbs w-asbs 'c))]
          (and (equal? w (append as bs cs))
-              (not (empty? as))
-              (not (empty? bs))
-              (not (empty? cs))))))
+              (not (null? as))
+              (not (null? bs))
+              (not (null? cs))))))
 
 
 ;; tape natnum → Boolean
@@ -1641,10 +1642,10 @@
 ;;(listof tape-configs) -> boolean
 ;;Purpose: Determine if K-inv holds
 (define (k-inv tape-config)
-  (let [(t0h (first (first tape-config)))
-        (t0 (second (first tape-config)))
-        (t1h (first (second tape-config)))
-        (t1 (second (second tape-config)))]
+  (let [(t0h (car (car tape-config)))
+        (t0 (cadr (car tape-config)))
+        (t1h (car (cadr tape-config)))
+        (t1 (cadr (cadr tape-config)))]
     (and (= t0h 1) (= t1h 0)
          (eq? (list-ref t0 t0h) BLANK)
          (equal? t1 (list BLANK)))))
@@ -1652,10 +1653,10 @@
 ;;(listof tape-configs) -> boolean
 ;;Purpose: Determine if H-inv holds
 (define (h-inv tape-config)
-  (let* [(t0h (first (first tape-config)))
-         (t0 (second (first tape-config)))
-         (t1h (first (second tape-config)))
-         (t1 (second (second tape-config)))
+  (let* [(t0h (car (car tape-config)))
+         (t0 (cadr (car tape-config)))
+         (t1h (car (cadr tape-config)))
+         (t1 (cadr (cadr tape-config)))
          (readt0 (take (drop t0 2) (- t0h 2)))
          (readt1 (take (drop t1 1) (- t1h 1)))]
     (and (>= t0h 2) (>= t1h 1)
@@ -1666,10 +1667,10 @@
 ;;(listof tape-configs) -> boolean
 ;;Purpose: Determine if T-inv holds
 (define (t-inv tape-config)
-  (let* [(t0h (first (first tape-config)))
-         (t0 (second (first tape-config)))
-         (t1h (first (second tape-config)))
-         (t1 (second (second tape-config)))
+  (let* [(t0h (car (car tape-config)))
+         (t0 (cadr (car tape-config)))
+         (t1h (car (cadr tape-config)))
+         (t1 (cadr (cadr tape-config)))
          (readt0 (take (drop t0 2) (- t0h 2)))
          (readt1 (take (drop t1 1) (- t1h 1)))]
     (and (>= t0h 2) (>= t1h 1)
@@ -1680,10 +1681,10 @@
 ;;(listof tape-configs) -> boolean
 ;;Purpose: Determine if F-inv holds
 (define (f-inv tape-config)
-  (let* [(t0h (first (first tape-config)))
-         (t0 (second (first tape-config)))
-         (t1h (first (second tape-config)))
-         (t1 (second (second tape-config)))
+  (let* [(t0h (car (car tape-config)))
+         (t0 (cadr (car tape-config)))
+         (t1h (car (cadr tape-config)))
+         (t1 (cadr (cadr tape-config)))
          (readt0 (take (drop t0 2) (- t0h 2)))
          (readt1 (take (drop t1 1) (- t1h 1)))]
     (and (>= t0h 2) (>= t1h 1)
@@ -1694,30 +1695,30 @@
 ;;(listof tape-configs) -> boolean
 ;;Purpose: Determine if E-inv holds
 (define (e-inv tape-config)
-  (let* [(t0h (first (first tape-config)))
-         (t0 (second (first tape-config)))
-         (t1h (first (second tape-config)))
-         (t1 (second (second tape-config)))
+  (let* [(t0h (car (car tape-config)))
+         (t0 (cadr (car tape-config)))
+         (t1h (car (cadr tape-config)))
+         (t1 (cadr (cadr tape-config)))
          (readt0 (take (drop t0 1) t0h))]
     (and (>= t0h 2)
          (eq? (list-ref t0 t0h) BLANK)
          (equal? readt0 t1))))
 
 (define (w-inv tape-config)
-  (let* [(t0h (first (first tape-config)))
-         (t0 (second (first tape-config)))
-         (t1h (first (second tape-config)))
-         (t1 (second (second tape-config)))
+  (let* [(t0h (car (car tape-config)))
+         (t0 (cadr (car tape-config)))
+         (t1h (car (cadr tape-config)))
+         (t1 (cadr (cadr tape-config)))
          (writet0 (take (drop t0 (length t1)) (- t0h (length t1))))
          (readt1 (take (drop t1 1) (- t1h 1)))]
     (and (>= t0h 2) (>= t1h 1)
          (equal? writet0 readt1))))
 
 (define (b-inv tape-config)
-  (let* [(t0h (first (first tape-config)))
-         (t0 (second (first tape-config)))
-         (t1h (first (second tape-config)))
-         (t1 (second (second tape-config)))
+  (let* [(t0h (car (car tape-config)))
+         (t0 (cadr (car tape-config)))
+         (t1h (car (cadr tape-config)))
+         (t1 (cadr (cadr tape-config)))
          (writet0 (take (drop t0 (length t1)) (- t0h (length t1))))
          (readt1 (take (drop t1 1) (- t1h 1)))]
     (and (>= t0h 2) (>= t1h 1)
@@ -1725,10 +1726,10 @@
          (equal? writet0 readt1))))
 
 (define (d-inv tape-config)
-  (let* [(t0h (first (first tape-config)))
-         (t0 (second (first tape-config)))
-         (t1h (first (second tape-config)))
-         (t1 (second (second tape-config)))
+  (let* [(t0h (car (car tape-config)))
+         (t0 (cadr (car tape-config)))
+         (t1h (car (cadr tape-config)))
+         (t1 (cadr (cadr tape-config)))
          (writet0 (take (drop t0 (length t1)) (- t0h (length t1))))
          (readt1 (take (drop t1 1) (- t1h 1)))]
     (and (>= t0h 2) (>= t1h 1)
@@ -1736,10 +1737,10 @@
          (equal? writet0 readt1))))
 
 (define (m-inv tape-config)
-  (let* [(t0h (first (first tape-config)))
-         (t0 (second (first tape-config)))
-         (t1h (first (second tape-config)))
-         (t1 (second (second tape-config)))
+  (let* [(t0h (car (car tape-config)))
+         (t0 (cadr (car tape-config)))
+         (t1h (car (cadr tape-config)))
+         (t1 (cadr (cadr tape-config)))
          (readt0 (take (drop t0 2) (- t0h 2)))
          (readt1 (take (drop t1 1) (- t1h 1)))]
     (and (>= t0h 2) (>= t1h 1)
@@ -1835,16 +1836,16 @@
     ;(sm-viz pd-numb>numa '(a b) #:cut-off -3)
     (sm-viz more-a-than-b '(a a a a a b b))
     (sm-viz a* '(a a a a a)
-            (list 'K (λ (w s) (and (empty? w) (empty? s)))) (list 'H (λ (w s) (and (not (= (length w) 3)) (empty? s)))))
+            (list 'K (λ (w s) (and (null? w) (null? s)))) (list 'H (λ (w s) (and (not (= (length w) 3)) (null? s)))))
     (sm-viz aa* '(a a)
-            (list 'K (λ (w s) (and (empty? w) (empty? s)))) (list 'H (λ (w s) (and (empty? w) (empty? s)))))
+            (list 'K (λ (w s) (and (null? w) (null? s)))) (list 'H (λ (w s) (and (null? w) (null? s)))))
     (sm-viz a* '(a a)
-            (list 'K (λ (w s) (and (empty? w) (empty? s)))) (list 'H (λ (w s) (and (not (empty? w)) (empty? s)))))
+            (list 'K (λ (w s) (and (null? w) (null? s)))) (list 'H (λ (w s) (and (not (null? w)) (null? s)))))
     (sm-viz P2 '(a a a b b) (list 'S P-S-INV) (list 'H P-H-INV))
     (sm-viz a* '(a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a
                    a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a
                    a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a)
-            (list 'K (λ (w s) (and (empty? w) (empty? s)))) (list 'H (λ (w s) (and (not (empty? w)) (empty? s))))) ;; look into
+            (list 'K (λ (w s) (and (null? w) (null? s)))) (list 'H (λ (w s) (and (not (null? w)) (null? s))))) ;; look into
     (sm-viz P2 '(a a a b b) (list 'S P-S-INV) (list 'H P-H-INV)) ;;needs to be looked into
 
     (sm-viz P2 '(a a a b b))

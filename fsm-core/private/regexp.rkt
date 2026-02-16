@@ -19,8 +19,12 @@
          racket/list)
 (provide null-regexp null-regexp? 
          empty-regexp empty-regexp?
-         (contract-out
-          [struct singleton-regexp ((a valid-singleton/c))])
+         singleton-regexp?
+         singleton-regexp-a
+         #;(contract-out
+          [singleton-regexp-a valid-singleton/c]
+          
+          #;[struct singleton-regexp ((a valid-singleton/c))])
          make-unchecked-singleton
          make-unchecked-concat concat-regexp? concat-regexp-r1 concat-regexp-r2
          make-unchecked-union union-regexp? union-regexp-r1 union-regexp-r2

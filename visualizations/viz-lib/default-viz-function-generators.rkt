@@ -347,9 +347,6 @@
 ;; Purpose: Zooms all the way out in the visualization
 (define (max-zoom-out E-SCENE-WIDTH E-SCENE-HEIGHT ZOOM-INCREASE ZOOM-DECREASE NODE-SIZE PERCENT-BORDER-GAP DEFAULT-ZOOM-CAP DEFAULT-ZOOM)
   (lambda (a-vs)
-    ;; actual-width * (curr-scale * factor) = new-width
-    ;; new-width / actual-width = curr-scale * factor
-    ;; new-width / actual-width * curr-scale = factor
     ((zoom (min (* (/ E-SCENE-WIDTH (image-width (viz-state-curr-image a-vs))) (viz-state-scale-factor a-vs))
                 (* (/ E-SCENE-HEIGHT (image-height (viz-state-curr-image a-vs))) (viz-state-scale-factor a-vs)))
                  E-SCENE-WIDTH E-SCENE-HEIGHT ZOOM-INCREASE ZOOM-DECREASE NODE-SIZE) a-vs)))

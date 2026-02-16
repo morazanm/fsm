@@ -1,9 +1,25 @@
-#lang racket
-
-(require "../../main.rkt")
+#lang racket/base
 
 (module+ test
-  (require rackunit)
+  (require "../../fsm-core/private/sm-apply.rkt"
+         "../../fsm-core/private/ndfa-constructors.rkt"
+         "../../fsm-core/private/sm-operations.rkt"
+         "../../fsm-core/private/sm-getters.rkt"
+         "../../fsm-core/private/fsa.rkt"
+         "../../fsm-core/private/constants.rkt"
+         "../../fsm-core/private/regexp-constructors.rkt"
+         "../../fsm-core/private/pda-constructors.rkt"
+         "../../fsm-core/private/tm-constructors.rkt"
+         "../../fsm-core/private/tm.rkt"
+         "../../fsm-core/private/rg-constructors.rkt"
+         "../../fsm-core/private/grammar-operations.rkt"
+         "../../fsm-core/private/misc.rkt"
+         "../../fsm-core/private/cfg-constructors.rkt"
+         "../../fsm-core/private/urg-constructors.rkt"
+         "../../fsm-core/private/grammar-getters.rkt"
+         "../../fsm-core/private/regexp.rkt"
+         racket/list
+         rackunit)
 
   ;; ---- DFA TESTS ---
 
@@ -810,20 +826,20 @@
   ;;; csg tests
 
   (define CSG-an-bn (make-grammar '(S) 
-                              '(a b) 
-                              (list (list 'S ARROW EMP) 
-                                    (list 'aSb ARROW 'aaSbb) 
-                                    (list 'S ARROW 'aSb)) 
-                              'S))
+                                  '(a b) 
+                                  (list (list 'S ARROW EMP) 
+                                        (list 'aSb ARROW 'aaSbb) 
+                                        (list 'S ARROW 'aSb)) 
+                                  'S))
 
   (define CSG-an-bn-cn (make-grammar '(S A B C G H I) 
-                                 '(a b c) 
-                                 `( (S -> ABCS) (S -> G)
-                                                (BA -> AB) (CA -> AC) (CB -> BC)
-                                                (CG -> Gc) (G -> H) 
-                                                (BH -> Hb) (H -> I)
-                                                (AI -> Ia) (I -> ,EMP)) 
-                                 'S))
+                                     '(a b c) 
+                                     `( (S -> ABCS) (S -> G)
+                                                    (BA -> AB) (CA -> AC) (CB -> BC)
+                                                    (CG -> Gc) (G -> H) 
+                                                    (BH -> Hb) (H -> I)
+                                                    (AI -> Ia) (I -> ,EMP)) 
+                                     'S))
 
   (check-equal? (last (grammar-derive CSG-an-bn-cn '())) (los->symbol (list EMP)))
   (check-equal? (last (grammar-derive CSG-an-bn-cn '(a b c))) (los->symbol '(a b c)))

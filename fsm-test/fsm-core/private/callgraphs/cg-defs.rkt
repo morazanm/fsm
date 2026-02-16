@@ -1,6 +1,4 @@
-#lang racket
-
-
+#lang racket/base
 
 (module+ test
   (require "../../../../fsm-core/private/callgraphs/cg-defs.rkt"

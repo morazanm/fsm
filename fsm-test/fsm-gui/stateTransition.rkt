@@ -1,16 +1,15 @@
-#lang racket
-(require "../../fsm-gui/components/stateTransitions.rkt"
+#lang racket/base
+
+(module+ test
+  (require rackunit
+           "../../fsm-gui/components/stateTransitions.rkt"
          "../../fsm-gui/globals.rkt"
          "../../fsm-core/private/constants.rkt"
          "../test-helpers.rkt")
 
-
-(module+ test
-  (require rackunit)
-
   (define getCurrentRule
     (test-suite "Tests getCurRule Function"
-                 (test-case "MTTM"
+                (test-case "MTTM"
                            (set-machine-type 'mttm)
                            (check-equal? (getCurRule '((Q (1 (_ a a b b c c d d)) (1 (_ _)) (1 (_ _)) (1 (_ _)))
                                                        (S (0 (_ a a b b c c d d)) (0 (_)) (0 (_)) (0 (_)))))

@@ -1,4 +1,4 @@
-#lang racket
+#lang racket/base
 (require "../../2htdp/image.rkt"
          racket/runtime-path)
 (provide (all-defined-out))
