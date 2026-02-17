@@ -1,134 +1,134 @@
 #lang racket/base
-  (require "constants.rkt"
-           racket/list)
-  (provide make-unchecked-mttm
-           mttm-get-states
-           mttm-get-sigma
-           mttm-get-start
-           mttm-get-finals
-           mttm-get-rules
-           mttm-what-am-i
-           mttm-get-accept
-           mttm-apply
-           mttm-show-transitions)
+(require "constants.rkt"
+         racket/list)
+(provide make-unchecked-mttm
+         mttm-get-states
+         mttm-get-sigma
+         mttm-get-start
+         mttm-get-finals
+         mttm-get-rules
+         mttm-what-am-i
+         mttm-get-accept
+         mttm-apply
+         mttm-show-transitions)
 
-  ;; An action is either: 1. RIGHT  2. LEFT or 3. alpha
+;; An action is either: 1. RIGHT  2. LEFT or 3. alpha
 
-  ;; A mttm-rule is (list (list state (listof alpha|BLANK)) (list state (listof action)))
-
-
-  ;; A mttm-config is (list state (list natnum (listof symbol))^+)
+;; A mttm-rule is (list (list state (listof alpha|BLANK)) (list state (listof action)))
 
 
+;; A mttm-config is (list state (list natnum (listof symbol))^+)
 
-  ;; (listof state) (listof alpha) state state (listof mttm-rule)
-  ;; Assume: Rules are for k tapes
-  (define (make-unchecked-mttm sts alpha start finals rules k . accept)
-    (define sigma (if (member LM alpha) alpha (cons LM alpha)))
-    (define accept-state (if (null? accept) (void) (car accept)))
-    (define (show-transitions w t1pos)
-      ;; (listof mttm-config) --> (listof tmconfig)
-      (define (run paths)
-        ;(display (format "PATHS: ~s\n" paths))
-        (if (null? paths)
-            (cond [(void? accept-state)
-                   (error "Turing machine exhausted all computation paths without reaching a halting state.")]
-                  [else (list 'reject)])
-            (let* ((currpath (car paths))
-                   ;(d (displayln (format "First of urrent path: ~s\n" (car currpath))))
-                   (currstate (car (car currpath))))
-              (if (member currstate finals)
-                  (cond [(void? accept-state) currpath] ;; if not a lang recog halt
-                        [(eq? currstate accept-state)   ;; if lang recog add 'accept
-                         (cons 'accept currpath)]
-                        [else (run (cdr paths))]) ;; else add 'reject
-                  (let* ((pos-tapes (cdr (car currpath)))
-                         ;(ddd (display (format "pos-tapes: ~s\n" pos-tapes)))
-                         (posns (map car pos-tapes))
-                         (tapes (map cadr pos-tapes))
-                         ;(ddd (display (format "pons: ~s\n" posns)))
-                         ;(ddd (display (format "tapes: ~s\n" tapes)))
-                         (reads (map (λ (p t)
-                                       (if (null? t)
-                                           BLANK
-                                           (list-ref t p)))
-                                     posns
-                                     tapes))
-                         ;(dd (display (format "reads: ~s\n" reads)))
-                         (rls (filter (λ (r)
-                                        ;(display (format "reads: ~a\n" reads))
-                                        ;(display (format "rule: ~a\n" r))
-                                        ;(display (format "currs: ~a\n" currstate))
-                                        ;(display (format "2nd 1st r: ~a\n" (cadr (car r))))
-                                        #;(display (format "equal: ~a\n\n" (and (equal? (car (car r))
-                                                                                        currstate)
-                                                                                (equal? (cadr (car r)) reads))))
-                                        (and (equal? (car (car r)) currstate)
-                                             (equal? (cadr (car r)) reads)))                                             
-                                      rules))
-                         ;(dd (display (format "rls: ~s\n" rls)))
-                         (newconfigs (map (λ (r)
-                                            (let* ((actions (cadr (cadr r))))
-                                              (cons (car (cadr r))
-                                                    (map (λ (p t a)
-                                                           (cond [(eq? a LEFT)
-                                                                  (cons (sub1 p) (list t))]
-                                                                 [(eq? a RIGHT)
-                                                                  (cons (add1 p)
-                                                                        (if (< (add1 p) (length t)) ;; add a blank to the right if necessary
-                                                                            (list t)
-                                                                            (list (append t (list BLANK)))))]
-                                                                 [else 
-                                                                  (cons p (list (append (take t p)
-                                                                                        (cons a (drop t (add1 p))))))]))
-                                                         posns
-                                                         tapes
-                                                         actions))))
-                                          rls))
-                         (newpaths (map (λ (config) (cons config currpath)) newconfigs)))
-                    (run (append (cdr paths) newpaths)))))))
-      (let* ((init-config (cons start
-                                (for/list [(n k)]
-                                  (if (= n 0)
-                                      (list  t1pos (if (null? w) `(,BLANK) w)) ;; head pos and tape for T1
-                                      (list 0 (list BLANK)))))) ;; head pos and tape for all non-T1
-             (res (reverse (run (list (list init-config)))))
-             ;(dddd (display (format "res: ~s\n" res)))
-             )
-        res))
-    (lambda (mess . junk)
-      (cond [(eq? mess 'get-states) sts]
-            [(eq? mess 'get-sigma) (remove '@ sigma)]
-            [(eq? mess 'get-start) start]
-            [(eq? mess 'get-finals) finals]
-            [(eq? mess 'get-rules) rules]
-            [(eq? mess 'get-numtapes) k]
-            [(eq? mess 'whatami)
-             (if (equal? accept-state (void)) 'mttm 'mttm-language-recognizer)]
-            [(eq? mess 'get-accept)
-             (if (equal? accept-state (void))
-                 (error "This mttm is not a language recognizer.")
-                 accept-state)]
-            [(eq? mess 'apply) (λ (w t1pos)
-                                 (last (show-transitions w t1pos)))]
-            [(eq? mess 'show-transitions) show-transitions]
-            [else (format "Unknown message give to mttm: ~s" mess)])))
+
+
+;; (listof state) (listof alpha) state state (listof mttm-rule)
+;; Assume: Rules are for k tapes
+(define (make-unchecked-mttm sts alpha start finals rules k . accept)
+  (define sigma (if (member LM alpha) alpha (cons LM alpha)))
+  (define accept-state (if (null? accept) (void) (car accept)))
+  (define (show-transitions w t1pos)
+    ;; (listof mttm-config) --> (listof tmconfig)
+    (define (run paths)
+      ;(display (format "PATHS: ~s\n" paths))
+      (if (null? paths)
+          (cond [(void? accept-state)
+                 (error "Turing machine exhausted all computation paths without reaching a halting state.")]
+                [else (list 'reject)])
+          (let* ((currpath (car paths))
+                 ;(d (displayln (format "First of urrent path: ~s\n" (car currpath))))
+                 (currstate (car (car currpath))))
+            (if (member currstate finals)
+                (cond [(void? accept-state) currpath] ;; if not a lang recog halt
+                      [(eq? currstate accept-state)   ;; if lang recog add 'accept
+                       (cons 'accept currpath)]
+                      [else (run (cdr paths))]) ;; else add 'reject
+                (let* ((pos-tapes (cdr (car currpath)))
+                       ;(ddd (display (format "pos-tapes: ~s\n" pos-tapes)))
+                       (posns (map car pos-tapes))
+                       (tapes (map cadr pos-tapes))
+                       ;(ddd (display (format "pons: ~s\n" posns)))
+                       ;(ddd (display (format "tapes: ~s\n" tapes)))
+                       (reads (map (λ (p t)
+                                     (if (null? t)
+                                         BLANK
+                                         (list-ref t p)))
+                                   posns
+                                   tapes))
+                       ;(dd (display (format "reads: ~s\n" reads)))
+                       (rls (filter (λ (r)
+                                      ;(display (format "reads: ~a\n" reads))
+                                      ;(display (format "rule: ~a\n" r))
+                                      ;(display (format "currs: ~a\n" currstate))
+                                      ;(display (format "2nd 1st r: ~a\n" (cadr (car r))))
+                                      #;(display (format "equal: ~a\n\n" (and (equal? (car (car r))
+                                                                                      currstate)
+                                                                              (equal? (cadr (car r)) reads))))
+                                      (and (equal? (car (car r)) currstate)
+                                           (equal? (cadr (car r)) reads)))                                             
+                                    rules))
+                       ;(dd (display (format "rls: ~s\n" rls)))
+                       (newconfigs (map (λ (r)
+                                          (let* ((actions (cadr (cadr r))))
+                                            (cons (car (cadr r))
+                                                  (map (λ (p t a)
+                                                         (cond [(eq? a LEFT)
+                                                                (cons (sub1 p) (list t))]
+                                                               [(eq? a RIGHT)
+                                                                (cons (add1 p)
+                                                                      (if (< (add1 p) (length t)) ;; add a blank to the right if necessary
+                                                                          (list t)
+                                                                          (list (append t (list BLANK)))))]
+                                                               [else 
+                                                                (cons p (list (append (take t p)
+                                                                                      (cons a (drop t (add1 p))))))]))
+                                                       posns
+                                                       tapes
+                                                       actions))))
+                                        rls))
+                       (newpaths (map (λ (config) (cons config currpath)) newconfigs)))
+                  (run (append (cdr paths) newpaths)))))))
+    (let* ((init-config (cons start
+                              (for/list [(n k)]
+                                (if (= n 0)
+                                    (list  t1pos (if (null? w) `(,BLANK) w)) ;; head pos and tape for T1
+                                    (list 0 (list BLANK)))))) ;; head pos and tape for all non-T1
+           (res (reverse (run (list (list init-config)))))
+           ;(dddd (display (format "res: ~s\n" res)))
+           )
+      res))
+  (lambda (mess . junk)
+    (cond [(eq? mess 'get-states) sts]
+          [(eq? mess 'get-sigma) (remove '@ sigma)]
+          [(eq? mess 'get-start) start]
+          [(eq? mess 'get-finals) finals]
+          [(eq? mess 'get-rules) rules]
+          [(eq? mess 'get-numtapes) k]
+          [(eq? mess 'whatami)
+           (if (equal? accept-state (void)) 'mttm 'mttm-language-recognizer)]
+          [(eq? mess 'get-accept)
+           (if (equal? accept-state (void))
+               (error "This mttm is not a language recognizer.")
+               accept-state)]
+          [(eq? mess 'apply) (λ (w t1pos)
+                               (last (show-transitions w t1pos)))]
+          [(eq? mess 'show-transitions) show-transitions]
+          [else (format "Unknown message give to mttm: ~s" mess)])))
   
 
-  (define (mttm-get-numtapes M) (M 'get-numtapes))
-  (define (mttm-get-states M) (M 'get-states))
-  (define (mttm-get-sigma M) (M 'get-sigma))
-  (define (mttm-get-start M) (M 'get-start))
-  (define (mttm-get-finals M) (M 'get-finals))
-  (define (mttm-get-rules M) (M 'get-rules))
-  (define (mttm-what-am-i M) (M 'whatami))
-  (define (mttm-get-accept M) (M 'get-accept))
-  (define (mttm-apply M w . t1pos) ((M 'apply) w (if (null? t1pos) 0 (car t1pos))))
-  (define (mttm-show-transitions M w . t1pos)
-    ((M 'show-transitions) w (if (null? t1pos) 0 (car t1pos))))
+(define (mttm-get-numtapes M) (M 'get-numtapes))
+(define (mttm-get-states M) (M 'get-states))
+(define (mttm-get-sigma M) (M 'get-sigma))
+(define (mttm-get-start M) (M 'get-start))
+(define (mttm-get-finals M) (M 'get-finals))
+(define (mttm-get-rules M) (M 'get-rules))
+(define (mttm-what-am-i M) (M 'whatami))
+(define (mttm-get-accept M) (M 'get-accept))
+(define (mttm-apply M w . t1pos) ((M 'apply) w (if (null? t1pos) 0 (car t1pos))))
+(define (mttm-show-transitions M w . t1pos)
+  ((M 'show-transitions) w (if (null? t1pos) 0 (car t1pos))))
 
   
- ; closes module
+; closes module
 
 ;; 1 tape
 ;#;(define M1 (make-mttm '(S Y N)

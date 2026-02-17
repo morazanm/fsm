@@ -14,8 +14,7 @@
   make-csg/c
   (begin
     (displayln "Warning: This constructor is deprecated. Use make-grammar.")
-    (make-unchecked-csg nts sigma delta state))
-  )
+    (make-unchecked-csg nts sigma delta state)))
 
 ;;make-grammar V sigma R S), where V and sigma are a (listof symbol), R
 ;; is a (listof csg-rule), and S is a symbol
@@ -24,5 +23,4 @@
                                #:accepts [accepts '()]
                                #:rejects [rejects '()])
   make-csg/c
-  (make-unchecked-csg nts sigma delta state)
-  )
+  (make-unchecked-csg nts sigma delta state))

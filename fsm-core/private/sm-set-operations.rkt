@@ -82,4 +82,3 @@
           [(or (eq? t1 'mttm) (eq? t1 'mttm-language-recognizer))
            (error "Intersection not supported for multitape Turing machines")]
           [else (error (format "Unknown/Invalid machine types as input to sm-intersection: first input is of type ~s and second input is of type ~s." t1 t2))])))
-  

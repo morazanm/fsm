@@ -8,10 +8,8 @@
 (define/contract (make-tm states sigma rules start finals
                           [accept 'null]
                           #:accepts [accepts '()]
-                          #:rejects [rejects '()]
-                          )
+                          #:rejects [rejects '()])
   make-tm/c
   (if (equal? accept 'null)
       (make-unchecked-tm states sigma rules start finals)
-      (make-unchecked-tm states sigma rules start finals accept))
-  )
+      (make-unchecked-tm states sigma rules start finals accept)))

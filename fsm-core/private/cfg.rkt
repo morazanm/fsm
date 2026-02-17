@@ -428,12 +428,12 @@
                      (cfg-get-rules G)))
            (newS (generate-symbol start nts)))
       (make-unchecked-cfg (cons newS nts)
-                sigma
-                (cons (list newS ARROW start)
-                      (map (λ (r)
-                             (list (car r) ARROW (los->symbol (caddr r))))
-                           rls))
-                newS)))
+                          sigma
+                          (cons (list newS ARROW start)
+                                (map (λ (r)
+                                       (list (car r) ARROW (los->symbol (caddr r))))
+                                     rls))
+                          newS)))
 
   ;; cfg --> cfg
   ;; Purpose: Eliminate rules with nonsolitary terminals
@@ -471,12 +471,12 @@
                                     sigma))
            (new-rls (map (λ (r) (convert-non-solitary r sigma ht)) rls)))
       (make-unchecked-cfg (append nts
-                        (map (λ (a) (hash-ref ht a)) sigma))
-                sigma
-                (map (λ (r)
-                       (list (car r) ARROW (los->symbol (caddr r))))
-                     (append new-rls solitary-new-rules))
-                start)))
+                                  (map (λ (a) (hash-ref ht a)) sigma))
+                          sigma
+                          (map (λ (r)
+                                 (list (car r) ARROW (los->symbol (caddr r))))
+                               (append new-rls solitary-new-rules))
+                          start)))
 
   ;; cfg --> cfg
   ;; Purpose: Eliminate rules with a rhs that has more than 2 nts
@@ -520,11 +520,11 @@
            ;(ddd (displayln (format "~s" (append nts new-nts))))
            )
       (make-unchecked-cfg (append nts new-nts)
-                sigma
-                (map (λ (r)
-                       (list (car r) ARROW (los->symbol (caddr r))))
-                     (append short-trls new-rls))
-                start)))
+                          sigma
+                          (map (λ (r)
+                                 (list (car r) ARROW (los->symbol (caddr r))))
+                               (append short-trls new-rls))
+                          start)))
 
   ;; (listof cfg-rule) --> (listof cfg-rule)
   ;; Purpose: Remove rules with nts in the rhs that do not appear in a lhs
@@ -590,7 +590,7 @@
            ;(ddd (display (format "trls: \n ~s \n" trls)))
            (nullables (compute-nullables trls
                                          (map car (filter {λ (r) (equal? (caddr r) (list EMP))}
-                                                            trls))
+                                                          trls))
                                          '()))
            (new-rules (map (λ (r)
                              (list (car r) ARROW (los->symbol (caddr r))))
@@ -607,9 +607,9 @@
            ;(dd (display (format "new rules: \n ~s \n" new-rules)))
            (new-nts (map car new-rules)))
       (make-unchecked-cfg new-nts
-                sigma
-                new-rules
-                start)))
+                          sigma
+                          new-rules
+                          start)))
 
   ;; cfg --> cfg
   ;; Purpose: Remove unit rules
@@ -655,9 +655,9 @@
            ;(d (display (format "trls: \n ~s \n\n" trls)))
            )
       (make-unchecked-cfg (remove-duplicates new-nts)
-                sigma
-                new-rules
-                start)
+                          sigma
+                          new-rules
+                          start)
       ;(display (format "ORIG rules: \n ~s \n \n RES new-rules: ~s \n" trls new-rules))
       ;new-rules
       ))
@@ -667,29 +667,29 @@
    (del-grammar (bin-grammar (term-grammar (start-grammar G))))))
 
 (define G (make-unchecked-cfg '(X Y Z A)
-                    '(a b c e)
-                    (list '(X -> ε)
-                          '(Y -> XXZ)
-                          '(Y -> XX)
-                          '(Z -> abc)
-                          '(A -> e))
-                    'Y))
+                              '(a b c e)
+                              (list '(X -> ε)
+                                    '(Y -> XXZ)
+                                    '(Y -> XX)
+                                    '(Z -> abc)
+                                    '(A -> e))
+                              'Y))
 
 (define BPG (make-unchecked-cfg '(S)
-                      '(o c)
-                      `((S ,ARROW ,EMP)
-                        (S ,ARROW SS)
-                        (S ,ARROW oSc))
-                      'S))
+                                '(o c)
+                                `((S ,ARROW ,EMP)
+                                  (S ,ARROW SS)
+                                  (S ,ARROW oSc))
+                                'S))
 (define numb>numa (make-unchecked-cfg '(S A)
-                            '(a b)
-                            `((S ,ARROW b)
-                              (S ,ARROW AbA)
-                              (A ,ARROW AaAbA)
-                              (A ,ARROW AbAaA)
-                              (A ,ARROW ,EMP)
-                              (A ,ARROW bA))
-                            'S))
+                                      '(a b)
+                                      `((S ,ARROW b)
+                                        (S ,ARROW AbA)
+                                        (A ,ARROW AaAbA)
+                                        (A ,ARROW AbAaA)
+                                        (A ,ARROW ,EMP)
+                                        (A ,ARROW bA))
+                                      'S))
 
 
 

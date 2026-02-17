@@ -21,33 +21,33 @@
   (lambda ()
     (define STS '(A B C D E F G H I J K L M N O P Q R S T U V W X Y Z))
 
-  ;; state natnum --> symbol
-  ;; Purpose: To append a dash and the given natnum to the given state
-  (define (concat-n s n)
-    (string->symbol (string-append (symbol->string s) "-" (number->string n))))
+    ;; state natnum --> symbol
+    ;; Purpose: To append a dash and the given natnum to the given state
+    (define (concat-n s n)
+      (string->symbol (string-append (symbol->string s) "-" (number->string n))))
 
-  ;; natnum (listof states) --> state
-  ;; Purpose: Generate an allowed state
-  (define (gen-helper n s-choices)
-    (if (not (null? s-choices))
-        (begin
-          (set-add! disallowed (car s-choices))
-          (car s-choices))
-        (gen-helper (add1 n)
-                    (filter (λ (s) (not (set-member? disallowed s)))
-                            (map (λ (s) (concat-n s n)) STS)))))
+    ;; natnum (listof states) --> state
+    ;; Purpose: Generate an allowed state
+    (define (gen-helper n s-choices)
+      (if (not (null? s-choices))
+          (begin
+            (set-add! disallowed (car s-choices))
+            (car s-choices))
+          (gen-helper (add1 n)
+                      (filter (λ (s) (not (set-member? disallowed s)))
+                              (map (λ (s) (concat-n s n)) STS)))))
 
-  (gen-helper 0 (filter (λ (a) (not (set-member? disallowed a))) STS))))
+    (gen-helper 0 (filter (λ (a) (not (set-member? disallowed a))) STS))))
 
 (define (chomsky G)
   (define alphabet-set (list->seteq (cfg-get-alphabet G)))
   (define (start-grammar G)
     (let ((newS (gen-nt (cfg-get-v G))))
       (make-unchecked-cfg (cons newS (cfg-get-v G))
-                (cfg-get-alphabet G)
-                (cons (list newS ARROW (cfg-get-start G))
-                      (cfg-get-rules G))
-                newS)))
+                          (cfg-get-alphabet G)
+                          (cons (list newS ARROW (cfg-get-start G))
+                                (cfg-get-rules G))
+                          newS)))
   
   ;; cfg --> cfg
   ;; Purpose: Eliminate rules with nonsolitary terminals
@@ -70,12 +70,12 @@
                               (symbol->fsmlos (caddr rule))))))
     (populate-hash!)
     (make-unchecked-cfg (append (cfg-get-v G) (hash-values ht))
-              (cfg-get-alphabet G)
-              (append (map (λ (a) (list (hash-ref ht a) ARROW a))
-                           (cfg-get-alphabet G))
-                      (map (λ (r) (convert-non-solitary r ht))
-                           (cfg-get-rules G)))
-              (cfg-get-start G)))
+                        (cfg-get-alphabet G)
+                        (append (map (λ (a) (list (hash-ref ht a) ARROW a))
+                                     (cfg-get-alphabet G))
+                                (map (λ (r) (convert-non-solitary r ht))
+                                     (cfg-get-rules G)))
+                        (cfg-get-start G)))
 
   ;; cfg --> cfg
   ;; Purpose: Eliminate rules with a rhs that has more than 2 nts
@@ -103,9 +103,9 @@
                       (convert-rules (cdr rules)))))))
     (let ([new-rules (convert-rules (cfg-get-rules G))])
       (make-unchecked-cfg (set->list nts)
-                (cfg-get-alphabet G)
-                new-rules
-                (cfg-get-start G))))
+                          (cfg-get-alphabet G)
+                          new-rules
+                          (cfg-get-start G))))
   
   ;; cfg --> cfg
   ;; Purpose: Remove e-rules from given grammar
@@ -119,10 +119,10 @@
     (define (new-compute-nullables trls)
       (define (compute-any-nullables rules)
         (if (null? (for/list ([rule (in-list rules)]
-                               #:when (and (not (set-member? nulls (car rule)))
-                                           (andmap (lambda (elem) (set-member? nulls elem)) rule)))
-                      (set-add! nulls (car rule))
-                      (car rule)))
+                              #:when (and (not (set-member? nulls (car rule)))
+                                          (andmap (lambda (elem) (set-member? nulls elem)) rule)))
+                     (set-add! nulls (car rule))
+                     (car rule)))
             (set->list nulls)
             (compute-any-nullables rules)))
       (compute-any-nullables trls))
@@ -160,9 +160,9 @@
                                                                 (not (equal? (caddr r) (list EMP))))))
                                                      (convert-rules trls (map car (new-compute-nullables trls))))))])
       (make-unchecked-cfg (remove-duplicates (map car new-rules))
-                (cfg-get-alphabet G)
-                new-rules
-                (cfg-get-start G))))
+                          (cfg-get-alphabet G)
+                          new-rules
+                          (cfg-get-start G))))
 
   ;; cfg --> cfg
   ;; Purpose: Remove unit rules
@@ -190,7 +190,7 @@
                                        (list (car r) (cadr r) (symbol->fsmlos (caddr r))))
                                      (cfg-get-rules G))))))]
       (make-unchecked-cfg (remove-duplicates (map car new-rules))
-                (cfg-get-alphabet G)
-                new-rules
-                (cfg-get-start G))))
+                          (cfg-get-alphabet G)
+                          new-rules
+                          (cfg-get-start G))))
   (unit-grammar (del-grammar (bin-grammar (term-grammar (start-grammar G))))))

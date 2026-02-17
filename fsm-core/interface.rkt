@@ -145,16 +145,16 @@
  fsa-minimize minimization-viz
 
  ;;cfexp constructors
-   make-cfe null-cfexp empty-cfexp singleton-cfexp
-   concat-cfexp union-cfexp kleenestar-cfexp
+ make-cfe null-cfexp empty-cfexp singleton-cfexp
+ concat-cfexp union-cfexp kleenestar-cfexp
 
-   ; cfexp observers
-   cfg->cfe cfe->cfg
-   cfexp? null-cfexp? empty-cfexp? singleton-cfexp?
-   concat-cfexp? union-cfexp? kleenestar-cfexp?
-   gen-cfexp-word pick-cfexp singleton-cfexp-a
-   union-cfexp-cfes concat-cfexp-cfes kleenestar-cfexp-c1
-   #;pda->cfe #;cfe->pda #;printable-cfexp
+ ; cfexp observers
+ cfg->cfe cfe->cfg
+ cfexp? null-cfexp? empty-cfexp? singleton-cfexp?
+ concat-cfexp? union-cfexp? kleenestar-cfexp?
+ gen-cfexp-word pick-cfexp singleton-cfexp-a
+ union-cfexp-cfes concat-cfexp-cfes kleenestar-cfexp-c1
+ #;pda->cfe #;cfe->pda #;printable-cfexp
  )
 ; Primitive constructors imported from other modules
 
