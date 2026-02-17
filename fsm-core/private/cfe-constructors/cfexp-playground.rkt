@@ -513,6 +513,10 @@
                                 ((F c (a)) (F ,EMP)))))
 
 
+(sm-graph Gina-aˆnbˆn)
+
+(pda->cfe Gina-aˆnbˆn)
+
 ;;w = a*
 #|
 (define A*-cfe (pda->cfe A*))
