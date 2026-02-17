@@ -1,12 +1,11 @@
 #lang racket/base
 
 (require "constants.rkt"
-         "misc.rkt"
-         "word.rkt")
+         "misc.rkt")
 
 (provide (struct-out cfg-rule)
          (struct-out cfg)
-         make-cfg
+         #;make-cfg
          make-unchecked-cfg
          cfg-get-v
          cfg-get-alphabet
@@ -29,11 +28,11 @@
   (map (lambda (r) (cfg-rule (car r) (symbol->fsmlos (caddr r)))) R))
 
 ; (listof symbol) (listof symbol) (listof (list symbol '-> symbol)) symbol --> cfg
-(define (make-cfg V sigma R S)
+#;(define (make-cfg V sigma R S)
   (cfg V sigma (parse-cfg-rules R) S))
 
 (define (make-unchecked-cfg v sigma rules s)
-  (make-cfg v sigma rules s))
+  (cfg v sigma (parse-cfg-rules rules) s))
 
 
 #;(define (cfg-get-the-rules g)  (cfg-rules g))

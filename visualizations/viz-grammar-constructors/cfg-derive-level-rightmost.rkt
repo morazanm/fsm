@@ -6,7 +6,6 @@
          racket/treelist
          "yield-struct.rkt"
          "../viz-lib/treelist-helper-functions.rkt"
-         racket/list
          "../../fsm-core/private/cyk.rkt"
          "../../fsm-core/private/chomsky.rkt")
 
@@ -114,7 +113,7 @@
       (if (= i -1)
           (subst-last-nt (yield (yield-state yd) (sub1 (treelist-length (yield-state yd)))) rght)
           (if (not (hash-ref alphabet-ht (treelist-ref (yield-state yd) i) #f))
-              (if (eq? (first rght) EMP)
+              (if (eq? (car rght) EMP)
                   (struct-copy yield yd [state (treelist-delete (yield-state yd) i)] [up (sub1 i)])
                   (struct-copy yield
                                yd
@@ -141,23 +140,23 @@
 
     (cond
       [(qempty? derivs) (format "~s is not in L(G)." w)]
-      [(> (count-terminals (yield-state (first (first (qpeek derivs))))) (treelist-length treelist-w))
+      [(> (count-terminals (yield-state (car (car (qpeek derivs))))) (treelist-length treelist-w))
        (make-deriv visited (dequeue! derivs) g)]
       [else
        (let* ([current-deriv (qpeek derivs)]
-              [current-yield-and-rule (first current-deriv)]
-              [current-yield (first current-yield-and-rule)]
+              [current-yield-and-rule (car current-deriv)]
+              [current-yield (car current-yield-and-rule)]
               [state (yield-state current-yield)]
               [current-nt (get-last-nt current-yield)])
          (if (not current-nt)
              (if (equal? treelist-w state)
-                 (reverse (cons (list current-yield (second current-yield-and-rule))
-                                (rest current-deriv)))
+                 (reverse (cons (list current-yield (cadr current-yield-and-rule))
+                                (cdr current-deriv)))
                  (if (any-nt? state)
                      (make-deriv visited
                                  (enqueue! (dequeue! derivs)
                                            (cons (list (yield state (sub1 (treelist-length state)))
-                                                       (second current-yield-and-rule))
+                                                       (cadr current-yield-and-rule))
                                                  current-deriv))
                                  g)
                      (make-deriv visited (dequeue! derivs) g)))
@@ -179,21 +178,21 @@
                                     new-derivs
                                     (map (lambda (yd) (cons yd current-deriv)) new-yields)))
                            g))))]))
-  (if (empty? w)
+  (if (null? w)
       (let ([deriv-queue (make-queue)])
-          (make-deriv (make-hash)
-                      (enqueue! deriv-queue (list (list (yield (treelist (cfg-get-start g)) 0) '())))
-                      g
-                      ))
+        (make-deriv (make-hash)
+                    (enqueue! deriv-queue (list (list (yield (treelist (cfg-get-start g)) 0) '())))
+                    g
+                    ))
       (if (cyk (chomsky g) w)
-        ;(if (string? ng-derivation)
-        ;ng-derivation
-        (let ([deriv-queue (make-queue)])
-          (make-deriv (make-hash)
-                      (enqueue! deriv-queue (list (list (yield (treelist (cfg-get-start g)) 0) '())))
-                      g
-                      ))
-        (format "~s is not in L(G)." w))))
+          ;(if (string? ng-derivation)
+          ;ng-derivation
+          (let ([deriv-queue (make-queue)])
+            (make-deriv (make-hash)
+                        (enqueue! deriv-queue (list (list (yield (treelist (cfg-get-start g)) 0) '())))
+                        g
+                        ))
+          (format "~s is not in L(G)." w))))
 
 (define testcfg
   (make-unchecked-cfg

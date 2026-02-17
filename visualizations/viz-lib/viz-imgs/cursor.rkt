@@ -1,4 +1,4 @@
-#lang racket
+#lang racket/base
 (require "../../2htdp/image.rkt")
 (provide cursor)
 

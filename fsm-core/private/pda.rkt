@@ -173,7 +173,7 @@
     
     (lambda (w . L)
       (cond [(eq? w 'whatami) 'pda]
-            [(empty? L) 
+            [(null? L) 
              (let ((res (consume w '() (list (list (mk-pdaconfig start 0 (empty-stack)))))))
                (if (list? res) 'accept 'reject))]
             [(eq? (car L) 'transitions)
@@ -448,11 +448,11 @@
   (define (rename-states-pda los m)
     
     (define (generate-rename-table disallowed sts)
-      (if (empty? sts)
+      (if (null? sts)
           '()
           (let ((new-st (gen-state disallowed)))
-            (cons (list (first sts) new-st)
-                  (generate-rename-table (cons new-st disallowed) (rest sts))))))
+            (cons (list (car sts) new-st)
+                  (generate-rename-table (cons new-st disallowed) (cdr sts))))))
     
     (let* ((sts (pda-getstates m))
            (rename-table (generate-rename-table (remove-duplicates (append sts los)) sts))
@@ -539,9 +539,9 @@
   ;; EDITED STUFF
 
   (define (get-pdaconfig-accepts-edited new-configs w finals)
-    (filter (lambda (c) (and (member (pdaconfig-state (first c)) finals)
-                             (empty-stack? (pdaconfig-stack (first c)))
-                             (= (word-length w) (pdaconfig-wi (first c)))))
+    (filter (lambda (c) (and (member (pdaconfig-state (car c)) finals)
+                             (empty-stack? (pdaconfig-stack (car c)))
+                             (= (word-length w) (pdaconfig-wi (car c)))))
             new-configs))
 
   (define (convert-pop-edited r)
@@ -554,17 +554,17 @@
         
       (list (mk-pdaconfig (pdarule-tostate r)
                           (if (eq? (pdarule-readsymb r) EMP)
-                              (pdaconfig-wi (first c))
-                              (+ (pdaconfig-wi (first c)) 1)
+                              (pdaconfig-wi (car c))
+                              (+ (pdaconfig-wi (car c)) 1)
                               )
-                          (stack-push (pdarule-push r) (stack-pop (pdaconfig-stack (first c)) (pdarule-pop r))))
+                          (stack-push (pdarule-push r) (stack-pop (pdaconfig-stack (car c)) (pdarule-pop r))))
             r
             )
       )
       
-    (let* ((state (pdaconfig-state (first c)))
-           (wi (pdaconfig-wi (first c)))
-           (S (pdaconfig-stack (first c)))
+    (let* ((state (pdaconfig-state (car c)))
+           (wi (pdaconfig-wi (car c)))
+           (S (pdaconfig-stack (car c)))
            (read (if (= wi (length w)) '() (get-symb-word w wi)))
            (rls (filter (lambda (r) (and (eq? state (pdarule-fromstate r))
                                          (or (eq? read (pdarule-readsymb r)) (eq? EMP (pdarule-readsymb r)))
@@ -582,7 +582,7 @@
     (cond [(null? tovisit) 'reject]
           [else
            (let* (
-                  (first-path (first tovisit))
+                  (first-path (car tovisit))
                   (config (first-config-pdapath first-path))
                   (new-configs (filter-pdaconfigs (mk-pdatransitions-edited config w (pda-getrules ndpda))
                                                   (generated-configs visited tovisit)))
@@ -603,10 +603,10 @@
           )
       (if (eq? res 'reject)
           'reject
-          (append (map (lambda (config) (list (mk-pdaconfig (pdaconfig-state (first config))
-                                                            (list-tail w (pdaconfig-wi (first config)))
-                                                            (pdaconfig-stack (first config)))
-                                              (second config)
+          (append (map (lambda (config) (list (mk-pdaconfig (pdaconfig-state (car config))
+                                                            (list-tail w (pdaconfig-wi (car config)))
+                                                            (pdaconfig-stack (car config)))
+                                              (cadr config)
                                               )   
                          )
                        res)

@@ -39,7 +39,7 @@
         ;; (mlistof X) natnum -> X
         ;; Purpose: Find element right from i on given mttm tape
         (define (mttm-tape-right-i tape i)
-          (cond [(empty? tape) '_]
+          (cond [(null? tape) '_]
                 [(= i -1) (mcar tape)]
                 [else (mttm-tape-right-i (mcdr tape) (sub1 i))]))
         ;; -> tape
@@ -76,21 +76,21 @@
                                     (equal? (tapes-at-i stuci) (mttm-Edge-reads e))))
                    edges)))
     (cut-off
-     (if (empty? to-visit)
+     (if (null? to-visit)
          '()
          (let* [(new-stucis (filter (lambda (x) (not (member (mttm-stuci-state x) (sm-finals M))))
-                                    (add-to-stucis-helper edges (first to-visit))))]
-           (if (empty? new-stucis)
-               (add-to-stucis edges (rest to-visit) visited)
+                                    (add-to-stucis-helper edges (car to-visit))))]
+           (if (null? new-stucis)
+               (add-to-stucis edges (cdr to-visit) visited)
                (append (filter-non-member new-stucis visited)
-                       (add-to-stucis edges (rest to-visit)
+                       (add-to-stucis edges (cdr to-visit)
                                       (append new-stucis
                                               visited))))))
      threshold))
   ;; (listof stuci) (listof stuci) -> (listof stuci)
   ;; Purpose: Filter out stucis already visited
   (define (filter-non-member s v)
-    (cond ((empty? s) '())
+    (cond ((null? s) '())
           ((ormap (lambda (x) (mttm-stucis-equal? (car s) x)) v)
            (filter-non-member (cdr s) v))
           (else (cons (car s) (filter-non-member (cdr s) v)))))
@@ -105,19 +105,19 @@
       ;; (mlistof X) natnum -> X
       ;; Purpose: Find element at i on given mttm tape
       (define (mttm-tape-at-i tape i)
-        (cond [(empty? tape) '_]
+        (cond [(null? tape) '_]
               [(= i 0) (mcar tape)]
               [else (mttm-tape-at-i (mcdr tape) (sub1 i))]))
       ;; (mlistof X) natnum -> X
       ;; Purpose: Find element left from i on given mttm tape
       (define (mttm-tape-left-i tape i)
-        (cond [(empty? tape) '_]
+        (cond [(null? tape) '_]
               [(= i 1) (mcar tape)]
               [else (mttm-tape-left-i (mcdr tape) (sub1 i))]))
       ;; (mlistof X) natnum -> X
       ;; Purpose: Find element right from i on given mttm tape
       (define (mttm-tape-right-i tape i)
-        (cond [(empty? tape) '_]
+        (cond [(null? tape) '_]
               [(= i -1) (mcar tape)]
               [else (mttm-tape-right-i (mcdr tape) (sub1 i))]))
       ;; (mlistof X) natnum action -> (listof X)
@@ -142,7 +142,7 @@
       ;; Purpose: Given a rule, determines whether the machine halts
       (define (machine-halts? rule)
         (let ((r (filter (lambda (x) (not (member (mttm-rule-fromst x) (sm-finals M)))) (future-rules rule))))
-          (empty? r)))
+          (null? r)))
       ;; rule -> tm-Edge
       ;; Purpose: Given a machine rule, determines which mttm-Edge subtype to use
       ;; How: If the machine halts in the state, we use a mttm-spedge.
@@ -163,7 +163,7 @@
                                (mttm-rule-reads rule)
                                (mttm-rule-tost rule)
                                (mttm-rule-actions rule))]))
-      (if (empty? new-rules)
+      (if (null? new-rules)
           '()
           (map (lambda (e) (mttm-Edge e)) new-rules))))
   ;; (listof mttm-stuci) (listof mttm-stuci) -> (listof mttm-Edge)
@@ -181,7 +181,7 @@
   (define (mttm-computation-tree->cg-edges to-visit visited)
     (let* [(new-edges (append-map (lambda (s) (add-to-edges s)) to-visit))
            (new-stucis (add-to-stucis (remove-duplicates new-edges) to-visit visited))]
-      (if (empty? new-stucis)
+      (if (null? new-stucis)
           new-edges
           (append
            new-edges
@@ -203,29 +203,29 @@
     ;; (listof sm-showtransitions) -> (listof mttm-Edge)
     ;; Purpose: Given sm-showtransitions, makes a list of edges according to that one accepting computation
     (define (edges-on-accept st)
-      (let* [(fromst (first (first st)))]      
+      (let* [(fromst (car (car st)))]      
         (if (or (and (eq? (sm-type M) 'mttm-language-recognizer)
                      (eq? fromst (sm-accept M)))
                 (and (eq? (sm-type M) 'mttm)
                      (member fromst (sm-finals M))))
             '()
-            (let* [(tost (first (second st)))
-                   (heads-from (map (lambda (x) (first x)) (cdr (first st))))
-                   (heads-to (map (lambda (x) (first x)) (cdr (second st))))
-                   (reads (map (lambda (x y) (list-ref (cadr y) x)) heads-from (cdr (first st)))) 
+            (let* [(tost (car (cadr st)))
+                   (heads-from (map (lambda (x) (car x)) (cdr (car st))))
+                   (heads-to (map (lambda (x) (car x)) (cdr (cadr st))))
+                   (reads (map (lambda (x y) (list-ref (cadr y) x)) heads-from (cdr (car st)))) 
                    (actions (map (lambda (hfr hto y) (cond [(eq? hfr hto)
                                                             (list-ref (cadr y) hto)]
                                                            [(< hfr hto) 'R]
                                                            [else 'L]))
-                                 heads-from heads-to (cdr (first st))))]
+                                 heads-from heads-to (cdr (car st))))]
               (if (or (and (eq? (sm-type M) 'mttm-language-recognizer)
                            (eq? tost (sm-accept M)))
                       (and (eq? (sm-type M) 'mttm)
                            (member tost (sm-finals M))))
                   (cons (mttm-spedge fromst reads tost actions)
-                        (edges-on-accept (rest st)))
+                        (edges-on-accept (cdr st)))
                   (cons (mttm-edge fromst reads tost actions)
-                        (edges-on-accept (rest st))))))))
+                        (edges-on-accept (cdr st))))))))
     (if (or (and (eq? (sm-type M) 'mttm-language-recognizer)
                  (ormap (lambda (r) (eq? (mttm-Edge-tost r) (sm-accept M)))
                         (append (filter mttm-spedge? edges)
@@ -324,7 +324,7 @@
          (edge-states (remove-duplicates (append (map (lambda (r) (mttm-Edge-fromst r)) new-rules)
                                                  (map (lambda (r) (mttm-Edge-tost r)) new-rules))))
          (all-states
-          (if (empty? edge-states)
+          (if (null? edge-states)
               (list (sm-start M))
               edge-states))
          (end-states
@@ -344,36 +344,36 @@
     ;; Purpose: Given a list of all states in a machine after a word
     ;;          has been consumed, returns a list of nodes 
     (define (new-node los)
-      (if (empty? los)
+      (if (null? los)
           '()
           (let* [(a-color
                   (cond [(= 1 (length all-states)) "crimson"] 
-                        [(member (first los) end-states) "crimson"]
+                        [(member (car los) end-states) "crimson"]
                         [(and (eq? color-blindness 'default)
-                              (eq? (first los) start-state)) "forestgreen"]
+                              (eq? (car los) start-state)) "forestgreen"]
                         [(and (eq? color-blindness 'deut)
-                              (eq? (first los) start-state)) "dodgerblue"]
+                              (eq? (car los) start-state)) "dodgerblue"]
                         [else "black"]))
                  (a-shape
                   (cond [(and (eq? (sm-type M) 'mttm-language-recognizer)
-                              (eq? (sm-accept M) (first los))) "doubleoctagon"]
-                        [(member (first los) final-states) "doublecircle"]
+                              (eq? (sm-accept M) (car los))) "doubleoctagon"]
+                        [(member (car los) final-states) "doublecircle"]
                         [else "circle"]))
                  (a-label
-                  (symbol->string (first los)))
+                  (symbol->string (car los)))
                  (a-fontcolor
-                  (cond [(or (and (eq? (first los) start-state)
-                                  (member (first los) end-states))
+                  (cond [(or (and (eq? (car los) start-state)
+                                  (member (car los) end-states))
                              (= 1 (length all-states)))
                          (cond [(eq? color-blindness 'default) "forestgreen"]
                                [(eq? color-blindness 'deut) "dodgerblue"])]
                         [else "black"]))
                  (a-fillcolor
-                  (if (member (first los) cutoff-states)
+                  (if (member (car los) cutoff-states)
                       "gold"
                       "white"))]
-            (cons (list (first los) `((color ,a-color) (shape ,a-shape) (label ,a-label) (fontcolor ,a-fontcolor) (fillcolor ,a-fillcolor))) 
-                  (new-node (rest los))))))
+            (cons (list (car los) `((color ,a-color) (shape ,a-shape) (label ,a-label) (fontcolor ,a-fontcolor) (fillcolor ,a-fillcolor))) 
+                  (new-node (cdr los))))))
     (new-node all-states)))
 
 ;.................................................
@@ -381,10 +381,10 @@
 ;; list -> string
 ;; Purpose: Convert given list to a string
 (define (list->string2 l)
-  (if (empty? l)
+  (if (null? l)
       ""
       (string-append (symbol->string (car l))
-                     (if (not (empty? (cdr l))) " " "")
+                     (if (not (null? (cdr l))) " " "")
                      (list->string2 (cdr l)))))
 
 ;; M -> (listof edge)
@@ -438,28 +438,28 @@
   (define DEFAULT-THRESH 100)
   (define MIN-THRESH 2)
   (define threshold
-    (cond [(empty? optargs) DEFAULT-THRESH]
-          [(and (integer? (first optargs))
-                (>= (first optargs) MIN-THRESH))
-           (first optargs)]
+    (cond [(null? optargs) DEFAULT-THRESH]
+          [(and (integer? (car optargs))
+                (>= (car optargs) MIN-THRESH))
+           (car optargs)]
           [(and (> (length optargs) 1)
-                (integer? (second optargs))
-                (>= (second optargs) MIN-THRESH))
-           (second optargs)]
+                (integer? (cadr optargs))
+                (>= (cadr optargs) MIN-THRESH))
+           (cadr optargs)]
           [else DEFAULT-THRESH]))
   ;; Definitions for Color Blindness
   (define DEFAULT-COLOR 'default)
   (define DEUTERANOPIA 'deut)
   (define COLOR-LIST (list DEFAULT-COLOR DEUTERANOPIA))
   (define color-blindness 
-    (cond [(empty? optargs) DEFAULT-COLOR]
-          [(and (symbol? (first optargs))
-                (member (first optargs) COLOR-LIST))
-           (first optargs)]
+    (cond [(null? optargs) DEFAULT-COLOR]
+          [(and (symbol? (car optargs))
+                (member (car optargs) COLOR-LIST))
+           (car optargs)]
           [(and (> (length optargs) 1)
-                (symbol? (second optargs))
-                (member (second optargs) COLOR-LIST))
-           (second optargs)]
+                (symbol? (cadr optargs))
+                (member (cadr optargs) COLOR-LIST))
+           (cadr optargs)]
           [else DEFAULT-COLOR]))
   ;; Def for fontsize
   (define mttm-FONTSIZE 8)
@@ -473,11 +473,11 @@
     ;; image
     ;; Purpose: Stores a computation graph image 
     (define cgraph (create-graph 'cgraph #:atb (hash 'rankdir "LR" 'label (cond [(and (eq? (sm-type M) 'mttm)
-                                                                                      (not (empty? (append (filter mttm-cutoff-edge? new-rules)
+                                                                                      (not (null? (append (filter mttm-cutoff-edge? new-rules)
                                                                                                            (filter mttm-cutoff-spedge? new-rules)))))
                                                                                  (format "All computations on '~a cut off at threshold ~a" (add-LM word) threshold)]
                                                                                 [(and (eq? (sm-type M) 'mttm-language-recognizer)
-                                                                                      (not (empty? (append (filter mttm-cutoff-edge? new-rules)
+                                                                                      (not (null? (append (filter mttm-cutoff-edge? new-rules)
                                                                                                            (filter mttm-cutoff-spedge? new-rules)))))
                                                                                  (format "All computations on '~a cut off at threshold ~a" (add-LM word) threshold)]
                                                                                 [(and (eq? (sm-type M) 'mttm)
@@ -500,22 +500,22 @@
       (set! cgraph
             (foldl
              (lambda (a-node a-graph)
-               (let* [(state (first a-node))
-                      (color (second (first (second a-node))))
-                      (shape (second (second (second a-node))))
-                      (label (second (third (second a-node)))) 
-                      (fontcolor (second (fourth (second a-node))))
+               (let* [(state (car a-node))
+                      (color (cadr (car (cadr a-node))))
+                      (shape (cadr (cadr (cadr a-node))))
+                      (label (cadr (caddr (cadr a-node)))) 
+                      (fontcolor (cadr (cadddr (cadr a-node))))
                       (style "filled")
-                      (fillcolor (second (fifth (second a-node))))]
+                      (fillcolor (cadr (car (cddddr (cadr a-node)))))]
                  (add-node a-graph state #:atb (hash 'color color 'shape shape 'label label 'fontcolor fontcolor 'style style 'fillcolor fillcolor)))) 
              cgraph   
              (dot-nodes-mttm M word new-rules color-blindness)))
       (set! cgraph
             (foldl
              (lambda (a-trans a-graph)
-               (let* [(state1 (first a-trans))
-                      (state2 (second a-trans))
-                      (label (second (second (third a-trans))))]
+               (let* [(state1 (car a-trans))
+                      (state2 (cadr a-trans))
+                      (label (cadr (cadr (caddr a-trans))))]
                  (add-edge a-graph label state1 state2 #:atb (hash 'fontsize mttm-FONTSIZE))))
              cgraph
              (dot-trans-mttm M new-rules)))
@@ -689,19 +689,19 @@
     (set! cgraph
           (foldl
            (lambda (a-node a-graph)
-             (let* [(state (first a-node))
-                    (color (second (first (second a-node))))
-                    (shape (second (second (second a-node))))
-                    (label (second (third (second a-node))))]
+             (let* [(state (car a-node))
+                    (color (cadr (car (cadr a-node))))
+                    (shape (cadr (cadr (cadr a-node))))
+                    (label (cadr (caddr (cadr a-node))))]
                (add-node a-graph state #:atb (hash 'color color 'shape shape 'label label)))) 
            cgraph   
            (dot-nodes M)))
     (set! cgraph
           (foldl
            (lambda (a-trans a-graph)
-             (let* [(state1 (first a-trans))
-                    (state2 (second a-trans))
-                    (label (second (second (third a-trans))))] 
+             (let* [(state1 (car a-trans))
+                    (state2 (cadr a-trans))
+                    (label (cadr (cadr (caddr a-trans))))] 
                (add-edge a-graph label state1 state2 #:atb (hash 'fontsize 8))))
            cgraph
            (dot-edges M)))

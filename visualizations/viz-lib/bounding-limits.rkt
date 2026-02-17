@@ -8,8 +8,13 @@
          outside-south-side-bounding-limits?
          outside-east-side-bounding-limits?
          outside-west-side-bounding-limits?
+         outside-west-north-sides-bounding-limits?
+         outside-west-south-sides-bounding-limits?
+         outside-east-north-sides-bounding-limits?
+         outside-east-south-sides-bounding-limits?
          outside-x-axis-bounding-limits?
-         outside-y-axis-bounding-limits?)
+         outside-y-axis-bounding-limits?
+         )
 
 ;; Coordinate pair
 ;; num num -> posn

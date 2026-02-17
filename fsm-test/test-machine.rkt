@@ -1,5 +1,8 @@
-#lang racket
-(require "../main.rkt")
+#lang racket/base
+(require "../fsm-core/private/ndfa-constructors.rkt"
+         "../fsm-core/private/pda-constructors.rkt"
+         "../fsm-core/private/tm-constructors.rkt"
+         "../fsm-core/private/constants.rkt")
 (provide
  (all-defined-out))
 

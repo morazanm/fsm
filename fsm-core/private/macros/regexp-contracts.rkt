@@ -1,10 +1,10 @@
 #lang racket/base
-(require racket/bool
-         racket/list
+(require racket/list
          "../regexp.rkt"
          "../constants.rkt"
          "error-formatting.rkt"
-         racket/contract
+         racket/contract/base
+         racket/contract/combinator
          "../../private/sm-getters.rkt"
          "../../private/sm-apply.rkt"
          "../../private/fsa.rkt"
@@ -23,8 +23,8 @@
 ;;          and false for every other input.
 (define (valid-alpha-string? x)
   (define regex-pattern (regexp "^[a-zA-Z0-9$&!*]$"))
-  (not (false? (and (string? x)
-                    (regexp-match regex-pattern x)))))
+  (and (string? x)
+       (regexp-match regex-pattern x)))
 
 (define valid-singleton/c
   (make-flat-contract
@@ -84,12 +84,12 @@
 (define (valid-regexp-sigma/c regexp)
   (make-flat-contract
    #:name 'valid-sigma?
-   #:first-order (lambda (sigma) (empty? (find-extra-singleton-regexps regexp sigma)))
+   #:first-order (lambda (sigma) (null? (find-extra-singleton-regexps regexp sigma)))
    #:projection (lambda (blame)
                   (lambda (sigma)
                     (current-blame-format format-error)
                     (let [(extra-singletons (find-extra-singleton-regexps regexp sigma))]
-                      (if (empty? extra-singletons)
+                      (if (null? extra-singletons)
                           sigma
                           (raise-blame-error
                            blame
@@ -103,19 +103,19 @@
 ;; expression's alphabet, and false otherwise.
 (define (word-in-regexp-sigma? regexp-sigma word)
   (let ((converted-word (map (lambda (x) (if (symbol? x) x (string->symbol (number->string x)))) word)))
-    (empty? (filter (lambda (x) (not (member x regexp-sigma))) converted-word)))
+    (null? (filter (lambda (x) (not (member x regexp-sigma))) converted-word)))
   )
 
 (define (words-in-sigma/c type regexp)
   (let [(regexp-sigma (sm-sigma (regexp->fsa regexp)))]
     (make-flat-contract
      #:name 'words-in-sigma?
-     #:first-order (lambda (words) (empty? (filter (lambda (word) (not (word-in-regexp-sigma? regexp-sigma word))) words)))
+     #:first-order (lambda (words) (null? (filter (lambda (word) (not (word-in-regexp-sigma? regexp-sigma word))) words)))
      #:projection (lambda (blame)
                     (lambda (words)
                       (current-blame-format format-error)
                       (let [(words-not-in-regexp-sigma (filter (lambda (word) (not (word-in-regexp-sigma? regexp-sigma word))) words))]
-                        (if (empty? words-not-in-regexp-sigma)
+                        (if (null? words-not-in-regexp-sigma)
                             words
                             (raise-blame-error
                              blame
@@ -130,7 +130,7 @@
 ; the regexp.
 (define (check-word-accepts regexp word accepts?)
   (let* [(converted-word (map (lambda (x) (if (symbol? x) x (string->symbol (number->string x)))) word))
-        (result (sm-apply (regexp->fsa regexp) converted-word))]
+         (result (sm-apply (regexp->fsa regexp) converted-word))]
     (if accepts?
         (equal? result 'accept)
         (equal? result 'reject))))
@@ -188,12 +188,12 @@
 (define (regexp-input/c regexp type in-lang?)
   (make-flat-contract
    #:name 'regexp-accepting-correctly
-   #:first-order (lambda (words) (empty? (filter (lambda (word) (not (check-word-accepts regexp word in-lang?))) words)))
+   #:first-order (lambda (words) (null? (filter (lambda (word) (not (check-word-accepts regexp word in-lang?))) words)))
    #:projection (lambda (blame)
                   (lambda (words)
                     (current-blame-format format-error)
                     (let [(failing-words (filter (lambda (word) (not (check-word-accepts regexp word in-lang?))) words))]
-                      (if (empty? failing-words)
+                      (if (null? failing-words)
                           words
                           (raise-blame-error
                            blame
@@ -211,12 +211,12 @@
                             (lambda (x) (gen-regexp-word regexp)))))]
     (make-flat-contract
      #:name 'predicate-passes
-     #:first-order (lambda (predicate) (empty? (filter (lambda (word) (not (predicate word))) words)))
+     #:first-order (lambda (predicate) (null? (filter (lambda (word) (not (predicate word))) words)))
      #:projection (lambda (blame)
                     (lambda (predicate)
                       (current-blame-format format-error)
                       (let [(failing-words (filter (lambda (word) (not (predicate word))) words))]
-                        (if (empty? failing-words)
+                        (if (null? failing-words)
                             predicate
                             (raise-blame-error
                              blame

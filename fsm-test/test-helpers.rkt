@@ -1,5 +1,5 @@
-#lang racket 
-(require (for-syntax syntax/stx syntax/parse) rackunit/text-ui "test-machine.rkt")
+#lang racket/base
+(require (for-syntax syntax/stx syntax/parse racket/base) rackunit/text-ui "test-machine.rkt")
 
 (provide test-all)
 

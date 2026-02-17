@@ -47,14 +47,14 @@
          (start-index 0)
          (head-pos 0)]
     (define (make-tape-img loi start-index)
-      (if (empty? (rest loi))
-          (above (first loi)
+      (if (null? (cdr loi))
+          (above (car loi)
                  (square 5 'solid 'white)
                  (text (number->string start-index) 10 'black))
-          (beside (above (first loi)
+          (beside (above (car loi)
                          (square 5 'solid 'white)
                          (text (number->string start-index) 10 'black))
-                  (make-tape-img (rest loi) (add1 start-index)))))
+                  (make-tape-img (cdr loi) (add1 start-index)))))
     (let [(letter-imgs (build-list TAPE-SIZE
                                    (λ (i) (if (< (+ start-index i) (length tape))
                                               (overlay (text (symbol->string (list-ref tape (+ start-index i)))
@@ -131,13 +131,13 @@
   (foldl (λ (state result)
            (add-node
             result
-            (string->symbol (first state))
-            #:atb (hash 'color (second (first (second state)))
-                        'style (if (equal? (first state) (first edge))
+            (string->symbol (car state))
+            #:atb (hash 'color (cadr (car (cadr state)))
+                        'style (if (equal? (car state) (car edge))
                                    'bold
                                    'solid)
-                        'shape (second (second (second state)))
-                        'label (second (third (second state)))
+                        'shape (cadr (cadr (cadr state)))
+                        'label (cadr (caddr (cadr state)))
                         'fontcolor 'black
                         'font "Sans")))
          dgraph
@@ -148,20 +148,20 @@
 ;; Purpose: To create graph of edges
 (define (create-edges dgraph loe edge)
   (foldl (λ (rule result) (add-edge result
-                                    (if (equal? (second (first (third rule))) '_)
+                                    (if (equal? (cadr (car (caddr rule))) '_)
                                         'BLANK
-                                        (second (first (third rule))))
-                                    (string->symbol (first rule))
-                                    (string->symbol (second rule))
+                                        (cadr (car (caddr rule))))
+                                    (string->symbol (car rule))
+                                    (string->symbol (cadr rule))
                                     #:atb (hash 'fontsize 14
-                                                'style (second (second (third rule)))
-                                                'color (cond [(and (equal? (first rule) (first edge))
-                                                                   (equal? (second rule) (second edge)))
+                                                'style (cadr (cadr (caddr rule)))
+                                                'color (cond [(and (equal? (car rule) (car edge))
+                                                                   (equal? (cadr rule) (cadr edge)))
                                                               'dodgerblue2]
-                                                             [(equal? (second (third (third rule))) "white")
+                                                             [(equal? (cadr (caddr (caddr rule))) "white")
                                                               'white]    
                                                              [else 'black])
-                                                'headlabel (second (fourth (third rule)))
+                                                'headlabel (cadr (cadddr (caddr rule)))
                                                 )))
          dgraph
          loe))
@@ -289,13 +289,13 @@
                                            [tapes (zipper-set (imsg-struct-tapes
                                                                (informative-messages-component-state
                                                                 (viz-state-informative-messages a-vs)))
-                                                              (list (first (zipper-current (imsg-struct-tapes
+                                                              (list (car (zipper-current (imsg-struct-tapes
                                                                                             (informative-messages-component-state
                                                                                              (viz-state-informative-messages a-vs)))))
-                                                                    (add1 (second (zipper-current (imsg-struct-tapes
+                                                                    (add1 (cadr (zipper-current (imsg-struct-tapes
                                                                                                    (informative-messages-component-state
                                                                                                     (viz-state-informative-messages a-vs))))))
-                                                                    (third (zipper-current (imsg-struct-tapes
+                                                                    (caddr (zipper-current (imsg-struct-tapes
                                                                                             (informative-messages-component-state
                                                                                              (viz-state-informative-messages a-vs))))))
                                                               )
@@ -314,19 +314,19 @@
                                            [tapes (zipper-set (imsg-struct-tapes
                                                                (informative-messages-component-state
                                                                 (viz-state-informative-messages a-vs)))
-                                                              (list (first (zipper-current (imsg-struct-tapes
+                                                              (list (car (zipper-current (imsg-struct-tapes
                                                                                             (informative-messages-component-state
                                                                                              (viz-state-informative-messages a-vs)))))
-                                                                    (if (< 0 (second (zipper-current (imsg-struct-tapes
+                                                                    (if (< 0 (cadr (zipper-current (imsg-struct-tapes
                                                                                                       (informative-messages-component-state
                                                                                                        (viz-state-informative-messages a-vs))))))
-                                                                        (sub1 (second (zipper-current (imsg-struct-tapes
+                                                                        (sub1 (cadr (zipper-current (imsg-struct-tapes
                                                                                                        (informative-messages-component-state
                                                                                                         (viz-state-informative-messages a-vs))))))
-                                                                        (second (zipper-current (imsg-struct-tapes
+                                                                        (cadr (zipper-current (imsg-struct-tapes
                                                                                                  (informative-messages-component-state
                                                                                                   (viz-state-informative-messages a-vs))))))
-                                                                    (third (zipper-current (imsg-struct-tapes
+                                                                    (caddr (zipper-current (imsg-struct-tapes
                                                                                             (informative-messages-component-state
                                                                                              (viz-state-informative-messages a-vs)))))))
                                                   ]
@@ -342,29 +342,29 @@
 ;; list -> string
 ;; Purpose: To convert all elements of the list into a string
 (define (list2string a-list)
-  (if (empty? a-list)
+  (if (null? a-list)
       (rectangle 0.1 40 'outline 'black)
-      (beside (overlay (text (format "~s" (first a-list)) 30 'black)
+      (beside (overlay (text (format "~s" (car a-list)) 30 'black)
                        (rectangle 36 40 'outline 'black))
-              (list2string (rest a-list)))))
+              (list2string (cdr a-list)))))
 
 ;; draw-imsg
 ;; list number number var -> image
 ;; Purpose: To make a informative message image
 (define (draw-imsg a-tape)
-  (let* [(tape (first (zipper-current (imsg-struct-tapes a-tape))))
-         (start-index (second (zipper-current (imsg-struct-tapes a-tape))))
-         (head-pos (third (zipper-current (imsg-struct-tapes a-tape))))
+  (let* [(tape (car (zipper-current (imsg-struct-tapes a-tape))))
+         (start-index (cadr (zipper-current (imsg-struct-tapes a-tape))))
+         (head-pos (caddr (zipper-current (imsg-struct-tapes a-tape))))
          (var (zipper-current (imsg-struct-vars a-tape)))]
     (define (make-tape-img loi start-index)
-      (if (empty? (rest loi))
-          (above (first loi)
+      (if (null? (cdr loi))
+          (above (car loi)
                  (square 5 'solid 'white)
                  (text (number->string start-index) 10 'black))
-          (beside (above (first loi)
+          (beside (above (car loi)
                          (square 5 'solid 'white)
                          (text (number->string start-index) 10 'black))
-                  (make-tape-img (rest loi) (add1 start-index)))))
+                  (make-tape-img (cdr loi) (add1 start-index)))))
     (let [(letter-imgs (build-list TAPE-SIZE
                                    (λ (i) (if (< (+ start-index i) (length tape))
                                               (overlay (text (symbol->string (list-ref tape (+ start-index i)))
@@ -408,23 +408,23 @@
 ;; (listof trace) -> (listof (listof tape))
 ;; Purpose: To create a list of lists of tapes
 (define (create-tape lot)
-  (if (empty? lot)
+  (if (null? lot)
       empty
-      (cons (list (tmconfig-tape (first lot))
-                  (if (> (length (tmconfig-tape (first lot))) TAPE-SIZE)
-                      (- (length (tmconfig-tape (first lot))) TAPE-SIZE)
+      (cons (list (tmconfig-tape (car lot))
+                  (if (> (length (tmconfig-tape (car lot))) TAPE-SIZE)
+                      (- (length (tmconfig-tape (car lot))) TAPE-SIZE)
                       0)
-                  (tmconfig-index (first lot)))
-            (create-tape (rest lot)))))
+                  (tmconfig-index (car lot)))
+            (create-tape (cdr lot)))))
 
 ;; create-graph-imgs
 ;; (listof edge) (listof node) (listof edge) -> (listof image)
 ;; Purpose: To create a list of transition diagram images
 (define (create-graphics loe lon comp-edges)
-  (if (empty? comp-edges)
+  (if (null? comp-edges)
       empty
-      (cons (create-graphic loe lon (first comp-edges))
-            (create-graphics loe lon (rest comp-edges)))))
+      (cons (create-graphic loe lon (car comp-edges))
+            (create-graphics loe lon (cdr comp-edges)))))
 
 ;; resize-image :: image -> int -> int -> image
 ;; Scales a image to the given dimentions. This solution was adapted from
@@ -460,20 +460,20 @@
 ;; loe -> lol
 ;; Purpose: To extract a list of labels from edges
 (define (extract-labels loe)
-  (if (empty? loe)
+  (if (null? loe)
       '()
-      (cons (first (third (first loe)))
-            (extract-labels (rest loe)))))
+      (cons (car (caddr (car loe)))
+            (extract-labels (cdr loe)))))
 
 ;; loe -> loe
 ;; Purpose: To fix the blank label in computation edges
 (define (fix-blank-label loe)
-  (map (λ (rule) (if (equal? (second (first (third rule))) "_")
-                     (list (first rule) (second rule)
+  (map (λ (rule) (if (equal? (cadr (car (caddr rule))) "_")
+                     (list (car rule) (cadr rule)
                            (list '(label "BLANK")
-                                 (second (third rule))
-                                 (third (third rule))
-                                 (fourth (third rule))))
+                                 (cadr (caddr rule))
+                                 (caddr (caddr rule))
+                                 (cadddr (caddr rule))))
                      rule)) loe))
 
 
@@ -493,9 +493,9 @@
 ;; (listof num) (listof configs) -> (listof configs)
 ;; Purpose: To remove tmconfigs in the place of vars
 (define (remove-configs refs configs)
-  (if (empty? refs)
+  (if (null? refs)
       configs
-      (remove (list-ref configs (first refs)) (remove-configs (rest refs) configs))))
+      (remove (list-ref configs (car refs)) (remove-configs (cdr refs) configs))))
 
 (define viz-go-next (go-next E-SCENE-WIDTH E-SCENE-HEIGHT NODE-SIZE DEFAULT-ZOOM-CAP DEFAULT-ZOOM-FLOOR PERCENT-BORDER-GAP))
 (define viz-go-prev (go-prev E-SCENE-WIDTH E-SCENE-HEIGHT NODE-SIZE DEFAULT-ZOOM-CAP DEFAULT-ZOOM-FLOOR PERCENT-BORDER-GAP))
@@ -513,23 +513,23 @@
 ;; ctm a-list (listof symbol) number -> void
 (define (ctm-viz ctm ctm-list tape head)
   (let* [(ce (fix-blank-label (computation-edges ctm ctm-list tape head)))
-         (last-node (second (last ce)))
+         (last-node (cadr (last ce)))
          (comp-edges (append (list (list "dummy-edge" "edge-dummy" (list '(label "dummy")'(style "dummy") '(color "dummy") '(headlabel "dummy"))))
                              ce
                              (list (list last-node "edge-dummy" (list '(label "dummy") '(style "dummy")'(color "dummy") '(headlabel "dummy"))))))
          (loedges (fix-blank-label (clean-list (dot-edges (parse-program ctm-list)))))
          (lonodes (clean-list (dot-nodes (parse-program ctm-list))))
          (tmconfigs (filter (λ (x) (tmconfig? x)) (ctm-apply ctm tape head #t)))
-         (all-vars (map (λ (x) (third x))
+         (all-vars (map (λ (x) (caddr x))
                         (filter (λ (x) (and (not (tmconfig? x))
-                                            (equal? 'VAR (first x)))) (ctm-apply ctm tape head #t))))
+                                            (equal? 'VAR (car x)))) (ctm-apply ctm tape head #t))))
          (tmc-var (filter (λ (x) (or (tmconfig? x)
-                                     (equal? 'VAR (first x)))) (ctm-apply ctm tape head #t)))
+                                     (equal? 'VAR (car x)))) (ctm-apply ctm tape head #t)))
          (refs (map (λ (x) (sub1 x)) (references tmc-var 0)))
          (tmconf-clean (remove-configs refs tmc-var))
          (varimgs (append (map (λ (var) (if (tmconfig? var)
                                             (text "" 20 'black)
-                                            (text (format "~a = ~a" (second var)(third var)) 20 'black))) tmconf-clean)))
+                                            (text (format "~a = ~a" (cadr var)(caddr var)) 20 'black))) tmconf-clean)))
          (lographs (create-graphics loedges lonodes comp-edges))
          (tapes (imsg-struct (list->zipper (drop-right (create-tape tmconfigs) 1)) (list->zipper (drop-right varimgs 1))))
          (lovars (extract-labels comp-edges))]
