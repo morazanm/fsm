@@ -597,8 +597,8 @@
   ;;Purpose: Converts the given rule to a cfe-template
   (define (rules->cfe rule)
     (cond [(e-transition? rule) (empty rule)]
-          [(read-only? rule) (singleton rule)]
-          [else rule]))
+          #;[(read-only? rule) (singleton rule)]
+          [else (singleton rule)]))
 
   ;;pda-rule -> cfe-template
   ;;Purpose: Converts the given rule to a cfe-template
@@ -622,7 +622,11 @@
                                                      (not (eq? state (first (pda-finals M))))))
                                      (pda-states M))])
           (if (null? states-to-rip-out)
-              M
+              (let ([start (pda-start M)]
+                    [final (first (pda-finals M))]
+                    [tag ])
+                (struct-copy pda M
+                           [rules (list (pda-rule start final ]))
               (let* ([state-to-rip (first states-to-rip-out)]
                      [rules-frm-ripped-state (filter (λ (rule) (or (eq? state-to-rip (pda-rule-source rule))
                                                                    (eq? state-to-rip (pda-rule-destin rule))))
@@ -635,12 +639,12 @@
                                                      rules-frm-ripped-state)]
                      [self-loop-rules (filter (λ (rule) (self-loop? rule)) rules-frm-ripped-state)]
                      [extracted-tags (flatten (filter-not symbol? (map pda-rule-tag rules-frm-ripped-state)))]
-                     [translated-frm (rules->tag frm-state-rules)]
+                     [translated-frm (list (rules->tag frm-state-rules))]
                      [translated-to (if (not (null? extracted-tags))
-                                        (first extracted-tags)
-                                        (rules->tag to-state-rules))]
-                     [translated-self (make-kleene-tag (rules->tag self-loop-rules))]
-                     [new-tag (concat (filter-not null? (list translated-to translated-self translated-frm)))]
+                                        (concat-rules (first extracted-tags))
+                                        (list (rules->tag to-state-rules)))]
+                     [translated-self (list (make-kleene-tag (rules->tag self-loop-rules)))]
+                     [new-tag (concat (filter-not null? (append translated-to translated-self translated-frm)))]
                      [new-states (filter (λ (state) (not (eq? state-to-rip state)))
                         (pda-states M))]
                      [destins-from-state (filter (λ (rule) (and (not (self-loop? rule))
@@ -679,6 +683,7 @@
     (cond [(symbol? tag) ""]
           [(pda-rule? tag) (format "~a~a" (action->string (pda-rule-action tag)) (printable-tag (pda-rule-tag tag)))]
           [(empty? tag) (~a (printable-tag (empty-rule tag)))]
+          [(singleton? tag) (~a (printable-tag (singleton-rule tag)))]
           [(union? tag) (format "(~a)" (printable-helper (union-rules tag) " U "))]
           [(concat? tag) (printable-helper (concat-rules tag) "")]
           [else (format "(~a)*" (printable-tag (kleene-rule tag)))]))
@@ -701,26 +706,22 @@
                                          ([final finals])
                                  (cons (list (list final EMP EMP) (list new-final EMP)) acc))]
            [new-rules-to-start (list (list new-start EMP EMP) (list start EMP))])
-      (make-unchecked-ndpda new-states
-                          sigma
-                          gamma
-                          new-start
-                          (list new-final)
-                          (append (cons new-rules-to-start new-rules-to-final) rules))
-      #;(pda new-states
+      (pda new-states
            sigma
            gamma
            new-start
-           new-final
-           (map rule->struct (append new-rules-to-start new-rules-to-final rules)))))
+           (list new-final)
+           (map rule->struct (append (cons new-rules-to-start new-rules-to-final) rules)))))
       
 
     (let* ([new-P (make-new-machine P)]
-          [shrunken-P (rip-nodes (unchecked->pda new-P))])
-      (values #;(unchecked->pda new-P)
-              (sm-graph new-P)
+          [shrunken-P (rip-nodes new-P)]
+          [cfe-templates (pda-rule-tag (first (pda-rules shrunken-P)))])
+      (values 
+              (sm-graph (pda->unchecked new-P))
               #;shrunken-P
-              (printable-tag (pda-rule-tag (first (pda-rules shrunken-P))))
+              #;(pda-rule-tag (first (pda-rules shrunken-P)))
+              (printable-tag cfe-templates)
               (sm-graph (pda->unchecked shrunken-P)))))
 
 #;(define #;define/contract (pda->cfe pda)

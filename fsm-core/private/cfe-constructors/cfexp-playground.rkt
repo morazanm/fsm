@@ -452,6 +452,7 @@
                                      ((B b (b)) (B ,EMP))
                                      ((B ,EMP ,EMP) (C ,EMP)))))
 
+;;L = {a^ib^j | i ≤ j ≤ 2i}
 (define Gina-AiBj (make-unchecked-ndpda '(S A B C)
                          '(a b)
                          '(a)
@@ -467,7 +468,7 @@
                            ((B b (a)) (B ,EMP))
                            ((B ,EMP ,EMP) (C ,EMP))
                            )))
-
+;;L = {a^nb^ma^n | n,m ≥ 0 }
 (define Gina-A^nB^mA^n (make-unchecked-ndpda '(S A B)
                               '(a b)
                               '(a)
@@ -481,6 +482,7 @@
                                 ((A a (a)) (B ,EMP))
                                 ((B a (a)) (B ,EMP)))))
 
+;;L = {a^mb^nc^pd^q | m,n,p,q ≥ 0 ∧ m + n = p + q}
 (define Gina-a^mb^nc^pd^q (make-unchecked-ndpda '(S A B C)
                                  '(a b c d)
                                  '(a)
@@ -494,6 +496,8 @@
                                    ((B ,EMP ,EMP) (C ,EMP))
                                    ((C d (a)) (C ,EMP)))))
 
+
+;;L = {a^mb^nc^p | m,n,p≥0 ∧ (m = n ∨ n = p)}
 (define Gina-a^mb^nc^p (make-unchecked-ndpda '(S A B C D E F)
                               '(a b c)
                               '(a)
