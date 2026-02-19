@@ -23,12 +23,20 @@
         [(union-regexp? regexp)
          (gen:choice (translate-regexp (union-regexp-r1 regexp))
                      (translate-regexp (union-regexp-r2 regexp)))]
-        [(kleenestar-regexp? regexp)
+         [(kleenestar-regexp? regexp)
          (gen:bind (gen:integer-in 0 MAX-KLEENE-LENGTH)
                    (λ (x) (gen:list (translate-regexp (kleenestar-regexp-r1 regexp))
                                     #:max-length x)))]
         [(empty-regexp? regexp)
          (gen:const '())]))
+
+
+
+#;[(kleenestar-regexp? regexp)
+         (gen:sized
+          (λ (size)
+            (gen:list (translate-regexp (kleenestar-regexp-r1 regexp))
+                      #:max-length size)))]
 
 ;; state regexp invariant natnum -> void throw error
 ;; Purpose: To test if a word generated from the given regexp holds for the invariant of the state
