@@ -91,31 +91,56 @@
 ;; list of rules that weve used
 ;; list of visited states
 
-(define (find-rules&states-to-state a-machine state #:num-rep [rep-limit 1])
+(define (find-rules&states-to-state a-machine state)
   (define machine-states (sm-states a-machine))
   (define finals (sm-finals a-machine))
 
+  (define states-set (mutable-seteq))
   
   ;; (queueof (listof rule)) (listof (listof rule)) -> (listof (listof rule))
   ;; Purpose: To return all the paths of the given machine
   ;; Accumulator invarient: paths = list of current paths
-  (define (find-paths-helper qos los lor)  
+  (define (find-paths-helper qos lor)  
     (if (qempty? qos)
-        '()
+        (list lor (set->list states-set))
         (let* ([new-rules
                 (for/list ([rule (in-list (sm-rules a-machine))]
                            #:when (and (not (member rule lor))
                                        (eq? (qfirst qos) (third rule)))) ;<- checking to see if the state in first of the queue matches the destination/third of a given rule
+                  
                   rule)] ;<- for each new rule, adding it to the LOR, uhh this isn't gonna work properly rn, can't just cons it 
-                [new-los (remove-duplicates (map (λ (x) (list (first x) (third x))) new-rules))])
-          (find-paths-helper (enqueue new-los (dequeue qos)) (cons (qfirst qos) los) (append new-rules lor)))))
-  
-  (map (λ (x) (path-with-hash-path x)) (find-paths-helper (enqueue (for/list ([rule (in-list (sm-rules a-machine))]
-                                                                              #:when (eq? (third rule) state)) ;; adding a rule if it goes to the given state
-                                                                     (path-with-hash (list rule) (hash rule 1)))
-                                                                   (treelist))
-                                                          '()
-                                                          '())))
+               [new-los (for/fold ([accum-lst '()])
+                                  ([new-rule (in-list new-rules)])
+                          (if (set-member? states-set (first new-rule))
+                              (cond [(set-member? states-set (third new-rule))
+                                     '()]
+                                    [else
+                                     (set-add! states-set (third new-rule))
+                                     (cons (third new-rule) accum-lst)])
+                              (cond [(set-member? states-set (third new-rule))
+                                     (set-add! states-set (first new-rule))
+                                     (cons (first new-rule) accum-lst)]
+                                    [else
+                                     (set-add! states-set (first new-rule))
+                                     (set-add! states-set (third new-rule))
+                                     (cons (first new-rule) (cons (third new-rule) accum-lst))]))
+                              
+                          )
+                        #;(flatten (map (λ (x) (list (first x) (third x))) new-rules))])
+          (begin
+            (displayln (qfirst qos))
+            
+           
+            (find-paths-helper (enqueue new-los (dequeue qos)) (append new-rules lor))))))
+
+  (set-add! states-set state)
+  (find-paths-helper (enqueue (for/list ([rule (in-list (sm-rules a-machine))]
+                                         #:when (eq? state (third rule)))
+                                (first rule)) (treelist))
+                     
+                     (for/list ([rule (in-list (sm-rules a-machine))]
+                                #:when (eq? state (third rule)))
+                       rule)))
 
 
 
@@ -130,34 +155,34 @@
 ;;          it ups the rep-limit each time to ensure that all paths are being covered, also returns the
 ;;          list of rules and states of the paths
 #;(define (get-all-paths a-machine finals-set)
-  (define rep1-paths (find-paths a-machine))
+    (define rep1-paths (find-paths a-machine))
 
-  ;; (listof path) -> (listof (listof rules) (mutable-seteq states))
-  ;; purpose: gets the rules of the given list of paths
-  (define (get-path-rules&states machine-paths)
-    (define new-states (mutable-seteq))
-    (list (remove-duplicates (for*/list ([path (in-list machine-paths)]
-                                   #:when (set-member? finals-set (third (last path)))
-                                   [rule (in-list path)])
-                         (set-add! new-states (first rule))  
-                         (set-add! new-states (third rule))
-                         rule))
-          new-states))
+    ;; (listof path) -> (listof (listof rules) (mutable-seteq states))
+    ;; purpose: gets the rules of the given list of paths
+    (define (get-path-rules&states machine-paths)
+      (define new-states (mutable-seteq))
+      (list (remove-duplicates (for*/list ([path (in-list machine-paths)]
+                                           #:when (set-member? finals-set (third (last path)))
+                                           [rule (in-list path)])
+                                 (set-add! new-states (first rule))  
+                                 (set-add! new-states (third rule))
+                                 rule))
+            new-states))
 
-  ;; (listof paths) (listof rules) number -> (listof (listof path) (listof rules) (mutable-seteq state))
-  ;; purpose: To return all the paths of the machine that take it from the starting state to any final state,
-  ;;          it ups the rep-limit each time to ensure that all paths are being covered also returns the
-  ;;          list of rules and states of the paths
-  (define (get-all-paths-helper cur-paths cur-path-rules rep-num)
-    (define next-rep-paths (find-paths a-machine #:num-rep rep-num))  ;; <- getting the paths of the next repetition
+    ;; (listof paths) (listof rules) number -> (listof (listof path) (listof rules) (mutable-seteq state))
+    ;; purpose: To return all the paths of the machine that take it from the starting state to any final state,
+    ;;          it ups the rep-limit each time to ensure that all paths are being covered also returns the
+    ;;          list of rules and states of the paths
+    (define (get-all-paths-helper cur-paths cur-path-rules rep-num)
+      (define next-rep-paths (find-paths a-machine #:num-rep rep-num))  ;; <- getting the paths of the next repetition
 
-    (define rules&states-next-rep (get-path-rules&states next-rep-paths))
-    (define rules-of-next-rep (first rules&states-next-rep)) ;; <- getting the rules of the next repetition
-    (define states-of-next-rep (second rules&states-next-rep)) ;; <- getting the states of the next repetition
+      (define rules&states-next-rep (get-path-rules&states next-rep-paths))
+      (define rules-of-next-rep (first rules&states-next-rep)) ;; <- getting the rules of the next repetition
+      (define states-of-next-rep (second rules&states-next-rep)) ;; <- getting the states of the next repetition
     
-    (if (> (length rules-of-next-rep) (length cur-path-rules))                 ;;<- check if length next rep rules is greater than last loop of rules
-        (get-all-paths-helper next-rep-paths rules-of-next-rep (add1 rep-num)) ;;<- if its greater then that means we have to loop again
-        (list next-rep-paths rules-of-next-rep states-of-next-rep)))           ;; <- if its less than or equal to, we return the cur rep's paths and its rules
+      (if (> (length rules-of-next-rep) (length cur-path-rules))                 ;;<- check if length next rep rules is greater than last loop of rules
+          (get-all-paths-helper next-rep-paths rules-of-next-rep (add1 rep-num)) ;;<- if its greater then that means we have to loop again
+          (list next-rep-paths rules-of-next-rep states-of-next-rep)))           ;; <- if its less than or equal to, we return the cur rep's paths and its rules
           
     (get-all-paths-helper rep1-paths (get-path-rules&states rep1-paths) 2))
  
@@ -190,12 +215,12 @@
                                 (filter (λ (final-state) (set-member? new-states final-state)) (sm-finals a-machine))
                                 new-rules))
 
-         ;(displayln (sm-graph machine-with-states-that-reach-finals))
+         (displayln (sm-graph machine-with-states-that-reach-finals))
          
          (define state&its-machine (make-hash))
          
-         (define all-paths (find-paths machine-with-states-that-reach-finals)) ;<- REFACTORED (old)
-         ;;(define all-paths (find-paths a-machine)) ;<- UNREFACTORED PATHS (old)
+         #;(define all-paths (find-paths machine-with-states-that-reach-finals)) ;<- REFACTORED (old)
+         (define all-paths (find-paths a-machine)) ;<- UNREFACTORED PATHS (old)
          
 
          
@@ -209,7 +234,7 @@
              
              (define paths-to-first-los (filter (λ (path) (eq? (third (last path)) symb)) all-paths))
               
-             (define (make-rules-states rules states paths)
+             #;(define (make-rules-states rules states paths)
                (define (make-rules-states-helper rules states path)
                  (if (empty? path)
                      (values rules states)
@@ -223,14 +248,16 @@
                    (call-with-values (lambda () (make-rules-states-helper rules states (first paths)))
                                      (lambda (rules states) (make-rules-states rules states (rest paths))))))
         
-             (define-values (rules-for-first-los states-to-first-los) (make-rules-states '() '() paths-to-first-los))
+             ;(define-values (rules-for-first-los states-to-first-los) (make-rules-states '() '() paths-to-first-los))
+
+             (define rules&states (find-rules&states-to-state a-machine symb))
              
              (define machine-only-paths-to-first-los    ;;; ✨ can get the rules, states using the function
-               (make-unchecked-ndfa states-to-first-los
+               (make-unchecked-ndfa (second rules&states)
                                     (sm-sigma machine-with-states-that-reach-finals)
                                     (sm-start machine-with-states-that-reach-finals)
                                     (list symb)
-                                    rules-for-first-los))
+                                    (first rules&states)))
              
              (hash-set! state&its-machine symb (simplify-regexp (fsa->regexp machine-only-paths-to-first-los))))
            state&its-machine)
