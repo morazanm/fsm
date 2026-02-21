@@ -50,10 +50,10 @@
                              (sm-sigma a-machine)
                              start-state
                              finals
-                             lor)
+                             (set->list lor))
         (let* ([new-rules
                 (for/list ([rule (in-list (sm-rules a-machine))]
-                           #:when (and (not (member rule lor))
+                           #:when (and (not (set-member? lor rule))
                                        (eq? (qfirst qos) (first rule))))
                   
                   rule)]
@@ -74,14 +74,18 @@
                                      (cons (first new-rule) (cons (third new-rule) accum-lst))]))
                               
                           )])
-          (find-rules&states-to-state-helper (enqueue new-los (dequeue qos)) (append new-rules lor)))))
+          (find-rules&states-to-state-helper (enqueue new-los (dequeue qos))
+                                             (for/fold ([rules-set lor])
+                                                       ([new-rule new-rules])
+                                               (set-add rules-set new-rule))
+                                             #;(append new-rules lor)))))
 
   (set-add! states-set start-state)
   (find-rules&states-to-state-helper (enqueue (for/list ([rule (in-list (sm-rules a-machine))]
                                                          #:when (eq? start-state (first rule)))
                                                 (first rule)) (treelist))
                      
-                                     (for/list ([rule (in-list (sm-rules a-machine))]
+                                     (for/set ([rule (in-list (sm-rules a-machine))]
                                                 #:when (eq? start-state (third rule)))
                                        rule)))
 
@@ -132,7 +136,7 @@
                                   ([new-rule (in-list new-rules)])
                           (if (set-member? states-set (first new-rule))
                               (cond [(set-member? states-set (third new-rule))
-                                     '()]
+                                     accum-lst]
                                     [else
                                      (set-add! states-set (third new-rule))
                                      (cons (third new-rule) accum-lst)])
