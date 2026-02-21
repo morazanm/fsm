@@ -61,7 +61,7 @@
                                   ([new-rule (in-list new-rules)])
                           (if (set-member? states-set (first new-rule))
                               (cond [(set-member? states-set (third new-rule))
-                                     '()]
+                                     accum-lst]
                                     [else
                                      (set-add! states-set (third new-rule))
                                      (cons (third new-rule) accum-lst)])
