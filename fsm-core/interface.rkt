@@ -166,8 +166,16 @@
 
 
 
-
-
+;; machine (listof (state invariant)) natnum boolean -> void throw error 
+;; Purpose: To quickcheck the invariants of the states of the given machine
+(define (sm-quickcheck machine #:num-tests [tests 300] #:ds-removal [ds-removed? #f]. los&inv)
+  (let ([type (sm-type machine)])
+    (cond [(or (eq? 'ndfa type)
+               (eq? 'dfa type))
+               (quickcheck-invs-fsa machine los&inv tests ds-removed?)]
+          [(eq? 'pda type)
+           (error "Support for pdas coming soon! :)")]
+          [else (error "Support for tms and mttms is under development! :)")])))
 
 
 ; sm word [natnum] --> image
