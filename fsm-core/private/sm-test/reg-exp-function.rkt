@@ -166,14 +166,20 @@
 
 
 
-;; machine -> hashtable
+;; machine boolean -> hashtable
 ;; Purpose: To return a hashtable of all regular expressions that
 ;;          can be made from the given machine
-(define (get-all-regexp a-machine)
+(define (get-all-regexp a-machine dead-state-removal?)
 
   (define rules&states (find-path-rule&states-dead-state-sweep a-machine (find-path-rule&states a-machine)))
-  (define new-states (second rules&states))
-  (define new-rules (first rules&states))
+  (define new-states (if dead-state-removal?
+                         (second rules&states) ;<- refactored
+                         (sm-states a-machine))) ;<- not refactored
+  (define new-rules (if dead-state-removal?
+                        (first rules&states) ;<- refactored
+                        (sm-rules a-machine))) ;<- not refactored
+        
+
   (define starting-state (sm-start a-machine))
   
   (define finals-set (list->seteq (sm-finals a-machine)))
@@ -183,12 +189,15 @@
          (null-regexp)]
         [else 
          (define machine-with-states-that-reach-finals
-           (make-unchecked-ndfa (set->list new-states)
-                                (sm-sigma a-machine)
-                                starting-state
-                                new-finals
-                                new-rules))
+           (if dead-state-removal?
+               (make-unchecked-ndfa (set->list new-states)
+                                    (sm-sigma a-machine)
+                                    starting-state ;<- UNREFACTORED
+                                    new-finals
+                                    new-rules)
+           a-machine))
 
+         ;(displayln (sm-graph a-machine)) ;<- this will display the transition diagram of the given machine
          ;(displayln (sm-graph machine-with-states-that-reach-finals)) ;<- this is the refactored machine
          
          (define state&its-machine (make-hash))
@@ -210,7 +219,7 @@
                                     (list symb)
                                     (first rules&states)))
 
-             ;(displayln (sm-graph machine-only-paths-to-first-los)) ;<- this will display all the regular expressions of the states
+             #;(displayln (sm-graph machine-only-paths-to-first-los)) ;<- this will display all the regular expressions of the states
                           
              (hash-set! state&its-machine symb (simplify-regexp (fsa->regexp machine-only-paths-to-first-los))))
            state&its-machine)
