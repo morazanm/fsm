@@ -105,7 +105,8 @@
   (cond [(or (null? cfexps) (andmap mk-null-cfexp? cfexps)) (null-cfexp)] ;; no input cfes -> null
         [(andmap mk-empty-cfexp? cfexps) (empty-cfexp)] ;; only empty cfes -> empty
         [(is-length-one? cfexps) (car cfexps)] ;;only one cfe -> cfe
-        [else (mk-union-cfexp (vector-append (list->vector (filter (compose1 not mk-union-cfexp?) cfexps)) ;;otherwise flatten nested unions -> union
+        [else (mk-union-cfexp (vector-append (list->vector (filter (compose1 not mk-union-cfexp?)
+                                                                   cfexps)) ;;otherwise flatten nested unions -> union
                                              (foldl (λ (u-cfe acc)
                                                       (vector-append acc (mk-union-cfexp-locfe u-cfe)))
                                                     (vector)
@@ -200,7 +201,7 @@
 (define/contract (gen-cfexp-word cfe . reps)
   gen-cfexp-word/c
   (define MAX-KLEENESTAR-REPS (if (null? reps) MAX-KLEENESTAR-LIMIT (car reps)))
-  (cond [(mk-null-cfexp? cfe) (error "A word cannot be generated using the null-regexp.")]
+  (cond [(mk-null-cfexp? cfe) (error "A word cannot be generated using the null-cfexp.")]
         [(mk-empty-cfexp? cfe) EMP]
         [(mk-singleton-cfexp? cfe) (list (string->symbol (mk-singleton-cfexp-char cfe)))]
         [(box? cfe) (gen-cfexp-word (unbox cfe) reps)]
@@ -212,7 +213,7 @@
 ;;cfexp ;;natnum
 ;;Purpose: Generates a word that is in the given cfexp's language
 (define (gen-cfexp-word-helper cfe reps)
-  (cond [(mk-null-cfexp? cfe) (error "A word cannot be generated using the null-regexp.")]
+  (cond [(mk-null-cfexp? cfe) (error "A word cannot be generated using the null-cfexp.")]
         [(mk-empty-cfexp? cfe) ""]
         [(mk-singleton-cfexp? cfe) (mk-singleton-cfexp-char cfe)]
         [(mk-concat-cfexp? cfe) (gen-concat-word cfe gen-cfexp-word-helper reps)]
@@ -296,21 +297,24 @@
                                              [(= (length RHS) 1) (rule->expression (car RHS))]
                                              [else (apply union-cfexp (map (λ (rule) (rule->expression rule)) RHS))])))))
   
-  (let* ([nts (cfg-get-v G)]
-         [rules (make-hash-table nts (λ (nt) (filter-map (λ (rule)
-                                                           (and (eq? (car rule) nt)
-                                                                (symbol->fsmlos (caddr rule))))
-                                                         (cfg-get-rules G))))]
-         [start (cfg-get-start G)]
-         [singletons (make-hash-table (cfg-get-alphabet G) (λ (sig)
-                                                             (singleton-cfexp (symbol->string sig))))]
-         [lang-boxes (make-hash-table nts (λ (x) (box (void))))]
-         [rules->cfexp (make-cfexps-frm-rules rules singletons lang-boxes)]
-         [updated-bindings (hash-map/copy rules->cfexp (λ (key value)
-                                                         (begin
-                                                           (set-box! (hash-ref lang-boxes key) value)
-                                                           (values key (hash-ref lang-boxes key)))))])
-    (hash-ref updated-bindings start)))
+  (let ([rules (cfg-get-rules G)])
+    (if (empty? rules)
+        (null-cfexp)
+        (let* ([nts (cfg-get-v G)]
+               [rules-hash (make-hash-table nts (λ (nt) (filter-map (λ (rule)
+                                                                 (and (eq? (car rule) nt)
+                                                                      (symbol->fsmlos (caddr rule))))
+                                                               rules)))]
+               [start (cfg-get-start G)]
+               [singletons (make-hash-table (cfg-get-alphabet G) (λ (sig)
+                                                                   (singleton-cfexp (symbol->string sig))))]
+               [lang-boxes (make-hash-table nts (λ (x) (box (void))))]
+               [rules->cfexp (make-cfexps-frm-rules rules-hash singletons lang-boxes)]
+               [updated-bindings (hash-map/copy rules->cfexp (λ (key value)
+                                                               (begin
+                                                                 (set-box! (hash-ref lang-boxes key) value)
+                                                                 (values key (hash-ref lang-boxes key)))))])
+          (hash-ref updated-bindings start)))))
 
 ;;cfe -> cfg
 ;;Purpose: Converts the given cfe into its corresponding cfg
@@ -434,7 +438,8 @@
                                                                          (symbol->string (hash-ref new-nts cfe)))
                                                                      acc))
                                                                   ""
-                                                                  (treelist-reverse (vector->treelist (mk-concat-cfexp-locfe cfe)))))]
+                                                                  (treelist-reverse
+                                                                   (vector->treelist (mk-concat-cfexp-locfe cfe)))))]
                 [else (error (format "unsuitable cfe ~a" cfe))]))
         ;;if union found in concat split union and make concat using every branch
         (let ([RHS (cond [(mk-empty-cfexp? cfe) EMP]
@@ -465,7 +470,8 @@
           finished-rules
           (let ([cfe (qfirst rules-to-convert)])
             (cond [(mk-union-cfexp? cfe)
-                   (remake-rules nt (enqueue (dequeue rules-to-convert) (vector->treelist (mk-union-cfexp-locfe cfe))) finished-rules)]
+                   (remake-rules nt (enqueue (dequeue rules-to-convert)
+                                             (vector->treelist (mk-union-cfexp-locfe cfe))) finished-rules)]
                   [(mk-kleene-cfexp? cfe)
                    (remake-rules nt (dequeue rules-to-convert) (cons (list nt ARROW EMP) (cons (cfe->rule nt cfe) finished-rules)))]
                   [else (remake-rules nt (dequeue rules-to-convert) (cons (cfe->rule nt cfe) finished-rules))]))))
@@ -500,26 +506,65 @@
 ;;Purpose: Converts the given pda into a cfe
 (define #;define/contract (pda->cfe P)
   #;pda->cfe/c
+  #|
+  pda-struct is a structural representation of a pda
+  states | The states for the given pda => (listof states)
+  sigma  | The alphabet that the given pda works over => (listof symbol)
+  gamma  | The stack alphabet that given pda works over => (listof symbol)
+  start  | The starting state => symbol
+  finals | The final states => (listof symbol)
+  rules  | The transition relation for the given pda => (listof pda-rule)
+  |#
   (struct pda (states sigma gamma start finals rules) #:transparent)
 
+  #|
+  pda-rule is a structural representation of a pda rule
+  source | The state the rule is coming from => symbol
+  action | The action the pda takes when using the rule => pda-action
+  destin | The state the rule transitions to => symbol
+  tag    | The cfe-template for the given rule => symbol / cfe-template
+  |#
   (struct pda-rule (source action destin tag) #:transparent)
 
-  (struct pda-action (read push pop) #:transparent)
+  #|
+  a pda-action is a structural representation of a pda action
+  read | The element that the pda reads => symbol
+  pop  | The element(s) that the pda pops of the stack => symbol / (listof symbol)
+  push | The element(s) that the pda pushes to the stack => symbol / (listof symbol)
+  |#
+  (struct pda-action (read pop push) #:transparent)
 
+  (struct inverse-pair (push pop) #:transparent)
+
+  #|
+  A cfe-template is an annotation for a pda-rule in preparation to be converted to a cfe
+  A cfe-template is either:
+  1. kleene
+  2. union
+  3. concat
+  4. empty
+  5. singleton
+  |#
+  ;;kleene is a cfe-template
+  ;;rule | the rule to be annotated with a Kleenestar
   (struct kleene (rule) #:transparent)
-
+  ;;union is a cfe-template
+  ;;rule | the rule to be annotated with a union
   (struct union (rules) #:transparent)
-
+  ;;concat is a cfe-template
+  ;;rule | the rule to be annotated with a concatenation
   (struct concat (rules) #:transparent)
-
+  ;;empty is a cfe-template
+  ;;rule | the rule to be annotated with a empty
   (struct empty (rule) #:transparent)
-
+  ;;singleton is a cfe-template
+  ;;rule | the rule to be annotated with a singleton
   (struct singleton (rule) #:transparent)
 
-  ;; symbol los los -> pda-action
-  ;;Purpose: creates a pda action from the given inpu
-  (define (make-pda-action read push pop)
-    (pda-action read push pop))
+  ;;symbol los los -> pda-action
+  ;;Purpose: Creates a pda action from the given input
+  (define (make-pda-action read pop push)
+    (pda-action read pop push))
 
   ;;(list (list state symbol los) (list state los)) -> pda-rule
   ;;Purpose: Converts the given pda rule into a pda-rule struct
@@ -534,23 +579,18 @@
   (define (struct->rules rule) 
     (list (list (pda-rule-source rule)
                 (pda-action-read (pda-rule-action rule))
-                (pda-action-push (pda-rule-action rule)))
+                (pda-action-pop (pda-rule-action rule)))
           (list (pda-rule-destin rule)
-                (pda-action-pop (pda-rule-action rule)))))
+                (pda-action-push (pda-rule-action rule)))))
 
   ;;pda-action pda-action -> Boolean
   ;;Purpose: Determines if the given pda-actions have inverse stack operations
-  (define (inverse-stack-operations? action1 action2)
-    (let ([pop1 (pda-action-pop action1)]
-          [push1 (pda-action-push action1)]
-          [pop2 (pda-action-pop action2)]
-          [push2 (pda-action-push action2)])
-      (or (and (equal? pop1 push2)
-               (not (eq? pop1 EMP))
-               (not (eq? push2 EMP)))
-          (and (equal? pop2 push1)
-               (not (eq? pop2 EMP))
-               (not (eq? push1 EMP))))))
+  (define (inverse-stack-operations? push-action pop-action)
+    (let ([push (pda-action-push push-action)]
+          [pop (pda-action-pop pop-action)])
+      (and (equal? pop push)
+           (not (eq? pop EMP))
+           (not (eq? push EMP)))))
 
   ;;pda -> pda-struct
   ;;Purpose: Converts the given pda into a pda-struct
@@ -589,34 +629,53 @@
            (eq? EMP (pda-action-push action)))))
 
   ;;pda-rule -> Boolean
-  ;;Purpose: Determines if the given rule is a self loop
+  ;;Purpose: Determines if the given pda-rule is a self loop
   (define (self-loop? pda-rule)
     (eq? (pda-rule-source pda-rule) (pda-rule-destin pda-rule))) 
 
   ;;pda-rule -> cfe-template
-  ;;Purpose: Converts the given rule to a cfe-template
-  (define (rules->cfe rule)
-    (cond [(e-transition? rule) (empty rule)]
-          #;[(read-only? rule) (singleton rule)]
-          [else (singleton rule)]))
+  ;;Purpose: Converts the given pda-rule to a cfe-template
+  (define (rules->cfe pda-rule)
+    (if (e-transition? pda-rule)
+        (empty pda-rule) 
+        (singleton pda-rule)))
 
-  ;;pda-rule -> cfe-template
-  ;;Purpose: Converts the given rule to a cfe-template
+  ;;(listof pda-rule) -> cfe-template
+  ;;Purpose: Converts the given (listof pda-rule) to a cfe-template
   (define (rules->tag rules)
     (let ([t-rules (map rules->cfe rules)])
       (cond [(null? t-rules) rules]
             [(is-length-one? t-rules) (first t-rules)]
             [else (union t-rules)])))
 
-  ;;cfe-template -> cfe-template
-  ;;Purpose: Converts given cfe-template into a kleene
+  ;;(listof cfe-template) -> (listof cfe-template)
+  ;;Purpose: Converts given (listof cfe-template) to a cfe-kleene-template
   (define (make-kleene-tag t-rule)
     (if (null? t-rule)
         t-rule
         (kleene t-rule)))
 
+  (define (make-new-tag t-rules)
+    (let ([rules (flatten (map template->rules t-rules))])
+    (if (eq? (pda-rule-source (first rules)) (pda-rule-destin (last rules)))
+        (kleene (concat t-rules))
+        (concat t-rules))))
+
+  ;;(listof pda-rule) -> pda-rule
+  ;;Purpose: If the given list has many rules (e.i more than 1), merge their tags together and create a union.
+  ;;         Otherwise return the given list
+  (define (merge-rules rules)
+    (if (or (null? rules)(is-length-one? rules))
+        rules
+        (list (struct-copy pda-rule (first rules)
+                     [tag (union (map pda-rule-tag rules))]))))
+
+
+  ;(define (update-rule (pda-rule-action rule)frm-ripped-state-rules)
+
+  
   ;;pda-struct -> pda-struct
-  ;;Purpose: Recursively rips nodes from the given M and converts the ripped nodes to cfe-templates
+  ;;Purpose: Recursively rips nodes out from the given M and converts the ripped nodes to cfe-templates
   (define (rip-nodes M)
     (let ([states-to-rip-out (filter (λ (state) (and (not (eq? state (pda-start M)))
                                                      (not (eq? state (first (pda-finals M))))))
@@ -624,53 +683,129 @@
           (if (null? states-to-rip-out)
               (let ([start (pda-start M)]
                     [final (first (pda-finals M))]
-                    [tag ])
+                    [tag (simplify-templates (pda-rule-tag (first (merge-rules (pda-rules M)))))]
+                    [space (string->symbol "")])
+                
                 (struct-copy pda M
-                           [rules (list (pda-rule start final ]))
+                           [rules (list #;(first (merge-rules (pda-rules M)))
+                                        (pda-rule start (pda-action (string->symbol (printable-tag tag)) space space) final tag))]))
               (let* ([state-to-rip (first states-to-rip-out)]
                      [rules-frm-ripped-state (filter (λ (rule) (or (eq? state-to-rip (pda-rule-source rule))
                                                                    (eq? state-to-rip (pda-rule-destin rule))))
                                                      (pda-rules M))]
-                     [frm-state-rules (filter (λ (rule) (and (not (self-loop? rule))
+                     [frm-ripped-state-rules (filter (λ (rule) (and (not (self-loop? rule))
                                                               (eq? state-to-rip (pda-rule-source rule))))
                                                      rules-frm-ripped-state)]
-                     [to-state-rules (filter (λ (rule) (and (not (self-loop? rule))
+                     [to-ripped-state-rules (filter (λ (rule) (and (not (self-loop? rule))
+                                                                   (not (and (eq? (pda-start M) (pda-rule-source rule))
+                                                                        (eq? EMP (pda-action-read (pda-rule-action rule)))))
                                                               (eq? state-to-rip (pda-rule-destin rule))))
                                                      rules-frm-ripped-state)]
                      [self-loop-rules (filter (λ (rule) (self-loop? rule)) rules-frm-ripped-state)]
                      [extracted-tags (flatten (filter-not symbol? (map pda-rule-tag rules-frm-ripped-state)))]
-                     [translated-frm (list (rules->tag frm-state-rules))]
-                     [translated-to (if (not (null? extracted-tags))
-                                        (concat-rules (first extracted-tags))
-                                        (list (rules->tag to-state-rules)))]
-                     [translated-self (list (make-kleene-tag (rules->tag self-loop-rules)))]
-                     [new-tag (concat (filter-not null? (append translated-to translated-self translated-frm)))]
-                     [new-states (filter (λ (state) (not (eq? state-to-rip state)))
+                     [translated-frm-rules (list (rules->tag frm-ripped-state-rules))]
+                     [translated-to-rules (cond [(concat? extracted-tags) (concat-rules (first extracted-tags))]
+                                                [(kleene? extracted-tags) (kleene-rule (first extracted-tags))]
+                                                [else (list (rules->tag to-ripped-state-rules))])]
+                     [translated-self-loop-rules (list (make-kleene-tag (rules->tag self-loop-rules)))]
+                     [new-tag (make-new-tag (filter-not null? (append translated-to-rules
+                                                                      translated-self-loop-rules
+                                                                      translated-frm-rules)))]
+                     [new-states-for-P (filter (λ (state) (not (eq? state-to-rip state)))
                         (pda-states M))]
-                     [destins-from-state (filter (λ (rule) (and (not (self-loop? rule))
-                                                                (eq? state-to-rip (pda-rule-source rule))))
-                                                 rules-frm-ripped-state )]
+                     [destins-from-ripped-state (filter (λ (rule)
+                                                          (and (not (self-loop? rule))
+                                                               (eq? state-to-rip (pda-rule-source rule))))
+                                                 rules-frm-ripped-state)]
                      [updated-destins (map (λ (rule)
                                              (struct-copy pda-rule rule
                                                           [source (pda-start M)]
                                                           [tag new-tag]))
-                                           destins-from-state)])
-                #;(pretty-print (if (not (null? extracted-tags)) (concat-rules (first extracted-tags)) extracted-tags))
-                #;(displayln "")
-                #;(pretty-print new-tag)
+                                           destins-from-ripped-state)]
+                     #;[updated-to-rules (map (λ (rule)
+                                                (struct-copy pda-rule rule
+                                                             [destin (if (eq? (first (pda-finals M)) (pda-rule-source rule))
+                                                                         (first (pda-finals M))
+                                                                         (pda-rule-source rule))]
+                                                             #;[tag new-tag]
+                                                             [action (let ([action (pda-rule-action rule)])
+                                                                       (struct-copy pda-action action
+                                                                                  [read (apply (compose1 string->symbol string-append)
+                                                                                               (map (λ (rule)
+                                                                                                      ((compose1 symbol->string pda-action-read pda-rule-action) rule))
+                                                                                                    (append to-ripped-state-rules
+                                                                                                            self-loop-rules
+                                                                                                            frm-ripped-state-rules)))
+                                                                                   ]))]))
+                                                             to-ripped-state-rules
+                                                             #;(filter (λ (rule)
+                                                                       (and (not (eq? (pda-start M) (pda-rule-source rule)))
+                                                                        (not (eq? EMP (pda-action-read (pda-rule-action rule))))))
+                                                                     to-ripped-state-rules))])
+                ;(pretty-print new-tag)
+               #| (pretty-print rules-frm-ripped-state)
+                (pretty-print frm-ripped-state-rules)
+                (pretty-print to-ripped-state-rules)
+                (pretty-print self-loop-rules)
+                #;(pretty-print updated-to-rules)
+                (pretty-print translated-frm-rules)
+                (pretty-print new-tag)
+                (displayln "next")
+                #;(pretty-print (append updated-destins
+                                      updated-to-rules
+                                      (filter (λ (rule) (and (not (eq? state-to-rip (pda-rule-source rule)))
+                                                                                  (not (eq? state-to-rip (pda-rule-destin rule)))))
+                                                                    (pda-rules M))))
+                #;(pretty-print (apply (compose1 string->symbol string-append)
+                                     (map (λ (rule)
+                                     ((compose1 symbol->string pda-action-read pda-rule-action) rule))
+                                   (append to-ripped-state-rules
+                                           self-loop-rules
+                                           frm-ripped-state-rules)))
+                              #;(foldl (λ (acc rule)
+                                     (string-append ((compose1 symbol->string pda-action-read pda-rule-action) rule)) acc)
+                                    ""
+                                   (append to-ripped-state-rules
+                                           self-loop-rules
+                                           frm-ripped-state-rules)))
+                #;(displayln (sm-graph (pda->unchecked (struct-copy pda M
+                             [states new-states-for-P]
+                             [rules (append updated-destins
+                                            updated-to-rules
+                                            (filter (λ (rule) (and (not (eq? state-to-rip (pda-rule-source rule)))
+                                                                                  (not (eq? state-to-rip (pda-rule-destin rule)))))
+                                                                    (pda-rules M)))]))))
+                #;(struct-copy pda M
+                             [states new-states-for-P]
+                             [rules (append updated-destins
+                                            updated-to-rules
+                                            (filter (λ (rule) (and (not (eq? state-to-rip (pda-rule-source rule)))
+                                                                                  (not (eq? state-to-rip (pda-rule-destin rule)))))
+
+                                                    (pda-rules M)))])
                 (rip-nodes (struct-copy pda M
-                             [states new-states]
-                             [rules (append updated-destins (filter (λ (rule) (and (not (eq? state-to-rip (pda-rule-source rule)))
+                             [states new-states-for-P]
+                             [rules (filter (λ (rule) (and (not (eq? state-to-rip (pda-rule-source rule)))
+                                                                                  (not (eq? state-to-rip (pda-rule-destin rule)))))
+                                                                  (pda-rules M))]))
+                |#
+                (rip-nodes (struct-copy pda M
+                             [states new-states-for-P]
+                             [rules (append #;updated-to-rules
+                                            updated-destins
+                                            (filter (λ (rule) (and (not (eq? state-to-rip (pda-rule-source rule)))
                                                                                   (not (eq? state-to-rip (pda-rule-destin rule)))))
                                                                     (pda-rules M)))]))))))
 
   ;;(listof cfe-template) string -> string
   ;;Purpose: Converts a (listof cfe-template) to a string
   (define (printable-helper tags connector)
-    (if (is-length-one? tags)
+    (if (null? tags)
+        connector
+        (if (is-length-one? tags)
         (printable-tag (first tags))
         (let ([res (printable-helper (rest tags) connector)])
-          (format "~a~a~a"(printable-tag (first tags)) connector res))))
+          (format "~a~a~a"(printable-tag (first tags)) connector res)))))
 
   ;;pda-action -> string
   ;;Purpose: Converts a pda-action to a string
@@ -691,38 +826,127 @@
   ;;pda -> pda-struct
   ;;Purpose: Converts given pda into a pda-struct
   (define (make-new-machine P)
-    (let* ([states (pda-getstates P)]
-           [sigma (pda-getalphabet P)]
-           [gamma (pda-getgamma P)]
-           [start (pda-getstart P)]
-           [finals (pda-getfinals P)]
-           [rules (pda-getrules P)]
-           [new-states (for/fold ([st states])
+    (let* ([new-states (for/fold ([st (pda-getstates P)])
                                  ([x (in-range 2)])
                          (cons (gen-state st) st))]
            [new-start (first new-states)]
            [new-final (second new-states)]
            [new-rules-to-final (for/fold ([acc '()])
-                                         ([final finals])
+                                         ([final (pda-getfinals P)])
                                  (cons (list (list final EMP EMP) (list new-final EMP)) acc))]
-           [new-rules-to-start (list (list new-start EMP EMP) (list start EMP))])
+           [new-rules-to-start (list (list new-start EMP EMP) (list (pda-getstart P) EMP))])
       (pda new-states
-           sigma
-           gamma
+           (pda-getalphabet P)
+           (pda-getgamma P)
            new-start
            (list new-final)
-           (map rule->struct (append (cons new-rules-to-start new-rules-to-final) rules)))))
-      
+           (map rule->struct (append (cons new-rules-to-start new-rules-to-final) (pda-getrules P))))))
 
-    (let* ([new-P (make-new-machine P)]
-          [shrunken-P (rip-nodes new-P)]
-          [cfe-templates (pda-rule-tag (first (pda-rules shrunken-P)))])
-      (values 
-              (sm-graph (pda->unchecked new-P))
-              #;shrunken-P
-              #;(pda-rule-tag (first (pda-rules shrunken-P)))
+  ;;union-cfe-template -> cfe-template
+  ;;Purpose: Simplifies the given union-cfe-template
+  (define (simplify-empty temp)
+    (if (andmap empty? (union-rules temp))
+        (empty (first (union-rules temp)))
+        (union (map simplify-templates (union-rules temp)))))
+
+  ;;cfe-template -> cfe-template
+  ;;Purpose: Simplifies the given cfe-template
+  (define (simplify-templates temp)
+    (cond [(concat? temp) (concat (filter-not empty? (map simplify-templates (concat-rules temp))))]
+          [(union? temp) (simplify-empty temp)]
+          [(kleene? temp) (kleene (simplify-templates (kleene-rule temp)))]
+          [else temp]))
+      
+  ;;cfe-template -> pda-rule / (listof pda-rule)
+  ;;Purpose: Extracts of the rule(s) out of the given cfe-template
+  (define (template->rules temp)
+    (cond [(symbol? temp) temp]
+          [(empty? temp) (empty-rule temp)]
+          [(singleton? temp) (singleton-rule temp)]
+          [(union? temp) (map template->rules (union-rules temp))]
+          [(concat? temp) (map template->rules (concat-rules temp))]
+          [else (template->rules (kleene-rule temp))]))
+
+  ;;(listof pda-rule) -> (listof pda-rule)
+  ;;Purpose: Extracts all the pda-rules that ONLY push to the stack
+  (define (get-push-only-rules rules)
+    (filter (λ (rule)
+              (and (list? (pda-action-push (pda-rule-action rule)))
+                   (symbol? (pda-action-pop (pda-rule-action rule)))))
+            rules))
+
+  ;;(listof pda-rule) -> (listof pda-rule)
+  ;;Purpose: Extracts all the pda-rules that ONLY pop off the stack
+  (define (get-pop-only-rules rules)
+    (filter (λ (rule)
+              (and (symbol? (pda-action-push (pda-rule-action rule)))
+                   (list? (pda-action-pop (pda-rule-action rule)))))
+              
+            rules))
+
+  ;;(listof pda-rule) -> (listof pda-rule)
+  ;;Purpose: Extracts all the pda-rules both push and pop off the stack
+  (define (get-push&pop-rules rules)
+    (filter (λ (rule)
+              (and (list? (pda-action-push (pda-rule-action rule)))
+                   (list? (pda-action-pop (pda-rule-action rule)))))
+              
+            rules))
+
+  (define (get-read-only-rules rules)
+    (filter read-only? rules))
+
+  (define (find-largest accessor rules acc)
+    (if (null? rules)
+        acc
+        (let ([oper-amount (length (accessor (first rules)))])
+          (if (> oper-amount acc)
+              (find-largest accessor (rest rules) oper-amount)
+              (find-largest accessor (rest rules) acc)))))
+        
+  
+  (define (make-inverses-equal push-rules pop-rules)
+    (cond [(or (null? push-rules) (null? pop-rules)) '()]
+          [(> (length push-rules) (length pop-rules)) '()]))
+  
+  (define (make-inverse-pairs push-rules pop-rules)
+    (for/list ([push (in-list push-rules)]
+               [pop (in-list pop-rules)]
+               #:when (inverse-stack-operations? (pda-rule-action push) (pda-rule-action pop))
+               [pair (list (inverse-pair push pop))])
+      pair))
+  
+  (let* ([new-P (make-new-machine P)]
+         [shrunken-P (rip-nodes new-P)]
+         #;[cfe-templates (pda-rule-tag (first (pda-rules shrunken-P)))]
+         #;[extracted-rules (flatten (template->rules cfe-templates))]
+         #;[inverse-pairs (make-inverse-pairs (get-push-only-rules extracted-rules) (get-pop-only-rules extracted-rules))])
+    #;(printable-tag cfe-templates)
+    (sm-graph (pda->unchecked shrunken-P))
+      #;(values #;(sm-graph (pda->unchecked new-P))
+              #;(sm-graph (pda->unchecked shrunken-P))
+              cfe-templates
               (printable-tag cfe-templates)
-              (sm-graph (pda->unchecked shrunken-P)))))
+              
+              #;extracted-rules
+              (get-push-only-rules extracted-rules)
+              (get-pop-only-rules extracted-rules)
+              (get-push&pop-rules extracted-rules)
+              (get-read-only-rules extracted-rules))
+      #;(values (find-largest (compose1 pda-action-push pda-rule-action) (get-push-only-rules extracted-rules) 0)
+              (find-largest (compose1 pda-action-pop pda-rule-action) (get-pop-only-rules extracted-rules) 0))
+      #;(list
+             (get-push-only-rules extracted-rules)
+             (get-pop-only-rules extracted-rules))
+      #;(values 
+              (sm-graph (pda->unchecked new-P))
+              cfe-templates
+              (printable-tag cfe-templates)
+              (template->rules cfe-templates)
+              (sm-graph (pda->unchecked shrunken-P))
+              #;(displayln (format "temp:\n~a\nprintable:\n~a\n" cfe-templates (printable-tag cfe-templates)))
+              #;(displayln (format "temp:\n~a\nprintable:\n~a\n" simp-template (printable-tag simp-template)))
+              #;(sm-graph (pda->unchecked shrunken-P)))))
 
 #;(define #;define/contract (pda->cfe pda)
   #;pda->cfe/c

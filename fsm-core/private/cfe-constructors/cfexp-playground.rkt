@@ -517,9 +517,41 @@
                                 ((F c (a)) (F ,EMP)))))
 
 
-(sm-graph Gina-aˆnbˆn)
+(define marco-anbncndn
+  (make-unchecked-ndpda '(P S H U R)
+                        '(a b c d)
+                        '(z Z)
+                        'P
+                        '(R)
+                        `(
+                          ((P ,EMP ,EMP) (S (Z)))
+                          ((S a ,EMP) (S (z)))
+                          ((S ,EMP ,EMP) (H ,EMP))
+                          ((H b (z)) (H ,EMP))
+                          ((H ,EMP (Z)) (U (Z)))
+                          ((U c ,EMP) (U (z)))
+                          ((U ,EMP ,EMP) (R ,EMP))
+                          ((R ,EMP (Z)) (R ,EMP))
+                          ((R d (z)) (R ,EMP))
+                          )))
 
-(pda->cfe Gina-aˆnbˆn)
+(define sample-P
+  (make-unchecked-ndpda
+   '(S F)
+   '(a b)
+   '(Z)
+   'S
+   '(F)
+   `(((S a ,EMP) (F ,EMP))
+     ((F b ,EMP) (S ,EMP)))))
+
+(define LOPDA (list Gina-aˆnbˆn A* Gina-wcwˆr Gina-palindrome-pda Gina-AiBj Gina-A^nB^mA^n Gina-a^mb^nc^pd^q Gina-a^mb^nc^p))
+
+#;(sm-graph Gina-aˆnbˆn)
+
+#;(pda->cfe Gina-aˆnbˆn)
+
+
 
 ;;w = a*
 #|
