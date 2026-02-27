@@ -1,9 +1,5 @@
 #lang racket/base
-(provide get-all-regexp
-         find-path-rule&states
-         find-rules&states-to-state
-         find-path-rule&states-dead-state-sweep
-         )
+(provide get-all-regexp)
 (require racket/list
          racket/treelist
          racket/set
@@ -104,6 +100,7 @@
   (define list-of-rules&states (for/list ([final-state (in-list finals)])
                                  (find-rules&states-to-state a-machine final-state)))
 
+
   (define rules (remove-duplicates (apply append (map (λ (x) (first x)) list-of-rules&states) )))
   (define states (remove-duplicates (apply append (map (λ (x) (second x)) list-of-rules&states))))
 
@@ -158,6 +155,7 @@
                      
                                      (for/list ([rule (in-list (sm-rules a-machine))]
                                                 #:when (eq? state (third rule)))
+                                       (set-add! states-set (first rule))
                                        rule)))
 
 
@@ -170,16 +168,16 @@
 ;; Purpose: To return a hashtable of all regular expressions that
 ;;          can be made from the given machine
 (define (get-all-regexp a-machine dead-state-removal?)
-
+  (define R&S (if dead-state-removal?
+                  (find-path-rule&states-dead-state-sweep a-machine (find-path-rule&states a-machine))
+                  (cons (sm-rules a-machine)
+                        (sm-states a-machine))))
   (define rules&states (find-path-rule&states-dead-state-sweep a-machine (find-path-rule&states a-machine)))
-  (define new-states (if dead-state-removal?
-                         (second rules&states) ;<- refactored
-                         (sm-states a-machine))) ;<- not refactored
-  (define new-rules (if dead-state-removal?
-                        (first rules&states) ;<- refactored
-                        (sm-rules a-machine))) ;<- not refactored
-        
 
+  (define new-states (second R&S))
+  (define new-rules (first R&S))
+       
+  
   (define starting-state (sm-start a-machine))
   
   (define finals-set (list->seteq (sm-finals a-machine)))
@@ -219,8 +217,10 @@
                                     (list symb)
                                     (first rules&states)))
 
-             #;(displayln (sm-graph machine-only-paths-to-first-los)) ;<- this will display all the regular expressions of the states
-                          
+             ;(displayln (sm-graph machine-only-paths-to-first-los)) ;<- this will display all the regular expressions of the states
+             ;(displayln (printable-regexp (simplify-regexp (fsa->regexp machine-only-paths-to-first-los))))
+             
+             
              (hash-set! state&its-machine symb (simplify-regexp (fsa->regexp machine-only-paths-to-first-los))))
            state&its-machine)
 
