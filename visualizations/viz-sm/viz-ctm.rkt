@@ -536,7 +536,6 @@
     (run-viz lographs
              (list->vector (map (lambda (x) (lambda (y) y)) lographs))
              #;(lambda () (graph->bitmap (first lographs)))
-              E-SCENE-WIDTH E-SCENE-HEIGHT PERCENT-BORDER-GAP
              MIDDLE-E-SCENE
              E-SCENE-WIDTH E-SCENE-HEIGHT PERCENT-BORDER-GAP
              DEFAULT-ZOOM
