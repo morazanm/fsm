@@ -17,7 +17,8 @@
             "unsafe-cdr"
             "unsafe-bytes-ref"
             "unsafe-bytes-copy!"
-            "unsafe-bytes-set!"))
+            "unsafe-bytes-set!"
+            "unsafe-bytes-length"))
      (cond [(regexp-match #rx"^unsafe-fx" name) (regexp-replace #rx"unsafe-" name "")]
            [(set-member? unsafe-methods-used name) (regexp-replace #rx"unsafe-" name "")]
            [else name]))
@@ -26,7 +27,7 @@
   "../fsa.rkt"
   "../sm-getters.rkt"
   "work-stealing-deque.rkt"
-  "packed-vector.rkt")
+  "unsafe-packed-vector.rkt")
 
 (#%declare #:unsafe)
 
@@ -53,14 +54,13 @@
 
 ;; machine . (list state (word -> boolean)) -> (listof (listof symbol))
 ;; Purpose: To return a list of the invarients that don't hold and the words that cause it not to hold
-(define (sm-test-invs-fsa a-machine #:ds-remove [ds-remove #f] #:rep-limit [rep-limit 1] . a-loi)
+(define (sm-test-invs-fsa a-machine ds-remove rep-limit a-loi)
   (define rules-len (length (sm-rules a-machine)))
   (define-values (make-gcfxvector
                   gcfxvector-ref
                   gcfxvector-add!
                   gcfxvector-add/copy)
     (create-gcfxv-functions (determine-num-bits-needed rules-len)))
-
   
   (define (new-find-paths a-machine rep-limit loi-hash)
     (cond [(fx> rules-len 0)
@@ -71,52 +71,57 @@
            
            (define rule-idx-from-final
              (for/hasheq ([rule (in-vector rules)])
-               (values (rule-struct-dest-state rule)
+               (values (unsafe-struct*-ref rule 2)
                        (for/fxvector ([a-rule (in-vector rules)]
                                       [idx (in-naturals)]
-                                      #:when (eq? (rule-struct-dest-state rule)
-                                                  (rule-struct-start-state a-rule)))
+                                      #:when (eq? (unsafe-struct*-ref rule 2)
+                                                  (unsafe-struct*-ref a-rule 0)))
                          idx))))
-                         
            
            (define (word-of-path a-gv)
              (define (word-of-path-helper accum idx)
                (if (fx= idx 0)
-                   (if (eq? 'ε (rule-struct-read-elem (vector*-ref rules (gcfxvector-ref a-gv 0))))
+                   (if (eq? 'ε (unsafe-struct*-ref (vector*-ref rules (gcfxvector-ref a-gv 0)) 1))
                        accum
-                       (unsafe-cons-list (rule-struct-read-elem (vector*-ref rules (gcfxvector-ref a-gv 0))) accum))
-                   (if (eq? 'ε (rule-struct-read-elem (vector*-ref rules (gcfxvector-ref a-gv idx))))
+                       (unsafe-cons-list (unsafe-struct*-ref (vector*-ref rules (gcfxvector-ref a-gv 0)) 1) accum))
+                   (if (eq? 'ε (unsafe-struct*-ref (vector*-ref rules (gcfxvector-ref a-gv idx)) 1))
                        (word-of-path-helper accum (fx- idx 1))
-                       (word-of-path-helper (unsafe-cons-list (rule-struct-read-elem (vector*-ref rules (gcfxvector-ref a-gv idx))) accum)
+                       (word-of-path-helper (unsafe-cons-list (unsafe-struct*-ref (vector*-ref rules (gcfxvector-ref a-gv idx)) 1) accum)
                                             (fx- idx 1)))))
-             (word-of-path-helper '() (fx- (gcfxvector-n a-gv) 1)))
+             (word-of-path-helper '() (fx- (unsafe-struct*-ref a-gv 1) 1)))
 
            
-           (define (create-new-words stack qfirst parent-task)
+           (define (create-new-words stack qfirst #;parent-task)
+             #;(when (fx= q-idx 0)
+               (displayln (word-of-path (unsafe-struct*-ref qfirst 0))))
              (define final-state
-               (rule-struct-dest-state
+               (unsafe-struct*-ref
                 (vector*-ref rules
-                             (gcfxvector-ref (path-with-rep-count-path qfirst)
-                                             (fx- (gcfxvector-n (path-with-rep-count-path qfirst)) 1)))))
+                             (gcfxvector-ref (unsafe-struct*-ref qfirst 0)
+                                             (fx- (unsafe-struct*-ref (unsafe-struct*-ref qfirst 0) 1) 1)))
+                2))
                     
              (for ([idx (in-fxvector (hash-ref rule-idx-from-final final-state))]
-                   #:do [(define curr-rep-count (bytes-ref (path-with-rep-count-rep-counts qfirst)
+                   #:do [(define curr-rep-count (bytes-ref (unsafe-struct*-ref qfirst 1)
                                                            idx))]
                    #:when (fx< curr-rep-count
                                rep-limit))
-               (define new-vec (bytes-copy (path-with-rep-count-rep-counts qfirst)))
+               (define len (bytes-length (unsafe-struct*-ref qfirst 1)))
+               (define new-vec (make-bytes len 0))
+               (bytes-copy! new-vec 0 (unsafe-struct*-ref qfirst 1) 0 len)
+               #;(define new-vec (bytes-copy (unsafe-struct*-ref qfirst 1)))
                (bytes-set! new-vec idx (fx+ curr-rep-count 1))
                (push! stack
-                      (path-with-rep-count (gcfxvector-add/copy (path-with-rep-count-path qfirst) idx)
+                      (path-with-rep-count (gcfxvector-add/copy (unsafe-struct*-ref qfirst 0) idx)
                                            new-vec)
-                      parent-task))
-             (define word-path (word-of-path (path-with-rep-count-path qfirst)))
+                      #;parent-task))
+             (define word-path (word-of-path (unsafe-struct*-ref qfirst 0)))
              (if ((hash-ref loi-hash
                             final-state
                             always-true-thunk)
                   word-path)
-                 '()
-                 (list (list word-path final-state))))
+                 #f
+                 (list word-path final-state)))
            
            
            (define (accumulate-results-into-lst vec)
@@ -129,13 +134,13 @@
            (accumulate-results-into-lst
             (run-parallel (for/list ([rule (in-vector rules)]
                                      [idx (in-naturals)]
-                                     #:when (eq? (rule-struct-start-state rule) (sm-start a-machine)))
+                                     #:when (eq? (unsafe-struct*-ref rule 0) (sm-start a-machine)))
                             (define vec (make-bytes rules-len 0))
                             (bytes-set! vec idx 1)
                             (path-with-rep-count (make-gcfxvector 16 idx) vec))
                           create-new-words
-                          8
-                          2048))]
+                          2048
+                          #;65536))]
           [else (error "Need at least one rule to run this tool")]))
   
   
@@ -509,11 +514,154 @@
                  #:preview? #t
                  #:threads #t
                  #:use-errortrace? #t)
+
+(define big-container (make-unchecked-ndfa '(S A B C D E F H I)
+                                 '(u n e a r
+                                     ;c l d i g o
+                                     )
+                                 'S
+                                 '(C F I)
+                                 '((S u A) (A n B) (S e H) (H r I) (D e E) (E a F)    
+                                           (C u C) (C n C) (C e C) (C a C) (C r C)
+                                           (D u D)
+                                           (D n D) (D e D) (D a D) (D r D)
+                                           (F u F) (F n F)
+                                           (F e F) (F a F) (F r F)
+                                           (S u D) (S n D)
+                                           (S a D) (S r D)
+                                           (B u C) (B n C) (B e C) (B a C)
+                                           (B r C)
+                                           (S e E) (B e H) (B e E) (F e H) (C e H))))
+(define LOI-big-container (list (list 'S always-true)
+                                (list 'A always-true)
+                                (list 'B always-true)
+                                (list 'C always-true)
+                                (list 'D always-true)
+                                (list 'E always-true)
+                                (list 'F always-true)
+                                (list 'G always-true)
+                                (list 'H always-false)
+                                (list 'I always-true)))
+(time (let ([res (sm-test-invs-fsa big-container
+                                   2
+                                   #f
+                                   LOI-big-container)])
+        #;(void)
+        (displayln (length res))))
 #;(time (let ([res (sm-test-invs-fsa NO-AA
-                                     #:rep-limit 6
-                                     #:ds-remove #f
-                                     (list 'S always-true)
-                                     (list 'A always-true)
-                                     (list 'B always-false)
-                                     (list 'R always-true))])
-          (displayln (length res))))
+                                    6
+                                   #f
+                                   (list (list 'S always-true)
+                                   (list 'A always-false)
+                                   (list 'B always-false)
+                                   (list 'R always-true)))])
+        (displayln (length res))))
+
+#;(define monster-machine (make-unchecked-ndfa '(S A B C D E F G H I J K L M N O P Q R)
+                                             '(k a l b u g c h o i n m)
+                                             'S
+                                             '(I M R)
+                                             `((S a S) (S l S) (S b S) (S u S) (S g S)
+                                                       (S c S) (S h S) (S o S) (S i S)
+                                                       (S n S) (S m S) (S k A)
+                                                                        
+                                                       (A a B) (A k S) (A l S) (A b S) (A u S)
+                                                       (A g S) (A c S) (A h S) (A o S)
+                                                       (A w S) (A i S) (A n S) (A m S)
+                                                                        
+                                                       (B l C) (B b J) (B c N) (B k S) (B a S)
+                                                       (B u S) (B g S) (B h S) (B o S)
+                                                       (B i S) (B n S) (B m S)
+
+                                                       (C k S) (C l S) (C b S) (C u S) (C g S)
+                                                       (C c S) (C h S) (C o S) (C i S)
+                                                       (C n S) (C m S) (C a D)
+
+                                                       (D b E) (D k S) (D a S) (D l S) (D u S)
+                                                       (D g S) (D c S) (D h S) (D o S)
+                                                       (D i S) (D n S) (D m S)
+
+                                                       (E u F) (E k S) (E a S) (E l S) (E b S)
+                                                       (E g S) (E c S) (E h S) (E o S)
+                                                       (E i S) (E n S) (E m S)
+
+                                                       (F n G) (F k S) (F a S) (F l S) (F b S)
+                                                       (F u S) (F g S) (F c S) (F h S) (F o S)
+                                                       (F i S) (F m S)
+
+                                                       (G g H) (G k S) (G a S) (G l S) (G b S)
+                                                       (G u S) (G c S) (G h S) (G o S)
+                                                       (G i S) (G m S) (G n S)
+
+                                                       (H a I) (H k S) (H l S) (H b S) (H u S)
+                                                       (H g S) (H c S) (H h S) (H o S)
+                                                       (H i S) (H n S) (H m S)
+
+                                                       (I k I) (I a I) (I l I) (I b I) (I u I)
+                                                       (I g I) (I c I) (I h I) (I o I)
+                                                       (I i I) (I n I) (I m I)
+
+                                                       (J k S) (J a S) (J l S) (J u S) (J g S)
+                                                       (J c S) (J h S) (J b S) (J i S)
+                                                       (J n S) (J m S) (J o K)
+
+                                                       (K o L) (K k S) (K a S) (K l S) (K b S)
+                                                       (K u S) (K g S) (K c S) (K h S)
+                                                       (K i S) (K n S) (K m S)
+
+                                                       (L m M) (L k S) (L a S) (L l S) (L b S)
+                                                       (L u S) (L g S) (L c S) (L h S) (L o S)
+                                                       (L i S) (L n S)
+
+                                                       (M k M) (M a M) (M l M) (M b M) (M u M)
+                                                       (M g M) (M c M) (M h M) (M o M)
+                                                       (M i M) (M n M) (M m M)
+
+                                                       (N h O) (N k S) (N a S) (N l S) (N b S)
+                                                       (N u S) (N g S) (N c S) (N o S)
+                                                       (N i S) (N n S) (N m S)
+
+                                                       (O i P) (O k S) (O a S) (O l S) (O b S)
+                                                       (O u S) (O g S) (O c S) (O h S) (O o S)
+                                                       (O n S) (O m S)
+
+                                                       (P n Q) (P k S) (P a S) (P l S) (P b S)
+                                                       (P u S) (P g S) (P c S) (P h S) (P o S)
+                                                       (P i S) (P m S)
+
+                                                       (Q g R) (Q k S) (Q a S) (Q l S) (Q b S)
+                                                       (Q u S) (Q c S) (Q h S) (Q o S)
+                                                       (Q i S) (Q n S) (Q m S)
+
+                                                       (R k R) (R a R) (R l R) (R b R) (R u R)
+                                                       (R g R) (R c R) (R h R) (R o R)
+                                                       (R i R) (R n R) (R m R))))
+
+
+
+#;(define LOI-monster-machine (list (list 'S INVS=T)
+                                  (list 'A INVS=T)
+                                  (list 'B INVS=T)
+                                  (list 'C INVS=T)
+                                  (list 'D INVS=T)
+                                  (list 'E INVS=T)
+                                  (list 'F INVS=T)
+                                  (list 'G INVS=T)
+                                  (list 'H INVS=T)
+                                  (list 'I INVS=T)
+                                  (list 'J INVS=T)
+                                  (list 'K INVS=T)
+                                  (list 'L INVS=T)
+                                  (list 'M INVS=T)
+                                  (list 'N INVS=T)
+                                  (list 'O INVS=T)
+                                  (list 'P INVS=T)
+                                  (list 'Q INVS=T)
+                                  (list 'R INVS=T)))
+
+#;(time (let ([res (sm-test-invs-fsa big-container
+                                   2
+                                   #f
+                                   LOI-big-container)])
+        #;(void)
+        (displayln (length res))))
