@@ -525,7 +525,7 @@
   destin | The state the rule transitions to => symbol
   tag    | The cfe-template for the given rule => symbol / cfe-template
   |#
-  (struct pda-rule (source action destin tag) #:transparent)
+  (struct pda-rule (source action destin) #:transparent)
 
   #|
   a pda-action is a structural representation of a pda action
@@ -572,8 +572,7 @@
   (define (rule->struct rule)
     (pda-rule (first (first rule))
               (rules->cfe (make-pda-action (second (first rule)) (third (first rule)) (second (second rule))))
-              (first (second rule))
-              'none))
+              (first (second rule))))
 
   ;;pda-rule -> (list (list state symbol los) (list state los))
   ;;Purpose: Converts the given pda-rule to a pda rule
@@ -608,7 +607,7 @@
                                             lor)]
                [collapsed (if (is-length-one? same-destin-rules)
                               (first same-destin-rules)
-                              (pda-rule source (union same-destin-rules) destin 'none))])
+                              (pda-rule source (union (map pda-rule-action same-destin-rules)) destin))])
           (cons collapsed
                 (simplify-rules remaining-rules)))))
   
@@ -672,6 +671,12 @@
         (list (struct-copy pda-rule (first rules)
                      [action (union (map pda-rule-action rules))]))))
 
+  (define (extract-concat rule)
+    (if (concat? rule)
+        (concat-rules rule)
+        (list rule)))
+
+  
   
   ;;pda-struct -> pda-struct
   ;;Purpose: Recursively rips nodes out from the given M and converts the ripped nodes to cfe-templates
@@ -679,79 +684,57 @@
     (let ([states-to-rip-out (filter (λ (state) (and (not (eq? state (pda-start M)))
                                                      (not (eq? state (first (pda-finals M))))))
                                      (pda-states M))])
-          (if (null? states-to-rip-out)
-              (struct-copy pda M
-                           [rules (list (first (merge-rules (pda-rules M))) )])
-              (let* ([state-to-rip (first states-to-rip-out)]
-                     
-                     [rules-frm-ripped-state (filter (λ (rule) (or (eq? state-to-rip (pda-rule-source rule))
-                                                                   (eq? state-to-rip (pda-rule-destin rule))))
-                                                     (pda-rules M))]
-                     [rule-frm-start (first (filter (λ (rule) (eq? (pda-start M) (pda-rule-source rule))) rules-frm-ripped-state))]
-                     [frm-ripped-state-rules (filter (λ (rule) (and (not (self-loop? rule))
-                                                                    (eq? state-to-rip (pda-rule-source rule))))
-                                                     rules-frm-ripped-state)]
-                     [to-ripped-state-rules (filter (λ (rule) (and (not (self-loop? rule))   
-                                                                   (eq? state-to-rip (pda-rule-destin rule))))
-                                                    rules-frm-ripped-state)]
-                     [self-loop-rules (filter (λ (rule) (self-loop? rule)) rules-frm-ripped-state)]
-                     [new-states-for-P (filter (λ (state) (not (eq? state-to-rip state)))
-                        (pda-states M))]
-                     [updated-self-loop (map (λ (rule)
-                                             (struct-copy pda-rule rule
-                                                          [source (pda-start M)]
-                                                          [action (kleene (pda-rule-action rule) #;(concat (list
-                                                                                   (pda-rule-action rule-frm-start)
-                                                                                  (pda-rule-action rule))))]))
-                                             self-loop-rules)]
-                     [updated-destins (map (λ (rule)
-                                             (struct-copy pda-rule rule
-                                                          [source (pda-start M)]
-                                                          [action (concat (append
-                                                                           #;(map pda-rule-action updated-self-loop)
-                                                                           (list (pda-rule-action rule-frm-start))
-                                                                           (map pda-rule-action updated-self-loop)
-                                                                           (list (pda-rule-action rule))
-                                                                           #;(map pda-rule-action updated-self-loop)))]
-                                                          #;[tag new-tag]))
-                                           frm-ripped-state-rules)]
-                     [updated-to-rules (filter-map (λ (rule)
-                                                     (and (and (eq? (pda-rule-source (first frm-ripped-state-rules)) (pda-rule-destin rule))
-                                                               (eq? (pda-rule-destin (first frm-ripped-state-rules)) (pda-rule-source rule)))
-                                                  (struct-copy pda-rule rule
-                                                               [action (concat (list
-                                                                                (pda-rule-action rule)
-                                                                               (pda-rule-action (first frm-ripped-state-rules))))]
-                                                               [destin (pda-rule-source rule)])))
-                                     to-ripped-state-rules)])
-               
-                     #;(values rules-frm-ripped-state
-                             frm-ripped-state-rules
-                             to-ripped-state-rules
-                             self-loop-rules
-                             loop-to-ripped
-                             updated-destins)
-                #;(displayln (sm-graph (pda->unchecked (struct-copy pda M
-                             [states new-states-for-P]
-                             [rules (append updated-to-rules
-                                            updated-destins
-                                            (filter (λ (rule) (and (not (eq? state-to-rip (pda-rule-source rule)))
-                                                                                  (not (eq? state-to-rip (pda-rule-destin rule)))))
-                                                                    (pda-rules M)))]))))
-                #;(struct-copy pda M
-                             [states new-states-for-P]
-                             [rules (append updated-to-rules
-                                            updated-destins
-                                            (filter (λ (rule) (and (not (eq? state-to-rip (pda-rule-source rule)))
-                                                                                  (not (eq? state-to-rip (pda-rule-destin rule)))))
-                                                                    (pda-rules M)))])
-                (rip-nodes (struct-copy pda M
-                             [states new-states-for-P]
-                             [rules (append updated-to-rules
-                                            updated-destins
-                                            (filter (λ (rule) (and (not (eq? state-to-rip (pda-rule-source rule)))
-                                                                                  (not (eq? state-to-rip (pda-rule-destin rule)))))
-                                                                    (pda-rules M)))]))))))
+      (if (null? states-to-rip-out)
+          (let ([new-rule (first (merge-rules (pda-rules M)))])
+            (struct-copy pda M
+                         [rules (list (struct-copy pda-rule new-rule
+                                                   [action (simplify-templates (pda-rule-action new-rule))]))]))
+          (let* ([state-to-rip (first states-to-rip-out)]
+                 [rules-frm-ripped-state (filter (λ (rule) (or (eq? state-to-rip (pda-rule-source rule))
+                                                               (eq? state-to-rip (pda-rule-destin rule))))
+                                                 (pda-rules M))]
+                 [rule-frm-start (first (filter (λ (rule) (eq? (pda-start M) (pda-rule-source rule))) rules-frm-ripped-state))]
+                 [frm-ripped-state-rules (filter (λ (rule) (and (not (self-loop? rule))
+                                                                (eq? state-to-rip (pda-rule-source rule))))
+                                                 rules-frm-ripped-state)]
+                 [to-ripped-state-rules (filter (λ (rule) (and (not (self-loop? rule))   
+                                                               (eq? state-to-rip (pda-rule-destin rule))))
+                                                rules-frm-ripped-state)]
+                 [self-loop-rules (filter (λ (rule) (self-loop? rule)) rules-frm-ripped-state)]
+                 [new-states-for-P (filter (λ (state) (not (eq? state-to-rip state))) (pda-states M))]
+                 [updated-self-loop (map (λ (rule)
+                                           (struct-copy pda-rule rule
+                                                        [source (pda-start M)]
+                                                        [action (kleene (pda-rule-action rule))]))
+                                         self-loop-rules)]
+                 [updated-destins (map (λ (rule)
+                                         (struct-copy pda-rule rule
+                                                      [source (pda-start M)]
+                                                      [action (concat (append (extract-concat (pda-rule-action rule-frm-start))
+                                                                              (map pda-rule-action updated-self-loop)
+                                                                              (extract-concat (pda-rule-action rule))))]))
+                                       frm-ripped-state-rules)]
+                 [updated-to-rules (if (null? frm-ripped-state-rules)
+                                       '()
+                                       (let ([rule-frm-ripped (first frm-ripped-state-rules)])
+                                         (filter-map (λ (rule)
+                                                     (and (and (eq? (pda-rule-source rule-frm-ripped)
+                                                                    (pda-rule-destin rule))
+                                                               (eq? (pda-rule-destin rule-frm-ripped)
+                                                                    (pda-rule-source rule)))
+                                                          (struct-copy pda-rule rule
+                                                                       [action (concat (list
+                                                                                        (pda-rule-action rule)
+                                                                                        (pda-rule-action rule-frm-ripped)))]
+                                                                       [destin (pda-rule-source rule)])))
+                                                   to-ripped-state-rules)))])
+            (rip-nodes (struct-copy pda M
+                                    [states new-states-for-P]
+                                    [rules (append updated-to-rules
+                                                   updated-destins
+                                                   (filter (λ (rule) (and (not (eq? state-to-rip (pda-rule-source rule)))
+                                                                          (not (eq? state-to-rip (pda-rule-destin rule)))))
+                                                           (pda-rules M)))]))))))
 
   ;;(listof cfe-template) string -> string
   ;;Purpose: Converts a (listof cfe-template) to a string
@@ -824,11 +807,9 @@
           [(empty? temp) (action->string (empty-rule temp))]
           [(singleton? temp) (action->string (singleton-rule temp))]
           [(union? temp) (apply string-append
-                                (cons "U" (map (compose1 template->rules pda-rule-action) (union-rules temp))))
-                                      #;(map template->rules (union-rules temp))]
+                                (cons "U" (map (compose1 pda-rule-action template->rules) (union-rules temp))))]
           [(concat? temp) (apply string-append
-                                (map template->rules #;(compose1 template->rules pda-rule-action) (concat-rules temp)))
-                                               #;(map template->rules (concat-rules temp))]
+                                (map template->rules (concat-rules temp)))]
           [else (template->rules (kleene-rule temp))]))
 
   ;;(listof pda-rule) -> (listof pda-rule)
@@ -882,13 +863,19 @@
   
   (let* ([new-P (make-new-machine P)]
          [shrunken-P (rip-nodes new-P)]
+         [simple-P (make-new-machine (pda->spda P))]
          #;[cfe-templates (pda-rule-tag (first (pda-rules shrunken-P)))]
          #;[extracted-rules (flatten (template->rules cfe-templates))]
          #;[inverse-pairs (make-inverse-pairs (get-push-only-rules extracted-rules) (get-pop-only-rules extracted-rules))])
     
     
    ;shrunken-P
-    (printable-tag (simplify-templates (pda-rule-action (first (pda-rules shrunken-P)))))
+    (sm-graph (pda->spda P))
+    #;(values simple-P
+            ;(pda2cfg P)
+            ;(printable-tag (pda-rule-action (first (pda-rules shrunken-P))))
+            ;(pda-rule-action (first (pda-rules shrunken-P)))
+            )
     ;(sm-graph (pda->unchecked shrunken-P))
       #;(values #;(sm-graph (pda->unchecked new-P))
               #;(sm-graph (pda->unchecked shrunken-P))
@@ -900,20 +887,9 @@
               (get-pop-only-rules extracted-rules)
               (get-push&pop-rules extracted-rules)
               (get-read-only-rules extracted-rules))
-      #;(values (find-largest (compose1 pda-action-push pda-rule-action) (get-push-only-rules extracted-rules) 0)
-              (find-largest (compose1 pda-action-pop pda-rule-action) (get-pop-only-rules extracted-rules) 0))
-      #;(list
-             (get-push-only-rules extracted-rules)
-             (get-pop-only-rules extracted-rules))
-      #;(values 
-              (sm-graph (pda->unchecked new-P))
-              cfe-templates
-              (printable-tag cfe-templates)
-              (template->rules cfe-templates)
-              (sm-graph (pda->unchecked shrunken-P))
-              #;(displayln (format "temp:\n~a\nprintable:\n~a\n" cfe-templates (printable-tag cfe-templates)))
-              #;(displayln (format "temp:\n~a\nprintable:\n~a\n" simp-template (printable-tag simp-template)))
-              #;(sm-graph (pda->unchecked shrunken-P)))))
+      
+      
+      ))
 
 #;(define #;define/contract (pda->cfe pda)
   #;pda->cfe/c

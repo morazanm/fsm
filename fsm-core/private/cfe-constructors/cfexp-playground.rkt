@@ -545,6 +545,17 @@
    `(((S a ,EMP) (F ,EMP))
      ((F b ,EMP) (S ,EMP)))))
 
+(define sample-P2
+  (make-unchecked-ndpda
+   '(S F X)
+   '(a b)
+   '(Z)
+   'S
+   '(F)
+   `(((S a ,EMP) (F ,EMP))
+     ((F b ,EMP) (S ,EMP))
+     ((F a ,EMP) (X ,EMP))))) 
+
 (define LOPDA (list Gina-aˆnbˆn A* Gina-wcwˆr Gina-palindrome-pda Gina-AiBj Gina-A^nB^mA^n Gina-a^mb^nc^pd^q Gina-a^mb^nc^p))
 
 #;(sm-graph Gina-aˆnbˆn)
