@@ -42,7 +42,7 @@
 ;                                                                                                     
 
 ;; a PATH is a structure: (make-PATH (listof rule) (listof symbol)
-(define-struct PATH (lor stack word))
+(define-struct PATH (lor stack word path-length))
 
 ;; AUXILARY FUNCTIONS FOR PDA RULES
 ;;     pda rule: ((Source read pop) (Destination push))
@@ -160,7 +160,7 @@
                                                 (PDA-rule-pop-length (first next-rules)) ;; the state has not been visited already
                                                 ))))
                (< max-length                                                                         
-                  (length (cons (first next-rules)(PATH-lor a-path)))))  ;<- caps # of paths  
+                  (+ 1 (PATH-path-length a-path))))  ;<- caps # of paths  
            (new-paths-helper (rest next-rules) accum #;visited #;new-visited)]
           [else (let* [(new-path-rules (cons (first next-rules)
                                              (PATH-lor a-path)))       ;<- the paths are in reverse  
@@ -182,8 +182,10 @@
                           (new-paths-helper (rest next-rules)
                                     (cons (make-PATH new-path-rules
                                             new-path-stack
-                                            new-path-word)
-                                          accum)))
+                                            new-path-word
+                                            (+ 1 (PATH-path-length a-path)))
+                                          accum
+                                          )))
                   #;(new-paths-helper (rest next-rules)
                                     (cons (make-PATH new-path-rules
                                             new-path-stack
@@ -252,8 +254,9 @@
                                                                        '()
                                                                        (get-push (first y)))  ;; <- current stack of the path
                                                                 (if (eq? 'ε (get-elem-read (first y)))
-                                                                    '()
-                                                                    (list (get-elem-read (first y)))))) ;; <- the current word of the path 
+                                                                    '()                                 ;; <- the current word of the path 
+                                                                    (list (get-elem-read (first y))))
+                                                                1))  ;<- current length of the path
                                                (map (λ (x) (list x))
                                                     (filter
                                                      (λ (rule) (eq? (get-source-state rule) (sm-start a-machine))) ;;  <- ⚙️getting the rules that come out of the starting state
@@ -265,7 +268,7 @@
 ;; pda -> (listof PATH)
 ;; Purpose: Returns all the paths that lead to an accepting word of the given machine
 (define (get-accepting-paths a-pda #:max-length [max-length 12])
-  (define paths-that-end-in-finals (map (λ (x) (make-PATH (reverse (PATH-lor x)) (PATH-stack x) (PATH-word x)))
+  (define paths-that-end-in-finals (map (λ (x) (make-PATH (reverse (PATH-lor x)) (PATH-stack x) (PATH-word x) (PATH-path-length x)))
                                         (filter (λ (x) (member (get-destination-state (first (PATH-lor x))) (sm-finals a-pda)))
                                            (find-paths a-pda #:max-length max-length))))
   ;; PATH -> Boolean
@@ -307,13 +310,15 @@
       (cond [(= length-cur-path (length (PATH-lor a-path)))
           (set-add! a-m-set (make-PATH (take (PATH-lor a-path) length-cur-path)
                                       (get-stack (take (PATH-lor a-path) length-cur-path))
-                                      (get-word (take (PATH-lor a-path) length-cur-path))))
+                                      (get-word (take (PATH-lor a-path) length-cur-path))
+                                      length-cur-path))
           ;(displayln a-m-set)
           a-m-set]
           [else
            (set-add! a-m-set (make-PATH (take (PATH-lor a-path) length-cur-path)
-                                                             (get-stack (take (PATH-lor a-path) length-cur-path))
-                                                             (get-word (take (PATH-lor a-path) length-cur-path))))
+                                        (get-stack (take (PATH-lor a-path) length-cur-path))
+                                        (get-word (take (PATH-lor a-path) length-cur-path))
+                                        length-cur-path))
            (get-sub-paths-helper  (+ 1 length-cur-path))]))
     (get-sub-paths-helper 1 #;a-m-set))
 
