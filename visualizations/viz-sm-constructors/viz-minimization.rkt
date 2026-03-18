@@ -13,6 +13,7 @@
          "../viz-lib/viz.rkt"
          "../viz-lib/bounding-limits.rkt"
          "../viz-lib/zipper.rkt"
+         "../viz-lib/minimization-viz-constants.rkt"
          racket/treelist
          racket/list
          racket/set
@@ -23,91 +24,16 @@
 
 (provide minimization-viz)
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;CONSTANTS;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define MIN-AMOUNT-TO-COMPARE 2)
-
-(define BLANK-SPACE 'blank)
-
-(define BLACK 'black)
-
-(define WHITE 'white)
-
-(define GRAY 'gray)
-
-(define RED 'red)
-
-(define SOLID 'solid)
-
-(define BOLD 'bold)
-
-(define X-MARK-SIZE 38)
-
-(define OUTLINE-SQUARE-SIZE 45)
-
-(define BASE-SQUARE-SIZE 40)
-
-(define INIT-COL-IDX 0)
-
-(define INIT-ROW-IDX 0)
-
-(define DESTINATION-PAIR-COLOR 'blue)
-
-(define FINAL-STATE-COLOR 'orange)
-
-(define NEW-MARK 'new-mark)
-
-(define MARK 'mark)
-
-(define e-queue empty-treelist)
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;CONSTANTS;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define qfirst treelist-first)
 
 (define qempty? treelist-empty?)
 
-(define FONT-SIZE 20)
-
-(define PHASE--1 -1)
-
-(define PHASE-0 0)
-
-(define PHASE-1 1)
-
-(define PHASE-2 2)
-
-(define PHASE-3 3)
-
-(define PHASE-4 4)
-
-(define PHASE-5 5)
-
-(define PHASE-6 6) 
-
-(define WHITE-SQUARE (square BASE-SQUARE-SIZE SOLID WHITE))
-(define FINAL-STATE-SQUARE (square BASE-SQUARE-SIZE SOLID FINAL-STATE-COLOR))
-(define BASE-OUTLINE-SQUARE (square OUTLINE-SQUARE-SIZE SOLID GRAY))
-(define SELECT-OUTLINE (square OUTLINE-SQUARE-SIZE SOLID RED))
-(define DESTINATION-OUTLINE (square OUTLINE-SQUARE-SIZE SOLID DESTINATION-PAIR-COLOR))
-
-(define BASE-SQUARE-IMG (overlay WHITE-SQUARE BASE-OUTLINE-SQUARE))
-(define SELECT-SQUARE-IMG (overlay WHITE-SQUARE SELECT-OUTLINE))
-(define DESTIN-SELECT-SQUARE-IMG (overlay WHITE-SQUARE DESTINATION-OUTLINE))
-(define FINAL-STATE-SQUARE-IMG (overlay FINAL-STATE-SQUARE BASE-OUTLINE-SQUARE))
-(define BI-COLOR-SELECT-SQUARE-IMG (let ([init-x 0]
-                                         [init-y 0]
-                                         [half-outline-square-size (/ OUTLINE-SQUARE-SIZE 2)])
-                                     (overlay WHITE-SQUARE
-                                              (beside (crop init-x init-y half-outline-square-size OUTLINE-SQUARE-SIZE SELECT-OUTLINE)
-                                                      (crop half-outline-square-size init-y half-outline-square-size OUTLINE-SQUARE-SIZE DESTINATION-OUTLINE)))))
-
-
-
-                                    
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;STRUCTS;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;STRUCTS;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;;phase | all of the phases needed for the visualization | (zipperof phase)  
-(struct imsg-state (phase) #:transparent)
+(struct imsg-state (phase color-scheme) #:transparent)
 
 ;;s1      | the first of the state in the state pair  | state
 ;;s2      | the second of the state in the state pair | state
@@ -194,8 +120,7 @@ ismg "finished machine"
 |#
 
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;Treelist-helpers;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;Treelist-helpers;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define (treelist-second tl)
   (treelist-ref tl 1))
 
@@ -220,7 +145,7 @@ ismg "finished machine"
   (for/and ([first (in-treelist tl)])
     (f first)))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;MINIMIZATION ALGORITHM;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;MINIMIZATION ALGORITHM;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;;unchecked-dfa -> dfa-struct
 ;;Purpose: Converts the given unchecked-dfa to a dfa struct
@@ -285,7 +210,8 @@ A Path is a (treelistof dfa-rule)
                                                (λ (rule) (treelist rule))
                                                rules)]
            [reachable-states (treelist->list (treelist-filter (λ (state) (or (eq? state start)
-                                                                             (reachable-from-start? state rules starter-rules))) states))]
+                                                                             (reachable-from-start? state rules starter-rules)))
+                                                              states))]
            [usable-rules (treelist-filter (λ (r) (ormap (λ (s) (eq? (first r) s)) reachable-states)) rules)])
       (make-unchecked-dfa reachable-states
                           (fsa-getalphabet M)
@@ -312,8 +238,9 @@ A Path is a (treelistof dfa-rule)
     ;;Purpose: Makes half of the state-pairing table
     (define (make-half-table loSP new-table)
       (cond [(treelist-empty? loSP) new-table]
-            [(not (treelist-member? new-table (treelist-first loSP) (λ (sp1 sp2) (and (eq? (state-pair-s1 sp1) (state-pair-s2 sp2))
-                                                                                      (eq? (state-pair-s2 sp1) (state-pair-s1 sp2))))))
+            [(not (treelist-member? new-table (treelist-first loSP) (λ (sp1 sp2)
+                                                                      (and (eq? (state-pair-s1 sp1) (state-pair-s2 sp2))
+                                                                           (eq? (state-pair-s2 sp1) (state-pair-s1 sp2))))))
              (make-half-table (treelist-rest loSP) (treelist-cons new-table (treelist-first loSP)))]
             [else (make-half-table (treelist-rest loSP) new-table)]))
     ;;state-pair -> state-pair
@@ -463,7 +390,8 @@ A Path is a (treelistof dfa-rule)
       (cond [(treelist-empty? unmarked-pairs) acc]
             [(overlap? (treelist-first unmarked-pairs) acc)
              (accumulate-unmarked-pairs (treelist-rest unmarked-pairs) (merge-pairs (treelist-first unmarked-pairs) acc))]
-            [(accumulate-unmarked-pairs (treelist-rest unmarked-pairs) (cons (make-merged-state (treelist-first unmarked-pairs)) acc))]))
+            [(accumulate-unmarked-pairs (treelist-rest unmarked-pairs)
+                                        (cons (make-merged-state (treelist-first unmarked-pairs)) acc))]))
     (let* ([states (fsa-getstates old-dfa)]
            [finals (fsa-getfinals old-dfa)]
            [merged-unmarked-pairs (accumulate-unmarked-pairs unmarked-pairs empty)]
@@ -510,13 +438,14 @@ A Path is a (treelistof dfa-rule)
          [states-table (treelist-map init-states-table (λ (sp) (mark-states-table sp finals)))]
          [marked-pairs (treelist-filter (λ (sp) (state-pair-marked? sp)) states-table)]
          [unmarked-pairs (treelist-filter (λ (sp) (not (state-pair-marked? sp))) states-table)]
-         [filled-table (make-matches (treelist (state-pairings marked-pairs unmarked-pairs)) transition-table (fsa-getalphabet dfa))]
+         [filled-table (make-matches (treelist (state-pairings marked-pairs unmarked-pairs))
+                                     transition-table (fsa-getalphabet dfa))]
          [new-M (table->dfa (state-pairings-unmarked-pairs (treelist-first filled-table))
                             dfa
                             transition-table)])
     (minimization-results M (first new-M) dfa filled-table (second new-M) (third new-M))))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;VIZ-SCENE-STUFF;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;VIZ-SCENE-STUFF;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define E-SCENE-TOOLS (e-scene-tools-generator HEIGHT-BUFFER LETTER-KEY-WIDTH-BUFFER FONT-SIZE
                                                (list (list ARROW-UP-KEY "Restart")
@@ -549,7 +478,8 @@ A Path is a (treelistof dfa-rule)
                    E-SCENE-HEIGHT
                    (+ E-SCENE-HEIGHT (image-height imsg-img))))
 
-(create-bounding-limits E-SCENE-WIDTH E-SCENE-HEIGHT (image-width E-SCENE-TOOLS) RULE-YIELD-DIMS FONT-SIZE LETTER-KEY-WIDTH-BUFFER INS-TOOLS-BUFFER
+(create-bounding-limits E-SCENE-WIDTH E-SCENE-HEIGHT (image-width E-SCENE-TOOLS)
+                        RULE-YIELD-DIMS FONT-SIZE LETTER-KEY-WIDTH-BUFFER INS-TOOLS-BUFFER
                         ((ARROW-UP-KEY "Restart")
                          (ARROW-RIGHT-KEY "Forward")
                          (ARROW-LEFT-KEY "Backward")
@@ -561,7 +491,7 @@ A Path is a (treelistof dfa-rule)
                          (E-KEY "Mid zoom")
                          (F-KEY "Max zoom")))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;VIZ-FUNCTIONS;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;VIZ-FUNCTIONS;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define viz-go-next
   (go-next E-SCENE-WIDTH
@@ -722,18 +652,43 @@ A Path is a (treelistof dfa-rule)
                           (zipper-to-begin all-phases))]))])]))
 
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;DRAWING FUNCTIONS;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;DRAWING FUNCTIONS;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;;(listof phase) -> (listof graph-thunk)
 ;;Purpose: Creates all of the graphics need for the visualization using the given (listof phase)
-(define (make-main-graphic loPhase state-table-mappings old-state-assoc)
+(define (make-main-graphic loPhase state-table-mappings old-state-assoc palette)
+  (define WHITE-SQUARE (square BASE-SQUARE-SIZE SOLID WHITE))
+  (define FINAL-STATE-SQUARE (square BASE-SQUARE-SIZE SOLID (color-palette-final-state-color palette)))
+  (define BASE-OUTLINE-SQUARE (square OUTLINE-SQUARE-SIZE SOLID (color-palette-outline-color palette)))
+  (define SELECT-OUTLINE (square OUTLINE-SQUARE-SIZE SOLID (color-palette-select-color palette)))
+  (define DESTINATION-OUTLINE (square OUTLINE-SQUARE-SIZE SOLID (color-palette-destination-pair-color palette)))
+
+  (define BASE-SQUARE-IMG (overlay WHITE-SQUARE BASE-OUTLINE-SQUARE))
+  (define SELECT-SQUARE-IMG (overlay WHITE-SQUARE SELECT-OUTLINE))
+  (define DESTIN-SELECT-SQUARE-IMG (overlay WHITE-SQUARE DESTINATION-OUTLINE))
+  (define FINAL-STATE-SQUARE-IMG (overlay FINAL-STATE-SQUARE BASE-OUTLINE-SQUARE))
+  (define BI-COLOR-SELECT-SQUARE-IMG (let ([init-x 0]
+                                           [init-y 0]
+                                           [half-outline-square-size (/ OUTLINE-SQUARE-SIZE 2)])
+                                       (overlay WHITE-SQUARE
+                                                (beside (crop init-x init-y
+                                                              half-outline-square-size
+                                                              OUTLINE-SQUARE-SIZE
+                                                              SELECT-OUTLINE)
+                                                        (crop half-outline-square-size
+                                                              init-y
+                                                              half-outline-square-size
+                                                              OUTLINE-SQUARE-SIZE
+                                                              DESTINATION-OUTLINE)))))
+
+  
   ;;phase -> graph-thunk
   ;;Purpose: Creates the transition diagram thunk and state pairing table using the given phase
   (define (draw-graphic phase)
     ;; phase -> graph-thunk
     ;;Purpose: Draws the transition diagram thunk of using the given phase
     (define (draw-graph)
-      (list (create-graph-struct (phase-M phase))
+      (list (create-graph-struct (phase-M phase) palette)
             (square 1 SOLID WHITE)))
     ;; phase -> graph-thunk
     ;; Purpose: Draws the state-pairing table next to the transition diagram thunk using the given phase
@@ -761,9 +716,9 @@ A Path is a (treelistof dfa-rule)
                                                     state-pair))
                                         (and (symbol? state-pair)
                                              (or (= (hash-ref state-table-mappings (hash-ref old-state-assoc state-pair))
-                                                              row-idx)
-                                                    (= (hash-ref state-table-mappings (hash-ref old-state-assoc state-pair))
-                                                       column-idx))))]
+                                                    row-idx)
+                                                 (= (hash-ref state-table-mappings (hash-ref old-state-assoc state-pair))
+                                                    column-idx))))]
                      [destin-pairs (cond [(symbol? state-pair) empty]
                                          [(list? state-pair) state-pair]
                                          [else (state-pair-destination-pairs state-pair)])]
@@ -784,14 +739,14 @@ A Path is a (treelistof dfa-rule)
                                                    [destin-pairs? DESTIN-SELECT-SQUARE-IMG]
                                                    [else BASE-SQUARE-IMG])]
                       [(eq? sym BLACK) (overlay (square BASE-SQUARE-SIZE SOLID (if (and on-diagonal? destin-pairs?)
-                                                                                (hash-ref X11-AS-RACKET-HASH 'mistyrose4)
-                                                                                BLACK))
+                                                                                   (hash-ref X11-AS-RACKET-HASH 'mistyrose4)
+                                                                                   BLACK))
                                                 (square OUTLINE-SQUARE-SIZE SOLID
                                                         (if (and on-diagonal? destin-pairs?)
-                                                            DESTINATION-PAIR-COLOR
-                                                            GRAY)))]
+                                                            (color-palette-destination-pair-color palette)
+                                                            (color-palette-outline-color palette))))]
                       [(eq? sym MARK) (overlay (text "X" X-MARK-SIZE BLACK) BASE-SQUARE-IMG)]
-                      [(eq? sym NEW-MARK) (overlay (text "X" X-MARK-SIZE RED)
+                      [(eq? sym NEW-MARK) (overlay (text "X" X-MARK-SIZE (color-palette-select-color palette))
                                                    (cond [(and current-pair? destin-pairs?) BI-COLOR-SELECT-SQUARE-IMG]
                                                          [current-pair? SELECT-SQUARE-IMG]
                                                          [destin-pairs? DESTIN-SELECT-SQUARE-IMG]
@@ -820,20 +775,21 @@ A Path is a (treelistof dfa-rule)
                    [applicable-rules (filter (λ (rule)
                                                (or (eq? (first rule) merge-state)
                                                    (eq? (third rule) merge-state)))
-                                               (dfa-rules rebuild-M))]
+                                             (dfa-rules rebuild-M))]
                    [old-rules (map (λ (rule) (list (hash-ref old-state-assoc (first rule) (λ () (first rule)))
                                                    (second rule)
                                                    (hash-ref old-state-assoc (third rule) (λ () (third rule)))))
                                    applicable-rules)])
-                (list (list (create-graph-struct (phase-M phase) #:merge-state (if (symbol? merge-state)
-                                                                               (box (cons (hash-ref old-state-assoc merge-state) old-rules))
-                                                                               merge-state))
-                        (create-graph-struct rebuild-M #:merge-state merge-state))
-                  (draw-table (phase-state-pairing-table phase) (dfa-finals (phase-M phase))
-                              (if (symbol? merge-state)
-                                  merge-state
-                                  (merged-state-state-pairs merge-state)))))
-            (list (create-graph-struct (phase-M phase)
+              (list (list (create-graph-struct (phase-M phase) palette #:merge-state (if (symbol? merge-state)
+                                                                                 (box (cons (hash-ref old-state-assoc merge-state)
+                                                                                            old-rules))
+                                                                                 merge-state))
+                          (create-graph-struct rebuild-M palette #:merge-state merge-state))
+                    (draw-table (phase-state-pairing-table phase) (dfa-finals (phase-M phase))
+                                (if (symbol? merge-state)
+                                    merge-state
+                                    (merged-state-state-pairs merge-state)))))
+            (list (create-graph-struct (phase-M phase) palette
                                        #:state-pair (if (and (= (phase-number phase) PHASE-4)
                                                              (not (symbol? state-pair)))
                                                         state-pair
@@ -847,9 +803,11 @@ A Path is a (treelistof dfa-rule)
   (map (λ (phase) (draw-graphic phase)) loPhase))
 
 
-;; imsg-state -> image
+;; imsg-state color-palette -> image
 ;;Purpose: Draws the informative messages using the given imsg-state
 (define (draw-imsg imsg-state)
+
+  (define palette (imsg-state-color-scheme imsg-state))
 
   (define PHASE--1-IMSG (text "Input Machine" FONT-SIZE BLACK))
 
@@ -885,7 +843,7 @@ A Path is a (treelistof dfa-rule)
   (define (pretty-print-destination-state-pair state-pair)
     (text (pretty-print-state-pair state-pair)
           FONT-SIZE
-          DESTINATION-PAIR-COLOR))
+          (color-palette-destination-pair-color palette)))
 
   ;;phase-attributes -> image
   ;;Purpose: Makes the imsg for phase 3
@@ -902,7 +860,7 @@ A Path is a (treelistof dfa-rule)
                        FONT-SIZE BLACK)
                  
                  (beside (text "State pair " FONT-SIZE BLACK)
-                         (text (pretty-print-state-pair phase-4-state-pair) FONT-SIZE RED)
+                         (text (pretty-print-state-pair phase-4-state-pair) FONT-SIZE (color-palette-select-color palette))
                          (text (if (state-pair-marked? phase-4-state-pair)
                                    " is marked because at least one of it's destination state pairing:"
                                    " remains unmarked because all of it's destination state pairings:")
@@ -919,7 +877,6 @@ A Path is a (treelistof dfa-rule)
     (let ([merged-state (phase-5-attributes-merged-states phase-attribute)]
           [remaining-states (phase-5-attributes-remaining-states phase-attribute)]
           [IMSG-NONE "none"])
-      ;(displayln phase-attribute)
       (above (text "Minimizing the machine" FONT-SIZE BLACK)
              (if (or (symbol? merged-state)
                      (< (set-count (merged-state-old-symbols merged-state)) 2))                 
@@ -974,9 +931,9 @@ A Path is a (treelistof dfa-rule)
           [(= (phase-number current-phase) PHASE-5) (make-phase5-imsg (phase-attributes current-phase))]
           [else (make-phase6-imsg (phase-attributes current-phase))])))
 
-;; ndfa -> graph-thunk
+;; ndfa palette -> graph-thunk
 ;;Purpose: Creates a graph-thunk using the given dfa and optional state-pair
-(define (create-graph-struct M #:state-pair [state-pair empty] #:merge-state [merge-states empty])
+(define (create-graph-struct M palette #:state-pair [state-pair empty] #:merge-state [merge-states empty])
   ;; graph (listof state) start (listof state) -> graph
   ;; Purpose: To make a node graph
   (define (make-node-graph graph los start finals merge-states)
@@ -989,16 +946,16 @@ A Path is a (treelistof dfa-rule)
                                  (eq? state (state-pair-s2 state-pair)))))])
                (add-node result
                          state
-                         #:atb (hash 'color (cond [found-state-from-state-pair? 'red]
-                                                  [(eq? state start) 'darkgreen]
+                         #:atb (hash 'color (cond [found-state-from-state-pair? (color-palette-select-graph-color palette)]
+                                                  [(eq? state start) (color-palette-start-state-color palette)]
                                                   [else BLACK])
                                      'shape (if member-of-finals? 'doublecircle 'circle)
                                      'style (cond [found-state-from-state-pair? BOLD]
                                                   [member-of-finals? 'filled]
                                                   [else SOLID])
-                                     'fillcolor FINAL-STATE-COLOR
+                                     'fillcolor (color-palette-fs-graph-color palette)
                                      'label state
-                                     'fontcolor (if found-state-from-state-pair? 'red BLACK)
+                                     'fontcolor (if found-state-from-state-pair? (color-palette-select-graph-color palette) BLACK)
                                      'font "Sans"))))
            graph
            los))
@@ -1008,7 +965,7 @@ A Path is a (treelistof dfa-rule)
   (define (make-edge-graph graph merge-states)
     (foldl (λ (rule result)
              (let* ([source-state (first rule)]
-                    [found-state-from-state-pair?
+                    [found-state-from-state-pair?  
                      (and (not (list? state-pair))
                           (or (eq? source-state (state-pair-s1 state-pair))
                               (eq? source-state (state-pair-s2 state-pair))))]
@@ -1030,7 +987,7 @@ A Path is a (treelistof dfa-rule)
                                                 BOLD
                                                 SOLID)
                                      'color (if (or found-state-from-state-pair? found-state-from-merge-state?)
-                                                DESTINATION-PAIR-COLOR
+                                                (color-palette-destination-graph-color palette)
                                                 BLACK)))))
            graph
            (dfa-rules M)))
@@ -1051,13 +1008,13 @@ A Path is a (treelistof dfa-rule)
                          [else (merged-state-old-symbols merge-states)])))
 
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;VIZ-PRIMITIVE;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;VIZ-PRIMITIVE;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; 
 
 
 ;; fsa -> void
 ;; Purpose: Displays the process of minimizing a dfa
-(define/contract (minimization-viz M)
-  any/c #;minimization-viz/c
+(define/contract (minimization-viz M #:palette [palette 'default])
+  minimization-viz/c
   ;;dfa dfa -> boolean
   ;;Purpose: Determines if the two dfa have any changes
   (define (machine-changed? old-M new-M)
@@ -1075,7 +1032,9 @@ A Path is a (treelistof dfa-rule)
                       (build-vector num-rows
                                     (λ (col-num)
                                       (let ([blank-tile-count (- (sub1 num-rows) (- num-rows row-num))])
-                                        (cond [(= row-num INIT-ROW-IDX) (if (= col-num INIT-COL-IDX) BLANK-SPACE (vector-ref states (sub1 col-num)))]
+                                        (cond [(= row-num INIT-ROW-IDX) (if (= col-num INIT-COL-IDX)
+                                                                            BLANK-SPACE
+                                                                            (vector-ref states (sub1 col-num)))]
                                               [(= col-num INIT-COL-IDX) (vector-ref states (sub1 row-num))]
                                               [(<= col-num blank-tile-count) BLANK-SPACE]
                                               [else BLACK])))))))
@@ -1127,7 +1086,8 @@ A Path is a (treelistof dfa-rule)
                                              [rules (remove-duplicates (append connecting-state-rules (dfa-rules rebuild-M)))]
                                              [finals (if (or (set-member? (dfa-finals minimized-M) next-state-to-add)
                                                              (ormap (λ (ms)
-                                                                      (set-member? (set-intersect (dfa-finals minimized-M) (merged-state-old-symbols ms))
+                                                                      (set-member? (set-intersect (dfa-finals minimized-M)
+                                                                                                  (merged-state-old-symbols ms))
                                                                                    next-state-to-add))
                                                                     merged-states))
                                                          (cons next-state-to-add (dfa-finals rebuild-M))
@@ -1154,8 +1114,10 @@ A Path is a (treelistof dfa-rule)
                            'no-dead)])
       (machine-rebuilder states-connected-to-start rebuild-M (list rebuild-M))))
 
-  ;;natnum phase-attribute-struct dfa (vectorof (vectorof marking)) (listof state-pair) (hash state . natnum) (set state-pair) (set state-pair) -> (listof phase)
-  ;;Purpose: Makes all of phase for the given natnum using the given dfa, state-table, (listof state-pair), and state-table-mappings 
+  ;;natnum phase-attribute-struct dfa (vectorof (vectorof marking)) (listof state-pair) (hash state . natnum)
+  ;; (set state-pair) (set state-pair) -> (listof phase)
+  ;;Purpose: Makes all of phase for the given natnum using the given dfa, state-table, (listof state-pair),
+  ;;and state-table-mappings 
   (define (make-phase phase-id attribute-struct-id no-unreachables-M state-pairing-table loSP state-table-mappings seen-markings)
     ;; (vectorof (vectorof marking)) (listof state-pair) (listof phase) -> (listof phase)
     ;; Purpose: Makes the phase with the updated table and corresponding state pair
@@ -1196,7 +1158,8 @@ A Path is a (treelistof dfa-rule)
                   [(or (newly-marked? state-pairing)
                        (set-member? seen-unmarkings state-pairing))
                    (make-phase-helper state-pairing-table loSP
-                                      (cons (phase phase-id no-unreachables-M state-pairing-table (attribute-struct-id 'next-pass)) acc)
+                                      (cons (phase phase-id no-unreachables-M state-pairing-table (attribute-struct-id 'next-pass))
+                                            acc)
                                       seen-markings
                                       (set))]
                   [else (let* ([state-pairing (treelist-first loSP)]
@@ -1214,7 +1177,8 @@ A Path is a (treelistof dfa-rule)
     (make-phase-helper state-pairing-table loSP empty seen-markings (set)))
 
   ;; (listof dfa) (listof merged-state) (vectorof (vectorof marking)) -> (listof phase)
-  ;; Purpose: Pairs a merged-state with a rebuild dfa that contains either the new merged state symbol or one of the states that got merged
+  ;; Purpose: Pairs a merged-state with a rebuild dfa that contains either the new merged state symbol
+  ;; or one of the states that got merged
   (define (make-phase-5 unminimized-M loRM loMS state-pairing-table states assoc-table)
     (define reverse-assoc-table (hash-map/copy assoc-table
                                                (λ (k v) (values v k))))
@@ -1261,7 +1225,8 @@ A Path is a (treelistof dfa-rule)
          [no-unreachables-M (minimization-results-unreachables-removed-M results-from-minimization)]
          [all-loSP (treelist-reverse (minimization-results-loSP results-from-minimization))]
          [final-non-final-pairings (state-pairings-marked-pairs (treelist-first all-loSP))]
-         [rest-loSP (treelist-append-map (λ (sp) (treelist-append (state-pairings-unmarked-pairs sp) (state-pairings-marked-pairs sp)))
+         [rest-loSP (treelist-append-map (λ (sp) (treelist-append (state-pairings-unmarked-pairs sp)
+                                                                  (state-pairings-marked-pairs sp)))
                                          (if (= (treelist-length all-loSP) 2) all-loSP (treelist-rest all-loSP)))]
          [unreachable-states (filter (λ (s) (not (member s (fsa-getstates no-unreachables-M)))) (fsa-getstates unchecked-M))]
          [M (ndfa->dfa M)]
@@ -1281,7 +1246,8 @@ A Path is a (treelistof dfa-rule)
                       (list (phase PHASE-0 M  no-unreachables-M-state-pairing-table (phase-0-attributes)))
                       empty)]
          [phase-1 (if has-unreachables?
-                      (list (phase PHASE-1 no-unreachables-M no-unreachables-M-state-pairing-table (phase-1-attributes unreachable-states)))
+                      (list (phase PHASE-1 no-unreachables-M no-unreachables-M-state-pairing-table
+                                   (phase-1-attributes unreachable-states)))
                       empty)]
          [phase-2 (list (phase PHASE-2 no-unreachables-M no-unreachables-M-state-pairing-table (phase-2-attributes)))]
          [phase3+new-table (make-phase PHASE-3
@@ -1317,27 +1283,16 @@ A Path is a (treelistof dfa-rule)
                       empty)]
          [phase-6 (list (phase PHASE-6 (last rebuilding-machines) filled-table (phase-6-attributes can-be-minimized?)))]
          [all-phases (append phase--1 phase-0 phase-1 phase-2 phase-3 phase-4 phase-5 phase-6)]
-         [graphs (make-main-graphic all-phases state-table-mappings (minimization-results-state-assoc results-from-minimization))]
+         [color-scheme (cond [(eq? palette 'prot) prot-color-scheme] ;;red color blind
+                             [(eq? palette 'deut) deut-color-scheme] ;;green color blind 
+                             [(eq? palette 'trit) trit-color-scheme] ;;blue color blind
+                             [else default-color-scheme])]
+         [graphs (make-main-graphic all-phases
+                                    state-table-mappings
+                                    (minimization-results-state-assoc results-from-minimization)
+                                    color-scheme)]
          
          )
-    ;(values merged-states rebuilding-machines results-from-minimization )
-    #;
-    (void)
-    ;phase-5
-    ;(values phase-3 all-loSP phase-4)
-    ;#;
-    ;(values rest-loSP #;(minimization-results-loSP results-from-minimization) 99 all-loSP)
-    #;
-    (values 4
-            phase-4-attributes
-            no-unreachables-M
-            table-with-initial-markings
-            rest-loSP
-            state-table-mappings
-            (list->set (map (compose1 phase-3-attributes-initial-pairings phase-attributes)
-                            (phase-results-loPhase phase3+new-table)))
-            (set))
-    ;#;
     (run-viz (map first graphs)
              (list->vector (map (λ (x table)
                                   (if (list? (first x))
@@ -1359,7 +1314,7 @@ A Path is a (treelistof dfa-rule)
              DEFAULT-ZOOM-CAP
              DEFAULT-ZOOM-FLOOR
              (informative-messages draw-imsg
-                                   (imsg-state (list->zipper all-phases))
+                                   (imsg-state (list->zipper all-phases) color-scheme)
                                    RULE-YIELD-DIMS)
              (instructions-graphic E-SCENE-TOOLS
                                    (bounding-limits 0
