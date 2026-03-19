@@ -1,7 +1,7 @@
 #lang racket
 (require "../2htdp/image.rkt")
 
-(provide X11-AS-RACKET-HASH)
+(provide X11-AS-RACKET-HASH X11-COLOR-HASH)
 
 
 (define color-hex-list '(aliceblue 	f0f8ff
@@ -870,7 +870,7 @@
       ht
       (make-color-hex-hash (rest (rest color-list))
                            (hash-set ht (first color-list) (if (symbol? (second color-list))
-                                                               (symbol->string (second color-list))
+                                                               (string-upcase (symbol->string (second color-list)))
                                                                (second color-list))))))
 
 (define hex-codes  (list "0" "1" "2" "3" "4" "5" "6" "7" "8" "9" "A" "B" "C" "D" "E" "F"))
