@@ -1,6 +1,12 @@
-#lang racket
+#lang racket/base
 
-(require "../main.rkt")
+(require "../fsm-gui/interface.rkt"
+         "../fsm-core/private/ndfa-constructors.rkt"
+         "../fsm-core/private/pda-constructors.rkt"
+         "../fsm-core/private/tm-constructors.rkt"
+         "../fsm-core/private/constants.rkt"
+         racket/stream
+         )
 
 (define a-aUb*
   (make-ndfa '(S F)     ;; the states
@@ -12,13 +18,13 @@
              'nodead))
 
 
-(define (SS-INV ci) (empty? ci))
+(define (SS-INV ci) (null? ci))
 
 (define (FF-INV ci)
-  (define ans (and (not (empty? ci))
-       (eq? (first ci) 'a)
+  (define ans (and (not (null? ci))
+       (eq? (car ci) 'a)
        (andmap (λ (s) (or (eq? s 'a) (eq? s 'b)))
-               (rest ci))))
+               (cdr ci))))
   ans)
 (sm-visualize  a-aUb* (list 'S SS-INV) (list 'F FF-INV))
 
@@ -33,8 +39,8 @@
               (F b F))
             'nodead))
 
-(sm-visualize a* (list 'S (lambda (v) true))
-            (list 'F (lambda (v) false)))
+(sm-visualize a* (list 'S (lambda (v) #t))
+            (list 'F (lambda (v) #f)))
 
 #;(define pda-numa=numb (make-ndpda '(S M F)
                                   '(a b)
@@ -239,7 +245,7 @@
   (letrec(
           (takewhile-eval (lambda (list proc) 
                             (cond
-                              [(empty? list) '()]
+                              [(null? list) '()]
                               [(proc (stream-first list))
                                (stream-cons (stream-first list)
                                             (takewhile-eval (stream-rest list) proc))]
@@ -252,7 +258,7 @@
   (letrec(
           (dropwhile-eval (lambda (list proc)
                             (cond
-                              [(empty? list)'()]
+                              [(null? list)'()]
                               [(proc (stream-first list)) (dropwhile-eval (stream-rest list) proc)]
                               [else list]))))
     (stream->list (dropwhile-eval list proc))))

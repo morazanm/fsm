@@ -1,4 +1,4 @@
-#lang racket
+#lang racket/base
 (require "../2htdp/image.rkt")
 
 (provide X11-AS-RACKET-HASH X11-COLOR-HASH)
@@ -866,7 +866,7 @@
                                     yellow  FFFF00))
 
 (define (make-color-hex-hash color-list ht)
-  (if (empty? color-list)
+  (if (null? color-list)
       ht
       (make-color-hex-hash (rest (rest color-list))
                            (hash-set ht (first color-list) (if (symbol? (second color-list))

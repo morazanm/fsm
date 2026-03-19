@@ -12,16 +12,6 @@
 ;; CONSTANT FOR LIMIT ON LENGTH OF A PATH
 (define MAX-PATH-LENGTH 20) ;not in use rn
 
-
-;; USEFUL FUNCTIONS
-
-;; X loX -> Boolean
-;; Purpose: To determine if the given item is a member of the given list
-(define (member? x lox)
-  (ormap (λ (y) (equal? x y)) lox))
-
-
-
 ;                                                                                                     
 ;                                                                                                     
 ;                                                                                                     
@@ -44,11 +34,13 @@
 ;                                                                                                     
 
 ;; a PATH is a structure: (make-PATH (listof rule) (listof symbol)
-(define-struct PATH (lor stack) #:transparent)
+;; Remember to make this non transparent when testing performance -Andres
+(struct PATH (lor stack) #:transparent)
 
 ;; AUXILARY FUNCTIONS FOR PDA RULES
 ;;     pda rule: ((Source read pop) (Destination push))
 
+;; Stop using all of these functions and just make the rules structures, constant access -Andres
 ;; pda-rule -> state
 ;; Purpose: To get the source state of a pda rule
 (define (get-source-state rule)
@@ -80,13 +72,15 @@
 
 
 ;; (listof (list state (word -> boolean))) (listof symbol) (listof symbol) -> Boolean
-;; Purpose: Determine if the given invariant holds 
+;; Purpose: Determine if the given invariant holds
+;; You can precompute this so you don't have to do (second (first ... -Andres
 (define (invariant-holds? a-loi a-word a-stack)
   (or (empty? a-loi)   
       ((second (first a-loi)) a-word a-stack)))
 
 ;; pda-rule (listof pda-rule) -> (listof pda-rule)
 ;; Purpose: To return the next pda-rules that can be used from the given pda-rules
+;; You can precompute this so you don't have to do a filter every time, use a hash map of some kind -Andres
 (define (get-next-rules a-rule rules)
   (filter (λ (rule) (eq? (get-destination-state a-rule) (get-source-state rule))) rules))
 
@@ -102,7 +96,7 @@
     (cond [(empty? next-rules) (list accum new-visited)]
           [(or (set-member? new-visited
                             (list (get-destination-state (first next-rules))
-                                  (word-of-path (make-PATH (append (PATH-lor a-path) (list (first next-rules)))
+                                  (word-of-path (PATH (append (PATH-lor a-path) (list (first next-rules)))
                                                            '())) ;; doesn't matter what the stack is for this
                                   (append (if (eq? 'ε (get-push (first next-rules)))
                                               '()
@@ -114,23 +108,30 @@
                (< max-length                                                                          ;; making sure the new word and stack at 
                   (length (append (PATH-lor a-path) (list (first next-rules))))))  ;<- caps # of paths     ;; the state has not been visited already
            (new-paths-helper (rest next-rules) accum new-visited)]
-          [else (let* [(new-path-rules (append (PATH-lor a-path)
+          [else (let* [
+                       ;; Don't append to the list, cons to it and work with it in reverse -Andres
+                       (new-path-rules (append (PATH-lor a-path)
                                                (list (first next-rules))))
                        (new-path-stack (append (if (eq? 'ε (get-push (first next-rules)))
                                                    '()
                                                    (get-push (first next-rules)))
                                                (drop (PATH-stack a-path)
+                                                     ;; Precompute the lengths when creating the rule structures -Andres
                                                      (length (if (eq? 'ε (get-pop (first next-rules)))
                                                                  '()
                                                                  (get-pop (first next-rules)))))))
-                       (new-path (make-PATH new-path-rules
+                       (new-path (PATH new-path-rules
                                             new-path-stack))
+                       ;; Swap this last with a first after changing the path to be in reverse -Andres
                        (destination-state-last-rule (get-destination-state (last new-path-rules)))
+                       ;; Inline this, this variable is only used in one place -Andres
                        (word-of-new-path (word-of-path new-path))
+                       ;; Inline this, this variable is only used in one place -Andres
                        (stack-of-new-path (PATH-stack new-path))]
                   (new-paths-helper (rest next-rules)
                                     (cons new-path
                                           accum)
+                                    ;; Mutable sets are still faster in racket than functional ones -Andres
                                     (set-add new-visited
                                              (list destination-state-last-rule
                                                    word-of-new-path
@@ -161,17 +162,19 @@
         (let* [;(hello (displayln "queue:    "))
                ;(hi (displayln (sequence->list (in-queue queue))))
                (qfirst (dequeue! queue))
+               ;; Swap this last with a first after changing the path to be in reverse -Andres
               (next-rules-first-path (get-next-rules (last (PATH-lor qfirst))
                                                      (filter
                                                       (λ (rule)
+                                                        ;; Change the functions in here to use rule structure accessor functions - Andres
                                                         (and (or (equal? (get-pop rule) 'ε)
+                                                                 ;; Add length field to path structure so you don't have to compute the length every time -Andres
                                                                  (and (<= (length (get-pop rule)) (length (PATH-stack qfirst)))
                                                                       (equal? (take (PATH-stack qfirst)
+                                                                                    ;; Precompute length in rule structure -Andres
                                                                                     (length (get-pop rule)))   ;; this part makes sure that we the rules are able to be applied bc 
                                                                               (get-pop rule))))                    ;; can't pop elems off stack if aren't there
-                                                             #;(< (count (λ (rl) (equal? rule rl))
-                                                                         (PATH-lor qfirst))
-                                                                  MAX-NUM-REPETITIONS)))
+                                                             ))
                                                       rules)))
               (paths-with-qfirst (cons qfirst paths))] ;; <-- the paths with the first of the queue included
           (if (empty? next-rules-first-path)
@@ -192,14 +195,8 @@
                       (find-paths-helper paths-with-qfirst
                                          (second (new-paths&visited qfirst next-rules-first-path visited max-length))))
           ))))
-  (begin #;(enqueue! queue (map (λ (y) (make-PATH y (if (eq? 'ε (get-push (first y)))
-                                                           '()
-                                                           (get-push (first y)))))     ;; have to fix this part, when enqueing, maybe map it onto each element?
-                                   (map (λ (x) (list x))
-                                        (filter
-                                         (λ (rule) (eq? (get-source-state rule) (sm-start a-machine)))
-                                         rules))))
-          (map (λ (x) (enqueue! queue x)) (map (λ (y) (make-PATH y (if (eq? 'ε (get-push (first y)))
+  
+  (begin (map (λ (x) (enqueue! queue x)) (map (λ (y) (PATH y (if (eq? 'ε (get-push (first y)))
                                                                        '()
                                                                        (get-push (first y)))))     ;; have to fix this part, when enqueing, maybe map it onto each element?
                                                (map (λ (x) (list x))
@@ -214,7 +211,7 @@
 ;; pda -> (listof PATH)
 ;; Purpose: Returns all the paths that lead to an accepting word of the given machine
 (define (get-accepting-paths a-pda #:max-length [max-length 12])
-  (define paths-that-end-in-finals (filter (λ (x) (member? (get-destination-state (last (PATH-lor x))) (sm-finals a-pda)))
+  (define paths-that-end-in-finals (filter (λ (x) (member (get-destination-state (last (PATH-lor x))) (sm-finals a-pda)))
                                            (find-paths a-pda #:max-length max-length)))
   ;; PATH -> Boolean
   ;; Purpose: To determine if the given path leads to an accept 
@@ -248,10 +245,10 @@
     ;;          path, including the given path
     (define (get-sub-paths-helper length-cur-path cur-set)
       (if (equal? (take (PATH-lor a-path) length-cur-path) (PATH-lor a-path))
-          (set-add cur-set (make-PATH (take (PATH-lor a-path) length-cur-path)
+          (set-add cur-set (PATH (take (PATH-lor a-path) length-cur-path)
                                       (get-stack (take (PATH-lor a-path) length-cur-path))))
           (get-sub-paths-helper  (+ 1 length-cur-path)
-                                 (set-add cur-set (make-PATH (take (PATH-lor a-path) length-cur-path)
+                                 (set-add cur-set (PATH (take (PATH-lor a-path) length-cur-path)
                                                              (get-stack (take (PATH-lor a-path) length-cur-path)))))))
     (get-sub-paths-helper 1 (set)))
   
@@ -266,7 +263,7 @@
 ;; pda -> pda
 ;; Purpose: Takes in pda and remove states and rules that can't reach a final state 
 (define (remove-states-that-cannot-reach-finals a-pda #:max-length [max-length 12])
-  (define paths-that-end-in-finals (filter (λ (x) (member? (get-destination-state (last (PATH-lor x))) (sm-finals a-pda)))
+  (define paths-that-end-in-finals (filter (λ (x) (member (get-destination-state (last (PATH-lor x))) (sm-finals a-pda)))
                                            (find-paths a-pda #:max-length max-length)))
   (define new-rules (remove-duplicates (apply append (map (λ (x) (PATH-lor x)) paths-that-end-in-finals))))
   (define new-states (remove-duplicates (append-map (λ (x) (list (get-source-state x) (get-destination-state x))) new-rules)))
@@ -376,7 +373,7 @@
   ;; the given machine without the states and rules of states that cannot reach a final state
   (define new-machine (remove-states-that-cannot-reach-finals a-machine #:max-length max-path-length))
   ;; list of invariants that are reachable from the starting configuration
-  (define reachable-inv (filter (λ (x) (member? (first x) (sm-states new-machine))) a-loi))
+  (define reachable-inv (filter (λ (x) (member (first x) (sm-states new-machine))) a-loi))
   ;; all accepting paths of new-machine
   (define all-paths-new-machine (get-accepting-paths new-machine #:max-length max-path-length))
 

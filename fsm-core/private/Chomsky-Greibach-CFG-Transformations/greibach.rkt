@@ -11,7 +11,7 @@
 ;; symbol (listof symbol) -> boolean
 ;; Purpose: Check whether list contains given symbol
 (define (contains? elem list)
-  (cond ((empty? list) #f)
+  (cond ((null? list) #f)
         ((equal? elem (car list)) #t)
         (else (contains? elem (cdr list)))))
 
@@ -33,7 +33,7 @@
   ;; (listof symbol) -> string
   ;; Purpose: Convert a list of symbols to one string
   (define (list->symbol-helper l)
-    (if (empty? l)
+    (if (null? l)
         ""
         (string-append (symbol->string (car l)) 
                        (list->symbol-helper (cdr l)))))
@@ -62,7 +62,7 @@
     ;; Accumulator invariants:
     ;;  n = next natnum for renaming nts
     (define (make-A-rules rules n)
-      (if (empty? rules)
+      (if (null? rules)
           '()
           (let* ((rule (car rules))
                  (same-lhs-rules (filter (lambda (x) (equal? (car rule) (car x))) (cdr rules)))
@@ -89,7 +89,7 @@
         ;; (listof symbol) -> (listof symbol)
         ;; Purpose: Convert a list of symbols to A-notation
         (define (convert-to-A los)
-          (cond ((empty? los) '())
+          (cond ((null? los) '())
                 ((or (terminal? cfg (car los))
                      (equal? EMP (car los))) (cons (car los) (convert-to-A (cdr los))))
                 (else
@@ -145,7 +145,7 @@
                                     (list rest-rules)))))
       (list (config new-nt new-n new-rep new-rules))))
 
-  (if (empty? rules)
+  (if (null? rules)
       (cons (config (config-nt A) (config-n A) (config-rep A) (remove-duplicates new-rules)) new-A)
       (let* ((first-rhs (car (car rules)))
              (i (config-n A)))
@@ -185,7 +185,7 @@
 ;; (listof config) -> (listof config)
 ;; Purpose: Call surgery function
 (define (combine-post-surgery-configs cfg configs acc)
-  (if (empty? configs)
+  (if (null? configs)
       (let ((Bconfigs (filter (lambda (x) (not (config-n x))) acc))
             (other (filter (lambda (x) (config-n x)) acc)))
         (append other (reverse Bconfigs)))
@@ -221,7 +221,7 @@
   ;; (listof (listof symbol)) -> (listof (listof symbol))
   ;; Purpose: Substitute if needed 
   (define (make-new-rules rules)
-    (cond ((empty? rules) '())
+    (cond ((null? rules) '())
           ((or (terminal? cfg (car (car rules)))
                (equal? EMP (car (car rules))))
            (cons (car rules) (make-new-rules (cdr rules))))
@@ -229,7 +229,7 @@
            (append (substitute (car (car rules)) (cdr (car rules)))
                    (make-new-rules (cdr rules))))))
 
-  (if (empty? configs)
+  (if (null? configs)
       '()
       (let* ((c (car configs))
              (rules (config-rules c))
@@ -252,13 +252,13 @@
   ;; (listof symbol) -> (listof symbol)
   ;; Purpose: Sub each rule independently 
   (define (make-new-rule rule)
-    (cond ((empty? rule) '())
+    (cond ((null? rule) '())
           ((or (terminal? cfg (car rule))
                (equal? EMP (car rule)))
            (cons (car rule) (make-new-rule (cdr rule))))
           (else (cons (sub (car rule)) (make-new-rule (cdr rule))))))
 
-  (if (empty? configs)
+  (if (null? configs)
       '()
       (let* ((c (car configs))
              (rules (config-rules c))

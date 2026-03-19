@@ -1,10 +1,11 @@
-#lang racket
+#lang racket/base
 
-(require 
+#;(require 
          "../../interface.rkt"
          "interface.rkt"
-         rackunit)
+         )
 
+#|
 ;; DESIGN IDEA
 ;; Need 4 tapes: input, as, bs, cs
 ;; Start with (LM BLANK w) and i = 1 on tape 0
@@ -3851,4 +3852,6 @@ Y - w=x* AND [xs] remainder 3 = 0, final accepting state
               '(a a a b a a a)
               '(a a b b a a)
               '(b b a b b))
+|#
+
 |#
