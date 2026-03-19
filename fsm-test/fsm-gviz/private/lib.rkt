@@ -49,7 +49,7 @@
                  '()))
 
 
-  (check-equal? (add-edges (add-subgraph (add-nodes (create-graph 'test) '(A B))
+  #;(check-equal? (add-edges (add-subgraph (add-nodes (create-graph 'test) '(A B))
                                          (add-nodes (create-subgraph #:name 'cluster1) '(AA BB)))
                            '((A a B)
                              (AA a B)

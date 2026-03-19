@@ -61,8 +61,8 @@
                                                start
                                                finals
                                                rules
-                                               add-dead) (and/c (words-in-sigma/c sigma 'accepts "two")
-                                                                (listof-words/c "accepts" "two")
+                                               add-dead) (and/c (listof-words/c "accepts" "two")
+                                                                (words-in-sigma/c sigma 'accepts "two")
                                                                 (dfa-input/c states
                                                                              sigma
                                                                              start
@@ -75,8 +75,8 @@
                                                start
                                                finals
                                                rules
-                                               add-dead) (and/c (words-in-sigma/c sigma 'rejects "two")
-                                                                (listof-words/c "rejects" "two")
+                                               add-dead) (and/c (listof-words/c "rejects" "two")
+                                                                (words-in-sigma/c sigma 'rejects "two")
                                                                 (dfa-input/c states
                                                                              sigma
                                                                              start

@@ -289,7 +289,7 @@ The given starting state: a is not a valid state"
                  )) )
   (check-exn
    #rx"Step three of the design recipe has not been successfully completed.
-The given starting state: (A) is not a valid state"
+The given starting state: \\(A\\) is not a valid state"
    (lambda () (make-ndpda '(A B C D)
                           '(a b c d)
                           '(f g)
@@ -367,7 +367,7 @@ The following words in the rejects list contain symbols not included in sigma: \
    )
 
   (check-exn
-   "Step two of the design recipe has not been successfully completed.
+   #rx"Step two of the design recipe has not been successfully completed.
 The expected rejects is not a list of words: \\(a\\)"
    (lambda () (make-ndpda '(S P Q F)
                           '(a b c)
