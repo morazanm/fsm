@@ -563,9 +563,11 @@ in a multitape Turing machine.
  The up arrow moves the visualization to the beginning. The down arrow moves
  the visualization to the end.}
 
-@defproc[(minimization-viz [m fsa]) void?]
+@defproc[(minimization-viz [m fsa] [#:palette palette symbol? 'default]) void?]
 Launches a visualization tool for the construction of a dfa with a minimal number of states that decides
-L = {w | w∈L(m)}.
+L = {w | w∈L(m)} The optional keyword parameter @italic{palette} is used
+to select a color blindness pallete: 'default for the default palette, 'prot for the protanopia palette,
+'deut for the deuteranopia palette, and 'trit for the tritanopia palette.
 
 @defproc[(union-viz [m1 ndfa] [m2 ndfa]) void?]
 Launches a visualization tool for the construction of an ndfa that decides
