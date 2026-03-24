@@ -37,7 +37,7 @@
 
   ; (listof (listof symbol)) --> (listof symbol)
   (define (get-starting-terminals st)
-    (if (empty? st)
+    (if (null? st)
         '()
         (if (not (set-member? nt-set (car st)))
             (cons (car st) (get-starting-terminals (cdr st)))

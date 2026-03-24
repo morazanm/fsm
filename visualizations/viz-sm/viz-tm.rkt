@@ -1,10 +1,15 @@
-#lang racket
+#lang racket/base
 
 (require "../../fsm-gviz/private/lib.rkt"
          "../2htdp/image.rkt"
          "../viz-lib/viz.rkt"
          "../viz-lib/zipper.rkt"
          racket/treelist
+         racket/list
+         racket/set
+         racket/function
+         racket/contract
+         "sm-viz-contracts/sm-viz-contracts.rkt"
          "../viz-lib/bounding-limits.rkt"
          "../viz-lib/viz-state.rkt"
          "../viz-lib/viz-macros.rkt"
@@ -13,12 +18,12 @@
                     INS-TOOLS-BUFFER)
          "../viz-lib/viz-imgs/keyboard_bitmaps.rkt"
          "../../fsm-core/private/constants.rkt"
-         "../../fsm-core/private/tm.rkt"
-         "david-imsg-state.rkt"
-         "david-viz-constants.rkt"
-         (except-in "david-imsg-dimensions.rkt"
+         "sm-viz-helpers/david-imsg-state.rkt"
+         "sm-viz-helpers/david-viz-constants.rkt"
+         (except-in "sm-viz-helpers/david-imsg-dimensions.rkt"
                     FONT-SIZE)
-         "default-informative-messages.rkt")
+         "sm-viz-helpers/default-informative-messages.rkt"
+         racket/set)
 
 
 (provide tm-viz)
@@ -51,7 +56,11 @@
 
 (define DUMMY-RULE (list (list BLANK BLANK) (list BLANK BLANK)))
 
-
+(define INIT-HEAD-POS 0)
+(define INIT-COMPUTATION-LENGTH 1)
+(define INIT-TAPE-CONFIG-INDEX 0)
+(define INIT-REACHED-FINAL #f)
+(define INIT-REACHED-CUTOFF #f)
 ;;word (listof rule) symbol number -> (listof computation)
 ;;Purpose: Returns all possible computations using the given word, (listof rule) and start symbol
 ;;   that are within the bounds of the max computation limit
@@ -130,11 +139,26 @@
   ;;the set of final states
   (define finals-set (list->seteq finals))
 
+  ;;(setof tm-config) tm-config -> boolean
+  ;;Purpose: Determines if the given tm-config is a member of the given set
+  (define (set-member? st val)
+    (for/or ([elem (in-set st)])
+      (and (equal? (tm-config-state         elem) (tm-config-state val))
+           (equal? (tm-config-head-position elem) (tm-config-head-position val))
+           (equal? (tm-config-tape          elem) (tm-config-tape val)))))
   
   ;;(queueof computation) (treelistof computation) -> (list (listof computation) hashtable)
   ;;Purpose: Makes all the computations based around the (queueof computation) and (listof rule)
   ;;     that are within the bounds of the max computation limit
   (define (make-computations QoC path)
+
+    (define (update-computation a-comp)
+      a-comp #;(if (> head-pos INIT-COMPUTATION-LENGTH)
+          (struct-copy computation a-comp
+               [LoC (treelist-drop (computation-LoC a-comp) head-pos)]
+               [LoR (treelist-drop (computation-LoR a-comp) head-pos)])
+          a-comp))
+    
     (if (qempty? QoC)
         path
         (let* ([current-config (treelist-last (computation-LoC (qfirst QoC)))]
@@ -146,23 +170,24 @@
           (if (or reached-threshold? (member? current-state finals eq?))
               (begin
                 ;(update-hash current-config current-tape)
-                (make-computations (dequeue QoC) (if (eq? current-state accepting-final)
-                                                     (struct-copy paths path
-                                                                  [accepting (treelist-add (paths-accepting path) (qfirst QoC))]
-                                                                  [reached-final? (cond [(paths-reached-final? path) (paths-reached-final? path)]
-                                                                                        [member-of-finals? #t]
-                                                                                        [else (paths-reached-final? path)])]
-                                                                  [cut-off? (cond [(paths-cut-off? path) (paths-cut-off? path)]
-                                                                                  [reached-threshold? #t]
-                                                                                  [else (paths-cut-off? path)])])
-                                                     (struct-copy paths path
-                                                                  [rejecting (treelist-add (paths-rejecting path) (qfirst QoC))]
-                                                                  [reached-final? (cond [(paths-reached-final? path) (paths-reached-final? path)]
-                                                                                        [member-of-finals? #t]
-                                                                                        [else (paths-reached-final? path)])]
-                                                                  [cut-off? (cond [(paths-cut-off? path) (paths-cut-off? path)]
-                                                                                  [reached-threshold? #t]
-                                                                                  [else (paths-cut-off? path)])]))))
+                (make-computations (dequeue QoC)
+                                   (if (eq? current-state accepting-final)
+                                       (struct-copy paths path
+                                                    [accepting (treelist-add (paths-accepting path) (update-computation (qfirst QoC)))]
+                                                    [reached-final? (cond [(paths-reached-final? path) (paths-reached-final? path)]
+                                                                          [member-of-finals? #t]
+                                                                          [else (paths-reached-final? path)])]
+                                                    [cut-off? (cond [(paths-cut-off? path) (paths-cut-off? path)]
+                                                                    [reached-threshold? #t]
+                                                                    [else (paths-cut-off? path)])])
+                                       (struct-copy paths path
+                                                    [rejecting (treelist-add (paths-rejecting path) (update-computation (qfirst QoC)))]
+                                                    [reached-final? (cond [(paths-reached-final? path) (paths-reached-final? path)]
+                                                                          [member-of-finals? #t]
+                                                                          [else (paths-reached-final? path)])]
+                                                    [cut-off? (cond [(paths-cut-off? path) (paths-cut-off? path)]
+                                                                    [reached-threshold? #t]
+                                                                    [else (paths-cut-off? path)])]))))
               (let* (;;(listof rules)
                      ;;Purpose: Filters all the rules that can be applied to the configuration by reading the element in the rule
                      [connected-read-rules (treelist-filter (λ (rule)
@@ -177,22 +202,26 @@
                 (begin
                   ;(update-hash current-config current-tape)
                   (if (treelist-empty? new-configs)
-                      (make-computations (dequeue QoC) (struct-copy paths path [rejecting (treelist-add (paths-rejecting path) (qfirst QoC))]))
+                      (make-computations (dequeue QoC)
+                                         (struct-copy paths path
+                                                      [rejecting (treelist-add (paths-rejecting path) (update-computation (qfirst QoC)))]))
                       (make-computations (enqueue new-configs (dequeue QoC)) path))))))))
   (let (;;computation
         ;;Purpose: The starting computation
-        [starting-computation (computation (treelist (tm-config start head-pos a-word 0))
+        [starting-computation (computation (treelist (tm-config start head-pos a-word INIT-TAPE-CONFIG-INDEX))
                                            empty-treelist
                                            (set)
-                                           1)])
-    (make-computations (enqueue (treelist starting-computation) E-QUEUE) (paths empty-treelist empty-treelist #f #f))))
+                                           INIT-COMPUTATION-LENGTH)])
+    (make-computations (enqueue (treelist starting-computation) E-QUEUE)
+                       (paths empty-treelist empty-treelist INIT-REACHED-FINAL INIT-REACHED-CUTOFF))))
 
 
 ;;(listof configurations) (listof rules) (listof configurations) -> (listof configurations)
 ;;Purpose: Returns a propers trace for the given (listof configurations) that accurately
 ;;         tracks each transition
 (define (make-trace configs rules acc)
-  (cond [(treelist-empty? rules) (reverse acc)]
+  (cond [(and (empty? acc) (= (treelist-length configs) 1)) (list (trace (treelist-first configs) (rule BLANK LM BLANK LM)))]
+        [(treelist-empty? rules) (reverse acc)]
         [(and (empty? acc)
               (or (not (eq? (rule-read (treelist-first rules)) BLANK))
                   (not (eq? (rule-read (treelist-first rules)) LM))))
@@ -847,7 +876,8 @@
 ;;tm tape natnum [natnum] [symbol] . (listof (list state (t i -> boolean))) -> (void) 
 ;;Purpose: Visualizes the given tm processing the given word
 ;;Assumption: The given machine is tm
-(define (tm-viz M a-word head-pos #:cut-off [cut-off 100] #:palette [palette 'default] invs) ;;GET RID OF . FOR TESTING
+(define/contract (tm-viz M a-word head-pos #:cut-off [cut-off 100] #:palette [palette 'default] invs) ;;GET RID OF . FOR TESTING
+  tm-viz/c
   (let* (;;tm-struct
          [M (remake-tm M)]
          ;;color-pallete ;;The corresponding color scheme to used in the viz
@@ -856,7 +886,6 @@
                              [(eq? palette 'trit) tritanopia-color-scheme] ;;blue color blind
                              [else standard-color-scheme])]
          ;;(listof computations) ;;Purpose: All computations that the machine can have
-         ;[computations (get-computations a-word (tm-rules M) (tm-start M) (tm-finals M) cut-off head-pos)]
          [all-paths (get-computations a-word (tm-rules M) (tm-start M) (tm-finals M) (tm-accepting-final M) cut-off head-pos)]
          ;;boolean ;;Purpose: Determines if any computation 
          [reached-final? (paths-reached-final? all-paths)]
@@ -897,9 +926,10 @@
                                                     accepting-trace))])
                              head-pos)]
          [all-head-pos (list->zipper tracked-head-pos)]
-         [machine-decision (if (not rejected?)
-                               'accept
-                               'reject)]
+         [machine-decision (cond [(not rejected?) 'accept]
+                                 [(and reached-final? (eq? (tm-type M) 'tm)) 'reached-final]
+                                 [(and (not reached-final?) (eq? (tm-type M) 'tm)) 'halted]
+                                 [else 'reject])]
          
          [tracked-trace (list (if (not rejected?) accepting-trace rejecting-trace))]
          ;;(listof number) ;;Purpose: Gets all the invariant configurations
@@ -940,9 +970,13 @@
                                    (text "Accept not traced" 20 (color-palette-legend-other-accept-color color-scheme))
                                    spacer
                                    (text "Reject not traced" 20 (color-palette-legend-other-reject-color color-scheme)))))])
-   (run-viz graphs
+   
+    #;
+    (void)
+    
+   ;#;
+    (run-viz graphs
             (list->vector (map (λ (x) (λ (grph) grph)) graphs))
-             #;(lambda () (list (graph->bitmap (first graphs))))
              (posn (/ E-SCENE-WIDTH 2) (/ TM-E-SCENE-HEIGHT 2))
              E-SCENE-WIDTH TM-E-SCENE-HEIGHT PERCENT-BORDER-GAP
              DEFAULT-ZOOM

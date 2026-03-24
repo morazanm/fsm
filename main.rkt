@@ -21,9 +21,26 @@
    (all-from-out racket)
    (all-from-out rackunit)
    (all-from-out "fsm-gui/interface.rkt")
+   sm-visualize
    check-machine
    empties
 
+
+   ;;cfexp constructors
+   make-cfe null-cfexp empty-cfexp singleton-cfexp
+   concat-cfexp union-cfexp kleenestar-cfexp 
+
+   ; cfexp observers
+   cfg->cfe cfe->cfg
+   cfexp? null-cfexp? empty-cfexp? singleton-cfexp?
+   concat-cfexp? union-cfexp? kleenestar-cfexp?
+   gen-cfexp-word pick-cfexp singleton-cfexp-a
+   union-cfexp-cfes concat-cfexp-cfes kleenestar-cfexp-c1
+   #;pda->cfe #;cfe->pda #;printable-cfexp
+
+   ;;fsa minimization
+   minimization-viz
+   
    ; sm constructors
    sm-test-invs
    sm-quickcheck
@@ -32,6 +49,7 @@
    sm-rename-states 
    sm-union sm-concat sm-kleenestar sm-complement sm-intersection grammar->sm
    make-mttm
+   fsa-minimize
 
    ; sm observers
    sm-apply sm-showtransitions sm-type
@@ -114,62 +132,4 @@
    ; invariant testing
    sm-test-invs
    )
-
-  ;; sm-graph :: fsa optional(number) -> bitmap
-  ;; draws a graph of the given machine and returns the bitmap so it
-  ;; can be displayed in the DrRacket Terminal
-  #;(define (sm-graph fsa #:color [color-blind-mode 0])
-      (when (or (< color-blind-mode 0) (> color-blind-mode 2))
-        (error 'sm-graph "Invalid color option. Must be either 0, 1, or 2. Given ~a" color-blind-mode))
-      (fsa->bitmap fsa color-blind-mode))
-
-  (define aab* (make-unchecked-ndfa '(W X Y)
-                                    '(a b)
-                                    'W
-                                    '(Y)
-                                    '((W a X)
-                                      (X a Y)
-                                      (Y b Y))))  
-
-  (define EQABC2
-    (make-mttm
-     '(S Y C D E F G)
-     '(a b c)
-     'S
-     '(Y)
-     (list
-      (list (list 'S (list BLANK BLANK BLANK BLANK))
-            (list 'C (list RIGHT RIGHT RIGHT RIGHT)))
-      (list (list 'C (list 'a BLANK BLANK BLANK))
-            (list 'D (list 'a 'a BLANK BLANK)))
-      (list (list 'D (list 'a 'a BLANK BLANK))
-            (list 'C (list RIGHT RIGHT BLANK BLANK)))
-      (list (list 'C (list 'b BLANK BLANK BLANK))
-            (list 'E (list 'b BLANK 'b BLANK)))
-      (list (list 'E (list 'b BLANK 'b BLANK))
-            (list 'C (list RIGHT BLANK RIGHT BLANK)))
-      (list (list 'C (list 'c BLANK BLANK BLANK))
-            (list 'F (list 'c BLANK BLANK 'c)))
-      (list (list 'F (list 'c BLANK BLANK 'c))
-            (list 'C (list RIGHT BLANK BLANK RIGHT)))
-      (list (list 'C (list BLANK BLANK BLANK BLANK))
-            (list 'G (list BLANK LEFT LEFT LEFT)))
-      (list (list 'G (list BLANK BLANK BLANK BLANK))
-            (list 'Y (list BLANK BLANK BLANK BLANK)))
-      (list (list 'G (list BLANK 'a 'b 'c))
-            (list 'G (list BLANK LEFT LEFT LEFT))))
-     4
-     'Y))
-
-  (define M (make-dfa 
-             '(B A S) 
-             '(a b) 
-             'S 
-             '(B) 
-             '((B a S) (A b A) (B b B) (A a B) (S b A) (S a B))))
-
-  ;(sm-graph EQABC2)
-  ;(sm-cmpgraph EQABC2 `(,LM ,BLANK a a b c c b) 1)
-  ;(sm-cmpgraph EQABC2 `(,LM ,BLANK a a b c c) 1)
- 
   ) ; close module

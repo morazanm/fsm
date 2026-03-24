@@ -1,246 +1,106 @@
-#lang racket
+#lang racket/base
 
 (require  "../constants.rkt"
           "context-free-expressions-constructors.rkt"
           "../cfg-struct.rkt"
-          "../cfg.rkt"
           "../pda.rkt"
-          racket/syntax-srcloc
-          (for-syntax racket/base
-                      syntax/parse
-                      racket/set
-                      syntax/parse/experimental/template
-                      racket/contract/combinator
-                      )
-          rackunit)
+          ;"../visualizations/viz-grammar-constructors/cfg-derive-leftmost.rkt"
+          "../../../sm-graph.rkt"          
+          "construct-cfe-macro.rkt"
+          )
 
-(define WORD-AMOUNT 100)
+(provide (all-defined-out))
 
-#;(define-syntax (syntax/loc-helper stx)
-  (syntax-parse stx
-    [(_ origin-stx constructor vals:expr ...)
-     (syntax/loc #'origin-stx
-       (constructor (if (procedure? vals)
-                                 (vals)
-                                 vals) ...))]))
 
-(define-struct (exn:fail:contract:srcloc exn:fail:contract) (a-srcloc)
-  #:property prop:exn:srclocs
-  (lambda (a-struct)
-    (match a-struct
-      [(exn:fail:contract:srcloc msg marks (list a-srcloc))
-       (list a-srcloc)])))
 
-(define-syntax (construct-cfe stx)
-  (define-syntax-class concat-expr
-    #:attributes (id (vals 1))
-    (pattern (id:id ((~literal concat) vals:expr ...))))
 
-  (define-syntax-class singleton-expr
-    #:attributes (id val)
-    (pattern (id:id ((~literal singleton) val:expr))))
 
-  (define-syntax-class empty-var-expr
-    #:attributes (id)
-    (pattern (id:id ((~literal var)))))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;CFEXP;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define-syntax-class var-expr
-    #:attributes (id binding)
-    (pattern (id:id ((~literal var) binding:expr))))
+(define EMPTY (make-cfe [(EMPTY (empty-cfexp))]
+                 EMPTY
+                 #;(empty))
+  #;(empty-cfexp))
 
-  (define-syntax-class union-expr
-    #:attributes (id (vals 1))
-    (pattern (id:id ((~literal union) vals:expr ...))))
+(define NULL (make-cfe [(NULL (null-cfexp))]
+                 NULL))
 
-  (define-syntax-class empty-expr
-    #:attributes (id)
-    (pattern (id:id ((~literal empty)))))
+(define ONEorTWO (make-cfe ([one (singleton-cfexp "1")]
+                             [two (singleton-cfexp "2")])
+                      (union-cfexp one two)))
 
-  (define-syntax-class null-expr
-    #:attributes (id)
-    (pattern (id:id ((~literal null)))))
-  
-  (syntax-parse stx
-    [(_ [(~or* empty-var-expr:empty-var-expr
-               var-expr:var-expr
-               singleton-expr:singleton-expr
-               concat-expr:concat-expr
-               union-expr:union-expr
-               empty-expr:empty-expr
-               null-expr:null-expr) ...]
-        res-cfe-id:id)
-     
-     #:with var-cfe-lst #`(list (~? (syntax->datum #'var-expr.id) #f) ...)
-     #`(letrec ([symb-lookup (for/hash ([cfe-id (in-list var-cfe-lst)]
-                                        #:when cfe-id)
-                               (values cfe-id (gensym 'A-)))]
-                (~? [empty-expr.id (lambda ()
-                                    (set! empty-expr.id (empty-cfexp))
-                                    empty-expr.id)])
-                ...
-                (~? [null-expr.id (lambda ()
-                                     (set! null-expr.id (null-cfexp))
-                                     null-expr.id)])
-                ...
-                (~? [singleton-expr.id (lambda ()
-                                        (set! singleton-expr.id
-                                              (with-handlers
-                                               ([exn:fail:contract?
-                                                 (lambda (e)
-                                                   (raise (exn:fail:contract:srcloc
-                                                           (exn-message e)
-                                                           (current-continuation-marks)
-                                                           (list (syntax-srcloc #'singleton-expr)))))])
-                                             (singleton-cfexp singleton-expr.val)))
-                                        singleton-expr.id)])
-                ...
-                (~? [empty-var-expr.id (lambda ()
-                                        (set! empty-var-expr.id (var-cfexp #f))
-                                        empty-var-expr.id)])
-                ...
-                (~? [var-expr.id (lambda ()
-                                  (set! var-expr.id
-                                        (with-handlers
-                                               ([exn:fail:contract?
-                                                 (lambda (e)
-                                                   (raise (exn:fail:contract:srcloc
-                                                           (exn-message e)
-                                                           (current-continuation-marks)
-                                                           (list (syntax-srcloc #'var-expr)))))])
-                                             (var-cfexp (hash-ref symb-lookup (syntax->datum #'var-expr.id)))))
-                                  var-expr.id)])
-                ...
-                (~? [union-expr.id (lambda ()
-                                     (set! union-expr.id
-                                           (with-handlers
-                                               ([exn:fail:contract?
-                                                 (lambda (e)
-                                                   (raise (exn:fail:contract:srcloc
-                                                           (exn-message e)
-                                                           (current-continuation-marks)
-                                                           (list (syntax-srcloc #'union-expr)))))])
-                                             (union-cfexp (if (procedure? union-expr.vals)
-                                                              (union-expr.vals)
-                                                              union-expr.vals)...)))
-                                     union-expr.id)])
-                ...
-                (~? [concat-expr.id (lambda ()
-                                     (set! concat-expr.id
-                                           (with-handlers
-                                               ([exn:fail:contract?
-                                                 (lambda (e)
-                                                   (raise (exn:fail:contract:srcloc
-                                                           (exn-message e)
-                                                           (current-continuation-marks)
-                                                           (list (syntax-srcloc #'concat-expr)))))])
-                                             (concat-cfexp (if (procedure? concat-expr.vals)
-                                                             (concat-expr.vals)
-                                                             concat-expr.vals) ...)))
-                                     concat-expr.id)])
-                ...)
-         (~? (with-handlers
-                 ([exn:fail:contract?
-                   (lambda (e)
-                     #;(println (blame-contract (exn:fail:contract:blame-object e)))
-                     (raise (exn:fail:contract:srcloc (exn-message e)
-                                                      (current-continuation-marks)
-                                                      (list (syntax-srcloc #'var-expr)))))])
-               (update-binding! (if (procedure? var-expr.id)
-                                    (var-expr.id)
-                                    var-expr.id)
-                                (hash-ref symb-lookup (syntax->datum #'var-expr.id))
-                                (if (procedure? var-expr.binding)
-                                    (var-expr.binding)
-                                    var-expr.binding))))
-         ...
-         (if (procedure? res-cfe-id)
-             (res-cfe-id)
-             res-cfe-id))]))
 
-(define EMPTY (empty-cfexp))
+(define A (make-cfe [(A (singleton-cfexp "a"))]
+                 A)
+  #;(singleton-cfexp 'a))
 
-(define A (singleton-cfexp 'a))
+#;(make-cfe [(A (singleton-cfexp 'a))]
+                 A)
 
-(define B (singleton-cfexp 'b))
+(define B (make-cfe [(B (singleton-cfexp "b"))]
+                 B)
+  #;(singleton-cfexp 'b))
 
-(define C (singleton-cfexp 'c))
+(define C (make-cfe [(C (singleton-cfexp "c"))]
+                 C)
+  #;(singleton-cfexp 'c))
 
-#;(define WWR
-    (let* [(WWR (var-cfexp 'S))
+(define D (make-cfe [(D (singleton-cfexp "d"))]
+                 D))
+
+#;(singleton-cfexp 'a)
+(define G (make-cfe [(B (singleton-cfexp "g"))
+                     (test (kleenestar-cfexp B))]
+                 test))
+
+
+;; w = ww^r
+(define WWR
+  (make-cfe [(WWr (union-cfexp EMPTY
+                         (concat-cfexp A WWr A)
+                         (concat-cfexp B WWr B)))]
+            WWr)
+  #;(let* [(WWR (var-cfexp 'S))
            (AHA (concat-cfexp A WWR A))
            (BHB (concat-cfexp B WWR B))]
       (begin
         (update-binding! WWR 'S (union-cfexp EMPTY AHA BHB))
         WWR)))
 
-#;(define AiBj
-  (let* [(AiBj (var-cfexp 'A))
-         (AIB (concat-cfexp A AiBj B))
-         (AIBB (concat-cfexp A AiBj B B))
-         (EUAIBUAIBB (union-cfexp EMPTY AIB AIBB))]
-    (begin
-      (update-binding! AiBj 'A EUAIBUAIBB)
-      AiBj)))
-
-#;(time (let* [(AiBj (var-cfexp 'A))
-             (AIB (concat-cfexp A AiBj B))
-             (AIBB (concat-cfexp A AiBj B B))
-             (EUAIBUAIBB (union-cfexp EMPTY AIB AIBB))]
-        (begin
-          (update-binding! AiBj 'A EUAIBUAIBB)
-          AiBj)))
-
-#;(time (construct-cfe [(AiBj (var EUAIBUAIBB))
-                      (EUAIBUAIBB (union EMPTY 'AIB AIBB))
-                      (AIB (concat A AiBj B))
-                      (AIBB (concat A AiBj B B))]
-                     AiBj))
-
-#;(equal? AiBj (construct-cfe [(AiBj (_var-cfexp 'A EUAIBUAIBB))
-                               (EUAIBUAIBB (_union-cfexp EMPTY AIB AIBB))
-                               (AIB (_concat-cfexp A AiBj B))
-                               (AIBB (_concat-cfexp A AiBj B B))]
-                              AiBj))
-  
-
-#;(construct-cfe [(AHA (_concat-cfexp A WWR A))
-                  (BHB (_concat-cfexp B WWR B))
-                  (WWR (_var-cfexp 'S (union-cfexp EMPTY AHA BHB)))]
-                 WWR)
-
-#|
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;CFEXP;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define EMPTY (empty-cfexp))
-
-(define A (singleton-cfexp 'a))
-
-(define B (singleton-cfexp 'b))
-
-(define C (singleton-cfexp 'c))
-
-;; w = ww^r
-(define WWR
-  (let* [(WWR (var-cfexp 'S))
-         (AHA (concat-cfexp A WWR A))
-         (BHB (concat-cfexp B WWR B))]
-    (begin
-      (update-binding! WWR 'S (union-cfexp EMPTY AHA BHB))
-      WWR)))
-
 ;;w = a^nb^n
 (define ANBN
-  (let* [(ANBN (var-cfexp 'S))
+  (make-cfe ([ASB (union-cfexp EMPTY (concat-cfexp A ASB B))])
+            ASB)
+  #;(let* [(ANBN (var-cfexp 'S))
          (ASB (concat-cfexp A ANBN B))]
     (begin
       (update-binding! ANBN 'S (union-cfexp EMPTY ASB))
       ANBN)))
 
-(define WWRUANBN (union-cfexp WWR ANBN))
+(define WWRUANBN (make-cfe ([WWrUAnBn (union-cfexp WWR ANBN)])
+                           WWrUAnBn))
+
+(define AUB (make-cfe ([AUB (union-cfexp A B)])
+                      AUB))
+(define cAUB (make-cfe ([AUB (union-cfexp A B)]
+                        [aAUB (concat-cfexp C AUB)])
+                      aAUB))
+
+(define cAUB2 (make-cfe ([aAUB (concat-cfexp C (union-cfexp A B))]) ;; now boxes the union-cfexp 
+                      aAUB))
+
+(define CUAUB (make-cfe ([CUAUB (union-cfexp C (union-cfexp A B))]) ;;now lifts nested unions
+                      CUAUB))
+
+(define CUAUBUD (make-cfe ([CUAUBUD (union-cfexp C (union-cfexp A (union-cfexp D B)))]) ;;now lifts nested unions
+                      CUAUBUD))
+
 
 ;;w = a^2ib^i
 (define A2iBi
-  (let* [(A2iBi (var-cfexp 'S))
+  (make-cfe ([A2iBi (union-cfexp EMPTY (concat-cfexp A A A2iBi B))])
+            A2iBi)
+            #;(let* [(A2iBi (var-cfexp 'S))
          (EUAAKB (union-cfexp EMPTY (concat-cfexp A A A2iBi B)))]
     (begin
       (update-binding! A2iBi 'S EUAAKB)
@@ -248,7 +108,11 @@
 
 ;;w = A^iB^j | i <= j <= 2i
 (define AiBj
-  (let* [(AiBj (var-cfexp 'A))
+  (make-cfe ([AiBj (union-cfexp EMPTY
+                          (concat-cfexp A AiBj B)
+                          (concat-cfexp A AiBj B B))])
+            AiBj)
+            #;(let* [(AiBj (var-cfexp 'A))
          (AIB (concat-cfexp A AiBj B))
          (AIBB (concat-cfexp A AiBj B B))
          (EUAIBUAIBB (union-cfexp EMPTY AIB AIBB))]
@@ -256,111 +120,186 @@
       (update-binding! AiBj 'A EUAIBUAIBB)
       AiBj)))
 
+(define AiBj-new
+  (make-cfe ([AiBj (union-cfexp EMPTY
+                          (concat-cfexp A AiBj B)
+                          (concat-cfexp A AiBj B B))
+                  #;(EUAIBUAIBB (union-cfexp EMPTY AIB AIBB))
+                  #;(AIB (concat-cfexp A AiBj B))
+                  #;(AIBB (concat-cfexp A AiBj B B))])
+                 AiBj))
+
+;AiBj-new
+
 ;;w = b^na^n
 (define BNAN
-  (let* [(BNAN (var-cfexp 'S))
+  (make-cfe ([BNAN (union-cfexp EMPTY (concat-cfexp B BNAN A))])
+            BNAN)
+  #;(let* [(BNAN (var-cfexp 'S))
          (BSA (concat-cfexp B BNAN A))]
     (begin
       (update-binding! BNAN 'S (union-cfexp EMPTY BSA))
       BNAN)))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;Generating Words;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;w = a^ib^jc^k, i=j or j=k
 
-;;cfe natnum -> (listof word)
-;;Purpose: Generates at MOST natnum amount of words generated by the given cfe
-(define (gen-cfe-words cfe a-num)
-  ;; (setof word) -> (setof word)
-  ;;Purpose: Generates a natnum amount of generated words
-  (define (loopinator-helper acc)
-    (if (= (set-count acc) a-num)
-        acc
-        (loopinator-helper (set-add acc (gen-cfexp-word cfe)))))
-  (set->list (loopinator-helper (set))))
+;;AiBjCk =>  a^ib^ic^k or a^ib^kc^k, i=j or j=k
+;;EF => a^ib^ic^k 
+;;E => a^ib^i
+;;F => c^k
+;;ZW => a^ib^kc^k
+;;Z => a^i
+;;W => b^kc^k
+;;A -> 'a
+;;B -> 'b
+;;C -> 'c
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;Langauge Predicates;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(define AiBjCk3
+  (let ([EMPTY (empty-cfexp)]
+        [A (singleton-cfexp "a")]
+        [B (singleton-cfexp "b")]
+        [C (singleton-cfexp "c")]
+        [AEB (box (void))] ;; AEB = A^iB^j, i=j
+        [CF (box (void))]
+        [BWC (box (void))] ;;BWC = B^jC^k, j=k
+        [AZ (box (void))])
+    (begin
+      (set-box! AEB (union-cfexp EMPTY (concat-cfexp A AEB B)))
+      (set-box! CF (union-cfexp (concat-cfexp C CF) EMPTY))
+      (set-box! BWC (union-cfexp (concat-cfexp B BWC C) EMPTY))
+      (set-box! AZ (union-cfexp (concat-cfexp A AZ) EMPTY))      
+      (union-cfexp (concat-cfexp AEB CF) (concat-cfexp AZ BWC)))))
 
-;;word -> boolean
-;;Purpose: Determines if the given word is a valid word for w = ww^r
-(define (valid-wwr-word? w)
-  (or (eq? w EMP)
-      (let* ([w-length (length w)]
-             [half-w (take w (/ w-length 2))]
-             [w^r (drop w (/ w-length 2))])
-        (and (even? w-length)
-             (equal? w (append half-w w^r))
-             (equal? (reverse half-w) w^r)
-             (equal? half-w (reverse w^r))))))
+;;w = a^nc^kb^n
+(define AnCkBn
+  (let ([EMPTY (empty-cfexp)]
+        [A (singleton-cfexp "a")]
+        [B (singleton-cfexp "b")]
+        [C (singleton-cfexp "c")]
+        [ASB (box (void))]
+        [Ck (box (void))])
+    (begin
+      (set-box! ASB (union-cfexp (concat-cfexp A ASB B) Ck))
+      (set-box! Ck (union-cfexp (concat-cfexp C Ck) EMPTY))
+      ASB)))
 
-;;word -> boolean
-;;Purpose: Determines if the given word is a valid word for w = a^nb^n
-(define (valid-anbn-word? w)
-  (or (eq? w EMP)
-      (let ([as (filter (λ (s) (eq? s 'a)) w)]
-            [bs (filter (λ (s) (eq? s 'b)) w)])
-        (and (even? (length w))
-             (equal? w (append as bs))
-             (= (length as) (length bs))))))
+;;w = a^nb^n
+(define ANBN-1
+  (let [(ASB (box (void)))]
+    (begin
+      (set-box! ASB (union-cfexp EMPTY (concat-cfexp A ASB B)))
+      ASB)))
 
-;;word -> boolean
-;;Purpose: Determines if the given word is a valid word for w = b^na^n
-(define (valid-bnan-word? w)
-  (or (eq? w EMP)
-      (let ([as (filter (λ (s) (eq? s 'a)) w)]
-            [bs (filter (λ (s) (eq? s 'b)) w)])
-        (and (even? (length w))
-             (equal? w (append bs as))
-             (= (length as) (length bs))))))
+(define ANBN-2
+  (make-cfe ([ASB (union-cfexp EMPTY (concat-cfexp A ASB B))])
+            ASB)
+  #;(let [(ASB (box (void)))]
+    (begin
+      (set-box! ASB (union-cfexp EMPTY (concat-cfexp A ASB B)))
+      ASB)))
 
-;;word -> boolean
-;;Purpose: Determines if the given word is a valid word for w = a^2ib^i
-(define (valid-a2ibi-word? w)
-  (or (eq? w EMP)
-      (let ([as (filter (λ (s) (eq? s 'a)) w)]
-            [bs (filter (λ (s) (eq? s 'b)) w)])
-        (and (equal? w (append as bs))
-             (= (length as) (* 2 (length bs)))))))
+(define ANBN* (kleenestar-cfexp ANBN-2))
 
-;;word -> boolean
-;;Purpose: Determines if the given word is a valid word for w = A^iB^j | i <= j <= 2i
-(define (valid-aibj-word? w)
-  (or (eq? w EMP)
-      (let ([as (filter (λ (s) (eq? s 'a)) w)]
-            [bs (filter (λ (s) (eq? s 'b)) w)])
-        (and (equal? w (append as bs))
-             (<= (length as) (length bs) (* 2 (length as)))))))
+(define A-STAR
+  #;(let ([EMPTY (empty-cfexp)]
+        [A (singleton-cfexp "a")]
+        [A* (box (void))])
+    (begin
+      (set-box! A* (union-cfexp EMPTY (concat-cfexp A A*)))
+      A*))
+  (make-cfe ([EMPTY (empty-cfexp)]
+             [A (singleton-cfexp "a")]
+             [A* (union-cfexp EMPTY (concat-cfexp A A*))])
+             A*))
 
-;;word -> boolean
-;;Purpose: Determines if the given word is a valid word for w = a*
-(define (valid-A*-word? a-word)
-  (or (eq? a-word EMP)
-      (andmap (λ (w) (eq? w 'a)) a-word)))
+#;(define AiBjCk
+  (make-cfe ([A (singleton-cfexp "a")]
+             [B (singleton-cfexp "b")]
+             [C (singleton-cfexp "c")]
+             [AEB (union-cfexp EMPTY (concat-cfexp A AEB B))]
+             [CF (union-cfexp (concat-cfexp C CF) EMPTY)]
+             [BWC (union-cfexp (concat-cfexp B BWC C) EMPTY)]
+             [AZ (union-cfexp (concat-cfexp A AZ) EMPTY)])
+            (union-cfexp (concat-cfexp AEB CF) (concat-cfexp AZ BWC)))
+  #;(make-cfe ([A (singleton-cfexp "a")]
+               [B (singleton-cfexp "b")]
+               [C (singleton-cfexp "c")]
+               [AEB #;(union-cfexp EMPTY #(concat-cfexp A AEB B)) (concat-cfexp A E B)] ;; AEB = A^iB^j, i=j
+               [CF (concat-cfexp C F)] ;;c^k
+               [AEBUEMP (union-cfexp AEB EMPTY)] ;;AEB U EMP
+               [CFUEMP (union-cfexp CF EMPTY)] ;;CF U EMP
+               [E (var AEBUEMP)]
+               [F (var CFUEMP)]
+               [EF (concat-cfexp E F)] ;;a^ib^jc^k, i=j
+               [BWC (concat-cfexp B W C)] ;;BWC = B^jC^k, j=k
+               [AZ (concat-cfexp A Z)] ;;a^i
+               [BWCUEMP (union-cfexp BWC EMPTY)]
+               [AZUEMP (union-cfexp AZ EMPTY)]
+               [W (var BWCUEMP)]
+               [Z (var AZUEMP)]
+               [ZW (concat-cfexp Z W)] ;;a^ib^jc^k, j=k
+               [EFUWZ (union-cfexp EF ZW)]
+               [AiBjCk (var EFUWZ)])
+              AiBjCk))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;LANGUAGE BANK;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(define AiBjCk2
+  (make-cfe ([A (singleton-cfexp "a")]
+             [B (singleton-cfexp "b")]
+             [C (singleton-cfexp "c")]
+             [AEB (union-cfexp EMPTY (concat-cfexp A AEB B))]
+             [CF (union-cfexp (concat-cfexp C CF) EMPTY)]
+             [BWC (union-cfexp (concat-cfexp B BWC C) EMPTY)]
+             [AZ (union-cfexp (concat-cfexp A AZ) EMPTY)]
+             [AiBjCk (union-cfexp (concat-cfexp AEB CF) (concat-cfexp AZ BWC))])
+            AiBjCk)
+  #;(make-cfe ([A (singleton-cfexp "a")]
+                  [B (singleton-cfexp "b")]
+                  [C (singleton-cfexp "c")]
+                  [AEB (concat-cfexp A E B)] ;; AEB = A^iB^j, i=j
+                  [CF (concat-cfexp C F)] ;;c^k
+                  [AEBUEMP (union-cfexp AEB EMPTY)] ;;AEB U EMP
+                  [CFUEMP (union-cfexp CF EMPTY)] ;;CF U EMP
+                  [E (var AEBUEMP)]
+                  [F (var CFUEMP)]
+                  [EF (concat-cfexp E F)] ;;a^ib^jc^k, i=j
+                  [BWC (concat-cfexp B W C)] ;;BWC = B^jC^k, j=k
+                  [AZ (concat-cfexp A Z)] ;;a^i
+                  [BWCUEMP (union-cfexp BWC EMPTY)]
+                  [AZUEMP (union-cfexp AZ EMPTY)]
+                  [W (var BWCUEMP)]
+                  [Z (var AZUEMP)]
+                  [ZW (concat-cfexp Z W)] ;;a^ib^jc^k, j=k
+                  [AiBjCk (union-cfexp EF ZW)])
+                 AiBjCk))
 
-(define WWR-WORDS (gen-cfe-words WWR WORD-AMOUNT))
+(define AiBjCk4
+  (make-cfe ([A (singleton-cfexp "a")]
+             [B (singleton-cfexp "b")]
+             [C (singleton-cfexp "c")]
+             [AEB (union-cfexp EMPTY (concat-cfexp A AEB B))]
+             [CF (kleenestar-cfexp C)]
+             [BWC (union-cfexp (concat-cfexp B BWC C) EMPTY)]
+             [AZ (kleenestar-cfexp A)]
+             [AiBjCk (union-cfexp (concat-cfexp AEB CF) (concat-cfexp AZ BWC))])
+            AiBjCk))
 
-(define ANBN-WORDS (gen-cfe-words ANBN WORD-AMOUNT))
 
-(define BNAN-WORDS (gen-cfe-words BNAN WORD-AMOUNT))
+;;L = wcw^r
+(define WcWr (make-cfe ([WcWr (union-cfexp (concat-cfexp A WcWr A)
+                                     (concat-cfexp B WcWr B)
+                                     C)])
+                       WcWr))
 
-(define A2iBi-WORDS (gen-cfe-words A2iBi WORD-AMOUNT))
+(define G2 (cfe->cfg AiBjCk2))
 
-(define AiBj-WORDS (gen-cfe-words AiBj WORD-AMOUNT))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;TESTING;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(check-pred (λ (low) (andmap valid-wwr-word? low)) WWR-WORDS)
-
-(check-pred (λ (low) (andmap valid-anbn-word? low)) ANBN-WORDS)
-
-(check-pred (λ (low) (andmap valid-bnan-word? low)) BNAN-WORDS)
-
-(check-pred (λ (low) (andmap valid-a2ibi-word? low)) A2iBi-WORDS)
-
-(check-pred (λ (low) (andmap valid-aibj-word? low)) AiBj-WORDS)
-
-(define test (union-cfexp ANBN BNAN))
-
+;;We do NOT need kleene because the variable binding is functionally equivalent.
+;;   L*    = L U EMP
+;; kleene^    var^
+;;We *could* use a kleene BUT it would be harder to understand and read. Especially since the implementation
+;;of CFEs are closely related to CFGs. Consider the cfg for L = a*, the rules would be S -> aS and S -> EMP
+;;the way of using a var (L U EMP) is directly reflects how the cfg rules would look AND captures the same
+;;(if not better) nature of kleene. Also, it makes converting easier since there is no need for the kleene
+;;as theres one less expression to check for AND everything I need would be found in the environment of the
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;CFG->CFE & CFE->CFG Transformations;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -372,17 +311,6 @@
 
 ;;w = a^nb^n
 (define transformed-anbn (cfg->cfe ANBN-cfg))
-
-
-(define TRANSFORMED-ANBN-WORDS (gen-cfe-words transformed-anbn WORD-AMOUNT))
-
-(define TRANSFORMED-BNAN-WORDS (gen-cfe-words (cfg->cfe (cfe->cfg BNAN)) WORD-AMOUNT))
-
-(define TRANSFORMED-WWR-WORDS (gen-cfe-words (cfg->cfe (cfe->cfg WWR)) WORD-AMOUNT))
-
-(define TRANSFORMED-AiBj-WORDS (gen-cfe-words (cfg->cfe (cfe->cfg AiBj)) WORD-AMOUNT))
-
-(define TRANSFORMED-A2iBi-WORDS (gen-cfe-words (cfg->cfe (cfe->cfg A2iBi)) WORD-AMOUNT))
 
 ;;w = a*
 (define thesis-cfg (make-unchecked-cfg '(S T U)
@@ -400,7 +328,9 @@
 
 ;;w = (ab)*c
 (define AB^NC
-  (let* [(AB^NC (var-cfexp 'S))
+  (make-cfe ([ABnC (union-cfexp (concat-cfexp A B ABnC) C)])
+            ABnC)
+  #;(let* [(AB^NC (var-cfexp 'S))
          (ABX (concat-cfexp A B AB^NC))]
     (begin
       (update-binding! AB^NC 'S (union-cfexp C ABX))
@@ -413,7 +343,35 @@
                                  'X))
 ;;w = (abc)^na^n
 (define thesis-cfe
-  (let* [(X (var-cfexp 'X))
+  #;(let ([ABY (box (void))]
+        [CXA (box (void))])
+    (begin
+      (set-box! ABY (union-cfexp (concat-cfexp A B CXA) EMPTY))
+      (set-box! CXA (concat-cfexp C ABY A))
+      ABY))
+  (make-cfe ([ABY (union-cfexp (concat-cfexp A B CXA) EMPTY)]
+             [CXA (concat-cfexp C ABY A)])
+            ABY)
+  #;(let* [(X (var-cfexp 'X))
+         (Y (var-cfexp 'Y))
+         (ABY (concat-cfexp A B Y))
+         (CXA (concat-cfexp C X A))]
+    (begin
+      (update-binding! X 'X (union-cfexp EMPTY ABY))
+      (update-binding! Y 'Y CXA)
+      X)))
+
+(define thesis-cfe21
+  (let ([ABY (box (void))]
+        [CXA (box (void))])
+    (begin
+      (set-box! ABY (union-cfexp (concat-cfexp A B CXA) EMPTY))
+      (set-box! CXA (concat-cfexp C ABY A))
+      ABY))
+    #;(make-cfe ([ABY (union-cfexp (concat-cfexp A B CXA) EMPTY)]
+             [CXA (concat-cfexp C ABY A)])
+            ABY)
+  #;(let* [(X (var-cfexp 'X))
          (Y (var-cfexp 'Y))
          (ABY (concat-cfexp A B Y))
          (CXA (concat-cfexp C X A))]
@@ -423,7 +381,7 @@
       X)))
 
 ;;w = (abc)^na^n
-(define thesis-cfe2
+#;(define thesis-cfe2
   (let* [(X (var-cfexp 'X))
          (Y (var-cfexp 'Y))
          (ABY (concat-cfexp A B Y))
@@ -441,12 +399,6 @@
                                                          (Y ,ARROW cXa))
                                         'X))
 
-;;cfg cfexp natnum -> boolean
-;;Purpose: Determines if the given cfe can generate a natnum amount of words that the grammar can derive
-(define (grammar-checker g words)
-  (for/and ([w (in-list words)])
-    (list? (cfg-derive g (if (eq? w EMP) '() w)))))
-
 ;;CFE->CFG
 
 ;;w = (abc)^na^n
@@ -455,37 +407,8 @@
 ;;w = (abc)^na^n
 (define thesis-cfe-converted (cfe->cfg thesis-cfe))
 
-;;TESTING
-
-(define thesis-cfg-converted-WORDS (gen-cfe-words thesis-cfg-converted WORD-AMOUNT))
-
-(define thesis-cfe-WORDS (gen-cfe-words thesis-cfe WORD-AMOUNT))
-
-(check-pred (λ (low) (andmap valid-anbn-word? low)) TRANSFORMED-ANBN-WORDS)
-
-(check-pred (λ (low) (andmap valid-bnan-word? low)) TRANSFORMED-BNAN-WORDS)
-
-(check-pred (λ (low) (andmap valid-wwr-word? low)) TRANSFORMED-WWR-WORDS)
-
-(check-pred (λ (low) (andmap valid-a2ibi-word? low)) TRANSFORMED-A2iBi-WORDS)
-
-(check-pred (λ (low) (andmap valid-aibj-word? low)) TRANSFORMED-AiBj-WORDS)
-
-(check-true (grammar-checker thesis-cfg1 thesis-cfg-converted-WORDS))
-
-(check-true (grammar-checker thesis-cfe-converted thesis-cfe-WORDS))
-
-(check-true (grammar-checker (cfe->cfg ANBN) TRANSFORMED-ANBN-WORDS))
-
-(check-true (grammar-checker (cfe->cfg BNAN) TRANSFORMED-BNAN-WORDS))
-
-(check-true (grammar-checker (cfe->cfg AiBj) TRANSFORMED-AiBj-WORDS))
-
-(check-true (grammar-checker (cfe->cfg A2iBi) TRANSFORMED-A2iBi-WORDS))
-
-(check-true (grammar-checker (cfe->cfg WWR) TRANSFORMED-WWR-WORDS))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;PDA->CFE & CFE->PDA Transformations;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;;PDA->CFE
 
 ;;w = a*
@@ -498,14 +421,14 @@
 
 
 (define Gina-aˆnbˆn (make-unchecked-ndpda '(S M F)
-                           '(a b)
-                           '(a)
-                           'S
-                           '(F)
-                           `(((S ,EMP ,EMP) (M ,EMP))
-                             ((S a ,EMP) (S (a)))
-                             ((M b (a)) (M ,EMP))
-                             ((M ,EMP ,EMP) (F ,EMP)))))
+                                          '(a b)
+                                          '(a)
+                                          'S
+                                          '(F)
+                                          `(((S ,EMP ,EMP) (M ,EMP))
+                                            ((S a ,EMP) (S (a)))
+                                            ((M b (a)) (M ,EMP))
+                                            ((M ,EMP ,EMP) (F ,EMP)))))
 
 (define Gina-wcwˆr (make-unchecked-ndpda '(S P Q F)
                           '(a b c)
@@ -596,59 +519,14 @@
                                 ((F c (a)) (F ,EMP)))))
 
 
-(define (valid-Gina-aˆnbˆn-word? ci)
-  (let* [(as (takef ci (λ (s) (eq? s 'a))))
-         (bs (takef (drop ci (length as))
-                    (λ (s) (eq? s 'b))))]
-    (and (equal? (append as bs) ci)
-         (= (length as) (length bs)))))
-
-(define (valid-Gina-wcwˆr-word? ci)
-  (let* [(w (takef ci (λ (s) (not (eq? s 'c)))))]
-    (equal? ci (append w (list 'c) (reverse w)))))
-
-(define (valid-Gina-palindrome-pda-word? ci)
-  (or (empty? ci)
-      (equal? ci (reverse ci))))
-
-(define (valid-Gina-AiBj-word? ci)
-  (let* [(As (takef ci (λ (x) (eq? x 'a))))
-         (Bs (takef (drop ci (length As)) (λ (x) (eq? x 'b))))]
-    (and (<= (length As) (length Bs) (* 2 (length As)))
-         (equal? ci (append As Bs)))))
-
-(define (valid-Gina-A^nB^mA^n-word? ci)
-  (let* [(As (takef ci (λ (x) (eq? x 'a))))
-         (Bs (takef (drop ci (length As)) (λ (x) (eq? x 'b))))
-         (As-after-Bs (takef (drop ci (length (append As Bs))) (λ (x) (eq? x 'a))))]
-    (or (and (equal? ci As)
-             (even? (length As))) 
-        (and (= (- (length As) (length As-after-Bs)) 0) 
-             (equal? (append As Bs As-after-Bs) ci)))))
-
-(define (valid-Gina-a^mb^nc^pd^q-word? ci stack)
-  (let* [(As (takef ci (λ (x) (eq? x 'a))))
-         (Bs (takef (drop ci (length As)) (λ (x) (eq? x 'b))))
-         (Cs (takef (drop ci (+ (length As) (length Bs))) (λ (x) (eq? x 'c))))
-         (Ds (takef (drop ci (+ (length As) (length Bs) (length Cs))) (λ (x) (eq? x 'd))))]
-    (and (equal? (append As Bs Cs Ds) ci)
-         (andmap (λ (x) (eq? x 'a)) stack)
-         (= 0 (- (+ (length As) (length Bs)) (length Cs) (length Ds))))))
-
-(define (valid-Gina-a^mb^nc^p-word? ci)
-  (let* [(As (takef ci (λ (x) (eq? x 'a))))
-         (Bs (takef (drop ci (length As)) (λ (x) (eq? 'b x))))
-         (Cs (takef (drop ci (+ (length As) (length Bs))) (λ (x) (eq? 'c x))))]
-    (and (equal? ci (append As Bs Cs))
-         (or (= 0 (- (length Bs) (length Cs)))
-             (= 0 (- (length As) (length Bs)))))))
-
 ;;w = a*
+#|
 (define A*-cfe (pda->cfe A*))
 
 (define Gina-aˆnbˆn-cfe (pda->cfe Gina-aˆnbˆn))
 
 (define Gina-wcwˆr-cfe (pda->cfe Gina-wcwˆr))
+
 
 (define Gina-palindrome-pda-cfe (pda->cfe Gina-palindrome-pda))
 
@@ -662,101 +540,4 @@
 
 ;;w = a^nb^n
 (define converted-ANBN (pda->cfe (cfe->pda ANBN)))
-
-;;pda cfexp natnum -> boolean
-;;Purpose: Determines if the given cfe can generate a natnum amount of words that the pda can accept
-(define (pda-checker p words)
-  (for/and ([w (in-list words)])
-    (eq? (apply-pda p (if (eq? w EMP) '() w)) 'accept)))
-
-
-(define A*-WORDS (gen-cfe-words A*-cfe WORD-AMOUNT))
-
-(define Gina-aˆnbˆn-WORDS (gen-cfe-words Gina-aˆnbˆn-cfe WORD-AMOUNT))
-
-(define Gina-wcwˆr-WORDS (gen-cfe-words Gina-wcwˆr-cfe WORD-AMOUNT))
-
-(define Gina-palindrome-pda-WORDS (gen-cfe-words Gina-palindrome-pda-cfe WORD-AMOUNT))
-
-(define Gina-AiBj-WORDS (gen-cfe-words Gina-AiBj-cfe WORD-AMOUNT))
-
-(define Gina-A^nB^mA^n-WORDS (gen-cfe-words Gina-A^nB^mA^n-cfe WORD-AMOUNT))
-
-(define Gina-a^mb^nc^pd^q-WORDS (gen-cfe-words Gina-a^mb^nc^pd^q-cfe WORD-AMOUNT))
-
-(define Gina-a^mb^nc^p-WORDS (gen-cfe-words Gina-a^mb^nc^p-cfe WORD-AMOUNT))
-
-(define converted-ANBN-WORDS (gen-cfe-words converted-ANBN WORD-AMOUNT))
-
-(define converted-BNAN-WORDS (gen-cfe-words (pda->cfe (cfe->pda BNAN)) WORD-AMOUNT))
-
-(define converted-WWR-WORDS (gen-cfe-words (pda->cfe (cfe->pda WWR)) WORD-AMOUNT))
-
-(define converted-A2iBi-WORDS (gen-cfe-words (pda->cfe (cfe->pda A2iBi)) WORD-AMOUNT))
-
-(define converted-AiBj-WORDS (gen-cfe-words (pda->cfe (cfe->pda AiBj)) WORD-AMOUNT))
-
-(check-pred (λ (low) (andmap valid-A*-word? low)) A*-WORDS)
-
-(check-pred (λ (low) (andmap valid-anbn-word? low)) converted-ANBN-WORDS)
-
-(check-pred (λ (low) (andmap valid-bnan-word? low)) converted-BNAN-WORDS)
-
-(check-pred (λ (low) (andmap valid-wwr-word? low)) converted-WWR-WORDS)
-
-(check-pred (λ (low) (andmap valid-a2ibi-word? low)) converted-A2iBi-WORDS)
-
-(check-pred (λ (low) (andmap valid-aibj-word? low)) converted-AiBj-WORDS)
-
-(check-pred (λ (low) (andmap valid-Gina-aˆnbˆn-word? low)) Gina-aˆnbˆn-WORDS) 
-
-(check-pred (λ (low) (andmap valid-Gina-wcwˆr-word? low)) Gina-wcwˆr-WORDS)
-
-(check-pred (λ (low) (andmap valid-Gina-palindrome-pda-word? low)) Gina-palindrome-pda-WORDS)
-
-(check-pred (λ (low) (andmap valid-Gina-AiBj-word? low)) Gina-AiBj-WORDS)
-
-(check-pred (λ (low) (andmap valid-Gina-A^nB^mA^n-word? low)) Gina-A^nB^mA^n-WORDS)
-
-(check-pred (λ (low) (andmap valid-Gina-a^mb^nc^pd^q-word? low)) Gina-a^mb^nc^pd^q-WORDS)
-
-(check-pred (λ (low) (andmap valid-Gina-a^mb^nc^p-word? low)) Gina-a^mb^nc^p-WORDS)
-
-(check-true (pda-checker (cfe->pda ANBN) converted-ANBN-WORDS))
-
-(check-true (pda-checker (cfe->pda BNAN) converted-BNAN-WORDS))
-
-(check-true (pda-checker (cfe->pda AiBj) converted-AiBj-WORDS))
-
-(check-true (pda-checker (cfe->pda A2iBi) converted-A2iBi-WORDS))
-
-(check-true (pda-checker (cfe->pda WWR) converted-WWR-WORDS))
-
-(check-true (pda-checker Gina-aˆnbˆn Gina-aˆnbˆn-WORDS))
-
-(check-true (pda-checker Gina-wcwˆr Gina-wcwˆr-WORDS))
-
-(check-true (pda-checker Gina-palindrome-pda Gina-palindrome-pda-WORDS))
-
-(check-true (pda-checker Gina-AiBj Gina-AiBj-WORDS))
-
-(check-true (pda-checker Gina-A^nB^mA^n Gina-A^nB^mA^n-WORDS))
-
-(check-true (pda-checker Gina-a^mb^nc^pd^q Gina-a^mb^nc^pd^q-WORDS))
-
-(check-true (pda-checker Gina-a^mb^nc^p Gina-a^mb^nc^p-WORDS))
-
-(check-true (pda-checker (cfe->pda Gina-aˆnbˆn-cfe) Gina-aˆnbˆn-WORDS))
-
-(check-true (pda-checker (cfe->pda Gina-wcwˆr-cfe) Gina-wcwˆr-WORDS))
-
-(check-true (pda-checker (cfe->pda Gina-palindrome-pda-cfe) Gina-palindrome-pda-WORDS))
-
-(check-true (pda-checker (cfe->pda Gina-AiBj-cfe) Gina-AiBj-WORDS))
-
-(check-true (pda-checker (cfe->pda Gina-A^nB^mA^n-cfe) Gina-A^nB^mA^n-WORDS))
-
-(check-true (pda-checker (cfe->pda Gina-a^mb^nc^pd^q-cfe) Gina-a^mb^nc^pd^q-WORDS))
-
-(check-true (pda-checker (cfe->pda Gina-a^mb^nc^p-cfe) Gina-a^mb^nc^p-WORDS))
 |#

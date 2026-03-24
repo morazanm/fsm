@@ -1,6 +1,7 @@
-#lang racket
+#lang racket/base
 
-(require "../../../main.rkt")
+(require "../../../fsm-core/private/ndfa-constructors.rkt"
+         "../../../fsm-core/private/constants.rkt")
 
 (define empty-tran (make-ndfa '(A)
                               '(a b)

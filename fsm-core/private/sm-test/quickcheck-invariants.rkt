@@ -1,6 +1,5 @@
 #lang racket/base
 (require rackcheck
-         rackunit
          racket/list
          "reg-exp-function.rkt"
          "../regexp.rkt"
@@ -54,10 +53,10 @@
 (define (quickcheck-invs-fsa machine los&inv tests dead-state-removal?)
   (define los&regexp (get-all-regexp machine dead-state-removal?))
   (define los&inv-only-states-that-reach-finals
-    (filter (λ (s&inv) (hash-has-key? los&regexp (first s&inv))) los&inv))
+    (filter (λ (s&inv) (hash-has-key? los&regexp (car s&inv))) los&inv))
   (for ([inv (in-list
                  los&inv-only-states-that-reach-finals)])
-    (testing-function (first inv) (hash-ref los&regexp (first inv)) (second inv) tests)))
+    (testing-function (car inv) (hash-ref los&regexp (car inv)) (cadr inv) tests)))
 
 
 (define (INVS=T ci)

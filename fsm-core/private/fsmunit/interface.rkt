@@ -9,6 +9,7 @@
          "unit-tests/check-grammar.rkt"
          "unit-tests/check-inv.rkt"
          "unit-tests/check-regexp.rkt"
+         "unit-tests/check-cfexp.rkt"
          "syntax-value-struct.rkt"
          "fsm-error-types/base-fsm-error-types.rkt")
 
@@ -35,6 +36,8 @@
          (check-grammar accept? fsm-val-stx-pair word-lst-val-stx-pairs)]
         [(eq? (parse-fsm-val-type (val-stx-pair-val fsm-val-stx-pair)) 'regexp)
          (check-regexp accept? fsm-val-stx-pair word-lst-val-stx-pairs)]
+        [(eq? (parse-fsm-val-type (val-stx-pair-val fsm-val-stx-pair)) 'cfexp)
+         (check-cfexp accept? fsm-val-stx-pair word-lst-val-stx-pairs)]
         [(eq? (parse-fsm-val-type (val-stx-pair-val fsm-val-stx-pair)) 'inv)
          (check-invariant accept? fsm-val-stx-pair word-lst-val-stx-pairs)]
         [else (display-fsm-err (warn:fsm:test:invalid-fsm-val fsm-val-stx-pair))]))

@@ -123,7 +123,7 @@
     (cond [(member S accum) #f]
           [else
            (let ((newmembers (map cfg-rule-lhs (filter (lambda (r) (only-accum-elems? r accum))rls))))
-             (cond [(empty? newmembers) #t]
+             (cond [(null? newmembers) #t]
                    [else (isempty? rls S (append newmembers accum))]))]))
     
   (let ((rls (cfg-get-the-rules g))
@@ -427,13 +427,13 @@
                        (list (car r) (cadr r) (symbol->fsmlos (caddr r))))
                      (cfg-get-rules G)))
            (newS (generate-symbol start nts)))
-      (make-cfg (cons newS nts)
-                sigma
-                (cons (list newS ARROW start)
-                      (map (λ (r)
-                             (list (first r) ARROW (los->symbol (third r))))
-                           rls))
-                newS)))
+      (make-unchecked-cfg (cons newS nts)
+                          sigma
+                          (cons (list newS ARROW start)
+                                (map (λ (r)
+                                       (list (car r) ARROW (los->symbol (caddr r))))
+                                     rls))
+                          newS)))
 
   ;; cfg --> cfg
   ;; Purpose: Eliminate rules with nonsolitary terminals
@@ -448,10 +448,10 @@
               (populate-hash! ht (cdr sigma) (cons new-nt nts))))))
 
     (define (convert-non-solitary rule sigma ht)
-      (let ((rhs (third rule)))
+      (let ((rhs (caddr rule)))
         (if (= (length rhs) 1)
             rule
-            (list (first rule)
+            (list (car rule)
                   ARROW
                   (map (λ (s)
                          (if (member s sigma)
@@ -470,13 +470,13 @@
            (solitary-new-rules (map (λ (a) (list (hash-ref ht a) ARROW (list a)))
                                     sigma))
            (new-rls (map (λ (r) (convert-non-solitary r sigma ht)) rls)))
-      (make-cfg (append nts
-                        (map (λ (a) (hash-ref ht a)) sigma))
-                sigma
-                (map (λ (r)
-                       (list (first r) ARROW (los->symbol (third r))))
-                     (append new-rls solitary-new-rules))
-                start)))
+      (make-unchecked-cfg (append nts
+                                  (map (λ (a) (hash-ref ht a)) sigma))
+                          sigma
+                          (map (λ (r)
+                                 (list (car r) ARROW (los->symbol (caddr r))))
+                               (append new-rls solitary-new-rules))
+                          start)))
 
   ;; cfg --> cfg
   ;; Purpose: Eliminate rules with a rhs that has more than 2 nts
@@ -484,19 +484,19 @@
   (define (bin-grammar G)
 
     (define (convert-rule r nts)
-      (if (= (length (third r)) 2)
+      (if (= (length (caddr r)) 2)
           (list r)
-          (cons (list (first r) (second r) (list (first (third r)) (first nts)))
-                (convert-rule (list (first nts) ARROW (rest (third r)))
-                              (rest nts)))))
+          (cons (list (car r) (cadr r) (list (car (caddr r)) (car nts)))
+                (convert-rule (list (car nts) ARROW (cdr (caddr r)))
+                              (cdr nts)))))
 
     (define (make-new-rls rls new-nts)
       (if (null? rls)
           '()
-          (append (convert-rule (first rls)
-                                (take new-nts (- (length (third (first rls))) 2)))
-                  (make-new-rls (rest rls)
-                                (drop new-nts (- (length (third (first rls))) 2))))))
+          (append (convert-rule (car rls)
+                                (take new-nts (- (length (caddr (car rls))) 2)))
+                  (make-new-rls (cdr rls)
+                                (drop new-nts (- (length (caddr (car rls))) 2))))))
       
     (let* ((nts (cfg-get-v G))
            (sigma (cfg-get-alphabet G))
@@ -506,34 +506,34 @@
                       (cfg-get-rules G)))
            (short-trls
             (filter (λ (r)
-                      (<= (length (third r)) 2))
+                      (<= (length (caddr r)) 2))
                     trls))
            (to-process-trls
             (filter (λ (r)
-                      (> (length (third r)) 2))
+                      (> (length (caddr r)) 2))
                     trls))
-           (num-new-nts (foldl (λ (r a) (+ (- (length (third r)) 2) a))
+           (num-new-nts (foldl (λ (r a) (+ (- (length (caddr r)) 2) a))
                                0
                                to-process-trls))
            (new-nts (build-list num-new-nts (λ (i) (generate-symbol 'T (cons 'T nts)))))
            (new-rls (make-new-rls to-process-trls new-nts))
            ;(ddd (displayln (format "~s" (append nts new-nts))))
            )
-      (make-cfg (append nts new-nts)
-                sigma
-                (map (λ (r)
-                       (list (first r) ARROW (los->symbol (third r))))
-                     (append short-trls new-rls))
-                start)))
+      (make-unchecked-cfg (append nts new-nts)
+                          sigma
+                          (map (λ (r)
+                                 (list (car r) ARROW (los->symbol (caddr r))))
+                               (append short-trls new-rls))
+                          start)))
 
   ;; (listof cfg-rule) --> (listof cfg-rule)
   ;; Purpose: Remove rules with nts in the rhs that do not appear in a lhs
   (define (remove-silly-rules rls start sigma)
-    (let ((lhs (map first rls)))
+    (let ((lhs (map car rls)))
       (filter (λ (r)
-                (and (or (eq? (first r) start)
-                         (member (first r) (append-map third rls)))
-                     (let ((r-nts (filter (λ (a) (not (member a sigma))) (third r))))
+                (and (or (eq? (car r) start)
+                         (member (car r) (append-map third rls)))
+                     (let ((r-nts (filter (λ (a) (not (member a sigma))) (caddr r))))
                        (andmap (λ (nt) (member nt (cons EMP lhs))) r-nts))))
               rls)))
 
@@ -543,10 +543,10 @@
 
     (define (compute-nullables rls nulls visited-nulls)
       (let* ((new-nullables (map
-                             first
-                             (filter (λ (r) (andmap (λ (a) (and (not (member (first r) visited-nulls))
+                             car
+                             (filter (λ (r) (andmap (λ (a) (and (not (member (car r) visited-nulls))
                                                                 (member a nulls)))
-                                                    (third r)))
+                                                    (caddr r)))
                                      rls)))
              ;;(ddd (displayln (format "nulls: ~s \n new: ~s\n\n" nulls new-nullables)))
              )
@@ -561,12 +561,12 @@
         
       (define (nullables-pos rhs pos)
         (cond [(null? rhs) '()]
-              [(member (first rhs) nullables)
-               (cons pos (nullables-pos (rest rhs) (add1 pos)))]
-              [else (nullables-pos (rest rhs) (add1 pos))]))
+              [(member (car rhs) nullables)
+               (cons pos (nullables-pos (cdr rhs) (add1 pos)))]
+              [else (nullables-pos (cdr rhs) (add1 pos))]))
               
-      (let* ((lhs (first r))
-             (rhs (third r))
+      (let* ((lhs (car r))
+             (rhs (caddr r))
              (nullables-at (nullables-pos rhs 0)))
         (if (null? nullables-at)
             (list r)
@@ -586,30 +586,30 @@
            (trls (map (lambda (r)
                         (list (car r) (cadr r) (symbol->fsmlos (caddr r))))
                       (cfg-get-rules G)))
-           ;(start-trl (first (filter (λ (r) (eq? (first r) start)) trls)))
+           ;(start-trl (car (filter (λ (r) (eq? (car r) start)) trls)))
            ;(ddd (display (format "trls: \n ~s \n" trls)))
            (nullables (compute-nullables trls
-                                         (map first (filter {λ (r) (equal? (third r) (list EMP))}
-                                                            trls))
+                                         (map car (filter {λ (r) (equal? (caddr r) (list EMP))}
+                                                          trls))
                                          '()))
            (new-rules (map (λ (r)
-                             (list (first r) ARROW (los->symbol (third r))))
+                             (list (car r) ARROW (los->symbol (caddr r))))
                            (remove-silly-rules
                             (filter (λ (r)
-                                      (or (eq? (first r) start)
-                                          (and (not (eq? (first r) start))
-                                               (not (equal? (third r) (list EMP))))))
+                                      (or (eq? (car r) start)
+                                          (and (not (eq? (car r) start))
+                                               (not (equal? (caddr r) (list EMP))))))
                                     (append-map (λ (r)
                                                   (remove-duplicates (convert-rule r nullables)))
                                                 trls))
                             start
                             sigma)))
            ;(dd (display (format "new rules: \n ~s \n" new-rules)))
-           (new-nts (map first new-rules)))
-      (make-cfg new-nts
-                sigma
-                new-rules
-                start)))
+           (new-nts (map car new-rules)))
+      (make-unchecked-cfg new-nts
+                          sigma
+                          new-rules
+                          start)))
 
   ;; cfg --> cfg
   ;; Purpose: Remove unit rules
@@ -619,19 +619,19 @@
 
       (define (new-rules-for-urule rls urule)
         ;; urule form: A -> B
-        (let* ((A (first urule))
-               (B (third urule))
-               (B-rules (filter (λ (r) (eq? (first B) (first r))) rls)))
-          (map (λ (r) (list A ARROW (third r))) B-rules)))
-      (let ((urules (filter (λ (r) (and (= (length (third r)) 1)
-                                        (member (first (third r)) nts)))
+        (let* ((A (car urule))
+               (B (caddr urule))
+               (B-rules (filter (λ (r) (eq? (car B) (car r))) rls)))
+          (map (λ (r) (list A ARROW (caddr r))) B-rules)))
+      (let ((urules (filter (λ (r) (and (= (length (caddr r)) 1)
+                                        (member (car (caddr r)) nts)))
                             rls)))
-        (if (empty? urules)
+        (if (null? urules)
             rls
-            (rm-unit-rules (append (remove (first urules) rls)
+            (rm-unit-rules (append (remove (car urules) rls)
                                    (new-rules-for-urule
-                                    (remove (first urules) rls)
-                                    (first urules)))
+                                    (remove (car urules) rls)
+                                    (car urules)))
                            nts))))
 
       
@@ -642,22 +642,22 @@
                         (list (car r) (cadr r) (symbol->fsmlos (caddr r))))
                       (cfg-get-rules G)))
            (unit-rules (filter (λ (r)
-                                 (and (= (length (third r)) 1)
-                                      (member (first (third r)) nts)))
+                                 (and (= (length (caddr r)) 1)
+                                      (member (car (caddr r)) nts)))
                                trls))
            (new-rules (map (λ (r)
-                             (list (first r) ARROW (los->symbol (third r))))
+                             (list (car r) ARROW (los->symbol (caddr r))))
                            (remove-silly-rules
                             (rm-unit-rules trls nts)
                             start
                             sigma)))
-           (new-nts (map first new-rules))
+           (new-nts (map car new-rules))
            ;(d (display (format "trls: \n ~s \n\n" trls)))
            )
-      (make-cfg (remove-duplicates new-nts)
-                sigma
-                new-rules
-                start)
+      (make-unchecked-cfg (remove-duplicates new-nts)
+                          sigma
+                          new-rules
+                          start)
       ;(display (format "ORIG rules: \n ~s \n \n RES new-rules: ~s \n" trls new-rules))
       ;new-rules
       ))
@@ -666,30 +666,30 @@
   (unit-grammar
    (del-grammar (bin-grammar (term-grammar (start-grammar G))))))
 
-(define G (make-cfg '(X Y Z A)
-                    '(a b c e)
-                    (list '(X -> ε)
-                          '(Y -> XXZ)
-                          '(Y -> XX)
-                          '(Z -> abc)
-                          '(A -> e))
-                    'Y))
+(define G (make-unchecked-cfg '(X Y Z A)
+                              '(a b c e)
+                              (list '(X -> ε)
+                                    '(Y -> XXZ)
+                                    '(Y -> XX)
+                                    '(Z -> abc)
+                                    '(A -> e))
+                              'Y))
 
-(define BPG (make-cfg '(S)
-                      '(o c)
-                      `((S ,ARROW ,EMP)
-                        (S ,ARROW SS)
-                        (S ,ARROW oSc))
-                      'S))
-(define numb>numa (make-cfg '(S A)
-                            '(a b)
-                            `((S ,ARROW b)
-                              (S ,ARROW AbA)
-                              (A ,ARROW AaAbA)
-                              (A ,ARROW AbAaA)
-                              (A ,ARROW ,EMP)
-                              (A ,ARROW bA))
-                            'S))
+(define BPG (make-unchecked-cfg '(S)
+                                '(o c)
+                                `((S ,ARROW ,EMP)
+                                  (S ,ARROW SS)
+                                  (S ,ARROW oSc))
+                                'S))
+(define numb>numa (make-unchecked-cfg '(S A)
+                                      '(a b)
+                                      `((S ,ARROW b)
+                                        (S ,ARROW AbA)
+                                        (A ,ARROW AaAbA)
+                                        (A ,ARROW AbAaA)
+                                        (A ,ARROW ,EMP)
+                                        (A ,ARROW bA))
+                                      'S))
 
 
 

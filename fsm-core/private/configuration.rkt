@@ -7,8 +7,6 @@
 
 #lang racket/base
 
-(require racket/bool)
-
 (provide wi-config
          state-config
          mk-config
@@ -31,7 +29,7 @@
 (define (mk-config a-wi a-state) (list a-wi a-state))
   
 ; config (listof config) --> boolean
-(define (member-config? c l) (not (false? (member c l))))
+(define (member-config? c l) (member c l))
   
 ; path --> boolean
 (define empty-path? null?)

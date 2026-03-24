@@ -126,7 +126,8 @@
 
 
 ;; (listof (list state (word -> boolean))) (listof symbol) (listof symbol) -> Boolean
-;; Purpose: Determine if the given invariant holds 
+;; Purpose: Determine if the given invariant holds
+;; You can precompute this so you don't have to do (second (first ... -Andres
 (define (invariant-holds? a-loi a-word a-stack)
   (or (empty? a-loi)   
       ((inv-pair-inv (first a-loi)) a-word a-stack)))
