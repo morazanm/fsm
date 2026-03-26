@@ -22,12 +22,20 @@
         [(union-regexp? regexp)
          (gen:choice (translate-regexp (union-regexp-r1 regexp))
                      (translate-regexp (union-regexp-r2 regexp)))]
-        [(kleenestar-regexp? regexp)
+         [(kleenestar-regexp? regexp)
          (gen:bind (gen:integer-in 0 MAX-KLEENE-LENGTH)
                    (λ (x) (gen:list (translate-regexp (kleenestar-regexp-r1 regexp))
                                     #:max-length x)))]
         [(empty-regexp? regexp)
          (gen:const '())]))
+
+
+
+#;[(kleenestar-regexp? regexp)
+         (gen:sized
+          (λ (size)
+            (gen:list (translate-regexp (kleenestar-regexp-r1 regexp))
+                      #:max-length size)))]
 
 ;; state regexp invariant natnum -> void throw error
 ;; Purpose: To test if a word generated from the given regexp holds for the invariant of the state
@@ -42,11 +50,21 @@
 
 ;; machine (listof (state invariant)) natnum -> void throw error 
 ;; Purpose: To quickcheck the invariants of the states of the given machine
-(define (quickcheck-invs-fsa machine los&inv tests)
-  (define los&regexp (get-all-regexp machine))
+(define (quickcheck-invs-fsa machine los&inv tests dead-state-removal?)
+  (define los&regexp (get-all-regexp machine dead-state-removal?))
   (define los&inv-only-states-that-reach-finals
     (filter (λ (s&inv) (hash-has-key? los&regexp (car s&inv))) los&inv))
   (for ([inv (in-list
                  los&inv-only-states-that-reach-finals)])
     (testing-function (car inv) (hash-ref los&regexp (car inv)) (cadr inv) tests)))
 
+
+(define (INVS=T ci)
+  #true)
+(define ba*Uab* (make-unchecked-ndfa '(S A B)
+                          '(a b)
+                          'S
+                          '(A B)
+                          '((S b B) (S a A)
+                            (A b A)
+                            (B a B))))

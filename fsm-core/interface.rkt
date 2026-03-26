@@ -165,11 +165,6 @@
         [else (error "Unknown grammar type given to grammar-viz.")]))
 
 
-
-
-
-
-
 ; sm word [natnum] --> image
 (define (sm-cmpgraph M w #:palette [p 'default] #:cutoff [c 100] . headpos)
   (let ((t1 (sm-type M)))
