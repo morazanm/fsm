@@ -4,8 +4,8 @@
 ;; working on optimizations
 
 ;(provide sm-test-invs-pda)
-(provide sm-test-invs-pda find-paths #;sm-all-possible-words)
-
+;(provide sm-test-invs-pda find-paths #;sm-all-possible-words)
+(provide (all-defined-out))
 (require racket/list
          racket/set
          data/queue
@@ -42,7 +42,7 @@
 ;                                                                                                     
 
 ;; a PATH is a structure: (make-PATH (listof rule) (listof symbol)
-(define-struct PATH (lor stack word path-length))
+(define-struct PATH (lor stack word path-length)#:transparent)
 
 ;; AUXILARY FUNCTIONS FOR PDA RULES
 ;;     pda rule: ((Source read pop) (Destination push))
@@ -286,6 +286,7 @@
   (define paths-that-end-in-finals (map (λ (x) (make-PATH (reverse (PATH-lor x)) (PATH-stack x) (PATH-word x) (PATH-path-length x)))
                                         (filter (λ (x) (member (get-destination-state (first (PATH-lor x))) (sm-finals a-pda)))
                                                 (find-paths a-pda #:max-length max-length))))
+
   ;; PATH -> Boolean
   ;; Purpose: To determine if the given path leads to an accept 
   (define (leads-to-accepting? a-path)
@@ -345,7 +346,7 @@
          ;; Combine these into a for loop to only traverse the list once -Andres
          (map get-sub-paths
               (filter leads-to-accepting? paths-that-end-in-finals)))
-  
+  ;(display new-mutable-set)
   (set->list new-mutable-set))
 
 
@@ -371,7 +372,7 @@
 
 ;; (listof pda-rule) -> word
 ;; Purpose: To return a word that is made from the given path
-#;(define (word-of-path a-path)
+(define (word-of-path a-path)
   ;; Combine these into a for loop to only traverse the list once -Andres
   (filter (λ (x) (not (eq? 'ε x)))
           (append-map (λ (x) (list (get-elem-read x))) (PATH-lor a-path))))
@@ -502,12 +503,3 @@
                                  ((second start-pair) '() '()))
                              '()
                              (list (list '() '() (sm-start a-machine)))))))
-
-
-
-
-
-
-
-
-
