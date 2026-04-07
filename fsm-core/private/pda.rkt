@@ -6,6 +6,7 @@
 (require "word.rkt"
          "constants.rkt"
          "cfg-struct.rkt"
+         "../../visualizations/viz-lib/unsafe-skew-binomial-heap.rkt"
          "misc.rkt"
          racket/list
          racket/set
@@ -40,7 +41,7 @@
   
 ; A pda-rule is (list (state symbol symbol*) (state symbol*))
 
-(struct pda-rule (from-state read-symb pop to-state push push-len pop-len))
+(struct pda-rule (from-state read-symb pop to-state push push-len pop-len) #:transparent)
 (define pdarule-fromstate caar)
   
 (define pdarule-readsymb cadar)
@@ -105,9 +106,17 @@
   (cond [(< (length S) n) (error "Pop-n of small stack error")]
         [else (list-tail S n)]))
 
-(struct stack (elems len))
+(struct pda-stack (elems len) #:transparent)
 ;;; end stack
-  
+#|
+#(struct:pda-config s 0 #(struct:stack () 0))
+#(struct:pda-config S 0 #(struct:stack () 0))
+#(struct:pda-config M 0 #(struct:stack () 0))
+#(struct:pda-config M 1 #(struct:stack (a) 1))
+#(struct:pda-config F 0 #(struct:stack () 0))
+#(struct:pda-config F 1 #(struct:stack (a) 1))
+#(struct:pda-config S 1 #(struct:stack (a) 1))
+|#
   
 ; (listof pdaconfig) (listof pdapaths) --> (listof pdaconfigs)
 ; Purpose: returns the list of all generated pdaconfigurations
@@ -123,44 +132,48 @@
   
 ; make-unchecked-ndpda: (listof states) alphabet alphabet state (listof states) (listof pdarules) --> ndpda
 (define (make-unchecked-ndpda K sigma gamma start finals pdarules)
-  ; (listof pdaconfigs) word --> (listof pdaconfigs)
-  #;(define (get-pdaconfig-accepts new-configs w)
-      (filter (lambda (c) (and (member (pdaconfig-state c) finals)
-                               (empty-stack? (pdaconfig-stack c))
-                               (= (length w) (pdaconfig-wi c))))    
-              new-configs))
-
-  #;(define (generated-configs visited tovisit) (append visited (map first-config-pdapath tovisit)))
-  #;(define (filter-pdaconfigs new-configs gen-configs)
-      (filter (lambda (c) (not (member c gen-configs))) new-configs))
   ; rule --> (listof symbol)
   (define (convert-pop r)
     (if (eq? (pda-rule-pop r) EMP)
         '()
         (pda-rule-pop r)))
     
-  
-    
   ; word (listof pdaconfig) (listof pdapaths) --> pdapath or 'reject
   ; Purpose: BFS search for accepting pdapath
   (define (pda-show-transitions w)
     (define visited-set (mutable-set))
-    (define word-len (length w))
     (define tovisit (make-queue))
     (define finals-set (list->seteq finals))
-    (define rule-structs
-      (for/list ([pdarule (in-list pdarules)])
-        (pda-rule (caar pdarule)
-                  (cadar pdarule)
-                  (caddar pdarule)
-                  (caadr pdarule)
-                  (cadadr pdarule)
-                  (if (eq? (cadadr pdarule) EMP)
-                      0
-                      (length (cadadr pdarule)))
-                  (if (eq? (caddar pdarule) EMP)
-                      0
-                      (length (caddar pdarule))))))
+    (define word-vec (list->vector w))
+
+    (define (comparator config1 config2)
+      (if (= (pda-stack-len (pda-config-stack (car config1)))
+             (pda-stack-len (pda-config-stack (car config2))))
+          (> (pda-config-ci-len (car config1))
+             (pda-config-ci-len (car config2)))
+          (< (pda-stack-len (pda-config-stack (car config1)))
+             (pda-stack-len (pda-config-stack (car config2))))))
+    
+    (define rules-hash
+      (for/hasheq ([state (in-list K)])
+        (values state
+                (for/list ([pdarule (in-list pdarules)]
+                           #:when (eq? state (caar pdarule)))
+                  (pda-rule (caar pdarule)
+                            (cadar pdarule)
+                            (if (eq? (caddar pdarule) EMP)
+                                '()
+                                (caddar pdarule))
+                            (caadr pdarule)
+                            (if (eq? (cadadr pdarule) EMP)
+                                '()
+                                (cadadr pdarule))
+                            (if (eq? (cadadr pdarule) EMP)
+                                0
+                                (length (cadadr pdarule)))
+                            (if (eq? (caddar pdarule) EMP)
+                                0
+                                (length (caddar pdarule))))))))
     
     (define (mk-pdatransition r c)
       (pda-config (pda-rule-to-state r)
@@ -170,148 +183,149 @@
                   (if (eq? (pda-rule-push r) EMP)
                       (if (eq? (pda-rule-pop r) EMP)
                           (pda-config-stack c)
-                          (stack (drop (stack-elems (pda-config-stack c)) (pda-rule-pop-len r))
-                                 (- (stack-len (pda-config-stack c))
-                                    (pda-rule-pop-len r))))
+                          (pda-stack (drop (pda-stack-elems (pda-config-stack c)) (pda-rule-pop-len r))
+                                     (- (pda-stack-len (pda-config-stack c))
+                                        (pda-rule-pop-len r))))
                       (if (eq? (pda-rule-pop r) EMP)
-                          (stack (append (pda-rule-push r) (stack-elems (pda-config-stack c)))
-                                 (+ (stack-len (pda-config-stack c))
-                                    (pda-rule-push-len r)))
-                          (stack (append (pda-rule-push r) (drop (stack-elems (pda-config-stack c)) (pda-rule-pop-len r)))
-                                 (+ (stack-len (pda-config-stack c))
-                                    (- (pda-rule-push-len r)
-                                       (pda-rule-pop-len r))))))))
+                          (pda-stack (append (pda-rule-push r) (pda-stack-elems (pda-config-stack c)))
+                                     (+ (pda-stack-len (pda-config-stack c))
+                                        (pda-rule-push-len r)))
+                          (pda-stack (append (pda-rule-push r) (drop (pda-stack-elems (pda-config-stack c)) (pda-rule-pop-len r)))
+                                     (+ (pda-stack-len (pda-config-stack c))
+                                        (- (pda-rule-push-len r)
+                                           (pda-rule-pop-len r))))))))
     
-    (define (loop)
-      (cond [(queue-empty? tovisit) 'reject]
+    (define (loop tovisit)
+      (cond [(root-empty? tovisit) 'reject]
             [else
-             (define first-path (dequeue! tovisit))
+             (define first-path (find-min/max tovisit))
              (define config (car first-path))
              (define new-configs
-               (for/list ([rule (in-list rule-structs)]
-                          #:when (and (eq? (pda-config-state config) (pda-rule-from-state rule))
-                                      (or (eq? (if (= (pda-config-ci-len config) word-len)
-                                                   '()
-                                                   (list-ref w (pda-config-ci-len config)))
-                                               (pda-rule-read-symb rule))
-                                          (eq? EMP (pda-rule-read-symb rule)))
-                                      (or (eq? (pda-rule-pop rule) EMP)
-                                          (and (>= (stack-len (pda-config-stack config)) (pda-rule-pop-len rule))
-                                               (equal? (convert-pop rule) 
-                                                       (take (stack-elems (pda-config-stack config))
-                                                             (pda-rule-pop-len rule))))))
+               (for/list ([rule (in-list (hash-ref rules-hash (pda-config-state config)))]
+                          #:when (and 
+                                  (or (eq? EMP (pda-rule-read-symb rule))
+                                      (and (< (pda-config-ci-len config) (vector-length word-vec))
+                                           (eq? (vector-ref word-vec (pda-config-ci-len config))
+                                                (pda-rule-read-symb rule))))
+                                  (and (>= (pda-stack-len (pda-config-stack config)) (pda-rule-pop-len rule))
+                                       (equal? (pda-rule-pop rule)
+                                               (take (pda-stack-elems (pda-config-stack config))
+                                                     (pda-rule-pop-len rule)))))
                           #:do [(define new-config (mk-pdatransition rule config))]
-                          #:when (and
-                                  (not (set-member? visited-set new-config))
-                                  (<= (pda-config-ci-len new-config) word-len)))
+                          #:when (not (set-member? visited-set new-config)))
                  (set-add! visited-set new-config)
                  new-config))
              (define accepts
                (filter (lambda (c) (and (set-member? finals-set (pda-config-state c))
-                                        (= 0 (stack-len (pda-config-stack c)))
-                                        (= word-len (pda-config-ci-len c))))    
+                                        (= 0 (pda-stack-len (pda-config-stack c)))
+                                        (= (vector-length word-vec) (pda-config-ci-len c))))    
                        (cons config new-configs)))
              (cond [(not (null? accepts))
                     (reverse (cons (car accepts) first-path))]
                    [else
-                    (for ([new-config (in-list new-configs)])
-                      (enqueue! tovisit (cons new-config first-path)))
-                    (loop)])]))
-    (enqueue! tovisit (list (pda-config start 0 (stack '() 0))))
-    (set-add! visited-set (pda-config start 0 (stack '() 0)))
-    (loop))
+                    (loop
+                     (foldr (lambda (val accum)
+                              (heap-insert (cons val first-path) accum comparator))
+                            (delete-min/max tovisit comparator)
+                            new-configs))])]))
+    (set-add! visited-set (pda-config start 0 (pda-stack '() 0)))
+    (loop (heap comparator (list (pda-config start 0 (pda-stack '() 0))))))
 
 
   (define (pda-apply w)
     (define visited-set (mutable-set))
-    (define word-len (length w))
-    (define tovisit (make-queue))
     (define finals-set (list->seteq finals))
-    (define rule-structs
-      (for/list ([pdarule (in-list pdarules)])
-        (pda-rule (caar pdarule)
-                  (cadar pdarule)
-                  (caddar pdarule)
-                  (caadr pdarule)
-                  (cadadr pdarule)
-                  (if (eq? (cadadr pdarule) EMP)
-                      0
-                      (length (cadadr pdarule)))
-                  (if (eq? (caddar pdarule) EMP)
-                      0
-                      (length (caddar pdarule))))))
+    (define word-vec (list->vector w))
+
+    (define (comparator config1 config2)
+      (if (= (pda-stack-len (pda-config-stack config1))
+             (pda-stack-len (pda-config-stack config2)))
+          (> (pda-config-ci-len config1)
+             (pda-config-ci-len config2))
+          (< (pda-stack-len (pda-config-stack config1))
+             (pda-stack-len (pda-config-stack config2)))))
+    
+    (define rules-hash
+      (for/hasheq ([state (in-list K)])
+        (values state
+                (for/list ([pdarule (in-list pdarules)]
+                           #:when (eq? state (caar pdarule)))
+                  (pda-rule (caar pdarule)
+                            (cadar pdarule)
+                            (if (eq? (caddar pdarule) EMP)
+                                '()
+                                (caddar pdarule))
+                            (caadr pdarule)
+                            (if (eq? (cadadr pdarule) EMP)
+                                '()
+                                (cadadr pdarule))
+                            (if (eq? (cadadr pdarule) EMP)
+                                0
+                                (length (cadadr pdarule)))
+                            (if (eq? (caddar pdarule) EMP)
+                                0
+                                (length (caddar pdarule))))))))
     
     (define (mk-pdatransition r c)
       (pda-config (pda-rule-to-state r)
                   (if (eq? (pda-rule-read-symb r) EMP)
                       (pda-config-ci-len c)
                       (+ (pda-config-ci-len c) 1))
-                  (if (eq? (pda-rule-push r) EMP)
-                      (if (eq? (pda-rule-pop r) EMP)
-                          (pda-config-stack c)
-                          (stack (drop (stack-elems (pda-config-stack c)) (pda-rule-pop-len r))
-                                 (- (stack-len (pda-config-stack c))
-                                    (pda-rule-pop-len r))))
-                      (if (eq? (pda-rule-pop r) EMP)
-                          (stack (append (pda-rule-push r) (stack-elems (pda-config-stack c)))
-                                 (+ (stack-len (pda-config-stack c))
-                                    (pda-rule-push-len r)))
-                          (stack (append (pda-rule-push r) (drop (stack-elems (pda-config-stack c)) (pda-rule-pop-len r)))
-                                 (+ (stack-len (pda-config-stack c))
-                                    (- (pda-rule-push-len r)
-                                       (pda-rule-pop-len r))))))))
+                  (pda-stack (append (pda-rule-push r) (drop (pda-stack-elems (pda-config-stack c)) (pda-rule-pop-len r)))
+                             (+ (pda-stack-len (pda-config-stack c))
+                                (- (pda-rule-push-len r)
+                                   (pda-rule-pop-len r))))))
     
-    (define (loop)
-      (cond [(queue-empty? tovisit) 'reject]
+    (define (loop tovisit)
+      (cond [(root-empty? tovisit) 'reject]
             [else
-             (define config (dequeue! tovisit))
+             (define config (find-min/max tovisit))
              (define new-configs
-               (for/list ([rule (in-list rule-structs)]
-                          #:when (and (eq? (pda-config-state config) (pda-rule-from-state rule))
-                                      (or (eq? (if (= (pda-config-ci-len config) word-len)
-                                                   '()
-                                                   (list-ref w (pda-config-ci-len config)))
-                                               (pda-rule-read-symb rule))
-                                          (eq? EMP (pda-rule-read-symb rule)))
-                                      (or (eq? (pda-rule-pop rule) EMP)
-                                          (and (>= (stack-len (pda-config-stack config)) (pda-rule-pop-len rule))
-                                               (equal? (convert-pop rule) 
-                                                       (take (stack-elems (pda-config-stack config))
-                                                             (pda-rule-pop-len rule))))))
+               (for/list ([rule (in-list (hash-ref rules-hash (pda-config-state config)))]
+                          #:when (and 
+                                  (or (eq? EMP (pda-rule-read-symb rule))
+                                      (and (< (pda-config-ci-len config) (vector-length word-vec))
+                                           (eq? (vector-ref word-vec (pda-config-ci-len config))
+                                                (pda-rule-read-symb rule))))
+                                  (and (>= (pda-stack-len (pda-config-stack config)) (pda-rule-pop-len rule))
+                                       (equal? (pda-rule-pop rule)
+                                               (take (pda-stack-elems (pda-config-stack config))
+                                                     (pda-rule-pop-len rule)))))
                           #:do [(define new-config (mk-pdatransition rule config))]
-                          #:when (and
-                                  (not (set-member? visited-set new-config))
-                                  (<= (pda-config-ci-len new-config) word-len)))
+                          #:when (not (set-member? visited-set new-config)))
                  (set-add! visited-set new-config)
                  new-config))
              (define accepts
                (filter (lambda (c) (and (set-member? finals-set (pda-config-state c))
-                                        (= 0 (stack-len (pda-config-stack c)))
-                                        (= word-len (pda-config-ci-len c))))    
-                       (cons config new-configs)))
+                                        (= 0 (pda-stack-len (pda-config-stack c)))
+                                        (= (vector-length word-vec) (pda-config-ci-len c))))    
+                       new-configs))
              (cond [(not (null? accepts))
                     'accept]
                    [else
-                    (for ([new-config (in-list new-configs)])
-                      (enqueue! tovisit new-config))
-                    (loop)])]))
-    (enqueue! tovisit (pda-config start 0 (stack '() 0)))
-    (set-add! visited-set (pda-config start 0 (stack '() 0)))
-    (loop))
+                    (loop (foldr (lambda (val accum)
+                                   (heap-insert val accum comparator))
+                                 (delete-min/max tovisit comparator)
+                                 new-configs))])]))
+    (define starting-config (pda-config start 0 (pda-stack '() 0)))
+    (cond [(and (set-member? finals-set (pda-config-state starting-config))
+                (= 0 (pda-stack-len (pda-config-stack starting-config)))
+                (= (vector-length word-vec) (pda-config-ci-len starting-config)))
+           'accept]
+          [else (set-add! visited-set starting-config)
+                (loop (heap comparator starting-config))]))
     
   (lambda (w . L)
     (cond [(eq? w 'whatami) 'pda]
           [(null? L)
-           (pda-apply w)
-           #;(let ((res (pda-show-transitions w)))
-             (if (list? res) 'accept 'reject))]
+           (pda-apply w)]
           [(eq? (car L) 'transitions)
            (let ((res (pda-show-transitions w)))
              (if (eq? res 'reject)
                  'reject
                  (append (map (lambda (config) (list (pda-config-state config)
                                                      (list-tail w (pda-config-ci-len config))
-                                                     (stack-elems (pda-config-stack config))))
+                                                     (pda-stack-elems (pda-config-stack config))))
                               res)
                          (list 'accept))
                  ))]
@@ -743,4 +757,20 @@
         )
     )
   )
+
+(define ax3=b-pda
+  (make-unchecked-ndpda '(S F)
+                        '(a b)
+                        '(R a b)
+                        'S 
+                        '(F)
+                        `(((S ,EMP ,EMP) (F (R)))
+                          ((F a (a)) (F ,EMP))
+                          ((F b (b)) (F ,EMP))
+                          ((F ,EMP (R)) (F ,EMP))
+                          ((F ,EMP (R)) (F (R b R a R a R a R)))
+                          ((F ,EMP (R)) (F (R a R b R a R a R)))
+                          ((F ,EMP (R)) (F (R a R a R b R a R)))
+                          ((F ,EMP (R)) (F (R a R a R a R b R))))))
+(time (ax3=b-pda '(a b a b a a a b a a a a b a a a a a a b) 'transitions)) 
 ; closes module
