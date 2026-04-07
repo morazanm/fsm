@@ -42,7 +42,7 @@
 ;                                                                                                     
 
 ;; a PATH is a structure: (make-PATH (listof rule) (listof symbol)
-(define-struct PATH (lor stack word path-length)#:transparent)
+(define-struct PATH (lor stack word path-length destination-state)#:transparent)
 
 ;; AUXILARY FUNCTIONS FOR PDA RULES
 ;;     pda rule: ((Source read pop) (Destination push))
@@ -114,7 +114,7 @@
 
 ;; structure to represent an invariant pair
 ;; An inv-pair is a (make-inv-pair state inv)
-(define-struct inv-pair (state inv))
+(define-struct inv-pair (state inv) #:transparent)
 
 (define (list-pair->inv-pair loi)
   (make-inv-pair (first loi) (second loi)))
@@ -127,7 +127,6 @@
 
 ;; (listof (list state (word -> boolean))) (listof symbol) (listof symbol) -> Boolean
 ;; Purpose: Determine if the given invariant holds
-;; You can precompute this so you don't have to do (second (first ... -Andres
 (define (invariant-holds? a-loi a-word a-stack)
   (or (empty? a-loi)   
       ((inv-pair-inv (first a-loi)) a-word a-stack)))
@@ -138,7 +137,7 @@
   (hash-ref rules-ht (get-destination-state a-rule)))
 
 
-
+(define-struct config (state rev-word stack))
 
 ;; PATH (listof pda-rule) -> (listof (listof PATH) (listof (listof state word stack)))
 ;; Purpose: To return a list of paths that comes from the given path and rules
@@ -149,21 +148,19 @@
   (define (new-paths-helper next-rules accum #;new-visited)
     (cond [(empty? next-rules) (list accum visited #;new-visited)]
           [(or (set-member? visited #;new-visited ;<- if we are at same state with same word & stack in visited or the path is at the max length
-                            ;; Why is this a list? This is always the same three length list, make this a structure -Andres
-                            (list (get-destination-state (first next-rules))
-                                  ;; Why are appending to the word here? Work with the word in reverse and cons onto it instead -Andres
-                                  (if (eq? 'ε (get-elem-read (first next-rules)))
-                                      (PATH-word a-path)
-                                      (append (PATH-word a-path) (list (get-elem-read (first next-rules))))) ;<- uses the new path stucture now
-                                  (append (if (eq? 'ε (get-push (first next-rules)))     ;; makes sure that we're not at the 
-                                              '()                                        ;; same state with the same word and
-                                              (get-push (first next-rules)))             ;; stack again (no double doing work),
-                                          (drop (PATH-stack a-path)                      ;; making sure the new word and stack at 
-                                                (PDA-rule-pop-length (first next-rules)) ;; the state has not been visited already
-                                                ))))
+                            (make-config (get-destination-state (first next-rules))
+                                         (if (eq? 'ε (get-elem-read (first next-rules)))
+                                             (PATH-word a-path)
+                                             (cons (get-elem-read (first next-rules)) (PATH-word a-path)))
+                                         (append (if (eq? 'ε (get-push (first next-rules)))     ;;<- makes sure that we're not at the 
+                                                     '()                                        ;; same state with the same word and
+                                                     (get-push (first next-rules)))             ;; stack again (no double doing work),
+                                                 (drop (PATH-stack a-path)                      ;; making sure the new word and stack at 
+                                                       (PDA-rule-pop-length (first next-rules)) ;; the state has not been visited already
+                                                       ))))
                (< max-length                                                                         
                   (+ 1 (PATH-path-length a-path))))  ;<- caps # of paths  
-           (new-paths-helper (rest next-rules) accum #;visited #;new-visited)]
+           (new-paths-helper (rest next-rules) accum)]
           [else (let* [(new-path-rules (cons (first next-rules)
                                              (PATH-lor a-path)))       ;<- the paths are in reverse  
                        (new-path-stack (append (if (eq? 'ε (get-push (first next-rules)))
@@ -172,46 +169,28 @@
                                                (drop (PATH-stack a-path)                      
                                                      (PDA-rule-pop-length (first next-rules))
                                                      )))
-                       ;; Why are appending to the word here? Work with the word in reverse and cons onto it instead -Andres
                        (new-path-word (if (eq? 'ε (get-elem-read (first next-rules)))
                                           (PATH-word a-path)
-                                          (append (PATH-word a-path)
-                                                  (list (get-elem-read (first next-rules))))))]
+                                          (cons (get-elem-read (first next-rules)) (PATH-word a-path))))] ;<- word is reversed
                   
-                  (begin (set-add! visited #;new-visited
-                                   ;; Why is this a list? This is always the same three length list, make this a structure -Andres
-                                   (list (get-destination-state (first next-rules))
-                                         new-path-word
-                                         new-path-stack))
+                  (begin (set-add! visited
+                                   (make-config (get-destination-state (first next-rules))
+                                                new-path-word ;<- the word is in reverse
+                                                new-path-stack))
                          (new-paths-helper (rest next-rules)
                                            (cons (make-PATH new-path-rules
                                                             new-path-stack
                                                             new-path-word
-                                                            (+ 1 (PATH-path-length a-path)))
+                                                            (+ 1 (PATH-path-length a-path))
+                                                            (get-destination-state (first next-rules)))
                                                  accum
                                                  )))
-                  #;(new-paths-helper (rest next-rules)
-                                      (cons (make-PATH new-path-rules
-                                                       new-path-stack
-                                                       new-path-word)
-                                            accum)
-                                      (begin
-                                        (set-add! visited #;new-visited
-                                                  (list (get-destination-state (first next-rules))
-                                                        new-path-word
-                                                        new-path-stack))
-                                        visited #;new-visited)))]
+                  )]
           ))
   (new-paths-helper rules '()))
 
 
 
-
-
-;; have to make the paths reverse so i dont have to append everytime, work with the path in reverse
-;; instead of looking at the last rule in the path, get the first, then before returning, unreverse the path
-
-;; i could just have find-paths returnthe reversed paths since it directly feeds into, get-accepting paths
 
 ;; pda -> (listof PATH)
 ;; Purpose: To return all the paths in the given pda 
@@ -227,26 +206,34 @@
   ;;                        visited = set of a state, word, and stack that has
   ;;                                  been visited
   (define (find-paths-helper paths visited)
-    (if (queue-empty? queue) paths
+    (if (queue-empty? queue) (map (λ (x) (make-PATH (PATH-lor x)
+                                                    (PATH-stack x)
+                                                    (reverse (PATH-word x))  ;<- have to unreverse the word
+                                                    (PATH-path-length x)
+                                                    (PATH-destination-state x))) paths)
         (let* [(qfirst (dequeue! queue))
                ;; hash table of the state (<- the key) and the rules that COME OUT of that state (the source state is that state) ;; need to change when reverse paths
-               (stack-applicable-rules (filter
-                                        (λ (rule)
-                                          ;; Why are we checking symbol equality with equal? and not eq? -Andres
-                                          (and (or (equal? (get-pop rule) 'ε)
-                                                   (and (<= (PDA-rule-pop-length rule) (length (PATH-stack qfirst)))
-                                                        (equal? (take (PATH-stack qfirst)
-                                                                      (PDA-rule-pop-length rule));; <- this part makes sure that we the rules are able to be applied bc 
-                                                                (get-pop rule))))                ;;     can't pop elems off stack if aren't there
-                                               #;(< (count (λ (rl) (equal? rule rl))
-                                                           (PATH-lor qfirst))
-                                                    MAX-NUM-REPETITIONS)))
-                                        rules))
-               ;; Aren't the states here symbols? Why is this hash table not using eq? for equality? -Andres
-               ;; Stack-applicable-rules can be inlined into a for loop this filter, that way the list
-               ;; is only traversed once -Andres
-               (rule-ht (for/hash ([state (sm-states a-machine)])
-                          (values state (filter (λ (rule) (eq? state (get-source-state rule))) stack-applicable-rules))))
+               #;(stack-applicable-rules (filter
+                                          (λ (rule)
+                                            (and (or (eq? (get-pop rule) 'ε)
+                                                     (and (<= (PDA-rule-pop-length rule) (length (PATH-stack qfirst)))
+                                                          (equal? (take (PATH-stack qfirst)
+                                                                        (PDA-rule-pop-length rule));; <- this part makes sure that we the rules are able to be applied bc 
+                                                                  (get-pop rule))))                ;;     can't pop elems off stack if aren't there
+                                                 #;(< (count (λ (rl) (equal? rule rl))
+                                                             (PATH-lor qfirst))
+                                                      MAX-NUM-REPETITIONS)))
+                                          rules))
+              
+               (rule-ht (for/hasheq ([state (sm-states a-machine)])
+                          (values state (for/list ([i rules]
+                                                   #:when (and (or (eq? (get-pop i) 'ε)
+                                                                   (and (<= (PDA-rule-pop-length i) (length (PATH-stack qfirst)))
+                                                                        (equal? (take (PATH-stack qfirst)
+                                                                                      (PDA-rule-pop-length i));; <- this part makes sure that we the rules are able to be applied bc 
+                                                                                (get-pop i))))
+                                                               (eq? state (get-source-state i))))
+                                          i))))
                (next-rules-first-path (get-next-rules (first (PATH-lor qfirst))
                                                       rule-ht))
                (paths-with-qfirst (cons qfirst paths))] ;; <-- the paths with the first of the queue included (the new accumulated paths)
@@ -259,33 +246,29 @@
               ))))
   
   (begin
-    ;; Combine these two maps, we should only be traversing this list once -Andres
-    (map (λ (x) (enqueue! queue x))
-              (map (λ (y) (make-PATH y ;<- current lor of the path
-                                     (if (eq? 'ε (get-push (first y)))  ;;  ⚙️making/adding the first paths to the queue
-                                         '()
-                                         (get-push (first y)))  ;; <- current stack of the path
-                                     (if (eq? 'ε (get-elem-read (first y)))
-                                         '()                                 ;; <- the current word of the path 
-                                         (list (get-elem-read (first y))))
-                                     1))  ;<- current length of the path
-                   ;; Combine these into the for loop too -Andres
-                   (map (λ (x) (list x))
-                        (filter
-                         (λ (rule) (eq? (get-source-state rule) (sm-start a-machine))) ;;  <- ⚙️getting the rules that come out of the starting state
-                         rules))))
-         (find-paths-helper '() (mutable-set)) ))
+    (for/list ([i rules]
+               #:when (eq? (get-source-state i) (sm-start a-machine)))
+      (enqueue! queue (make-PATH (list i) ;<- current lor of the path
+                                 (if (eq? 'ε (get-push i))  ;;  ⚙️making/adding the first paths to the queue
+                                     '()
+                                     (get-push i))  ;; <- current stack of the path
+                                 (if (eq? 'ε (get-elem-read i))
+                                     '()                                 ;; <- the current word of the path 
+                                     (list (get-elem-read i)))
+                                 1    ;<- current length of the path
+                                 (get-destination-state i)))) 
+    
+    (find-paths-helper '() (mutable-set)) ))
 
 
 
 ;; pda -> (listof PATH)
 ;; Purpose: Returns all the paths that lead to an accepting word of the given machine
-(define (get-accepting-paths a-pda #:max-length [max-length 12])
-  ;; Combine the map and filter into a single for loop, only traverse the list once -Andres
-  ;; Don't use member here, use a hash set to determine membership -Andres
-  (define paths-that-end-in-finals (map (λ (x) (make-PATH (reverse (PATH-lor x)) (PATH-stack x) (PATH-word x) (PATH-path-length x)))
-                                        (filter (λ (x) (member (get-destination-state (first (PATH-lor x))) (sm-finals a-pda)))
-                                                (find-paths a-pda #:max-length max-length))))
+(define (get-accepting-paths a-pda max-length)
+  (define finals-set (list->set (sm-finals a-pda)))
+  (define paths-that-end-in-finals (for/list ([i (find-paths a-pda #:max-length max-length)]
+                                              #:when (set-member? finals-set (get-destination-state (first (PATH-lor i)))))
+                                     (make-PATH (reverse (PATH-lor i)) (PATH-stack i) (PATH-word i) (PATH-path-length i) (PATH-destination-state i))))
 
   ;; PATH -> Boolean
   ;; Purpose: To determine if the given path leads to an accept 
@@ -313,39 +296,41 @@
                                       (drop cur-stack
                                             (PDA-rule-pop-length (first rules-left)))))))
       (get-stack-helper path-lor '()))
-
     (define (get-word a-path)
-      ;; This should be a for loop that only traverses the list once -Andres
-      (filter (λ (x) (not (eq? 'ε x)))
-              (append-map (λ (x) (list (get-elem-read x))) a-path)))
-
+      (for/fold ([accum '()])
+                ([rule a-path]
+                 #:when (not (eq? 'ε (get-elem-read rule))))
+        (append accum (list (get-elem-read rule)))))
     
     ;; number (listof PATH) -> (setof PATH)
     ;; Purpose: To return all the sub paths of the given
     ;;          path, including the given path
     (define (get-sub-paths-helper length-cur-path)
-      ;; Get rid of the length call here, use the structure field -Andres
-      (cond [(= length-cur-path (length (PATH-lor a-path)))
-             (set-add! a-m-set (make-PATH (take (PATH-lor a-path) length-cur-path)
-                                          (get-stack (take (PATH-lor a-path) length-cur-path))
-                                          (get-word (take (PATH-lor a-path) length-cur-path))
-                                          length-cur-path))
-             ;(displayln a-m-set)
-             a-m-set]
-            [else
-             (set-add! a-m-set (make-PATH (take (PATH-lor a-path) length-cur-path)
-                                          (get-stack (take (PATH-lor a-path) length-cur-path))
-                                          (get-word (take (PATH-lor a-path) length-cur-path))
-                                          length-cur-path))
-             (get-sub-paths-helper  (+ 1 length-cur-path))]))
-    (get-sub-paths-helper 1 #;a-m-set))
+      (let [(new-lor (take (PATH-lor a-path) length-cur-path))]
+        (cond [(= length-cur-path (PATH-path-length a-path))
+               (set-add! a-m-set (make-PATH new-lor
+                                            (get-stack (take (PATH-lor a-path) length-cur-path))
+                                            (get-word (take (PATH-lor a-path) length-cur-path))
+                                            length-cur-path
+                                            (get-destination-state (last new-lor))
+                                            ))
+               a-m-set]
+              [else
+               (set-add! a-m-set (make-PATH new-lor
+                                            (get-stack (take (PATH-lor a-path) length-cur-path))
+                                            (get-word (take (PATH-lor a-path) length-cur-path))
+                                            length-cur-path
+                                            (get-destination-state (last new-lor))
+                                            ))
+               (get-sub-paths-helper  (+ 1 length-cur-path))])))
+    (get-sub-paths-helper 1))
 
   (define new-mutable-set (mutable-set))
 
   (apply (curry set-union! new-mutable-set)
-         ;; Combine these into a for loop to only traverse the list once -Andres
-         (map get-sub-paths
-              (filter leads-to-accepting? paths-that-end-in-finals)))
+         (for/list ([i paths-that-end-in-finals]
+                    #:when (leads-to-accepting? i))
+           (get-sub-paths i)))
   ;(display new-mutable-set)
   (set->list new-mutable-set))
 
@@ -355,28 +340,28 @@
 
 ;; pda -> pda
 ;; Purpose: Takes in pda and remove states and rules that can't reach a final state 
-(define (remove-states-that-cannot-reach-finals a-pda #:max-length [max-length 12])
-  ;; Don't use member here, use a hash set to determine membership -Andres
-  ;; This filter can be inlined into the maps in the find-paths function -Andres
-  ;; This can also be inlined into the for loop used to create the new-rules and new-states -Andres
-  ;; Get rid of the keyword argument and make it a regular argument,
-  ;; it can lead to optimization blockage on weird occasions -Andres
-  (define paths-that-end-in-finals (filter (λ (x) (member (get-destination-state (first (PATH-lor x))) (sm-finals a-pda)))
-                                           (find-paths a-pda #:max-length max-length)))
-  ;; For both of the new-rules and new-states, I'd mutate a set inside of nested fors instead. You can do both
-  ;; At the same time and only have to traverse the paths once without allocating a ton of extra memory -Andres
-  (define new-rules (remove-duplicates (apply append (map (λ (x) (PATH-lor x)) paths-that-end-in-finals))))
-  (define new-states (remove-duplicates (append-map (λ (x) (list (get-source-state x) (get-destination-state x))) new-rules)))
-  (make-unchecked-ndpda new-states (sm-sigma a-pda) (sm-gamma a-pda) (sm-start a-pda) (sm-finals a-pda) (map PDA-rule->rule new-rules)))
+(define (remove-states-that-cannot-reach-finals a-pda max-length)
+  (define finals-set (list->set (sm-finals a-pda)))
+
+  (define new-rules (mutable-set))
+  (define new-states (mutable-set))
+
+  (for ([path (filter (λ (x) (set-member? finals-set (get-destination-state (first (PATH-lor x))))) ;<- paths that end in finals
+                                           (find-paths a-pda #:max-length max-length))])
+       (for ([rule (PATH-lor path)])
+            (set-add! new-rules rule)
+            (set-add! new-states (get-source-state rule))
+            (set-add! new-states (get-destination-state rule))))
+  (make-unchecked-ndpda (set->list new-states) (sm-sigma a-pda) (sm-gamma a-pda) (sm-start a-pda) (sm-finals a-pda) (map PDA-rule->rule (set->list new-rules))))
 
 
 ;; (listof pda-rule) -> word
 ;; Purpose: To return a word that is made from the given path
 (define (word-of-path a-path)
-  ;; Combine these into a for loop to only traverse the list once -Andres
-  (filter (λ (x) (not (eq? 'ε x)))
-          (append-map (λ (x) (list (get-elem-read x))) (PATH-lor a-path))))
-
+  (for/fold ([accum '()])
+            ([rule (PATH-lor a-path)]
+             #:when (not (eq? 'ε (get-elem-read rule))))
+    (append accum (list (get-elem-read rule)))))
 
 ;; PATH (listof (list state (word -> boolean))) -> Boolean
 ;; Purpose: To determine if a the invariant for a given path holds
@@ -395,67 +380,67 @@
 ;; machine (listof (list state (word -> boolean))) -> (listof (listof state (listof word)))
 ;; Purpose: To return a list of all posible words that can be at each state in a machine 
 #;(define (sm-all-possible-words a-machine #:max-path-length [max-path-length 12])
-  ;; the given machine without the states and rules of states that cannot reach a final state
-  (define new-machine (remove-states-that-cannot-reach-finals a-machine #:max-length max-path-length))
+    ;; the given machine without the states and rules of states that cannot reach a final state
+    (define new-machine (remove-states-that-cannot-reach-finals a-machine #:max-length max-path-length))
  
-  ;; list of the paths that lead to accept of the refactored pda 
-  (define all-paths-new-machine (get-accepting-paths new-machine #:max-length max-path-length))
+    ;; list of the paths that lead to accept of the refactored pda 
+    (define all-paths-new-machine (get-accepting-paths new-machine #:max-length max-path-length))
   
 
-  ;; (listof (listof rule)) (listof (listof symbol)) -> (listof (listof symbol))
-  ;; Purpose:  To return a list of all posible words that can be at each state in a machine 
-  ;; Accumulator Invarient: accum = list of lists of words with the states that the can possibly be at
-  (define (sm-all-possible-words-helper all-paths accum)
-    (if (empty? all-paths)
-        accum
-        (sm-all-possible-words-helper (rest all-paths)
-                                      (cons (list #;(word-of-path (first all-paths)) (PATH-word (first all-paths))           
-                                                  (PATH-stack (first all-paths))
-                                                  (get-destination-state (last (PATH-lor (first all-paths))))) accum))))      ;<-- pda version, now there's also the stack
-  ;; returns list of word path state
+    ;; (listof (listof rule)) (listof (listof symbol)) -> (listof (listof symbol))
+    ;; Purpose:  To return a list of all posible words that can be at each state in a machine 
+    ;; Accumulator Invarient: accum = list of lists of words with the states that the can possibly be at
+    (define (sm-all-possible-words-helper all-paths accum)
+      (if (empty? all-paths)
+          accum
+          (sm-all-possible-words-helper (rest all-paths)
+                                        (cons (list #;(word-of-path (first all-paths)) (PATH-word (first all-paths))           
+                                                    (PATH-stack (first all-paths))
+                                                    (get-destination-state (last (PATH-lor (first all-paths))))) accum))))      ;<-- pda version, now there's also the stack
+    ;; returns list of word path state
   
   
-  ;; (listof symbol) -> (listof (symbol (listof word)))
-  ;; Purpose: To generate a list of lists of a state and an empty list for each given states
-  (define (build-list-of-states-&-empty-low states)
-    ;; (listof symbol) (listof word)-> (listof (symbol '()))
+    ;; (listof symbol) -> (listof (symbol (listof word)))
     ;; Purpose: To generate a list of lists of a state and an empty list for each given states
-    ;; Accumulator Invariant: accum = list containing a list with the state and an empty list of words
-    (define (build-list-of-states-&-empty-low-helper states accum)
-      (if (empty? states) accum
-          (build-list-of-states-&-empty-low-helper (rest states) (cons (list (first states) '()) accum))))  ;; ⚙️this is what builds the main list
-    (build-list-of-states-&-empty-low-helper states '()))                                                   ;;      with the states and empty list of words
+    (define (build-list-of-states-&-empty-low states)
+      ;; (listof symbol) (listof word)-> (listof (symbol '()))
+      ;; Purpose: To generate a list of lists of a state and an empty list for each given states
+      ;; Accumulator Invariant: accum = list containing a list with the state and an empty list of words
+      (define (build-list-of-states-&-empty-low-helper states accum)
+        (if (empty? states) accum
+            (build-list-of-states-&-empty-low-helper (rest states) (cons (list (first states) '()) accum))))  ;; ⚙️this is what builds the main list
+      (build-list-of-states-&-empty-low-helper states '()))                                                   ;;      with the states and empty list of words
           
-  (define states-&-empty-low (build-list-of-states-&-empty-low (sm-states new-machine)))
+    (define states-&-empty-low (build-list-of-states-&-empty-low (sm-states new-machine)))
 
-  ;; (listof (listof word state)) -> (listof (listof state (listof word)))
-  ;; Purpose: To sort the words to be a list of the state and the words that can possibly reach that state
-  (define (sort-words listof-all-words-&-states)
-    ;; (listof (word state)) -> (listof word)
-    ;; Purpose: To make the given (listof (word state)) into a list of words
-    (define (make-low list-of-words-&-states)
-      ;; (listof (word state)) -> (listof word)
-      ;; Purpose: To make the given (listof (word state)) into a list of words
-      ;; Accumulator Invariant: accum = current list of words for the state
-      (define (make-low-helper list-of-words-&-states accum)
-        (if (empty? list-of-words-&-states) accum
-            (make-low-helper (rest list-of-words-&-states) (cons (list (first (first list-of-words-&-states))
-                                                                       (second (first list-of-words-&-states))) accum))))  ;; ⚙️turning the list of words, stack and state into a list of the words
-      (make-low-helper list-of-words-&-states '()))                                                                       ;; the given list is a list of configs that go to a state
     ;; (listof (listof word state)) -> (listof (listof state (listof word)))
     ;; Purpose: To sort the words to be a list of the state and the words that can possibly reach that state
-    ;; Accumulator Invairant: accum = list of states with all the possible words in them 
-    (define (sort-words-helper states-&-empty-low accum)
-      (if (empty? states-&-empty-low) accum
-          (sort-words-helper (rest states-&-empty-low)                                 ;; ⚙️accumulates the list of words and states sorted
-                             (cons (list (first (first states-&-empty-low))
-                                         (make-low (filter (λ (x) (eq? (first (first states-&-empty-low)) (third x)))
-                                                           listof-all-words-&-states))) accum))
-          ))
+    (define (sort-words listof-all-words-&-states)
+      ;; (listof (word state)) -> (listof word)
+      ;; Purpose: To make the given (listof (word state)) into a list of words
+      (define (make-low list-of-words-&-states)
+        ;; (listof (word state)) -> (listof word)
+        ;; Purpose: To make the given (listof (word state)) into a list of words
+        ;; Accumulator Invariant: accum = current list of words for the state
+        (define (make-low-helper list-of-words-&-states accum)
+          (if (empty? list-of-words-&-states) accum
+              (make-low-helper (rest list-of-words-&-states) (cons (list (first (first list-of-words-&-states))
+                                                                         (second (first list-of-words-&-states))) accum))))  ;; ⚙️turning the list of words, stack and state into a list of the words
+        (make-low-helper list-of-words-&-states '()))                                                                       ;; the given list is a list of configs that go to a state
+      ;; (listof (listof word state)) -> (listof (listof state (listof word)))
+      ;; Purpose: To sort the words to be a list of the state and the words that can possibly reach that state
+      ;; Accumulator Invairant: accum = list of states with all the possible words in them 
+      (define (sort-words-helper states-&-empty-low accum)
+        (if (empty? states-&-empty-low) accum
+            (sort-words-helper (rest states-&-empty-low)                                 ;; ⚙️accumulates the list of words and states sorted
+                               (cons (list (first (first states-&-empty-low))
+                                           (make-low (filter (λ (x) (eq? (first (first states-&-empty-low)) (third x)))
+                                                             listof-all-words-&-states))) accum))
+            ))
             
-    (sort-words-helper states-&-empty-low '()))
-  (sort-words (sm-all-possible-words-helper all-paths-new-machine
-                                            (list (list '() '() (sm-start a-machine))))))
+      (sort-words-helper states-&-empty-low '()))
+    (sort-words (sm-all-possible-words-helper all-paths-new-machine
+                                              (list (list '() '() (sm-start a-machine))))))
 
 
 
@@ -466,16 +451,13 @@
 ;; Purpose: To return a list of the invarients that don't hold and the words that cause it not to hold
 (define (sm-test-invs-pda a-machine max-path-length a-loi)
   ;; the given machine without the states and rules of states that cannot reach a final state
-  ;; Remove the keyword argument, make it a regular argument -Andres
-  (define new-machine (remove-states-that-cannot-reach-finals a-machine #:max-length max-path-length))
+  (define new-machine (remove-states-that-cannot-reach-finals a-machine max-path-length))
   ;; list of invariants that are reachable from the starting configuration
-  ;; Inline this into a for loop -Andres
-  (define reachable-inv (filter (λ (x) (member (first x) (sm-states new-machine))) a-loi))
-  ;; Inline this into a for loop with the filter in path-inv-not-hold? below -Andres
-  (define reachable-inv-pair-structs (map list-pair->inv-pair reachable-inv))
+  (define reachable-inv (for/list ([i a-loi]
+                                   #:when (member (first i) (sm-states new-machine)))
+                          i))
   ;; all accepting paths of new-machine
-  ;; Get rid of the keyword argument here, make it a normal argument -Andres
-  (define all-paths-new-machine (get-accepting-paths new-machine #:max-length max-path-length))
+  (define all-paths-new-machine (get-accepting-paths new-machine max-path-length))
   ;; (listof PATH) (listof (word stack state)) -> (listof (word stack state))
   ;; Purpose: To return a list of the invariants and the word that causes them not to hold
   ;; Accumulator Invariant: accum = list of lists of words and stacks that cause the invarient not to hold
@@ -485,16 +467,13 @@
         accum
         (sm-test-invs-helper (rest all-paths)
                              (if (path-inv-not-hold? (first all-paths)
-                                                     (filter
-                                                      ;; Store the start state in the structure, last is an O(n) operation -Andres
-                                                      (λ (x) (eq? (get-destination-state (last (PATH-lor (first all-paths))))
-                                                                  (inv-pair-state x)))
-                                                      reachable-inv-pair-structs))
-                                 ;; Pretty sure this is another instance of the three length list you need to make a structure -Andres
+                                                     (for/list ([i (map list-pair->inv-pair reachable-inv)] ; <- reachable inv pair structures
+                                                                #:when (eq? (PATH-destination-state (first all-paths))
+                                                                            (inv-pair-state i)))
+                                                       i))
                                  (cons (list (PATH-word (first all-paths))
                                              (PATH-stack (first all-paths))
-                                             ;; Store the start state in the path structure, last is an O(n) operation -Andres
-                                             (get-destination-state (last (PATH-lor (first all-paths))))) accum)
+                                             (PATH-destination-state (first all-paths))) accum)
                                  accum))))
           
   (sm-test-invs-helper all-paths-new-machine
