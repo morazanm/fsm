@@ -14,7 +14,7 @@
          racket/list
          )
 
-(define WORD-AMOUNT 1)
+(define WORD-AMOUNT 50)
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;CFEXP;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -32,8 +32,6 @@
 
 (define A (make-cfe [(A (singleton-cfexp "a"))]
                  A))
-
-
 
 (define B (make-cfe [(B (singleton-cfexp "b"))]
                  B))
@@ -299,7 +297,7 @@
                                             ((S a ,EMP) (S (a)))
                                             ((M b (a)) (M ,EMP))
                                             ((M ,EMP ,EMP) (F ,EMP)))))
-
+;;L = {wcw^r | sig = {a b}}
 (define Gina-wcwˆr (make-unchecked-ndpda '(S P Q F)
                           '(a b c)
                           '(a b)
@@ -327,7 +325,7 @@
                                      ((B a (a)) (B ,EMP))
                                      ((B b (b)) (B ,EMP))
                                      ((B ,EMP ,EMP) (C ,EMP)))))
-
+;;L = {a^ib^j | i ≤ j ≤ 2i}
 (define Gina-AiBj (make-unchecked-ndpda '(S A B C)
                          '(a b)
                          '(a)
@@ -344,6 +342,14 @@
                            ((B ,EMP ,EMP) (C ,EMP))
                            )))
 
+(define Gina-Aibj-TBH (make-cfe ([EMP (empty-cfexp)]
+                                 [A (singleton-cfexp "a")]
+                                 [B (singleton-cfexp "b")]
+                                 [S (union-cfexp T (concat-cfexp A T B) (concat-cfexp A T B B))]
+                                 [T (union-cfexp EMP (concat-cfexp A T B) (concat-cfexp A T B B))])
+                                AiBj))
+
+;;L = {a^nb^ma^n | n,m ≥ 0}
 (define Gina-A^nB^mA^n (make-unchecked-ndpda '(S A B)
                               '(a b)
                               '(a)
@@ -357,6 +363,7 @@
                                 ((A a (a)) (B ,EMP))
                                 ((B a (a)) (B ,EMP)))))
 
+;;L = {a^mb^nc^pd^q | m,n,p,q ≥ 0 ∧ m + n = p + q}
 (define Gina-a^mb^nc^pd^q (make-unchecked-ndpda '(S A B C)
                                  '(a b c d)
                                  '(a)
@@ -370,6 +377,7 @@
                                    ((B ,EMP ,EMP) (C ,EMP))
                                    ((C d (a)) (C ,EMP)))))
 
+;;L = {a^mb^nc^p | m,n,p≥0 ∧ (m = n ∨ n = p)}
 (define Gina-a^mb^nc^p (make-unchecked-ndpda '(S A B C D E F)
                               '(a b c)
                               '(a)
@@ -388,6 +396,36 @@
                                 ((E ,EMP ,EMP) (F ,EMP))
                                 ((F c (a)) (F ,EMP)))))
 
+
+(define Gina-a^mb^nc^p-tbh (make-cfe ([L (union-cfexp w1 w3)]
+                                      [w1 (concat-cfexp (kleenestar-cfexp A) w2)]
+                                      [w2 (union-cfexp (concat-cfexp B w2 C) EMPTY)]
+                                      [w3 (concat-cfexp w4 (kleenestar-cfexp C))]
+                                      [w4 (union-cfexp EMPTY (concat-cfexp A w4 B))])
+                                     L))
+
+
+(define marco-anbncndn
+  (make-unchecked-ndpda '(P S H U R)
+                        '(a b c d)
+                        '(z Z)
+                        'P
+                        '(R)
+                        `(
+                          ((P ,EMP ,EMP) (S (Z)))
+                          ((S a ,EMP) (S (z)))
+                          ((S ,EMP ,EMP) (H ,EMP))
+                          ((H b (z)) (H ,EMP))
+                          ((H ,EMP (Z)) (U (Z)))
+                          ((U c ,EMP) (U (z)))
+                          ((U ,EMP ,EMP) (R ,EMP))
+                          ((R ,EMP (Z)) (R ,EMP))
+                          ((R d (z)) (R ,EMP))
+                          )))
+
+(define marco-anbncndn-tbh (make-cfe ([L (union-cfexp (concat-cfexp A L B) EMPTY)]
+                                      [S (union-cfexp (concat-cfexp C S D) EMPTY)])
+                                     (concat-cfexp L S)))
 
 ;;w = a*
 #|
@@ -642,14 +680,14 @@
         (and (= (- (length As) (length As-after-Bs)) 0) 
              (equal? (append As Bs As-after-Bs) ci)))))
 
-
-(define (valid-Gina-a^mb^nc^pd^q-word? ci stack)
+;;word -> boolean
+;;Purpose: Determines if the given word is a valid word in L = a^mb^nc^pd^q 
+(define (valid-Gina-a^mb^nc^pd^q-word? ci)
   (let* [(As (takef ci (λ (x) (eq? x 'a))))
          (Bs (takef (drop ci (length As)) (λ (x) (eq? x 'b))))
          (Cs (takef (drop ci (+ (length As) (length Bs))) (λ (x) (eq? x 'c))))
          (Ds (takef (drop ci (+ (length As) (length Bs) (length Cs))) (λ (x) (eq? x 'd))))]
     (and (equal? (append As Bs Cs Ds) ci)
-         (andmap (λ (x) (eq? x 'a)) stack)
          (= 0 (- (+ (length As) (length Bs)) (length Cs) (length Ds))))))
 
 ;;word -> boolean
@@ -790,7 +828,7 @@
 
  (check-true (pda-checker (cfe->pda Gina-a^mb^nc^p-cfe) Gina-a^mb^nc^p-WORDS))
  )
-|#
+
 
 (define CFE-WORD-TESTS
   (let [(WWR-WORDS (gen-cfe-words WWR))
@@ -872,3 +910,8 @@
     (run-tests CFE-UNIT-TESTING)
     (run-tests CFE-WORD-TESTS)
     (void)))
+|#
+
+(pda-checker Gina-AiBj (gen-cfe-words Gina-Aibj-TBH))
+(pda-checker Gina-a^mb^nc^p (gen-cfe-words Gina-a^mb^nc^p-tbh))
+(pda-checker marco-anbncndn (gen-cfe-words marco-anbncndn-tbh))

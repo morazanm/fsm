@@ -156,7 +156,7 @@
                      (build-list
                       (random (add1 reps))
                       (λ (i) (gen-function (mk-kleene-cfexp-cfe kleene-cfexp) reps))))))]
-    (if (null? lst-words) EMP (append-map append lst-words))))
+    (if (null? lst-words) "" (apply string-append lst-words))))
 
 ;;string -> Boolean
 ;;Purpose: Determines if the given string is empty
@@ -205,7 +205,7 @@
   (cond [(mk-null-cfexp? cfe) (error "A word cannot be generated using the null-cfexp.")]
         [(mk-empty-cfexp? cfe) EMP]
         [(mk-singleton-cfexp? cfe) (list (string->symbol (mk-singleton-cfexp-char cfe)))]
-        [(box? cfe) (gen-cfexp-word (unbox cfe) reps)]
+        [(box? cfe) (gen-cfexp-word (unbox cfe) MAX-KLEENESTAR-REPS)]
         [else (let ([res (gen-cfexp-word-helper cfe MAX-KLEENESTAR-REPS)])
                 (if (string-empty? res)
                     EMP
@@ -570,6 +570,18 @@
   ;;(list (list state symbol los) (list state los)) -> pda-rule
   ;;Purpose: Converts the given pda rule into a pda-rule struct
   (define (rule->struct rule)
+    ;;pda-rule -> cfe-template
+    ;;Purpose: Converts the given pda-rule to a cfe-template
+    (define (rules->cfe pda-action)
+      ;;pda-rule -> Boolean
+      ;;Purpose: Determines if the given pda-rule is an empty transition
+      (define (e-transition? action)
+        (and (eq? EMP (pda-action-read action))
+             (eq? EMP (pda-action-pop action))
+             (eq? EMP (pda-action-push action))))
+      (if (e-transition? pda-action)
+          (empty pda-action) 
+          (singleton pda-action)))
     (pda-rule (first (first rule))
               (rules->cfe (make-pda-action (second (first rule)) (third (first rule)) (second (second rule))))
               (first (second rule))))
@@ -577,6 +589,17 @@
   ;;pda-rule -> (list (list state symbol los) (list state los))
   ;;Purpose: Converts the given pda-rule to a pda rule
   (define (struct->rules rule)
+     ;;cfe-template -> pda-rule / (listof pda-rule)
+  ;;Purpose: Extracts of the rule(s) out of the given cfe-template
+  (define (template->rules temp)
+    (cond [(symbol? temp) temp]
+          [(empty? temp) (action->string (empty-rule temp))]
+          [(singleton? temp) (action->string (singleton-rule temp))]
+          [(union? temp) (apply string-append
+                                (cons "U" (map (compose1 pda-rule-action template->rules) (union-rules temp))))]
+          [(concat? temp) (apply string-append
+                                (map template->rules (concat-rules temp)))]
+          [else (template->rules (kleene-rule temp))]))
     (list (list (pda-rule-source rule)
                 (string->symbol (template->rules (pda-rule-action rule))) #;(pda-action-read (pda-rule-action rule))
                  EMP #;(pda-action-pop (pda-rule-action rule)))
@@ -612,7 +635,7 @@
                 (simplify-rules remaining-rules)))))
   
     
-      
+      ;;make pred for do nothing on stack rule e.i push and pop same element
   
   
   ;;pda -> pda-struct
@@ -634,53 +657,46 @@
                           (pda-start P)
                           (pda-finals P)
                           (map struct->rules (pda-rules P))))
-
-  ;;pda-rule -> Boolean
-  ;;Purpose: Determines if the given pda-rule is an empty transition
-  (define (e-transition? action)
-    (and (eq? EMP (pda-action-read action))
-         (eq? EMP (pda-action-pop action))
-         (eq? EMP (pda-action-push action))))
-
-  ;;pda-rule -> Boolean
-  ;;Purpose: Determines if the given pda-rule only reads an letter in sigma
-  (define (read-only? pda-rule)
-    (let ([action (pda-rule-action pda-rule)])
-      (and (not (eq? EMP (pda-action-read action)))
-           (eq? EMP (pda-action-pop action))
-           (eq? EMP (pda-action-push action)))))
-
-  ;;pda-rule -> Boolean
-  ;;Purpose: Determines if the given pda-rule is a self loop
-  (define (self-loop? pda-rule)
-    (eq? (pda-rule-source pda-rule) (pda-rule-destin pda-rule))) 
-
-  ;;pda-rule -> cfe-template
-  ;;Purpose: Converts the given pda-rule to a cfe-template
-  (define (rules->cfe pda-action)
-    (if (e-transition? pda-action)
-        (empty pda-action) 
-        (singleton pda-action)))
-
-  ;;(listof pda-rule) -> pda-rule
-  ;;Purpose: If the given list has many rules (e.i more than 1), merge their tags together and create a union.
-  ;;         Otherwise return the given list
-  (define (merge-rules rules)
-    (if (or (null? rules)(is-length-one? rules))
-        rules
-        (list (struct-copy pda-rule (first rules)
-                     [action (union (map pda-rule-action rules))]))))
-
-  (define (extract-concat rule)
-    (if (concat? rule)
-        (concat-rules rule)
-        (list rule)))
-
   
-  
+
   ;;pda-struct -> pda-struct
   ;;Purpose: Recursively rips nodes out from the given M and converts the ripped nodes to cfe-templates
   (define (rip-nodes M)
+    ;;cfe-template -> cfe-template
+    ;;Purpose: Simplifies the given cfe-template
+    (define (simplify-templates temp)
+      ;;union-cfe-template -> cfe-template
+      ;;Purpose: Simplifies the given union-cfe-template
+      (define (simplify-empty temp)
+        (if (andmap empty? (union-rules temp))
+            (empty (first (union-rules temp)))
+            (union (map simplify-templates (union-rules temp)))))
+      (cond [(concat? temp) (concat (filter-not empty? (map simplify-templates (concat-rules temp))))]
+            [(union? temp) (simplify-empty temp)]
+            [(kleene? temp) (kleene (simplify-templates (kleene-rule temp)))]
+            [else temp]))
+    
+    ;;pda-rule -> Boolean
+    ;;Purpose: Determines if the given pda-rule is a self loop
+    (define (self-loop? pda-rule)
+      (eq? (pda-rule-source pda-rule) (pda-rule-destin pda-rule)))
+    
+    ;;(listof pda-rule) -> pda-rule
+    ;;Purpose: If the given list has many rules (e.i more than 1), merge their tags together and create a union.
+    ;;         Otherwise return the given list
+    (define (merge-rules rules)
+      (if (or (null? rules)(is-length-one? rules))
+          rules
+          (list (struct-copy pda-rule (first rules)
+                             [action (union (map pda-rule-action rules))]))))
+
+    ;;rule -> (listof rules)
+    ;;Purpose: Extracts the rules that make the concat if possible
+    (define (extract-concat rule)
+      (if (concat? rule)
+          (concat-rules rule)
+          (list rule)))
+    
     (let ([states-to-rip-out (filter (λ (state) (and (not (eq? state (pda-start M)))
                                                      (not (eq? state (first (pda-finals M))))))
                                      (pda-states M))])
@@ -718,16 +734,16 @@
                                        '()
                                        (let ([rule-frm-ripped (first frm-ripped-state-rules)])
                                          (filter-map (λ (rule)
-                                                     (and (and (eq? (pda-rule-source rule-frm-ripped)
-                                                                    (pda-rule-destin rule))
-                                                               (eq? (pda-rule-destin rule-frm-ripped)
-                                                                    (pda-rule-source rule)))
-                                                          (struct-copy pda-rule rule
-                                                                       [action (concat (list
-                                                                                        (pda-rule-action rule)
-                                                                                        (pda-rule-action rule-frm-ripped)))]
-                                                                       [destin (pda-rule-source rule)])))
-                                                   to-ripped-state-rules)))])
+                                                       (and (and (eq? (pda-rule-source rule-frm-ripped)
+                                                                      (pda-rule-destin rule))
+                                                                 (eq? (pda-rule-destin rule-frm-ripped)
+                                                                      (pda-rule-source rule)))
+                                                            (struct-copy pda-rule rule
+                                                                         [action (concat (list
+                                                                                          (pda-rule-action rule)
+                                                                                          (pda-rule-action rule-frm-ripped)))]
+                                                                         [destin (pda-rule-source rule)])))
+                                                     to-ripped-state-rules)))])
             (rip-nodes (struct-copy pda M
                                     [states new-states-for-P]
                                     [rules (append updated-to-rules
@@ -736,15 +752,6 @@
                                                                           (not (eq? state-to-rip (pda-rule-destin rule)))))
                                                            (pda-rules M)))]))))))
 
-  ;;(listof cfe-template) string -> string
-  ;;Purpose: Converts a (listof cfe-template) to a string
-  (define (printable-helper tags connector)
-    (if (null? tags)
-        connector
-        (if (is-length-one? tags)
-        (printable-tag (first tags))
-        (let ([res (printable-helper (rest tags) connector)])
-          (format "~a~a~a"(printable-tag (first tags)) connector res)))))
 
   ;;pda-action -> string
   ;;Purpose: Converts a pda-action to a string
@@ -754,6 +761,15 @@
   ;;cfe-template -> string
   ;;Purpose: Prints the given tag as a string
   (define (printable-tag tag)
+    ;;(listof cfe-template) string -> string
+    ;;Purpose: Converts a (listof cfe-template) to a string
+    (define (printable-helper tags connector)
+      (if (null? tags)
+          connector
+          (if (is-length-one? tags)
+              (printable-tag (first tags))
+              (let ([res (printable-helper (rest tags) connector)])
+                (format "~a~a~a"(printable-tag (first tags)) connector res)))))
     (cond [(symbol? tag) ""]
           [(pda-action? tag) (format "~a" (action->string tag))]
           [(pda-rule? tag) (printable-tag (pda-rule-action tag)) #;(format "~a" (action->string tag) )]
@@ -781,36 +797,16 @@
            new-start
            (list new-final)
            (simplify-rules (map rule->struct (append (cons new-rules-to-start new-rules-to-final) (pda-getrules P)))))))
-
-  ;;union-cfe-template -> cfe-template
-  ;;Purpose: Simplifies the given union-cfe-template
-  (define (simplify-empty temp)
-    (if (andmap empty? (union-rules temp))
-        (empty (first (union-rules temp)))
-        (union (map simplify-templates (union-rules temp)))))
-
-  ;;cfe-template -> cfe-template
-  ;;Purpose: Simplifies the given cfe-template
-  (define (simplify-templates temp)
-    (cond [(concat? temp) (concat (filter-not empty? (map simplify-templates (concat-rules temp))))]
-          [(union? temp) (simplify-empty temp)]
-          [(kleene? temp) (kleene (simplify-templates (kleene-rule temp)))]
-          [else temp]))
-
   
-    
-      
-  ;;cfe-template -> pda-rule / (listof pda-rule)
-  ;;Purpose: Extracts of the rule(s) out of the given cfe-template
-  (define (template->rules temp)
-    (cond [(symbol? temp) temp]
-          [(empty? temp) (action->string (empty-rule temp))]
-          [(singleton? temp) (action->string (singleton-rule temp))]
-          [(union? temp) (apply string-append
-                                (cons "U" (map (compose1 pda-rule-action template->rules) (union-rules temp))))]
-          [(concat? temp) (apply string-append
-                                (map template->rules (concat-rules temp)))]
-          [else (template->rules (kleene-rule temp))]))
+
+  ;;pda-rule -> Boolean
+  ;;Purpose: Determines if the given pda-rule only reads an letter in sigma
+  (define (read-only? pda-rule)
+    (let ([action (pda-rule-action pda-rule)])
+      (and (not (eq? EMP (pda-action-read action)))
+           (eq? EMP (pda-action-pop action))
+           (eq? EMP (pda-action-push action)))))
+  
 
   ;;(listof pda-rule) -> (listof pda-rule)
   ;;Purpose: Extracts all the pda-rules that ONLY push to the stack
@@ -869,8 +865,9 @@
          #;[inverse-pairs (make-inverse-pairs (get-push-only-rules extracted-rules) (get-pop-only-rules extracted-rules))])
     
     
-   ;shrunken-P
-    (sm-graph (pda->spda P))
+    (values (sm-graph P)
+           shrunken-P)
+    ;(sm-graph (pda->spda P))
     #;(values simple-P
             ;(pda2cfg P)
             ;(printable-tag (pda-rule-action (first (pda-rules shrunken-P))))
