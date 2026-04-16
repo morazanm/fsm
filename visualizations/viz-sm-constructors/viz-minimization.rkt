@@ -1220,7 +1220,7 @@ A Path is a (treelistof dfa-rule)
     (make-phase-5-helper loRM loMS states empty))
   (let* ([unchecked-M M]
          [results-from-minimization (minimize-dfa unchecked-M)]
-
+         [post-conversion-M-states (unchecked->dfa (ndfa->dfa (minimization-results-original-M results-from-minimization)))]
          [original-M (unchecked->dfa (minimization-results-original-M results-from-minimization))]
          [no-unreachables-M (minimization-results-unreachables-removed-M results-from-minimization)]
          [all-loSP (treelist-reverse (minimization-results-loSP results-from-minimization))]
@@ -1278,7 +1278,7 @@ A Path is a (treelistof dfa-rule)
          [rebuilding-machines (reconstruct-machine minimized-M merged-states)]
          
          [phase-5 (if can-be-minimized?
-                      (make-phase-5 no-unreachables-M rebuilding-machines merged-states filled-table (dfa-states original-M)
+                      (make-phase-5 no-unreachables-M rebuilding-machines merged-states filled-table (dfa-states post-conversion-M-states)
                        (minimization-results-state-assoc results-from-minimization))
                       empty)]
          [phase-6 (list (phase PHASE-6 (last rebuilding-machines) filled-table (phase-6-attributes can-be-minimized?)))]

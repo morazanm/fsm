@@ -3,6 +3,7 @@
 (require "../constants.rkt"
          "../fsa.rkt"
          "./fsa-minimization.rkt"
+         "../regexp.rkt"
          "../../../sm-graph.rkt"
          "../../../visualizations/viz-sm-constructors/viz-minimization.rkt")
 
@@ -331,6 +332,19 @@
                                  (C a E)
                                  (D ,EMP S)
                                  (E ,EMP S))))
+
+(define AUB*A-NDFA
+  (let* (;;L = a
+          (A (make-unchecked-singleton "a"))
+          ;;L = b
+          (B (make-unchecked-singleton "b"))
+          ;;L = a U b
+          (AUB (make-unchecked-union A B))
+          ;;L = (a U b)*
+          (AUB* (make-unchecked-kleenestar AUB))
+          ;;L = (A U B)*A
+          (AUB*A (make-unchecked-concat AUB* A)))
+    (regexp->fsa AUB*A)))
 
 (define ND2
   (make-unchecked-ndfa
