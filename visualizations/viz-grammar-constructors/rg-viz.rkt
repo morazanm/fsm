@@ -15,7 +15,7 @@
 (define FONT-SIZE 20)
 (define HEDGE-COLOR 'violet)
 (define YIELD-COLOR 'skyblue)
-(define INVARIANT-HOLDS-COLOR 'green)
+(define INVARIANT-HOLDS-COLOR 'chartreuse4)
 (define INVARIANT-BROKEN-COLOR 'red)
 
 ;; dgrph is a structure that has
@@ -182,14 +182,14 @@
              (create-rules (cdr w-der)))]))
 
 (define (rename-symbol nt hashtb)
-    (let ([result (hash-ref hashtb nt #f)])
-      (if result
-          (begin
-            (hash-set! hashtb nt (add1 result))
-            (string->symbol (format "~s_~s" nt (add1 result))))
-          (begin
-            (hash-set! hashtb nt 0)
-            (string->symbol (format "~s_0" nt))))))
+  (let ([result (hash-ref hashtb nt #f)])
+    (if result
+        (begin
+          (hash-set! hashtb nt (add1 result))
+          (string->symbol (format "~s_~s" nt (add1 result))))
+        (begin
+          (hash-set! hashtb nt 0)
+          (string->symbol (format "~s_0" nt))))))
 
 ;; rename-edges
 ;; (listof level) -> (listof level)
@@ -200,7 +200,7 @@
       [(null? lvl) '()]
       [(= 1 (length lvl)) (list (list (car acc) (cadr (car lvl))) acc)]
       [(member (cadr (cadr lvl)) acc)
-       (let ([new-symbol (generate-symbol (cadr (cadr lvl)) acc)])
+       (let ([new-symbol (rename-symbol (second (second lvl)) hash-nt) #;(generate-symbol (cadr (cadr lvl)) acc)])
          (list (list (list (car acc) (cadr (car lvl))) (list (car acc) new-symbol))
                (cons new-symbol acc)))]
       [else
@@ -223,12 +223,12 @@
     (cond
       [(null? lvl) '()]
       [(and (symbol? (car lvl)) (member (cadr lvl) acc))
-       (let ([new-symbol (generate-symbol (cadr lvl) acc)])
+       (let ([new-symbol (rename-symbol (second lvl) hash-nt) #;(generate-symbol (cadr lvl) acc)])
          (list (list (car lvl) new-symbol) acc))]
       [(and (symbol? (car lvl)) (not (member (cadr lvl) acc)))
        (list (list (car lvl) (cadr lvl)) (cons (cadr lvl) acc))]
       [(member (cadr (car lvl)) acc)
-       (let ([new-symbol (generate-symbol (cadr (car lvl)) acc)])
+       (let ([new-symbol (rename-symbol (second (first lvl)) hash-nt) #;(generate-symbol (cadr (car lvl)) acc)])
          (list (list (list (car (car lvl)) new-symbol) (cadr lvl)) (cons new-symbol acc)))]
       [else (list (list (car lvl) (cadr lvl)) (cons (cadr (car lvl)) acc))]))
   (define (rnm-lvls exe accum)
@@ -369,15 +369,15 @@
                 (append-map
                  (lambda (lvl)
                    (filter (lambda (node) (member node producing-nodes))
-                                               (map (lambda (edge) (second edge))
-                                                    (filter (lambda (edge) (not (empty? edge))) lvl))))
+                           (map (lambda (edge) (second edge))
+                                (filter (lambda (edge) (not (empty? edge))) lvl))))
                  levels))
           #;(cons root-node
-                (append-map (lambda (lvl)
-                              (let* ([nodes (map (lambda (edge) (cadr edge))
-                                                 (filter (lambda (edge) (not (null? edge))) lvl))])
-                                (filter (lambda (node) (member node producing-nodes)) nodes)))
-                            levels))]
+                  (append-map (lambda (lvl)
+                                (let* ([nodes (map (lambda (edge) (cadr edge))
+                                                   (filter (lambda (edge) (not (null? edge))) lvl))])
+                                  (filter (lambda (node) (member node producing-nodes)) nodes)))
+                              levels))]
          [broken-invariant?
           (check-all-invariants (car (dgrph-p-yield-trees a-dgrph)) invariant-nodes invariants)])
     (make-edge-graph
@@ -433,9 +433,9 @@
              [used-node-names (make-hash)]
              [renamed (rename-nodes (rename-edges (create-edges w-der) used-node-names) used-node-names)]
              [yield-trees (map (lambda (x) (create-yield-tree x (grammar-start rg))) (map reverse (create-list-of-levels (map (λ (el) (if (symbol? (first el))
-                                                                                (list el)
-                                                                                el))
-                                                                    renamed))))]
+                                                                                                                                          (list el)
+                                                                                                                                          el))
+                                                                                                                              renamed))))]
              [dgraph (dgrph (map (λ (el) (if (symbol? (first el))
                                              (list el '())
                                              el))
@@ -449,11 +449,11 @@
                             (map (lambda (x) (first yield-trees))
                                  yield-trees)
                             #;(reverse (for/list ([lvl (in-list (create-list-of-levels
-                                                               (map (λ (el) (if (symbol? (first el))
-                                                                                (list el)
-                                                                                el))
-                                                                    renamed)))])
-                                       (create-yield-tree (reverse lvl) (grammar-start rg))))
+                                                                 (map (λ (el) (if (symbol? (first el))
+                                                                                  (list el)
+                                                                                  el))
+                                                                      renamed)))])
+                                         (create-yield-tree (reverse lvl) (grammar-start rg))))
                             (list (tree (grammar-start rg) '())))]
              [lod (reverse (create-dgrphs dgraph '()))]
              [broken-invariants
@@ -473,14 +473,81 @@
 
 (define even-bs-odd-as
   (make-unchecked-rg '(S A B C)
-           '(a b)
-           `((S ,ARROW aA) (S ,ARROW bB)
-                           (S ,ARROW a)
-                           (A ,ARROW aS)
-                           (A ,ARROW bC)
-                           (B ,ARROW aC)
-                           (B ,ARROW bS)
-                           (C ,ARROW aB)
-                           (C ,ARROW bA)
-                           (C ,ARROW b))
-           'S))
+                     '(a b)
+                     `((S ,ARROW aA) (S ,ARROW bB)
+                                     (S ,ARROW a)
+                                     (A ,ARROW aS)
+                                     (A ,ARROW bC)
+                                     (B ,ARROW aC)
+                                     (B ,ARROW bS)
+                                     (C ,ARROW aB)
+                                     (C ,ARROW bA)
+                                     (C ,ARROW b))
+                     'S))
+
+
+
+
+
+
+
+
+
+
+
+
+
+(define ab*Uac* 
+  (make-unchecked-rg 
+   '(S H I F U)
+   '(a b c)
+   '((S -> ε) (S -> aH) (S -> aI) (H -> b) (H -> bU)
+              (U -> aH) (I -> c) (I -> cF) (F -> aI))
+   'S))
+
+;;word -> Boolean
+;;Determines if the given word is in L(U)
+(define (U-INV w)
+  (or  (empty? w)
+       (and (>= (length w) 2) (eq? (first w) 'a) 
+            (eq? (second w) 'b) (U-INV (drop w 2)))))
+
+
+;;word -> Boolean
+;;Determines if the given word is in L(H)
+(define (H-INV w)
+  (and (not (empty? w)) (eq? (first w) 'b) 
+       (U-INV (rest w))))
+
+
+;;word -> Boolean
+;;Determines if the given word is in L(F)
+(define (F-INV w)
+  (or (empty? w)
+      (and (>= (length w) 2) (eq? (first w) 'a) 
+           (eq? (second w) 'c) (F-INV (drop w 2)))))
+
+
+;;word -> Boolean
+;;Determines if the given word is in L(I)
+(define (I-INV w)
+  (and (not (empty? w)) (eq? (first w) 'c) 
+       (F-INV (rest w))))
+
+
+;;word -> Boolean
+;;Determines if the given word is in L(S)
+(define (S-INV w)
+  (or (empty? w)
+      (and (eq? (first w) 'a) (H-INV (rest w)))
+      (and (eq? (first w) 'a) (I-INV (rest w)))))
+
+
+
+(rg-viz ab*Uac*
+        '(a c a c a c)
+        (list 'S S-INV)
+        (list 'H H-INV)
+        (list 'I I-INV)
+        (list 'F F-INV)
+        (list 'U U-INV))
