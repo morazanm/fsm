@@ -290,11 +290,11 @@
                                                                (informative-messages-component-state
                                                                 (viz-state-informative-messages a-vs)))
                                                               (list (car (zipper-current (imsg-struct-tapes
-                                                                                            (informative-messages-component-state
-                                                                                             (viz-state-informative-messages a-vs)))))
+                                                                                          (informative-messages-component-state
+                                                                                           (viz-state-informative-messages a-vs)))))
                                                                     (add1 (cadr (zipper-current (imsg-struct-tapes
-                                                                                                   (informative-messages-component-state
-                                                                                                    (viz-state-informative-messages a-vs))))))
+                                                                                                 (informative-messages-component-state
+                                                                                                  (viz-state-informative-messages a-vs))))))
                                                                     (caddr (zipper-current (imsg-struct-tapes
                                                                                             (informative-messages-component-state
                                                                                              (viz-state-informative-messages a-vs))))))
@@ -315,17 +315,17 @@
                                                                (informative-messages-component-state
                                                                 (viz-state-informative-messages a-vs)))
                                                               (list (car (zipper-current (imsg-struct-tapes
-                                                                                            (informative-messages-component-state
-                                                                                             (viz-state-informative-messages a-vs)))))
+                                                                                          (informative-messages-component-state
+                                                                                           (viz-state-informative-messages a-vs)))))
                                                                     (if (< 0 (cadr (zipper-current (imsg-struct-tapes
-                                                                                                      (informative-messages-component-state
-                                                                                                       (viz-state-informative-messages a-vs))))))
+                                                                                                    (informative-messages-component-state
+                                                                                                     (viz-state-informative-messages a-vs))))))
                                                                         (sub1 (cadr (zipper-current (imsg-struct-tapes
-                                                                                                       (informative-messages-component-state
-                                                                                                        (viz-state-informative-messages a-vs))))))
+                                                                                                     (informative-messages-component-state
+                                                                                                      (viz-state-informative-messages a-vs))))))
                                                                         (cadr (zipper-current (imsg-struct-tapes
-                                                                                                 (informative-messages-component-state
-                                                                                                  (viz-state-informative-messages a-vs))))))
+                                                                                               (informative-messages-component-state
+                                                                                                (viz-state-informative-messages a-vs))))))
                                                                     (caddr (zipper-current (imsg-struct-tapes
                                                                                             (informative-messages-component-state
                                                                                              (viz-state-informative-messages a-vs)))))))
@@ -531,7 +531,12 @@
                                             (text "" 20 'black)
                                             (text (format "~a = ~a" (cadr var)(caddr var)) 20 'black))) tmconf-clean)))
          (lographs (create-graphics loedges lonodes comp-edges))
-         (tapes (imsg-struct (list->zipper (drop-right (create-tape tmconfigs) 1)) (list->zipper (drop-right varimgs 1))))
+         (tapes (imsg-struct (list->zipper (if (number? (last ctm-list))
+                                               (drop-right (create-tape tmconfigs) 1)
+                                               (create-tape tmconfigs)))
+                             (list->zipper (if (number? (last ctm-list))
+                                               (drop-right varimgs 1)
+                                               varimgs))))
          (lovars (extract-labels comp-edges))]
     (run-viz lographs
              (list->vector (map (lambda (x) (lambda (y) y)) lographs))
@@ -542,7 +547,7 @@
              DEFAULT-ZOOM-CAP
              DEFAULT-ZOOM-FLOOR
              (informative-messages draw-imsg
-                                   (imsg-struct (list->zipper (drop-right (create-tape tmconfigs) 1)) (list->zipper (drop-right varimgs 1)))
+                                   tapes
                                    (bounding-limits 0 0 0 0)
                                    )
              (instructions-graphic
@@ -577,5 +582,4 @@
                                        [A-KEY-DIMS identity a-key-pressed]
                                        [D-KEY-DIMS identity d-key-pressed]))
              'ctm-viz)))
-
 
