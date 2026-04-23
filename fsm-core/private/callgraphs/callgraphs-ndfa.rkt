@@ -35,8 +35,8 @@
                (stuci-any-ui
                 (lambda (r) (ndfa-stuci (ndfa-Edge-tost r)
                                         (if (eq? (ndfa-Edge-read r)
-                                                 (first (ndfa-stuci-ui stuci)))
-                                            (rest (ndfa-stuci-ui stuci))
+                                                 (car  (ndfa-stuci-ui stuci)))
+                                            (cdr  (ndfa-stuci-ui stuci))
                                             (ndfa-stuci-ui stuci)))))              
                (empty-rules
                 (lambda (e) (and (eq? (ndfa-Edge-read e) EMP)
@@ -44,31 +44,31 @@
                                       (ndfa-stuci-state stuci)))))
                (empty-or-nonempty-rules
                 (lambda (e) (and (or (eq? (ndfa-Edge-read e)
-                                          (first (ndfa-stuci-ui stuci)))
+                                          (car  (ndfa-stuci-ui stuci)))
                                      (eq? (ndfa-Edge-read e) EMP))
                                  (eq? (ndfa-Edge-fromst e)
                                       (ndfa-stuci-state stuci)))))] 
-          (if (empty? (ndfa-stuci-ui stuci))
+          (if (null? (ndfa-stuci-ui stuci))
               (map stuci-empty-ui
                    (filter empty-rules
                            edges))
               (map stuci-any-ui
                    (filter empty-or-nonempty-rules
                            edges))))) 
-      (if (empty? to-visit)
+      (if (null? to-visit)
           '()
-          (let* [(new-stucis (add-to-stucis-helper (first to-visit)))]
-            (if (empty? new-stucis)
-                (add-to-stucis edges (rest to-visit) visited)
+          (let* [(new-stucis (add-to-stucis-helper (car  to-visit)))]
+            (if (null? new-stucis)
+                (add-to-stucis edges (cdr  to-visit) visited)
                 (append (filter-non-member new-stucis visited)
-                        (add-to-stucis edges (rest to-visit)
+                        (add-to-stucis edges (cdr  to-visit)
                                        (append new-stucis
                                                visited)))))))
 
     ;; (listof stuci) (listof stuci) -> (listof stuci)
     ;; Purpose: Filter out stucis already visited
     (define (filter-non-member s v)
-      (cond ((empty? s) '())
+      (cond ((null? s) '())
             ((ormap (lambda (x) (ndfa-stucis-equal? (car s) x)) v)
              (filter-non-member (cdr s) v))
             (else (cons (car s) (filter-non-member (cdr s) v)))))
@@ -81,15 +81,15 @@
                                (eq? (ndfa-stuci-state stuci) (ndfa-rule-fromst r)))))
              (nonempty-rules
               (lambda (r) (and (eq? (ndfa-stuci-state stuci) (ndfa-rule-fromst r))
-                               (eq? (first (ndfa-stuci-ui stuci)) (ndfa-rule-read r)))))
+                               (eq? (car  (ndfa-stuci-ui stuci)) (ndfa-rule-read r)))))
              (empty-or-nonempty-rules
               (lambda (r) (or (and (eq? (ndfa-stuci-state stuci) (ndfa-rule-fromst r))
-                                   (eq? (first (ndfa-stuci-ui stuci)) (ndfa-rule-read r)))
+                                   (eq? (car  (ndfa-stuci-ui stuci)) (ndfa-rule-read r)))
                               (and (eq? (ndfa-stuci-state stuci) (ndfa-rule-fromst r))
                                    (eq? EMP (ndfa-rule-read r))))))
              (empty-trans?
               (lambda (e) (eq? EMP e)))]
-        (if (empty? (ndfa-stuci-ui stuci))
+        (if (null? (ndfa-stuci-ui stuci))
             (map (λ (r)
                    (ndfa-spedge (ndfa-rule-fromst r)
                                 (ndfa-rule-read r)
@@ -116,13 +116,13 @@
                                           (ndfa-rule-tost r))) 
                              (filter empty-or-nonempty-rules                     
                                      (sm-rules M)))))]
-              (cond [(empty? new-rules)
+              (cond [(null? new-rules)
                      (list (ndfa-spedge (ndfa-stuci-state stuci)
-                                        (first (ndfa-stuci-ui stuci))
+                                        (car  (ndfa-stuci-ui stuci))
                                         my-ds))]
                     [(andmap empty-trans? (map ndfa-Edge-read new-rules))
                      (cons (ndfa-spedge (ndfa-stuci-state stuci)
-                                        (first (ndfa-stuci-ui stuci))
+                                        (car  (ndfa-stuci-ui stuci))
                                         my-ds)
                            new-rules)]
                     [else new-rules])))))
@@ -141,7 +141,7 @@
              (new-stucis 
               (add-to-stucis new-edges
                              to-visit visited))]
-        (if (empty? new-stucis)
+        (if (null? new-stucis)
             new-edges
             (append new-edges
                     (ndfa-computation-tree->cg-edges 
@@ -179,21 +179,21 @@
       (define (make-showtrans-rules showtrans)  
         (cond [(= (length showtrans) 1) '()]
               [else
-               (let* [(fromst (second (first showtrans)))
-                      (tost (second (second showtrans)))
-                      (read-inpt (cond [(empty? (first (first showtrans))) EMP]
-                                       [(equal? (first (first showtrans)) (first (second showtrans))) EMP]
-                                       [else (first (first (first showtrans)))]))]
+               (let* [(fromst (cadr (car  showtrans)))
+                      (tost (cadr (cadr showtrans)))
+                      (read-inpt (cond [(null? (car  (car  showtrans))) EMP]
+                                       [(equal? (car  (car  showtrans)) (car  (cadr showtrans))) EMP]
+                                       [else (car  (car  (car  showtrans)))]))]
                  (if (= (length showtrans) 2)
                      (cons (ndfa-spedge fromst read-inpt tost)
-                           (make-showtrans-rules (rest showtrans)))
+                           (make-showtrans-rules (cdr  showtrans)))
                      (cons (ndfa-edge fromst read-inpt tost)
-                           (make-showtrans-rules (rest showtrans)))))]))
+                           (make-showtrans-rules (cdr  showtrans)))))]))
       (if (equal? (sm-apply M word) 'reject)
           edges  
           (let* [(showtrans (sm-showtransitions M word))
                  (showtrans-drop-type (take showtrans (- (length showtrans) 1)))
-                 (valid-states (map second showtrans-drop-type))]
+                 (valid-states (map cadr showtrans-drop-type))]
             (remove-duplicates
              (map (lambda (r) (if (and (ndfa-spedge? r)
                                        (not (eq? (ndfa-Edge-tost r) (last valid-states))))
@@ -227,7 +227,7 @@
                                (map (lambda (r)  (ndfa-Edge-tost r))
                                     new-rules))))
          (all-states
-          (if (empty? edge-states)
+          (if (null? edge-states)
               (list (sm-start M))
               edge-states))
          (end-states
@@ -239,16 +239,16 @@
     ;; Purpose: Given a list of all states in a machine after a word
     ;;          has been consumed, returns a list of nodes 
     (define (new-node los)
-      (if (empty? los)
+      (if (null? los)
           '()
           (let* [(a-color
                   (cond [(= 1 (length all-states)) "crimson"]
-                        [(member (first los) end-states) "crimson"]
-                        [(and (or (empty? cb)
-                                  (eq? 'default (first cb)))
+                        [(member (car  los) end-states) "crimson"]
+                        [(and (or (null? cb)
+                                  (eq? 'default (car  cb)))
                               (eq? (ndfa-rule-fromst los) start-state)) "forestgreen"]
-                        [(and (not (empty? cb))
-                              (eq? 'deut (first cb))
+                        [(and (not (null? cb))
+                              (eq? 'deut (car  cb))
                               (eq? (ndfa-rule-fromst los) start-state)) "dodgerblue"]
                         [else "black"]))
                  (a-shape
@@ -260,12 +260,12 @@
                   (cond [(or (and (eq? (ndfa-rule-fromst los) start-state)
                                   (member (ndfa-rule-fromst los) end-states))
                              (= 1 (length all-states)))
-                         (cond [(or (empty? cb)
-                                    (eq? 'default (first cb))) "forestgreen"]
-                               [(eq? 'deut (first cb)) "dodgerblue"])]
+                         (cond [(or (null? cb)
+                                    (eq? 'default (car  cb))) "forestgreen"]
+                               [(eq? 'deut (car  cb)) "dodgerblue"])]
                         [else "black"]))]
             (cons (list (ndfa-rule-fromst los) `((color ,a-color) (shape ,a-shape) (label ,a-label) (fontcolor ,a-fontcolor))) 
-                  (new-node (rest los))))))
+                  (new-node (cdr  los))))))
     (new-node all-states)))
 
 ;.................................................
@@ -283,12 +283,12 @@
     ;;          spedge, returns a transition
     (define (new-trans from r to)      
       (list from to `((fontsize 15) (label ,(symbol->string r)))))
-    (if (empty? loes)
+    (if (null? loes)
         '()
-        (cons (new-trans (ndfa-Edge-fromst (first loes))
-                         (ndfa-Edge-read (first loes))
-                         (ndfa-Edge-tost (first loes)))
-              (all-trans (rest loes)))))
+        (cons (new-trans (ndfa-Edge-fromst (car  loes))
+                         (ndfa-Edge-read (car loes))
+                         (ndfa-Edge-tost (car  loes)))
+              (all-trans (cdr  loes)))))
   (all-trans new-rules))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -314,21 +314,21 @@
       (set! cgraph
             (foldl
              (lambda (a-node a-graph)
-               (let* [(state (first a-node))
-                      (color (second (first (second a-node))))
-                      (shape (second (second (second a-node))))
-                      (label (second (third (second a-node)))) 
-                      (fontcolor (second (fourth (second a-node))))]
+               (let* [(state (car  a-node))
+                      (color (cadr (car  (cadr a-node))))
+                      (shape (cadr (cadr (cadr a-node))))
+                      (label (cadr (caddr (cadr a-node)))) 
+                      (fontcolor (cadr (cadddr (cadr a-node))))]
                  (add-node a-graph state #:atb (hash 'color color 'shape shape 'fontcolor fontcolor)))) 
              cgraph   
              (dot-nodes-fsa M new-rules cb)))
       (set! cgraph
             (foldl
              (lambda (a-trans a-graph)
-               (let* [(state1 (first a-trans))
-                      (state2 (second a-trans))
-                      (fontsize (second (first (third a-trans))))
-                      (label (string->symbol (second (second (third a-trans)))))
+               (let* [(state1 (car  a-trans))
+                      (state2 (cadr a-trans))
+                      (fontsize (cadr (car  (caddr a-trans))))
+                      (label (string->symbol (cadr (cadr (caddr a-trans)))))
                       (style (if (member state2 (sm-states M))
                                  "solid"
                                  "dashed"))] 

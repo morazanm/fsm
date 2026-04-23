@@ -129,11 +129,11 @@
     #;(define (generate-table nts1 nts2)
         (map (lambda (s) (list s (generate-symbol s nts1))) nts2))
     (define (generate-table disallowed nts2)
-      (if (empty? nts2)
+      (if (null? nts2)
           '()
           (let ((new-nt (gen-nt disallowed)))
-            (cons (list (first nts2) new-nt)
-                  (generate-table (cons new-nt disallowed) (rest nts2))))))
+            (cons (list (car nts2) new-nt)
+                  (generate-table (cons new-nt disallowed) (cdr nts2))))))
     
     ; update-rls: symb symb (listof rule)->(listof rule)
     (define (update-rls old new lr)
@@ -145,7 +145,7 @@
     
     ; generate-new-rls: (listof symb) table (listof rules) --> (listof rules)
     (define (generate-new-rls nts t lrs)
-      (cond [(empty? nts) lrs]
+      (cond [(null? nts) lrs]
             [else (generate-new-rls (cdr nts) t (update-rls (car nts) (cadr (assoc (car nts) t)) lrs))]))
     
     (let* ((nts2 (csg-getv csg2))

@@ -7,15 +7,14 @@
          "yield-struct.rkt"
          "cyk.rkt"
          "chomsky.rkt"
-         racket/list
          racket/set)
 
 (provide cfg-derive-level-leftmost)
 
 (define (treelist-insert-list tl i lst)
-  (if (empty? lst)
+  (if (null? lst)
       tl
-      (treelist-insert-list (treelist-insert tl i (first lst)) (add1 i) (rest lst))))
+      (treelist-insert-list (treelist-insert tl i (car  lst)) (add1 i) (cdr lst))))
 
 (define (tlos->symbol l)
     (define (tlostr->string l)
@@ -76,7 +75,7 @@
       (if (= i (treelist-length (yield-state yd)))
           (subst-first-nt (yield (yield-state yd) 0) rght)
           (if (not (set-member? alphabet-ht (treelist-ref (yield-state yd) i)))
-              (if (eq? (first rght) EMP)
+              (if (eq? (car  rght) EMP)
                   (struct-copy yield yd [state (treelist-delete (yield-state yd) i)])
                   (struct-copy yield
                                yd
@@ -128,9 +127,9 @@
         (format "~s is not in L(G)." w)
         (let ([current-deriv (dequeue! derivs)])
           (displayln current-deriv)
-          (if (> (count-terminals (yield-state (first current-deriv))) (treelist-length treelist-w))
+          (if (> (count-terminals (yield-state (car  current-deriv))) (treelist-length treelist-w))
             (make-deriv)
-            (let* ([current-yield (first current-deriv)]
+            (let* ([current-yield (car  current-deriv)]
                    [current-nt (get-first-nt current-yield)])
               (if current-nt
                   (begin

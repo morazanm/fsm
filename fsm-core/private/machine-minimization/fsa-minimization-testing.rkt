@@ -1,4 +1,4 @@
-#lang racket
+#lang racket/base
 
 (require "../constants.rkt"
          "../fsa.rkt"
@@ -463,4 +463,3 @@
 ;(minimization-viz AT-LEAST-ONE-MISSING)
 
 ;(time (minimization-viz EX3-vid))
-

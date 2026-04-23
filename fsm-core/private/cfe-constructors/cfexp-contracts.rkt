@@ -174,7 +174,7 @@
 
 (define gen-cfexp-word/c
   (->* ((is-cfexp/c "gen-cfexp-word expects a cfe as input, given"))
-       #:rest (listof nat-num/c)
+       (nat-num/c)
        (or/c symbol?
              (listof symbol?))))
 

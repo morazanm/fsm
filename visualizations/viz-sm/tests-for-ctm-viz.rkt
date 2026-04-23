@@ -1,5 +1,6 @@
-#lang racket
-(require "../../fsm-core/interface.rkt"
+#lang racket/base
+(require "../../fsm-core/private/tm.rkt"
+         "../../fsm-core/private/tm-constructors.rkt"
          rackunit)
 #|
 ;; CAN ONLY BE TESTED IF PRECONDITION IS SATISFIED
