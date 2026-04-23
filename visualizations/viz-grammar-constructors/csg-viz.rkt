@@ -201,28 +201,28 @@
                                   yield-nodes
                                   levels
                                   hedge-nodes)
-    (if (empty? (first (first rules)))
+    (if (null? (car (car rules)))
         (list hex-nodes yield-nodes levels hedge-nodes)
-        (let* ([curr-rule (first rules)]
-               [idx-of-replaced (third curr-rule)]
+        (let* ([curr-rule (car rules)]
+               [idx-of-replaced (caddr curr-rule)]
                [replaced-str-length (find-length (map undo-renaming curr-state)
-                                                 (symbol->fsmlos (first curr-rule))
-                                                 (length (symbol->fsmlos (first curr-rule)))
+                                                 (symbol->fsmlos (car curr-rule))
+                                                 (length (symbol->fsmlos (car curr-rule)))
                                                  idx-of-replaced
                                                  0)]
                [all-before-to-be-replaced-symbols (take curr-state idx-of-replaced)]
                [to-be-replaced-symbols-plus-tail (drop curr-state idx-of-replaced)]
                   
                [to-be-replaced-symbols (take to-be-replaced-symbols-plus-tail replaced-str-length)]
-               [replaced-combined-symbol (rename-symbols (first curr-rule) used-names)]
+               [replaced-combined-symbol (rename-symbols (car curr-rule) used-names)]
                [replacement-symbols (map (lambda (x) (rename-symbols x used-names))
-                                         (symbol->fsmlos (second curr-rule)))]
+                                         (symbol->fsmlos (cadr curr-rule)))]
                [after-replaced-symbols (drop to-be-replaced-symbols-plus-tail replaced-str-length)])
           (generate-levels-helper
            ;; curr-state
            (append all-before-to-be-replaced-symbols replacement-symbols after-replaced-symbols)
            ;; rules
-           (rest rules)
+           (cdr rules)
            ;; used-names
            used-names
            ;; hex-nodes
@@ -233,15 +233,15 @@
                  yield-nodes)
               
            ;; levels
-           (let ([not-replaced-edges (filter (lambda (edge) (not (member (second edge) to-be-replaced-symbols)))
-                                             (if (empty? levels) '() (first levels)))]
-                 [replaced-edges (if (empty? levels)
+           (let ([not-replaced-edges (filter (lambda (edge) (not (member (cadr edge) to-be-replaced-symbols)))
+                                             (if (null? levels) '() (car levels)))]
+                 [replaced-edges (if (null? levels)
                                      '()
                                      (remove-duplicates
                                       (map (lambda (edge)
-                                             (list (first edge) replaced-combined-symbol))
-                                           (filter (lambda (edge) (member (second edge) to-be-replaced-symbols))
-                                                   (first levels)))))])
+                                             (list (car edge) replaced-combined-symbol))
+                                           (filter (lambda (edge) (member (cadr edge) to-be-replaced-symbols))
+                                                   (car levels)))))])
              (cons (append (foldr (lambda (val accum)
                                     (cons (list replaced-combined-symbol val) accum))
                                   '()
@@ -266,9 +266,9 @@
 ;; now the rule is next to where it will be applied
 (define (move-rule-applications-in-list lst)
   (if (= (length lst) 1)
-      (list (list (first (first lst)) '() '() '()))
-      (cons (list (first (first lst)) (second (second lst)) (third (second lst)) (fourth (second lst)))
-            (move-rule-applications-in-list (rest lst)))))
+      (list (list (car (car lst)) '() '() '()))
+      (cons (list (car (car lst)) (cadr (cadr lst)) (caddr (cadr lst)) (cadddr (cadr lst)))
+            (move-rule-applications-in-list (cdr lst)))))
 
 ;; dgrph is a structure that has
 ;; levels - levels of a graph
@@ -339,7 +339,7 @@
 (define (make-invisible-edge-graph graph loe)
   (foldl
    (lambda (rule result)
-     (add-edge result "" (first rule) (second rule) #:atb (hash 'style 'invisible 'arrowhead 'none)))
+     (add-edge result "" (car rule) (cadr rule) #:atb (hash 'style 'invisible 'arrowhead 'none)))
    graph
    (reverse loe)))
 
@@ -352,8 +352,8 @@
      (add-edge
       result
       ""
-      (first rule)
-      (second rule)
+      (car rule)
+      (cadr rule)
       #:atb
       (hash 'fontsize FONT-SIZE
             'style 'solid 
@@ -383,8 +383,8 @@
 (define (create-line-of-edges yield-nodes)
   (if (<= (length yield-nodes) 1)
       '()
-      (cons (list (first yield-nodes) (second yield-nodes))
-            (create-line-of-edges (rest yield-nodes)))))
+      (cons (list (car yield-nodes) (cadr yield-nodes))
+            (create-line-of-edges (cdr yield-nodes)))))
 
 ;; create-graph-structs
 ;; dgprh -> img
@@ -406,29 +406,29 @@
 
 (define (csg-viz g w #:cpu-cores [cpu-cores #f] . invariant)
   (let* [(derv (csg-derive-edited g w))
-         (w-derv (map (lambda (x) (symbol->fsmlos (first x))) derv))
+         (w-derv (map (lambda (x) (symbol->fsmlos (car x))) derv))
          (moved-stuff (move-rule-applications-in-list derv))
          (moved-rules
-          (map (lambda (x) (list (second x) (third x))) moved-stuff))
-         (moved-rules-with-idx (map (lambda (x) (list (second x) (third x) (fourth x))) moved-stuff))
+          (map (lambda (x) (list (cadr x) (caddr x))) moved-stuff))
+         (moved-rules-with-idx (map (lambda (x) (list (cadr x) (caddr x) (cadddr x))) moved-stuff))
          
          
          (rules
           (cons ""
                 (foldr (lambda (x accum)
-                         (if (empty? (first x))
+                         (if (null? (car x))
                              '()
-                             (append (list (string-append (symbol->string (first x))
+                             (append (list (string-append (symbol->string (car x))
                                                           " → "
-                                                          (symbol->string (second x))))
+                                                          (symbol->string (cadr x))))
                                      accum)))
                        '()
                        moved-rules)))
          (renamed (generate-levels (list (csg-getstart g)) moved-rules-with-idx (make-hash)))
-         (lod (create-dgrphs (third renamed) (first renamed) (second renamed) (fourth renamed)))
-         (graphs (map (lambda (x) (create-graph-structs x (if (empty? invariant)
+         (lod (create-dgrphs (caddr renamed) (car renamed) (cadr renamed) (cadddr renamed)))
+         (graphs (map (lambda (x) (create-graph-structs x (if (null? invariant)
                                                               'NO-INV
-                                                              (first invariant)))) lod))
+                                                              (car invariant)))) lod))
          (rank-node-lst (map (lambda (x y) (cons x (map list y)))
                              (second renamed)
                              (first renamed)))

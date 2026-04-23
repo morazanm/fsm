@@ -1,12 +1,11 @@
 (module validation-flat-contracts racket
   (require "validation-predicates.rkt"
            "../error-formatting.rkt"
-           "../../constants.rkt"
            "../../regular-grammar.rkt"
            "../../cfg.rkt"
            "../../cfg-struct.rkt"
            "../../csg.rkt"
-           racket/contract
+           racket/contract/combinator
            )
   (provide listof-words/c
            listof-words-tm/c

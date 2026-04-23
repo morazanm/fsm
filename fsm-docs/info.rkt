@@ -1,3 +1,3 @@
 #lang info
 
-(define scribblings '(["fsm.scrbl" ()]))
+(define scribblings '(["fsm.scrbl" (multi-page)]))

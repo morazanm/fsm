@@ -6,7 +6,7 @@
          "../../fsm-core/private/cyk.rkt"
          "../../fsm-core/private/chomsky.rkt"
          "circular-queue-treelist.rkt"
-         racket/list
+         
          racket/set)
 (provide cfg-derive-leftmost)
 
@@ -20,7 +20,7 @@
   ;; Purpose: Returns leftmost nonterminal
   (define (get-first-nt st)
     (cond
-      [(empty? st) #f]
+      [(null? st) #f]
       [(set-member? nt-set (car st)) (car st)]
       [else (get-first-nt (cdr st))]))
 
@@ -77,29 +77,29 @@
       (length (filter (lambda (a) (member a sigma)) st)))
     (cond
       [(qempty? derivs) (format "~s is not in L(G)." w)]
-      [(or (and chomsky (> (length (first (first (qpeek derivs)))) (+ 2 input-word-length)))
-           (> (count-terminals (first (first (qpeek derivs))) (cfg-get-alphabet g))
+      [(or (and chomsky (> (length (car (car (qpeek derivs)))) (+ 2 input-word-length)))
+           (> (count-terminals (car (car (qpeek derivs))) (cfg-get-alphabet g))
               input-word-length))
        (make-deriv visited (dequeue! derivs) g chomsky)]
       [else
-       (let* ([fderiv (qpeek derivs)] [state (first fderiv)] [fnt (get-first-nt (first state))])
+       (let* ([fderiv (qpeek derivs)] [state (car fderiv)] [fnt (get-first-nt (car state))])
          (if (not fnt)
-             (if (equal? w (first state))
-                 (append-map (lambda (l)
-                               (if (equal? w (first l))
+             (if (equal? w (car state))
+                 (apply append (map (lambda (l)
+                               (if (equal? w (car l))
                                    (if (null? l)
                                        (list EMP)
-                                       (list (list (los->symbol (first l)) (los->symbol (second l)))))
-                                   (list (list (los->symbol (first l)) (los->symbol (second l)))
+                                       (list (list (los->symbol (car l)) (los->symbol (cadr l)))))
+                                   (list (list (los->symbol (car l)) (los->symbol (cadr l)))
                                          )))
-                             (reverse fderiv))
+                             (reverse fderiv)))
                  (make-deriv visited (dequeue! derivs) g chomsky))
              (let* ([rls (hash-ref nt-to-rules-ht fnt)]
                     [rights (map cfg-rule-rhs rls)]
                     [new-states
                      (filter (lambda (st)
-                               (and (not (hash-ref visited st #f)) (check-terminals? (first state))))
-                             (map (lambda (rght) (list (subst-first-nt (first state) rght) rght))
+                               (and (not (hash-ref visited st #f)) (check-terminals? (car state))))
+                             (map (lambda (rght) (list (subst-first-nt (car state) rght) rght))
                                   rights))])
 
                (make-deriv (begin
@@ -111,7 +111,7 @@
                                     (map (lambda (st) (cons st fderiv)) new-states)))
                            g
                            chomsky))))]))
-  (if (empty? w)
+  (if (null? w)
       (let ([deriv-queue (make-queue)])
           (make-deriv (make-hash)
                       (enqueue! deriv-queue (list (list (list (cfg-get-start g)) '())))

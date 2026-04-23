@@ -5,7 +5,7 @@
          "../constants.rkt"
          "shared/shared-predicates.rkt"
          "../grammar-getters.rkt"
-         racket/contract)
+         racket/contract/base)
 (provide make-cfg/c
          make-rg/c
          make-csg/c)

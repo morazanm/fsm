@@ -2,7 +2,6 @@
 (require (for-syntax syntax/parse
                      racket/base
                      racket/syntax)
-         "../viz-lib/viz-imgs/keyboard_bitmaps.rkt"
          "../2htdp/image.rkt"
          "bounding-limits.rkt")
 
