@@ -1,16 +1,16 @@
-(module ndfa-tests racket
-  (require "../../../main.rkt"
-           racket/contract
-           )
-  (local-require test-engine/racket-tests)
-  
-  (provide 
-   )
+#lang racket/base
+(module+ test
+  (require "../../../fsm-core/private/ndfa-constructors.rkt"
+           rackunit)
 
   ;;valid-listof/c tests
   ;;STATES
   ;;Invalid number
-  (check-error (make-ndfa '(A B C 1)
+  (check-exn
+   #rx"Step three of the design recipe has not been successfully completed.
+The following: \\(1\\) are not valid machine states in the given list of machine states: \\(A B C 1\\)"
+   (lambda ()
+     (make-ndfa '(A B C 1)
                           '(a b c d)
                           'A
                           '(B C)
@@ -18,9 +18,12 @@
                             (A c C)
                             (B c B)
                             (B a B))
-                          ) (format "Step three of the design recipe has not been successfully completed.
-The following: (1) are not valid machine states in the given list of machine states: (A B C 1)"))
-  (check-error (make-ndfa '(A B C 1 2)
+                          ))
+   )
+  (check-exn
+   #rx"Step three of the design recipe has not been successfully completed.
+The following: \\(1 2\\) are not valid machine states in the given list of machine states: \\(A B C 1 2\\)"
+   (lambda () (make-ndfa '(A B C 1 2)
                           '(a b c d)
                           'A
                           '(B C)
@@ -28,10 +31,12 @@ The following: (1) are not valid machine states in the given list of machine sta
                             (A c C)
                             (B c B)
                             (B a B))
-                          ) (format "Step three of the design recipe has not been successfully completed.
-The following: (1 2) are not valid machine states in the given list of machine states: (A B C 1 2)"))
+                          )) )
   ;;Invalid letter
-  (check-error (make-ndfa '(A B C a)
+  (check-exn
+   #rx"Step three of the design recipe has not been successfully completed.
+The following: \\(a\\) are not valid machine states in the given list of machine states: \\(A B C a\\)"
+   (lambda () (make-ndfa '(A B C a)
                           '(a b c d)
                           'A
                           '(B C)
@@ -39,9 +44,13 @@ The following: (1 2) are not valid machine states in the given list of machine s
                             (A c C)
                             (B c B)
                             (B a B))
-                          ) (format "Step three of the design recipe has not been successfully completed.
-The following: (a) are not valid machine states in the given list of machine states: (A B C a)"))
-  (check-error (make-ndfa '(A B C a b)
+                          ))
+   )
+  (check-exn
+   #rx"Step three of the design recipe has not been successfully completed.
+The following: \\(a b\\) are not valid machine states in the given list of machine states: \\(A B C a b\\)"
+   (lambda ()
+     (make-ndfa '(A B C a b)
                           '(a b c d)
                           'A
                           '(B C)
@@ -49,10 +58,12 @@ The following: (a) are not valid machine states in the given list of machine sta
                             (A c C)
                             (B c B)
                             (B a B))
-                          ) (format "Step three of the design recipe has not been successfully completed.
-The following: (a b) are not valid machine states in the given list of machine states: (A B C a b)"))
+                          ) ))
   ;;Duplicate states
-  (check-error (make-ndfa '(A B C A)
+  (check-exn
+   #rx"Step three of the design recipe has not been successfully completed.
+The following values, \\(A\\), are duplicated in the given states: \\(A B C A\\)"
+   (lambda () (make-ndfa '(A B C A)
                           '(a b c d)
                           'A
                           '(B C)
@@ -60,9 +71,13 @@ The following: (a b) are not valid machine states in the given list of machine s
                             (A c C)
                             (B c B)
                             (B a B))
-                          ) (format "Step three of the design recipe has not been successfully completed.
-The following values, (A), are duplicated in the given states: (A B C A)"))
-  (check-error (make-ndfa '(A B C A A)
+                          ))
+   )
+  (check-exn
+   #rx"Step three of the design recipe has not been successfully completed.
+The following values, \\(A\\), are duplicated in the given states: \\(A B C A A\\)"
+   (lambda ()
+     (make-ndfa '(A B C A A)
                           '(a b c d)
                           'A
                           '(B C)
@@ -70,9 +85,12 @@ The following values, (A), are duplicated in the given states: (A B C A)"))
                             (A c C)
                             (B c B)
                             (B a B))
-                          ) (format "Step three of the design recipe has not been successfully completed.
-The following values, (A), are duplicated in the given states: (A B C A A)"))
-  (check-error (make-ndfa '(A B B C A A)
+                          )) )
+  
+  (check-exn
+   #rx"Step three of the design recipe has not been successfully completed.
+The following values, \\(A B\\), are duplicated in the given states: \\(A B B C A A\\)"
+   (lambda () (make-ndfa '(A B B C A A)
                           '(a b c d)
                           'A
                           '(B C)
@@ -80,11 +98,13 @@ The following values, (A), are duplicated in the given states: (A B C A A)"))
                             (A c C)
                             (B c B)
                             (B a B))
-                          ) (format "Step three of the design recipe has not been successfully completed.
-The following values, (A B), are duplicated in the given states: (A B B C A A)"))
+                          )) )
   ;;SIGMA
   ;invalid letter
-  (check-error (make-ndfa '(A B C D)
+  (check-exn
+   #rx"Step one of the design recipe has not been successfully completed.
+The following: \\(AA\\) are not valid alphanumeric symbols in the given input alphabet: \\(a b c AA\\)"
+   (lambda () (make-ndfa '(A B C D)
                           '(a b c AA)
                           'A
                           '(B C)
@@ -92,9 +112,12 @@ The following values, (A B), are duplicated in the given states: (A B B C A A)")
                             (A c D)
                             (B c D)
                             (B a B))
-                          ) (format "Step one of the design recipe has not been successfully completed.
-The following: (AA) are not valid alphanumeric symbols in the given input alphabet: (a b c AA)"))
-  (check-error (make-ndfa '(A B C D)
+                          ))
+   )
+  (check-exn
+   #rx"Step one of the design recipe has not been successfully completed.
+The following: \\(AA BB\\) are not valid alphanumeric symbols in the given input alphabet: \\(a b c AA BB\\)"
+   (lambda () (make-ndfa '(A B C D)
                           '(a b c AA BB)
                           'A
                           '(B C)
@@ -102,10 +125,14 @@ The following: (AA) are not valid alphanumeric symbols in the given input alphab
                             (A c D)
                             (B c D)
                             (B a B))
-                          ) (format "Step one of the design recipe has not been successfully completed.
-The following: (AA BB) are not valid alphanumeric symbols in the given input alphabet: (a b c AA BB)"))
+                          ))
+   )
   ;duplicate letter
-  (check-error (make-ndfa '(A B C D)
+  (check-exn
+   #rx"Step one of the design recipe has not been successfully completed.
+The following values, \\(a\\), are duplicated in the given sigma: \\(a b c a\\)"
+   (lambda ()
+     (make-ndfa '(A B C D)
                           '(a b c a)
                           'A
                           '(B C)
@@ -113,9 +140,11 @@ The following: (AA BB) are not valid alphanumeric symbols in the given input alp
                             (A c D)
                             (B c D)
                             (B a B))
-                          ) (format "Step one of the design recipe has not been successfully completed.
-The following values, (a), are duplicated in the given sigma: (a b c a)"))
-  (check-error (make-ndfa '(A B C D)
+                          )) )
+  (check-exn
+   #rx"Step one of the design recipe has not been successfully completed.
+The following values, \\(a\\), are duplicated in the given sigma: \\(a b c a a\\)"
+   (lambda () (make-ndfa '(A B C D)
                           '(a b c a a)
                           'A
                           '(B C)
@@ -123,9 +152,12 @@ The following values, (a), are duplicated in the given sigma: (a b c a)"))
                             (A c D)
                             (B c D)
                             (B a B))
-                          ) (format "Step one of the design recipe has not been successfully completed.
-The following values, (a), are duplicated in the given sigma: (a b c a a)"))
-  (check-error (make-ndfa '(A B C D)
+                          ))
+   )
+  (check-exn
+   #rx"Step one of the design recipe has not been successfully completed.
+The following values, \\(a b\\), are duplicated in the given sigma: \\(a b c a b\\)"
+   (lambda () (make-ndfa '(A B C D)
                           '(a b c a b)
                           'A
                           '(B C)
@@ -133,11 +165,14 @@ The following values, (a), are duplicated in the given sigma: (a b c a a)"))
                             (A c D)
                             (B c D)
                             (B a B))
-                          ) (format "Step one of the design recipe has not been successfully completed.
-The following values, (a b), are duplicated in the given sigma: (a b c a b)"))
+                          ))
+   )
   ;;FINALS
   ;invalid final state
-  (check-error (make-ndfa '(A B C D)
+  (check-exn
+   #rx"Step three of the design recipe has not been successfully completed.
+The following: \\(1\\) are not valid machine states in the given list of machine finals: \\(B C 1\\)"
+   (lambda () (make-ndfa '(A B C D)
                           '(a b c d)
                           'A
                           '(B C 1)
@@ -145,9 +180,12 @@ The following values, (a b), are duplicated in the given sigma: (a b c a b)"))
                             (A c D)
                             (B c D)
                             (B a B))
-                          ) (format "Step three of the design recipe has not been successfully completed.
-The following: (1) are not valid machine states in the given list of machine finals: (B C 1)"))
-  (check-error (make-ndfa '(A B C D)
+                          ))
+   )
+  (check-exn
+   #rx"Step three of the design recipe has not been successfully completed.
+The following: \\(1 2\\) are not valid machine states in the given list of machine finals: \\(B C 1 2\\)"
+   (lambda () (make-ndfa '(A B C D)
                           '(a b c d)
                           'A
                           '(B C 1 2)
@@ -155,10 +193,13 @@ The following: (1) are not valid machine states in the given list of machine fin
                             (A c D)
                             (B c D)
                             (B a B))
-                          ) (format "Step three of the design recipe has not been successfully completed.
-The following: (1 2) are not valid machine states in the given list of machine finals: (B C 1 2)"))
+                          ))
+   )
   ;invalid letter
-  (check-error (make-ndfa '(A B C D)
+  (check-exn
+   #rx"Step three of the design recipe has not been successfully completed.
+The following: \\(a\\) are not valid machine states in the given list of machine finals: \\(B C a\\)"
+   (lambda () (make-ndfa '(A B C D)
                           '(a b c d)
                           'A
                           '(B C a)
@@ -166,9 +207,12 @@ The following: (1 2) are not valid machine states in the given list of machine f
                             (A c D)
                             (B c D)
                             (B a B))
-                          ) (format "Step three of the design recipe has not been successfully completed.
-The following: (a) are not valid machine states in the given list of machine finals: (B C a)"))
-  (check-error (make-ndfa '(A B C D)
+                          ))
+   )
+  (check-exn
+   #rx"Step three of the design recipe has not been successfully completed.
+The following: \\(a a\\) are not valid machine states in the given list of machine finals: \\(B C a a\\)"
+   (lambda () (make-ndfa '(A B C D)
                           '(a b c d)
                           'A
                           '(B C a a)
@@ -176,9 +220,12 @@ The following: (a) are not valid machine states in the given list of machine fin
                             (A c D)
                             (B c D)
                             (B a B))
-                          ) (format "Step three of the design recipe has not been successfully completed.
-The following: (a a) are not valid machine states in the given list of machine finals: (B C a a)"))
-  (check-error (make-ndfa '(A B C D)
+                          )) )
+  (check-exn
+   #rx"Step three of the design recipe has not been successfully completed.
+The following: \\(a b\\) are not valid machine states in the given list of machine finals: \\(B C a b\\)"
+   (lambda ()
+     (make-ndfa '(A B C D)
                           '(a b c d)
                           'A
                           '(B C a b)
@@ -186,10 +233,14 @@ The following: (a a) are not valid machine states in the given list of machine f
                             (A c D)
                             (B c D)
                             (B a B))
-                          ) (format "Step three of the design recipe has not been successfully completed.
-The following: (a b) are not valid machine states in the given list of machine finals: (B C a b)"))
+                          ))
+   )
   ;not in list of states
-  (check-error (make-ndfa '(A B C D)
+  (check-exn
+   #rx"Step three of the design recipe has not been successfully completed.
+The following final states, \\(F\\), are not in your list of states: \\(A B C D\\)"
+   (lambda ()
+     (make-ndfa '(A B C D)
                           '(a b c d)
                           'A
                           '(B C F)
@@ -197,9 +248,12 @@ The following: (a b) are not valid machine states in the given list of machine f
                             (A c D)
                             (B c D)
                             (B a B))
-                          ) (format "Step three of the design recipe has not been successfully completed.
-The following final states, (F), are not in your list of states: (A B C D)"))
-  (check-error (make-ndfa '(A B C D)
+                          ))
+   )
+  (check-exn
+   #rx"Step three of the design recipe has not been successfully completed.
+The following final states, \\(F G\\), are not in your list of states: \\(A B C D\\)"
+   (lambda () (make-ndfa '(A B C D)
                           '(a b c d)
                           'A
                           '(B C F G)
@@ -207,10 +261,13 @@ The following final states, (F), are not in your list of states: (A B C D)"))
                             (A c D)
                             (B c D)
                             (B a B))
-                          ) (format "Step three of the design recipe has not been successfully completed.
-The following final states, (F G), are not in your list of states: (A B C D)"))
+                          ))
+   )
   ;duplicates
-  (check-error (make-ndfa '(A B C D)
+  (check-exn
+   #rx"Step three of the design recipe has not been successfully completed.
+The following values, \\(C\\), are duplicated in the given final states: \\(B C C\\)"
+   (lambda () (make-ndfa '(A B C D)
                           '(a b c d)
                           'A
                           '(B C C)
@@ -218,9 +275,12 @@ The following final states, (F G), are not in your list of states: (A B C D)"))
                             (A c D)
                             (B c D)
                             (B a B))
-                          ) (format "Step three of the design recipe has not been successfully completed.
-The following values, (C), are duplicated in the given final states: (B C C)"))
-  (check-error (make-ndfa '(A B C D)
+                          ))
+   )
+  (check-exn
+   #rx"Step three of the design recipe has not been successfully completed.
+The following values, \\(B C\\), are duplicated in the given final states: \\(B C C B\\)"
+   (lambda () (make-ndfa '(A B C D)
                           '(a b c d)
                           'A
                           '(B C C B)
@@ -228,11 +288,13 @@ The following values, (C), are duplicated in the given final states: (B C C)"))
                             (A c D)
                             (B c D)
                             (B a B))
-                          ) (format "Step three of the design recipe has not been successfully completed.
-The following values, (B C), are duplicated in the given final states: (B C C B)"))
+                          )) )
 
   ;;START STATE
-  (check-error (make-ndfa '(A B C D)
+  (check-exn
+   #rx"Step three of the design recipe has not been successfully completed.
+The given starting state: 1 is not a valid state"
+   (lambda () (make-ndfa '(A B C D)
                           '(a b c d)
                           '1
                           '(B C C B)
@@ -240,9 +302,11 @@ The following values, (B C), are duplicated in the given final states: (B C C B)
                             (A c D)
                             (B c D)
                             (B a B))
-                          ) (format "Step three of the design recipe has not been successfully completed.
-The given starting state: 1 is not a valid state"))
-  (check-error (make-ndfa '(A B C D)
+                          )) )
+  (check-exn
+   #rx"Step three of the design recipe has not been successfully completed.
+The given starting state: a is not a valid state"
+   (lambda () (make-ndfa '(A B C D)
                           '(a b c d)
                           'a
                           '(B C C B)
@@ -250,9 +314,11 @@ The given starting state: 1 is not a valid state"))
                             (A c D)
                             (B c D)
                             (B a B))
-                          ) (format "Step three of the design recipe has not been successfully completed.
-The given starting state: a is not a valid state"))
-  (check-error (make-ndfa '(A B C D)
+                          )) )
+  (check-exn
+   #rx"Step three of the design recipe has not been successfully completed.
+The given starting state: \\(A\\) is not a valid state"
+   (lambda () (make-ndfa '(A B C D)
                           '(a b c d)
                           '(A)
                           '(B C C B)
@@ -260,9 +326,11 @@ The given starting state: a is not a valid state"))
                             (A c D)
                             (B c D)
                             (B a B))
-                          ) (format "Step three of the design recipe has not been successfully completed.
-The given starting state: (A) is not a valid state"))
-  (check-error (make-ndfa '(A B C D)
+                          )) )
+  (check-exn
+   #rx"Step three of the design recipe has not been successfully completed.
+The following starting state, F, is not in the given list of states: \\(A B C D\\)"
+   (lambda () (make-ndfa '(A B C D)
                           '(a b c d)
                           'F
                           '(B C C B)
@@ -270,12 +338,14 @@ The given starting state: (A) is not a valid state"))
                             (A c D)
                             (B c D)
                             (B a B))
-                          ) (format "Step three of the design recipe has not been successfully completed.
-The following starting state, F, is not in the given list of states: (A B C D)"))
+                          )) )
 
   ;; Accepts/Rejects
 
-  (check-error (make-ndfa '(A B)
+  (check-exn
+   #rx"Step two of the design recipe has not been successfully completed.
+The following words in the accepts list contain symbols not included in sigma: \\(\\(c\\)\\)"
+   (lambda () (make-ndfa '(A B)
                           '(a b)
                           'A
                           '(A)
@@ -283,11 +353,13 @@ The following starting state, F, is not in the given list of states: (A B C D)")
                             (B b B)
                             (A b B)
                             (B a B))
-                          #:accepts '((c)))
-               (format "Step two of the design recipe has not been successfully completed.
-The following words in the accepts list contain symbols not included in sigma: ((c))"))
+                          #:accepts '((c))))
+               )
 
-  (check-error (make-ndfa '(A B)
+  (check-exn
+   #rx"Step two of the design recipe has not been successfully completed.
+The expected accepts is not a list of words: \\(c\\)"
+   (lambda () (make-ndfa '(A B)
                           '(a b)
                           'A
                           '(A)
@@ -295,11 +367,13 @@ The following words in the accepts list contain symbols not included in sigma: (
                             (B b B)
                             (A b B)
                             (B a B))
-                          #:accepts '(c))
-               (format "Step two of the design recipe has not been successfully completed.
-The expected accepts is not a list of words: (c)"))
+                          #:accepts '(c)))
+               )
 
-  (check-error (make-ndfa '(A B)
+  (check-exn
+   #rx"Step two of the design recipe has not been successfully completed.
+The following words in the rejects list contain symbols not included in sigma: \\(\\(c\\)\\)"
+   (lambda () (make-ndfa '(A B)
                           '(a b)
                           'A
                           '(A)
@@ -307,11 +381,13 @@ The expected accepts is not a list of words: (c)"))
                             (B b B)
                             (A b B)
                             (B a B))
-                          #:rejects '((c)))
-               (format "Step two of the design recipe has not been successfully completed.
-The following words in the rejects list contain symbols not included in sigma: ((c))"))
+                          #:rejects '((c))))
+               )
 
-  (check-error (make-ndfa '(A B)
+  (check-exn
+   #rx"Step two of the design recipe has not been successfully completed.
+The expected rejects is not a list of words: \\(c\\)"
+   (lambda () (make-ndfa '(A B)
                           '(a b)
                           'A
                           '(A)
@@ -319,11 +395,13 @@ The following words in the rejects list contain symbols not included in sigma: (
                             (B b B)
                             (A b B)
                             (B a B))
-                          #:rejects '(c))
-               (format "Step two of the design recipe has not been successfully completed.
-The expected rejects is not a list of words: (c)"))
+                          #:rejects '(c)))
+               )
 
-  (check-error (make-ndfa '(A B)
+  (check-exn
+   #rx"Step six of the design recipe has not been successfully completed.
+The constructed machine does not accept the following words: \\(\\(a a b a a a\\)\\)"
+   (lambda () (make-ndfa '(A B)
                           '(a b)
                           'A
                           '(A)
@@ -332,11 +410,14 @@ The expected rejects is not a list of words: (c)"))
                             (A b B)
                             (B a B))
                           #:accepts '((a a b a a a))
-                          #:rejects '((b a a a) (a a a a b a)))
-               (format "Step six of the design recipe has not been successfully completed.
-The constructed machine does not accept the following words: ((a a b a a a))"))
+                          #:rejects '((b a a a) (a a a a b a))))
+               )
 
-  (check-error (make-ndfa '(A B)
+  (check-exn
+   #rx"Step six of the design recipe has not been successfully completed.
+The constructed machine does not reject the following words: \\(\\(a a a\\)\\)"
+   (lambda ()
+     (make-ndfa '(A B)
                           '(a b)
                           'A
                           '(A)
@@ -345,28 +426,7 @@ The constructed machine does not accept the following words: ((a a b a a a))"))
                             (A b B)
                             (B a B))
                           #:accepts '((a a a a a))
-                          #:rejects '((a a a) (a a a a b a)))
-               (format "Step six of the design recipe has not been successfully completed.
-The constructed machine does not reject the following words: ((a a a))"))
-
-  ;;RULES
-  
-  (test)
-
-  (define ALOM (make-ndfa '(S A B C)
-                          '(a b c)
-                          'S
-                          '(A B C)
-                          `((S ,EMP A)
-                            (S ,EMP B)
-                            (S ,EMP C)
-                            (A b A)
-                            (A c A)
-                            (B a B)
-                            (B c B)
-                            (C a C)
-                            (C b C))
-                          #:accepts '((a a c) (b c) (c a a) (a b))
-                          #:rejects '((a b c) (b a b b c))))
+                          #:rejects '((a a a) (a a a a b a))))
+               )
 
   )

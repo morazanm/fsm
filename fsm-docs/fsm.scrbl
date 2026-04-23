@@ -3,7 +3,7 @@
 
 #lang scribble/manual
 
-@(require (for-label 2htdp/image typed/racket/base))
+@(require (for-label 2htdp/image racket (only-in typed/racket/base U Listof Boolean List)))
 
 @title{FSM}
 @author[(author+email "Marco T. Morazán" "morazanm@shu.edu")]
@@ -563,9 +563,11 @@ in a multitape Turing machine.
  The up arrow moves the visualization to the beginning. The down arrow moves
  the visualization to the end.}
 
-@defproc[(minimization-viz [m fsa]) void?]
+@defproc[(minimization-viz [m fsa] [#:palette palette symbol? 'default]) void?]
 Launches a visualization tool for the construction of a dfa with a minimal number of states that decides
-L = {w | w∈L(m)}.
+L = {w | w∈L(m)} The optional keyword parameter @italic{palette} is used
+to select a color blindness pallete: 'default for the default palette, 'prot for the protanopia palette,
+'deut for the deuteranopia palette, and 'trit for the tritanopia palette.
 
 @defproc[(union-viz [m1 ndfa] [m2 ndfa]) void?]
 Launches a visualization tool for the construction of an ndfa that decides
@@ -637,12 +639,12 @@ the invariant failed.
 
 Note: Currently does not work with Turing machines, and mttms.
 
-@defproc[(sm-quickcheck [m machine?] [#:num-tests tests natural? 300] [#:max-length-kleenes num-kleenes natural? 20] [invs (list state (-> word boolean))] ...)
-         void?]
-Tests the given machine using the given state invariants. Dead states are removed for testing purposes. @italic{ds-remove}
-is used to determine if they are removed. @italic{tests} is the number of tests to perform on each state.
-@italic{num-kleenes} is the maximum number of times a loop is traversed in the given machine's transition
-relation. If tests pass, the function returns void. If tests fail, failed test reports are generated.
+@defproc[(sm-quickcheck [m machine?] [#:num-tests tests natural? 300] [#:max-length-kleenes num-kleenes natural? 20] [#:ds-removal? ds-removed? boolean? #false] [invs (list state (-> word boolean))] ...)
+         (void)]
+        Tests the given machine using the given state invariants. Dead states are removed for testing purposes. @italic{ds-removed?}
+        is used to determine if they are removed. @italic{tests} is the number of tests to perform on each state.
+        @italic{num-kleenes} is the maximum number of times a loop is traversed in the given machine's transition
+        relation. If tests pass, the function returns void. If tests fail, failed test reports are generated.
 
 Note: Currently does not work with pdas, Turing machines, and mttms.
 

@@ -339,8 +339,8 @@
   (if (empty? los)
       (empty-regexp)
       (if (= 1 (length los))
-          (singleton-regexp (symbol->string (first los)))
-          (simplify-regexp (make-unchecked-union (singleton-regexp (symbol->string (first los))) (make-unions (rest los)))))))
+          (make-unchecked-singleton (symbol->string (first los)))
+          (simplify-regexp (make-unchecked-union (make-unchecked-singleton (symbol->string (first los))) (make-unions (rest los)))))))
 
 
 ;; make-init-graph

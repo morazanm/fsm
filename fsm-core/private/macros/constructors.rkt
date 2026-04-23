@@ -4,7 +4,7 @@
          "validation/validation-flat-contracts.rkt"
          "../constants.rkt"
          "shared/shared-predicates.rkt"
-         racket/contract
+         racket/contract/base
          racket/list
          )
 (provide make-dfa/c
@@ -22,7 +22,7 @@
 (define (add-dead-state-rules rules states sigma)
   (define all-state-sigma-pairs (cartesian-product states sigma))
   (define existing-state-sigma-pairs
-    (map (lambda (rule) (list (first rule) (second rule))) rules))
+    (map (lambda (rule) (list (car rule) (cadr rule))) rules))
   (define missing-state-sigma-pairs
     (filter
      (lambda (pair) (not (member pair existing-state-sigma-pairs)))
@@ -61,8 +61,8 @@
                                                start
                                                finals
                                                rules
-                                               add-dead) (and/c (words-in-sigma/c sigma 'accepts "two")
-                                                                (listof-words/c "accepts" "two")
+                                               add-dead) (and/c (listof-words/c "accepts" "two")
+                                                                (words-in-sigma/c sigma 'accepts "two")
                                                                 (dfa-input/c states
                                                                              sigma
                                                                              start
@@ -75,8 +75,8 @@
                                                start
                                                finals
                                                rules
-                                               add-dead) (and/c (words-in-sigma/c sigma 'rejects "two")
-                                                                (listof-words/c "rejects" "two")
+                                               add-dead) (and/c (listof-words/c "rejects" "two")
+                                                                (words-in-sigma/c sigma 'rejects "two")
                                                                 (dfa-input/c states
                                                                              sigma
                                                                              start
