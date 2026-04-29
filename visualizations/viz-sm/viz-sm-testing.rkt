@@ -1925,6 +1925,15 @@
 
 |#
 
+#;(sm-viz (make-unchecked-mttm '(S)
+                   '()
+                   'S
+                   '(S)
+                   '()
+                   2
+                   'S)
+        `(,LM))
+
 
 #;(sm-viz AT-LEAST-ONE-MISSING '(a b c z)
             (list 'Z AB*B*UAB*-S-INV)

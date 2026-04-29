@@ -418,7 +418,8 @@
     (define (make-tapes aux-tape-index max-aux-tapes-index)
       (let ([tapes (zipper-current (imsg-state-mttm-tapes imsg-st))]
             [head-positions (zipper-current (imsg-state-mttm-head-positions imsg-st))])
-        (if (or (= aux-tape-index max-aux-tapes-index) (= aux-tape-index (sub1 (mttm-tape-amount (imsg-state-mttm-M imsg-st)))))
+        (if (or (= aux-tape-index max-aux-tapes-index)
+                (= aux-tape-index (sub1 (mttm-tape-amount (imsg-state-mttm-M imsg-st)))))
             (beside
              (text (format "T~s: " aux-tape-index) 20 FONT-COLOR)
              (draw-tape (list-ref tapes aux-tape-index) (list-ref head-positions aux-tape-index)))
