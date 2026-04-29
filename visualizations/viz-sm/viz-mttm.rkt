@@ -749,8 +749,10 @@ destination -> the rest of a mttm rule | half-rule
 (define (f-key-pressed a-vs)
   (let ([imsg-state-aux-tape-index (imsg-state-mttm-aux-tape-index (informative-messages-component-state (viz-state-informative-messages a-vs)))]
         [imsg-state-M (imsg-state-mttm-M (informative-messages-component-state (viz-state-informative-messages a-vs)))])
-    (if (and (>= (mttm-tape-amount imsg-state-M) MAX-TAPES-SHOWN)
-             (= imsg-state-aux-tape-index (- (mttm-tape-amount imsg-state-M) (sub1 MAX-TAPES-SHOWN))))
+    (if (or (<= (mttm-tape-amount imsg-state-M) MAX-TAPES-SHOWN)
+            (and (> (mttm-tape-amount imsg-state-M) MAX-TAPES-SHOWN)
+                 (= imsg-state-aux-tape-index (- (mttm-tape-amount imsg-state-M) (sub1 MAX-TAPES-SHOWN)))))
+          
         a-vs
         (struct-copy
          viz-state
@@ -771,7 +773,9 @@ destination -> the rest of a mttm rule | half-rule
 (define (e-key-pressed a-vs)
   (let ([imsg-state-aux-tape-index (imsg-state-mttm-aux-tape-index (informative-messages-component-state (viz-state-informative-messages a-vs)))]
         [imsg-state-M (imsg-state-mttm-M (informative-messages-component-state (viz-state-informative-messages a-vs)))])
-    (if (and (>= (mttm-tape-amount imsg-state-M) MAX-TAPES-SHOWN) (= imsg-state-aux-tape-index MIN-AUX-TAPE-INDEX))
+    (if (or (<= (mttm-tape-amount imsg-state-M) MAX-TAPES-SHOWN)
+              (and (> (mttm-tape-amount imsg-state-M) MAX-TAPES-SHOWN)
+                   (= imsg-state-aux-tape-index MIN-AUX-TAPE-INDEX)))
         a-vs
         (struct-copy
          viz-state

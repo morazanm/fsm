@@ -38,7 +38,9 @@
   ;;list -> Boolean
   ;;Purpose: Determines if the given list is length 2
   (define (length-is-two? L)
-    (= (length L) 2))
+    (and (not (null? L))
+         (not (null? (cdr L)))
+         (null? (cddr L))))
   (and (list? X)
        (length-is-two? X)
        (symbol? (car X))
