@@ -201,7 +201,7 @@
 ;; Purpose: Generates a word using 
 (define/contract (gen-cfexp-word cfe [reps MAX-KLEENESTAR-LIMIT])
   gen-cfexp-word/c
-  (define MAX-KLEENESTAR-REPS (if (null? reps) MAX-KLEENESTAR-LIMIT (car reps)))
+  (define MAX-KLEENESTAR-REPS (if (null? reps) MAX-KLEENESTAR-LIMIT reps))
   (cond [(mk-null-cfexp? cfe) (error "A word cannot be generated using the null-cfexp.")]
         [(mk-empty-cfexp? cfe) EMP]
         [(mk-singleton-cfexp? cfe) (list (string->symbol (mk-singleton-cfexp-char cfe)))]
@@ -887,6 +887,69 @@
       
       
       ))
+
+
+(define (make-smallest-paths P)
+   #|
+  pda-struct is a structural representation of a pda
+  states | The states for the given pda => (listof states)
+  sigma  | The alphabet that the given pda works over => (listof symbol)
+  gamma  | The stack alphabet that given pda works over => (listof symbol)
+  start  | The starting state => symbol
+  finals | The final states => (listof symbol)
+  rules  | The transition relation for the given pda => (listof pda-rule)
+  |#
+  (struct pda (states sigma gamma start finals rules) #:transparent)
+
+  #|
+  pda-rule is a structural representation of a pda rule
+  source | The state the rule is coming from => symbol
+  action | The action the pda takes when using the rule => pda-action
+  destin | The state the rule transitions to => symbol
+  tag    | The cfe-template for the given rule => symbol / cfe-template
+  |#
+  (struct pda-rule (source action destin) #:transparent)
+
+  #|
+  a pda-action is a structural representation of a pda action
+  read | The element that the pda reads => symbol
+  pop  | The element(s) that the pda pops of the stack => symbol / (listof symbol)
+  push | The element(s) that the pda pushes to the stack => symbol / (listof symbol)
+  |#
+  (struct pda-action (read pop push) #:transparent)
+
+  ;;pda-rule -> Boolean
+      ;;Purpose: Determines if the given pda-rule is an empty transition
+      (define (e-transition? action)
+        (and (eq? EMP (pda-action-read action))
+             (eq? EMP (pda-action-pop action))
+             (eq? EMP (pda-action-push action))))
+  
+  ;;pda -> pda-struct
+  ;;Purpose: Converts the given pda into a pda-struct
+  (define (unchecked->pda P)
+    ;;(list (list state symbol los) (list state los)) -> pda-rule
+    ;;Purpose: Converts the given pda rule into a pda-rule struct
+    (define (rule->struct rule)
+      ;;symbol los los -> pda-action
+      ;;Purpose: Creates a pda action from the given input
+      (define (make-pda-action read pop push)
+        (pda-action read pop push))
+      (pda-rule (first (first rule))
+                (make-pda-action (second (first rule)) (third (first rule)) (second (second rule)))
+                (first (second rule))))
+    (pda (pda-getstates P)
+         (pda-getalphabet P)
+         (pda-getgamma P)
+         (pda-getstart P)
+         (pda-getfinals P)
+         (map rule->struct (pda-getrules P))
+         (pda-getstates P)))
+  
+  (unchecked->pda P))
+
+
+
 
 #;(define #;define/contract (pda->cfe pda)
   #;pda->cfe/c

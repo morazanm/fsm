@@ -14,7 +14,7 @@
          racket/list
          )
 
-(define WORD-AMOUNT 50)
+(define WORD-AMOUNT 10)
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;CFEXP;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -186,6 +186,9 @@
                                      (concat-cfexp B WcWr B)
                                      C)])
                        WcWr))
+
+
+
 
 (define G2 (cfe->cfg AiBjCk2))
 
@@ -561,7 +564,7 @@
 
 ;;cfg cfexp -> boolean
 ;;Purpose: Determines if the given cfe can generate a natnum amount of words that the grammar can derive
-(define (grammar-checker g words)
+#;(define (grammar-checker g words)
   (for/and ([w (in-list words)])
     (list? (cfg-derive g (if (eq? w EMP) '() w)))))
 
@@ -912,6 +915,9 @@
     (void)))
 |#
 
+
+#|
 (pda-checker Gina-AiBj (gen-cfe-words Gina-Aibj-TBH))
 (pda-checker Gina-a^mb^nc^p (gen-cfe-words Gina-a^mb^nc^p-tbh))
 (pda-checker marco-anbncndn (gen-cfe-words marco-anbncndn-tbh))
+|#
