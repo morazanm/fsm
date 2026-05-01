@@ -1794,6 +1794,179 @@
    4
    'Y))
 
+(define MULT
+  (make-unchecked-mttm
+   '(S A B C D E F G H I J K L M N P Q R Y)
+   '(d)
+   'S
+   '(Y)
+   (list
+
+    ;; Phase 1: copy a's d's to tape 1, copy b's d's to tape 2
+
+    (list (list 'S (list BLANK BLANK BLANK BLANK))
+          (list 'A (list RIGHT RIGHT RIGHT RIGHT)))
+
+    (list (list 'A (list 'd BLANK BLANK BLANK))
+          (list 'B (list 'd 'd BLANK BLANK)))
+
+    (list (list 'B (list 'd 'd BLANK BLANK))
+          (list 'A (list RIGHT RIGHT BLANK BLANK)))
+
+    (list (list 'A (list BLANK BLANK BLANK BLANK))
+          (list 'C (list RIGHT BLANK BLANK BLANK)))
+
+    (list (list 'C (list 'd BLANK BLANK BLANK))
+          (list 'D (list 'd BLANK 'd BLANK)))
+
+    (list (list 'D (list 'd BLANK 'd BLANK))
+          (list 'C (list RIGHT BLANK RIGHT BLANK)))
+
+    (list (list 'C (list BLANK BLANK BLANK BLANK))
+          (list 'E (list BLANK LEFT LEFT BLANK)))
+
+    ;; Phase 2 setup: rewind tape 1 in E, then tape 2 in F
+
+    (list (list 'E (list BLANK 'd BLANK BLANK))
+          (list 'E (list BLANK LEFT BLANK BLANK)))
+    (list (list 'E (list BLANK 'd 'd BLANK))
+          (list 'E (list BLANK LEFT 'd BLANK)))
+
+    (list (list 'E (list BLANK BLANK BLANK BLANK))
+          (list 'F (list BLANK RIGHT BLANK BLANK)))
+    (list (list 'E (list BLANK BLANK 'd BLANK))
+          (list 'F (list BLANK RIGHT 'd BLANK)))
+
+    (list (list 'F (list BLANK BLANK 'd BLANK))
+          (list 'F (list BLANK BLANK LEFT BLANK)))
+    (list (list 'F (list BLANK 'd 'd BLANK))
+          (list 'F (list BLANK 'd LEFT BLANK)))
+
+    (list (list 'F (list BLANK BLANK BLANK BLANK))
+          (list 'G (list BLANK BLANK RIGHT BLANK)))
+    (list (list 'F (list BLANK 'd BLANK BLANK))
+          (list 'G (list BLANK 'd RIGHT BLANK)))
+
+    ;; Phase 2 main loop: for each d on tape 2, copy all of tape 1 onto tape 3
+
+    (list (list 'G (list BLANK 'd 'd BLANK))
+          (list 'H (list BLANK 'd BLANK BLANK)))
+    (list (list 'G (list BLANK BLANK 'd BLANK))
+          (list 'H (list BLANK BLANK BLANK BLANK)))
+
+    (list (list 'G (list BLANK 'd BLANK BLANK))
+          (list 'L (list BLANK 'd BLANK LEFT)))
+    (list (list 'G (list BLANK BLANK BLANK BLANK))
+          (list 'L (list BLANK BLANK BLANK LEFT)))
+
+    (list (list 'H (list BLANK 'd BLANK BLANK))
+          (list 'I (list BLANK 'd RIGHT BLANK)))
+    (list (list 'H (list BLANK BLANK BLANK BLANK))
+          (list 'I (list BLANK BLANK RIGHT BLANK)))
+
+    (list (list 'I (list BLANK 'd 'd BLANK))
+          (list 'J (list BLANK 'd 'd 'd)))
+    (list (list 'I (list BLANK 'd BLANK BLANK))
+          (list 'J (list BLANK 'd BLANK 'd)))
+
+    (list (list 'I (list BLANK BLANK 'd BLANK))
+          (list 'K (list BLANK LEFT 'd BLANK)))
+    (list (list 'I (list BLANK BLANK BLANK BLANK))
+          (list 'K (list BLANK LEFT BLANK BLANK)))
+
+    (list (list 'J (list BLANK 'd 'd 'd))
+          (list 'I (list BLANK RIGHT 'd RIGHT)))
+    (list (list 'J (list BLANK 'd BLANK 'd))
+          (list 'I (list BLANK RIGHT BLANK RIGHT)))
+
+    (list (list 'K (list BLANK 'd 'd BLANK))
+          (list 'K (list BLANK LEFT 'd BLANK)))
+    (list (list 'K (list BLANK 'd BLANK BLANK))
+          (list 'K (list BLANK LEFT BLANK BLANK)))
+
+    (list (list 'K (list BLANK BLANK 'd BLANK))
+          (list 'G (list BLANK RIGHT 'd BLANK)))
+    (list (list 'K (list BLANK BLANK BLANK BLANK))
+          (list 'G (list BLANK RIGHT BLANK BLANK)))
+
+    ;; Phase 3: rewind tape 3, erase tape 0, copy tape 3 onto tape 0
+
+    (list (list 'L (list BLANK 'd BLANK 'd))
+          (list 'L (list BLANK 'd BLANK LEFT)))
+    (list (list 'L (list BLANK BLANK BLANK 'd))
+          (list 'L (list BLANK BLANK BLANK LEFT)))
+
+    (list (list 'L (list BLANK 'd BLANK BLANK))
+          (list 'M (list LEFT 'd BLANK RIGHT)))
+    (list (list 'L (list BLANK BLANK BLANK BLANK))
+          (list 'M (list LEFT BLANK BLANK RIGHT)))
+
+    (list (list 'M (list 'd 'd BLANK 'd))
+          (list 'N (list BLANK 'd BLANK 'd)))
+    (list (list 'M (list 'd BLANK BLANK 'd))
+          (list 'N (list BLANK BLANK BLANK 'd)))
+    (list (list 'M (list 'd 'd BLANK BLANK))
+          (list 'N (list BLANK 'd BLANK BLANK)))
+    (list (list 'M (list 'd BLANK BLANK BLANK))
+          (list 'N (list BLANK BLANK BLANK BLANK)))
+
+    (list (list 'M (list BLANK 'd BLANK 'd))
+          (list 'M (list LEFT 'd BLANK 'd)))
+    (list (list 'M (list BLANK BLANK BLANK 'd))
+          (list 'M (list LEFT BLANK BLANK 'd)))
+    (list (list 'M (list BLANK 'd BLANK BLANK))
+          (list 'M (list LEFT 'd BLANK BLANK)))
+    (list (list 'M (list BLANK BLANK BLANK BLANK))
+          (list 'M (list LEFT BLANK BLANK BLANK)))
+
+    (list (list 'M (list LM 'd BLANK 'd))
+          (list 'R (list RIGHT 'd BLANK 'd)))
+    (list (list 'M (list LM BLANK BLANK 'd))
+          (list 'R (list RIGHT BLANK BLANK 'd)))
+    (list (list 'M (list LM 'd BLANK BLANK))
+          (list 'R (list RIGHT 'd BLANK BLANK)))
+    (list (list 'M (list LM BLANK BLANK BLANK))
+          (list 'R (list RIGHT BLANK BLANK BLANK)))
+
+    (list (list 'N (list BLANK 'd BLANK 'd))
+          (list 'M (list LEFT 'd BLANK 'd)))
+    (list (list 'N (list BLANK BLANK BLANK 'd))
+          (list 'M (list LEFT BLANK BLANK 'd)))
+    (list (list 'N (list BLANK 'd BLANK BLANK))
+          (list 'M (list LEFT 'd BLANK BLANK)))
+    (list (list 'N (list BLANK BLANK BLANK BLANK))
+          (list 'M (list LEFT BLANK BLANK BLANK)))
+
+    (list (list 'R (list BLANK 'd BLANK 'd))
+          (list 'P (list RIGHT 'd BLANK 'd)))
+    (list (list 'R (list BLANK BLANK BLANK 'd))
+          (list 'P (list RIGHT BLANK BLANK 'd)))
+    (list (list 'R (list BLANK 'd BLANK BLANK))
+          (list 'P (list RIGHT 'd BLANK BLANK)))
+    (list (list 'R (list BLANK BLANK BLANK BLANK))
+          (list 'P (list RIGHT BLANK BLANK BLANK)))
+
+    (list (list 'P (list BLANK 'd BLANK 'd))
+          (list 'Q (list 'd 'd BLANK 'd)))
+    (list (list 'P (list BLANK BLANK BLANK 'd))
+          (list 'Q (list 'd BLANK BLANK 'd)))
+
+    (list (list 'P (list BLANK 'd BLANK BLANK))
+          (list 'Y (list BLANK 'd BLANK BLANK)))
+    (list (list 'P (list BLANK BLANK BLANK BLANK))
+          (list 'Y (list BLANK BLANK BLANK BLANK)))
+
+    (list (list 'Q (list 'd 'd BLANK 'd))
+          (list 'P (list RIGHT 'd BLANK RIGHT)))
+    (list (list 'Q (list 'd BLANK BLANK 'd))
+          (list 'P (list RIGHT BLANK BLANK RIGHT)))
+
+    )
+   4
+   #|
+     Why do you have an accept state?
+   |#
+   'Y))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 #|
