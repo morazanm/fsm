@@ -14,6 +14,21 @@
 
 ;;PDA->CFE
 
+
+(define anbkckdn (make-unchecked-ndpda '(S D M C)
+                                       '(a b c d)
+                                       '(n k)
+                                       'S
+                                       '(C)
+                                       `(((S ,EMP ,EMP)(D ,EMP))
+                                         ((D ,EMP ,EMP)(M ,EMP))
+                                         ((S a ,EMP)(S (n)))
+                                         ((D b ,EMP)(D (k)))
+                                         ((M c (k))(M ,EMP))
+                                         ((C d (n))(C ,EMP))
+                                         ((M ,EMP ,EMP)(C ,EMP)))))
+                                       
+
 ;;w = a*
 (define A* (make-unchecked-ndpda '(S)
                                 '(a b)
@@ -77,6 +92,23 @@
                            ((B b (a)) (B ,EMP))
                            ((B ,EMP ,EMP) (C ,EMP))
                            )))
+(define Gina-AiBj2 (make-unchecked-ndpda '(S A B C)
+                         '(a b)
+                         '(a)
+                         'S
+                         '(C)
+                         `(((S a ,EMP) (A (a)))
+                           ((S a ,EMP) (A (a a)))
+                           ((S ,EMP ,EMP) (A ,EMP))
+                           ((A a ,EMP) (A (a)))
+                           ((A a ,EMP) (A (a a)))
+                           ((A a ,EMP) (S ,EMP))
+                           ((A b (a)) (B ,EMP))
+                           ((A ,EMP ,EMP) (B ,EMP))
+                           ((B b (a)) (B ,EMP))
+                           ((B ,EMP ,EMP) (C ,EMP))
+                           )))
+
 ;;L = {a^nb^ma^n | n,m ≥ 0 }
 (define Gina-A^nB^mA^n (make-unchecked-ndpda '(S A B)
                               '(a b)
@@ -173,7 +205,8 @@
 
 
 #;(sm-graph Gina-AiBj)
-(pda->cfe Gina-AiBj)
+;(pda->cfe Gina-AiBj2)
+
 
 
 ;;w = a*

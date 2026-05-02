@@ -869,9 +869,9 @@
     
     
     (values (sm-graph P)
-            (pda-rules new-P)
-            (sm-graph (pda->unchecked shrunken-P))
-            (printable-tag (pda-rule-action (first (pda-rules shrunken-P))))
+            ;(pda-rules new-P)
+           ; (sm-graph (pda->unchecked shrunken-P))
+            (pda-rule-action (first (pda-rules shrunken-P)))
            #;shrunken-P)
     ;(sm-graph (pda->spda P))
     #;(values simple-P
