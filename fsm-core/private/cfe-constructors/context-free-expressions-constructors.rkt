@@ -42,6 +42,7 @@
          cfe->pda
          pick-cfexp
          printable-cfexp
+         #;make-smallest-paths
          )
 
 (define MAX-KLEENESTAR-LIMIT 20)
@@ -596,7 +597,9 @@
           [(empty? temp) (action->string (empty-rule temp))]
           [(singleton? temp) (action->string (singleton-rule temp))]
           [(union? temp) (apply string-append
-                                (cons "U" (map (compose1 pda-rule-action template->rules) (union-rules temp))))]
+                                (map template->rules #;(compose1 pda-rule-action template->rules) (union-rules temp))
+                                #;(map (λ (x) (string-append (template->rules x) "U")) #;(compose1 pda-rule-action template->rules) (union-rules temp))
+                                #;(cons "U" (map (λ (x) (string-append (template->rules x) "U")) #;(compose1 pda-rule-action template->rules) (union-rules temp))))]
           [(concat? temp) (apply string-append
                                 (map template->rules (concat-rules temp)))]
           [else (template->rules (kleene-rule temp))]))
@@ -866,7 +869,10 @@
     
     
     (values (sm-graph P)
-           shrunken-P)
+            (pda-rules new-P)
+            (sm-graph (pda->unchecked shrunken-P))
+            (printable-tag (pda-rule-action (first (pda-rules shrunken-P))))
+           #;shrunken-P)
     ;(sm-graph (pda->spda P))
     #;(values simple-P
             ;(pda2cfg P)
@@ -888,283 +894,6 @@
       
       ))
 
-
-(define (make-smallest-paths P)
-   #|
-  pda-struct is a structural representation of a pda
-  states | The states for the given pda => (listof states)
-  sigma  | The alphabet that the given pda works over => (listof symbol)
-  gamma  | The stack alphabet that given pda works over => (listof symbol)
-  start  | The starting state => symbol
-  finals | The final states => (listof symbol)
-  rules  | The transition relation for the given pda => (listof pda-rule)
-  |#
-  (struct pda (states sigma gamma start finals rules) #:transparent)
-
-  #|
-  pda-rule is a structural representation of a pda rule
-  source | The state the rule is coming from => symbol
-  action | The action the pda takes when using the rule => pda-action
-  destin | The state the rule transitions to => symbol
-  tag    | The cfe-template for the given rule => symbol / cfe-template
-  |#
-  (struct pda-rule (source action destin) #:transparent)
-
-  #|
-  a pda-action is a structural representation of a pda action
-  read | The element that the pda reads => symbol
-  pop  | The element(s) that the pda pops of the stack => symbol / (listof symbol)
-  push | The element(s) that the pda pushes to the stack => symbol / (listof symbol)
-  |#
-  (struct pda-action (read pop push) #:transparent)
-
-  ;;pda-rule -> Boolean
-      ;;Purpose: Determines if the given pda-rule is an empty transition
-      (define (e-transition? action)
-        (and (eq? EMP (pda-action-read action))
-             (eq? EMP (pda-action-pop action))
-             (eq? EMP (pda-action-push action))))
-  
-  ;;pda -> pda-struct
-  ;;Purpose: Converts the given pda into a pda-struct
-  (define (unchecked->pda P)
-    ;;(list (list state symbol los) (list state los)) -> pda-rule
-    ;;Purpose: Converts the given pda rule into a pda-rule struct
-    (define (rule->struct rule)
-      ;;symbol los los -> pda-action
-      ;;Purpose: Creates a pda action from the given input
-      (define (make-pda-action read pop push)
-        (pda-action read pop push))
-      (pda-rule (first (first rule))
-                (make-pda-action (second (first rule)) (third (first rule)) (second (second rule)))
-                (first (second rule))))
-    (pda (pda-getstates P)
-         (pda-getalphabet P)
-         (pda-getgamma P)
-         (pda-getstart P)
-         (pda-getfinals P)
-         (map rule->struct (pda-getrules P))
-         (pda-getstates P)))
-  
-  (unchecked->pda P))
-
-
-
-
-#;(define #;define/contract (pda->cfe pda)
-  #;pda->cfe/c
-
-  ;;nts   | the non-terminals for the given CFG     | (listof non-terminal)
-  ;;sigma | the alphabet for the given CFG          | (listof symbol)
-  ;;rules | the productions rules for the given CFG | (listof cfg-rule)
-  ;;start | the starting nt of the given CFG        | non-terminal
-  (struct CFG (nts sigma rules start) #:transparent)
-
-  ;;cfg -> CFG
-  ;;Purpose: Converts the given cfg into a CFG
-  (define (unchecked->cfg G)
-    (CFG (cfg-get-v G) (cfg-get-alphabet G) (cfg-get-the-rules G) (cfg-get-start G)))
-
-  ;;CFG -> cfg
-  ;;Purpose: Converts the given CFG into a cfg
-  (define (cfg->unchecked G)
-    (cfg (CFG-nts G) (CFG-sigma G) (CFG-rules G) (CFG-start G)))
-  
-  ;;CFG -> (hash nt . nt)
-  ;;Purpose: Creates a hash table with all the nts and new respective name  
-  (define (rename-nts G)
-  
-    ;;(listof nt) (listof nt) (hash nt . nt)
-    ;;Purpose: Renames the given (listof nt) and pairs the each nt with a new name in a hash
-    (define (rename-nts-helper old-nts new-nts acc)
-      (if (null? old-nts)
-          acc
-          (let* ([translated-nt (gen-nt new-nts)]
-                 [new-acc (hash-set acc (car old-nts) translated-nt)]
-                 [new-nts (cons translated-nt new-nts)])
-            (rename-nts-helper (cdr old-nts) new-nts new-acc))))
-    (rename-nts-helper (CFG-nts G) '() (hash)))
-
-  ;;CFG (hash nt . nt) -> cfg
-  ;;Purpose: Rebuilds the cfg by renaming all of the nts and remaking the 
-  (define (rebuild-cfg improper-cfg nts-mapping)
-    (let ([sigma (CFG-sigma improper-cfg)])
-      (make-unchecked-cfg (hash-values nts-mapping)
-                          sigma
-                          (map (λ (rule)
-                                 (list (hash-ref nts-mapping (cfg-rule-lhs rule))
-                                       ARROW
-                                       (let ([RHS (cfg-rule-rhs rule)])
-                                         (los->symbol (map (λ (r)
-                                                             (if (member r (cons EMP sigma))
-                                                                 r
-                                                                 (hash-ref nts-mapping r)))
-                                                           RHS)))))
-                               (CFG-rules improper-cfg))
-                          (hash-ref nts-mapping (CFG-start improper-cfg)))))
-
-  ;;cfg -> cfg
-  ;;Purpose: minimizes the given cfg by removing nts and rules that aren't needed
-  (define (minimize-cfg G)
-  
-    ;;CFG -> cfg
-    ;;Purpose: Minimizes the given CFG by repeatedly removing rules that can't
-    ;;         be used the grammar until the same grammar is created twice
-    (define (clean-up-cfg cfg acc)
-
-      ;;CFG -> CFG
-      ;;Purpose: Cleans up the given CFG's rules and nts by removing rules that cannot be generated
-      ;;         or contain nts that produce nothing
-      (define (clean-up-cfg-rules-and-nts G)
-
-        ;;symbol (listof nt) (listof cfg-rule) (listof symbol) -> (listof cfg-rule)
-        ;;Purpose: Remvoes rules that dont have produce an nt that has no production rule
-        ;;         (e.i a rule that produces a nt on the RHS but doesnt have a LHS substitution)
-        (define (remove-useless-rules start nts rules sigma)
-
-          ;;(listof nt) (listof cfg-rule) (listof symbol) (listof cfg-rule) -> (listof cfg-rule)
-          ;;Purpose: Removes that produces a nt on the RHS but doesnt have a LHS substitution
-          (define (remove-rules-without-nts nts rules sigma acc)
-    
-            ;;(listof cfg-rule) (listof cfg-rule) -> Boolean
-            ;;Purpose: Determines if the first given (listof cfg-rule) is the same as the second given (listof cfg-rule)
-            (define (same-rules? rules1 rules2)
-              (and (andmap (λ (rule) (member rules2 rule)) rules1)
-                   (andmap (λ (rule) (member rules1 rule)) rules2)))
-            (if (and (>= (length acc) 2)
-                     (same-rules? (car acc) (cadr acc)))
-                (car acc)
-                (let* ([new-rules (filter (λ (rule)
-                                            (andmap (λ (rhs)
-                                                      (or (member sigma rhs)
-                                                          (member nts rhs)))
-                                                    (cfg-rule-rhs rule)))
-                                          rules)]
-                       [new-nts (map cfg-rule-lhs new-rules)])
-                  (remove-rules-without-nts new-nts new-rules sigma (cons new-rules acc)))))
-  
-          ;;(listof cfg-rules) (listof cfg-rules) -> (listof cfg-rules)
-          ;;Purpose: Removes rules whose LHS nt only produces self-loops 
-          (define (remove-only-self-loops rules new-rules)
-            (if (null? rules)
-                new-rules
-                (let* ([rule-lhs (cfg-rule-lhs (car rules))]
-                       [related-rules (filter (λ (rule) (eq? (cfg-rule-lhs rule) rule-lhs)) rules)]
-                       [only-self-loop? (or (and (= (length related-rules) 1)
-                                                 (not (member (cfg-rule-rhs (car related-rules)) rule-lhs)))
-                                            (and (> (length related-rules) 1)
-                                                 (ormap (λ (rule) (not (member (cfg-rule-rhs rule) rule-lhs))) related-rules)))])
-                  (if (not only-self-loop?)
-                      (remove-only-self-loops (cdr rules) new-rules)
-                      (remove-only-self-loops (cdr rules) (cons (car rules) new-rules))))))
-  
-          (let* ([rhs-nts (remove-duplicates (append-map cfg-rule-rhs rules))]
-                 [rules-that-can-be-generated (filter (λ (rule)
-                                                        (or (eq? (cfg-rule-lhs rule) start)
-                                                            (member  rhs-nts (cfg-rule-lhs rule))))
-                                                      rules)]
-                 [lhs-nts (map cfg-rule-lhs rules-that-can-be-generated)])
-            (remove-only-self-loops (remove-rules-without-nts lhs-nts rules-that-can-be-generated sigma '()) '())))
-
-        ;;(listof cfg-rule) (listof nt) (listof nt) -> (listof nt)
-        ;;Purpose: Extrascts rules who rhs contain needed nts
-        (define (extract-needed-nts rules needed seen)
-          (let* ([new-needed-nts (filter (λ (nt)
-                                           (not (member seen nt)))
-                                         (remove-duplicates (filter-map (λ (rule)
-                                                                          (and (ormap (λ (rhs) (member needed rhs))
-                                                                                      (cfg-rule-rhs rule))
-                                                                               (cfg-rule-lhs rule)))
-                                                                        rules)))])
-            (if (null? new-needed-nts)
-                seen 
-                (extract-needed-nts rules (append needed new-needed-nts) (append seen new-needed-nts)))))
-  
-        (let* ([sigma (cons EMP (CFG-sigma G))]
-               [needed-nts (extract-needed-nts (remove-useless-rules (CFG-start G) (CFG-nts G) (CFG-rules G) sigma) sigma '())]
-               [rules-that-contain-needed-nts (filter (λ (rule)
-                                                        (member needed-nts (cfg-rule-lhs rule)))
-                                                      (CFG-rules G))])
-          (CFG needed-nts
-               (CFG-sigma G)
-               (filter (λ (rule)
-                         (andmap (λ (rhs) (or (member sigma rhs)
-                                              (member needed-nts rhs))) (cfg-rule-rhs rule)))
-                       rules-that-contain-needed-nts)
-               (CFG-start G))))
-      (if (and (>= (length acc) 2)
-               (equal? (car acc) (cadr acc)))
-          (cfg->unchecked (car acc))
-          (let ([new-cfg (clean-up-cfg-rules-and-nts cfg)])
-            (clean-up-cfg new-cfg (cons new-cfg acc)))))
-    (clean-up-cfg G '()))
-
-  ;;(listof X) (X -> Y) -> (hash X . Y)
-  ;;Purpose: Creates a hash table using the given (listof x) and function where x is a key and (f x) is the value
-  (define (make-hash-table lox f)
-    (foldl (λ (x h)
-             (hash-set h x (f x)))
-           (hash)
-           lox))
-
-  (define (simplify-rules curr-rules acc-rules)
-    (if (and (>= (length acc-rules) 2)
-             (equal? (car acc-rules) (cadr acc-rules)))
-        (hash-filter (car acc-rules)
-                     (λ (k v)
-                       (andmap (λ (r) (not (or (null? r)
-                                               (equal? (list EMP) r)))) v)))
-        (let* ([only-empty-rules
-                (hash-filter curr-rules (λ (k v)
-                                          (andmap (λ (r) (or (null? r)
-                                                             (equal? (list EMP) r))) v)))]
-               [e-nts (hash-keys only-empty-rules)]
-               [new-rules (hash-map/copy curr-rules (λ (k v)
-                                                      (if (ormap (λ (rule)
-                                                                   (ormap (λ (r)
-                                                                            (hash-has-key? only-empty-rules r)) rule)) v)
-                                                          (values k (map (λ (val) (filter (λ (r) (not (member r e-nts))) val)) v))
-                                                          (values k v))))])
-          (simplify-rules new-rules (cons new-rules acc-rules)))))
-  
-  (let* ([G (unchecked->cfg (pda2cfg pda))]
-         [renamed-nts-mapping (rename-nts G)]
-         [renamed-cfg (unchecked->cfg (rebuild-cfg G renamed-nts-mapping))]
-         [proper-cfg  (minimize-cfg renamed-cfg)]
-         [new-rules (make-hash-table (cfg-get-v proper-cfg) (λ (nt) (filter-map (λ (rule)
-                                                                                  (and (eq? (car rule) nt)
-                                                                                       (symbol->fsmlos (caddr rule))))
-                                                                                (cfg-get-rules proper-cfg))))]
-         [only-empty-rules (hash-filter new-rules (λ (k v)
-                                                    (or (null? v)
-                                                        (andmap (λ (r) (equal? (list EMP) r)) v))))]
-         [e-nts (hash-keys only-empty-rules)]
-         [simp-rules (simplify-rules new-rules '())]
-         [sub-only-rules (hash-filter simp-rules (λ (k v)
-                                                   (andmap (λ (r)
-                                                             (and (= (length r) 1)
-                                                                  (ormap (λ (el)
-                                                                           (member el (hash-keys simp-rules))) r))) v)))]
-         [sub-nts (hash-keys sub-only-rules)]
-         [simp-rules2 (hash-map/copy simp-rules (λ (k v)
-                                                  (if (ormap (λ (rule)
-                                                               (ormap (λ (r)
-                                                                        (hash-has-key? sub-only-rules r)) rule)) v)
-                                                      (values k (map (λ (val) (map (λ (r)
-                                                                                     (if (hash-has-key? sub-only-rules r)
-                                                                                         (car (flatten (hash-ref sub-only-rules r)))
-                                                                                         r)) val)) v))
-                                                      (values k v))))]
-         [startt (car (filter (λ (x) (eq? x (cfg-get-start proper-cfg))) (hash-keys simp-rules2)))]
-         [final-rules (hash-filter simp-rules2 (λ (k v)
-                                                 (or (eq? k startt)
-                                                     (not (member k sub-nts)))))]
-         [usable-rules (append-map (λ (lhs)
-                                     (map (λ (rhs)
-                                            (cfg-rule lhs rhs))
-                                          (hash-ref final-rules lhs)))
-                                   (hash-keys final-rules))])
-    final-rules))
 
 ;;cfe -> pda
 ;;Purpose: Converts the given cfe into a pda
