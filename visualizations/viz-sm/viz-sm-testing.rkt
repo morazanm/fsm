@@ -1140,6 +1140,401 @@
                       'S
                       '(Y)))
 
+;; function for rev(w) = w^r
+;; sigma = '(a b)
+
+;; xs: all the xs on the tape
+;; as: all the as on the tape
+;; bs: all the bs on the tape
+
+;; State Documentation:
+;; S: i = 1 AND tape[i] = BLANK
+;; A: i => 2 AND tape[1] = BLANK AND tape[2..i-1] = (aUb)*
+;; B: i => 1 AND tape[1] = BLANK AND |as|+|bs| => |xs|
+;; C: i => 2 AND tape[1] = BLANK AND tape[2..i] contains at least 1 x AND |as|+|bs|+1 => |xs|
+;; D: i => 4 AND tape[1] = BLANK AND tape[2..i-2] contains at least 1 x AND |as|+|bs|+1 => |xs|
+;; E: i => 3 AND tape[1] = BLANK AND tape[2..i-1] contains at least 1 x AND |as|+|bs| => |xs| AND |as|+|bs| => 1
+;; F: i => 2 AND tape[1] = BLANK AND tape[2..i] contains at least 1 x AND |as|+|bs|+1 => |xs|
+;; G: i => 4 AND tape[1] = BLANK AND tape[2..i-2] contains at least 1 x AND |as|+|bs|+1 => |xs|
+;; H: i => 2 AND tape[1] = BLANK AND |xs| = |as|+|bs|
+;; I: i => 3 AND tape[1] = BLANK AND |xs| = |as|+|bs|
+;; J: i => 3 AND tape[1] = BLANK AND |xs| = |as|+|bs|+1 AND tape[2..i-1] contains at least 1 x
+;; K: i => 1 AND tape[1] = BLANK AND |xs| = |as|+|bs|+2 AND tape[2..i+1] contains at least 1 x
+;; L: i => 2 AND tape[1] = BLANK AND |xs| = |as|+|bs|+2 AND tape[i] = x
+;; M: i => 2 AND tape[1] = BLANK AND |xs| = |as|+|bs| AND tape[i] = a
+;; N: i => 3 AND tape[1] = BLANK AND |xs| = |as|+|bs|+1 AND tape[2..i-1] contains at least 1 x
+;; O: i => 1 AND tape[1] = BLANK AND |xs| = |as|+|bs|+2 AND tape[2..i+1] contains at least 1 x
+;; P: i => 2 AND tape[1] = BLANK AND |xs| = |as|+|bs|+2 AND tape[i] = x
+;; Q: i => 2 AND tape[1] = BLANK AND |xs| = |as|+|bs| AND tape[i] = b
+;; R: i => 2 AND tape[1] = BLANK AND |as|+|bs| => |xs|
+;; T: i => 4 AND tape[1] = BLANK AND |as|+|bs| > |xs| AND tape[i] = BLANK
+;; Y: i => 2 AND tape[1] = BLANK AND |xs| = 0 AND tape[i] = BLANK
+
+
+;; PRE: tape = (LM BLANK w BLANK) AND i = 1
+;; POST: tape = (LM BLANK w^r BLANK) AND
+;;       i = 2 if w = '()
+;;         = (length w) + 1 otherwise
+(define rev (make-unchecked-tm '(S A B C D E F G H I J K L M N O P Q R T Y)
+                     '(a b x)
+                     `(((S ,BLANK) (A ,RIGHT))
+                       ((A a) (A ,RIGHT))
+                       ((A b) (A ,RIGHT))
+                       ((A ,BLANK) (B ,LEFT))
+                       ((B x) (B ,LEFT))
+                       ((B a) (C x))
+                       ((B b) (F x))
+                       ((B ,BLANK) (H ,RIGHT))
+                       ((C x) (C ,RIGHT))
+                       ((C ,BLANK) (D ,RIGHT))
+                       ((D a) (D ,RIGHT))
+                       ((D b) (D ,RIGHT))
+                       ((D ,BLANK) (E a))
+                       ((E a) (E ,LEFT))
+                       ((E b) (E ,LEFT))
+                       ((E ,BLANK) (B ,LEFT))
+                       ((F x) (F ,RIGHT))
+                       ((F ,BLANK) (G ,RIGHT))
+                       ((G a) (G ,RIGHT))
+                       ((G b) (G ,RIGHT))
+                       ((G ,BLANK) (E b))
+                       ((H x) (H ,RIGHT))
+                       ((H ,BLANK) (I ,RIGHT))
+                       ((I x) (I ,RIGHT))
+                       ((I a) (J x))
+                       ((I b) (N x))
+                       ((I ,BLANK) (R ,LEFT))
+                       ((J x) (J ,LEFT))
+                       ((J ,BLANK) (K ,LEFT))
+                       ((K x) (K ,LEFT))
+                       ((K ,BLANK) (L ,RIGHT))
+                       ((K b) (L ,RIGHT))
+                       ((K a) (L ,RIGHT))
+                       ((L x) (M a))
+                       ((M a) (H ,RIGHT))
+                       ((N x) (N ,LEFT))
+                       ((N ,BLANK) (O ,LEFT))
+                       ((O x) (O ,LEFT))
+                       ((O ,BLANK) (P ,RIGHT))
+                       ((O b) (P ,RIGHT))
+                       ((O a) (P ,RIGHT))
+                       ((P x) (Q b))
+                       ((Q b) (H ,RIGHT))
+                       ((R x) (T ,BLANK))
+                       ((R ,BLANK) (Y ,BLANK))
+                       ((T ,BLANK) (R ,LEFT))
+                       )
+                     'S
+                     '(Y)
+                     'Y))
+
+;; invariants for rev(w)
+
+;; tape natnum --> Boolean
+;; Purpose: Determine head in position 1 and tape[i]=BLANK
+(define (S-INV-rev t i)
+  (and (= i 1) (eq? (list-ref t i) BLANK)))
+
+;; tape natnum --> Boolean
+;; Purpose: Determine head in position  => 2 AND tape[1] = BLANK AND tape[2..i-1] = (aUb)*
+(define (A-INV-rev t i)
+  (and (>= i 2)
+       (eq? (list-ref t 1) BLANK)
+       (let* [(w2->i-1 (take (drop t 2) (- i 2)))
+              (onlyas&bs (filter (λ (symb) (or (eq? 'a symb)
+                                               (eq? 'b symb)))
+                                 w2->i-1))]
+         (equal? w2->i-1 onlyas&bs))))
+
+
+;; tape natnum --> Boolean
+;; Purpose: Determine head in position => 1 AND tape[1] = BLANK AND |as|+|bs| => |xs|
+(define (B-INV-rev t i)
+  (and (>= i 1)
+       (eq? (list-ref t 1) BLANK)
+       (let* [(w2->i-1 (if (> 2 i)
+                           '()
+                           (take (drop t 2) (- i 2))))
+              (onlyas&bs (filter (λ (symb) (or (eq? 'a symb)
+                                               (eq? 'b symb)))
+                                 t))
+              (xs (filter (λ (symb) (eq? symb 'x)) t))]
+         (>= (length onlyas&bs) (length xs)))))
+
+;; tape natnum --> Boolean
+;; Purpose: Determine head in position => 2 AND tape[1] = BLANK AND tape[2..i] contains at least 1 x AND |as|+|bs|+1 => |xs|
+(define (C-INV-rev t i)
+  (and (>= i 2)
+       (eq? (list-ref t 1) BLANK)
+       (let* [(w2->i (if (> 2 i)
+                           '()
+                           (take (drop t 2) (- i 1))))
+              (onlyas&bs (filter (λ (symb) (or (eq? 'a symb)
+                                               (eq? 'b symb)))
+                                 t))
+              (xs (filter (λ (symb) (eq? symb 'x)) t))
+              (xs2->i (filter (λ (symb) (eq? symb 'x)) w2->i))]
+         (>= (add1 (length onlyas&bs)) (length xs))
+         (>= (length xs2->i) 1))))
+
+
+;; tape natnum --> Boolean
+;; Purpose: Determine head in position => 4 AND tape[1] = BLANK AND tape[2..i-2] contains at least 1 x AND |as|+|bs|+1 => |xs|
+(define (D-INV-rev t i)
+  (and (>= i 4)
+       (eq? (list-ref t 1) BLANK)
+       (let* [(w2->i-2 (if (> 2 i)
+                           '()
+                           (take (drop t 2) (- i 3))))
+              (onlyas&bs (filter (λ (symb) (or (eq? 'a symb)
+                                               (eq? 'b symb)))
+                                 t))
+              (xs (filter (λ (symb) (eq? symb 'x)) t))
+              (xs2->i-2 (filter (λ (symb) (eq? symb 'x)) w2->i-2))]
+         (>= (add1 (length onlyas&bs)) (length xs))
+         (>= (length xs2->i-2) 1))))
+
+
+;; tape natnum --> Boolean
+;; Purpose: Determine head in position => 3 AND tape[1] = BLANK AND tape[2..i-1] contains at least 1 x AND |as|+|bs| => |xs| AND |as|+|bs| => 1
+(define (E-INV-rev t i)
+  (and (>= i 3)
+       (eq? (list-ref t 1) BLANK)
+       (let* [(w2->i-1 (if (> 2 i)
+                           '()
+                           (take (drop t 2) (- i 2))))
+              (onlyas&bs (filter (λ (symb) (or (eq? 'a symb)
+                                               (eq? 'b symb)))
+                                 t))
+              (xs (filter (λ (symb) (eq? symb 'x)) t))
+              (xs2->i-1 (filter (λ (symb) (eq? symb 'x)) w2->i-1))]
+         (>= (add1 (length onlyas&bs)) (length xs))
+         (>= (length xs2->i-1) 1))))
+
+
+;; tape natnum --> Boolean
+;; Purpose: Determine head in position => 2 AND tape[1] = BLANK AND tape[2..i] contains at least 1 x AND |as|+|bs|+1 => |xs|
+(define (F-INV-rev t i)
+  (and (>= i 2)
+       (eq? (list-ref t 1) BLANK)
+       (let* [(w2->i (if (> 2 i)
+                           '()
+                           (take (drop t 2) (- i 1))))
+              (onlyas&bs (filter (λ (symb) (or (eq? 'a symb)
+                                               (eq? 'b symb)))
+                                 t))
+              (xs (filter (λ (symb) (eq? symb 'x)) t))
+              (xs2->i (filter (λ (symb) (eq? symb 'x)) w2->i))]
+         (>= (add1 (length onlyas&bs)) (length xs))
+         (>= (length xs2->i) 1))))
+
+
+
+;; tape natnum --> Boolean
+;; Purpose: Determine head in position => 4 AND tape[1] = BLANK AND tape[2..i-2] contains at least 1 x AND |as|+|bs|+1 => |xs|
+(define (G-INV-rev t i)
+  (and (>= i 4)
+       (eq? (list-ref t 1) BLANK)
+       (let* [(w2->i-2 (if (> 2 i)
+                           '()
+                           (take (drop t 2) (- i 3))))
+              (onlyas&bs (filter (λ (symb) (or (eq? 'a symb)
+                                               (eq? 'b symb)))
+                                 t))
+              (xs (filter (λ (symb) (eq? symb 'x)) t))
+              (xs2->i-2 (filter (λ (symb) (eq? symb 'x)) w2->i-2))]
+         (>= (add1 (length onlyas&bs)) (length xs))
+         (>= (length xs2->i-2) 1))))
+
+
+;; tape natnum --> Boolean
+;; Purpose: Determine head in position => 2 AND tape[1] = BLANK AND |xs| = |as|+|bs|
+(define (H-INV-rev t i)
+  (and (>= i 2)
+       (eq? (list-ref t 1) BLANK)
+       (let* [(onlyas&bs (filter (λ (symb) (or (eq? 'a symb)
+                                               (eq? 'b symb)))
+                                 t))
+              (xs (filter (λ (symb) (eq? symb 'x)) t))]
+         (= (length onlyas&bs) (length xs)))))
+
+
+;; tape natnum --> Boolean
+;; Purpose: Determine head in position => 3 AND tape[1] = BLANK AND |xs| = |as|+|bs|
+(define (I-INV-rev t i)
+  (and (>= i 3)
+       (eq? (list-ref t 1) BLANK)
+       (let* [(onlyas&bs (filter (λ (symb) (or (eq? 'a symb)
+                                               (eq? 'b symb)))
+                                 t))
+              (xs (filter (λ (symb) (eq? symb 'x)) t))]
+         (= (length onlyas&bs) (length xs)))))
+
+
+
+;; tape natnum --> Boolean
+;; Purpose: Determine head in position => 3 AND tape[1] = BLANK AND |xs| = |as|+|bs|+1 AND tape[2..i-1] contains at least 1 x
+(define (J-INV-rev t i)
+  (and (>= i 3)
+       (eq? (list-ref t 1) BLANK)
+       (let* [(w2->i-1 (if (> 2 i)
+                           '()
+                           (take (drop t 2) (- i 2))))
+              (onlyas&bs (filter (λ (symb) (or (eq? 'a symb)
+                                               (eq? 'b symb)))
+                                 t))
+              (xs (filter (λ (symb) (eq? symb 'x)) t))
+              (xs2->i-1 (filter (λ (symb) (eq? symb 'x)) w2->i-1))]
+         (= (add1 (length onlyas&bs)) (length xs))
+         (>= (length xs2->i-1) 1))))
+
+
+;; tape natnum --> Boolean
+;; Purpose: Determine head in position => 1 AND tape[1] = BLANK AND |xs| = |as|+|bs|+2 AND tape[2..i+1] contains at least 1 x
+(define (K-INV-rev t i)
+  (and (>= i 1)
+       (eq? (list-ref t 1) BLANK)
+       (let* [(w2->i+1 (if (> 2 i)
+                           '()
+                           (take (drop t 2) i)))
+              (onlyas&bs (filter (λ (symb) (or (eq? 'a symb)
+                                               (eq? 'b symb)))
+                                 t))
+              (xs (filter (λ (symb) (eq? symb 'x)) t))
+              (xs2->i+1 (filter (λ (symb) (eq? symb 'x)) w2->i+1))]
+         (= (+ 2 (length onlyas&bs)) (length xs))
+         (>= (length xs2->i+1) 1))))
+
+
+
+;; tape natnum --> Boolean
+;; Purpose: Determine head in position => 2 AND tape[1] = BLANK AND |xs| = |as|+|bs|+2 AND tape[i] = x
+(define (L-INV-rev t i)
+  (and (>= i 2)
+       (eq? (list-ref t 1) BLANK)
+       (eq? (list-ref t i) 'x)
+       (let* [(onlyas&bs (filter (λ (symb) (or (eq? 'a symb)
+                                               (eq? 'b symb)))
+                                 t))
+              (xs (filter (λ (symb) (eq? symb 'x)) t))]
+         (= (+ 2 (length onlyas&bs)) (length xs)))))
+
+
+
+;; tape natnum --> Boolean
+;; Purpose: Determine head in position => 2 AND tape[1] = BLANK AND |xs| = |as|+|bs| AND tape[i] = a
+(define (M-INV-rev t i)
+  (and (>= i 2)
+       (eq? (list-ref t 1) BLANK)
+       (eq? (list-ref t i) 'a)
+       (let* [(onlyas&bs (filter (λ (symb) (or (eq? 'a symb)
+                                               (eq? 'b symb)))
+                                 t))
+              (xs (filter (λ (symb) (eq? symb 'x)) t))]
+         (= (length onlyas&bs) (length xs)))))
+
+
+
+
+;; tape natnum --> Boolean
+;; Purpose: Determine head in position i => 3 AND tape[1] = BLANK AND |xs| = |as|+|bs|+1 AND tape[2..i-1] contains at least 1 x
+(define (N-INV-rev t i)
+  (and (>= i 3)
+       (eq? (list-ref t 1) BLANK)
+       (let* [(w2->i-1 (if (> 2 i)
+                           '()
+                           (take (drop t 2) (- i 2))))
+              (onlyas&bs (filter (λ (symb) (or (eq? 'a symb)
+                                               (eq? 'b symb)))
+                                 t))
+              (xs (filter (λ (symb) (eq? symb 'x)) t))
+              (xs2->i-1 (filter (λ (symb) (eq? symb 'x)) w2->i-1))]
+         (= (add1 (length onlyas&bs)) (length xs))
+         (>= (length xs2->i-1) 1))))
+
+
+;; tape natnum --> Boolean
+;; Purpose: Determine head in position => 1 AND tape[1] = BLANK AND |xs| = |as|+|bs|+2 AND tape[2..i+1] contains at least 1 x
+(define (O-INV-rev t i)
+  (and (>= i 1)
+       (eq? (list-ref t 1) BLANK)
+       (let* [(w2->i+1 (if (> 2 i)
+                           '()
+                           (take (drop t 2) i)))
+              (onlyas&bs (filter (λ (symb) (or (eq? 'a symb)
+                                               (eq? 'b symb)))
+                                 t))
+              (xs (filter (λ (symb) (eq? symb 'x)) t))
+              (xs2->i+1 (filter (λ (symb) (eq? symb 'x)) w2->i+1))]
+         (= (+ 2 (length onlyas&bs)) (length xs))
+         (>= (length xs2->i+1) 1))))
+
+
+
+;; tape natnum --> Boolean
+;; Purpose: Determine head in position => 2 AND tape[1] = BLANK AND |xs| = |as|+|bs|+2 AND tape[i] = x
+(define (P-INV-rev t i)
+  (and (>= i 2)
+       (eq? (list-ref t 1) BLANK)
+       (eq? (list-ref t i) 'x)
+       (let* [(onlyas&bs (filter (λ (symb) (or (eq? 'a symb)
+                                               (eq? 'b symb)))
+                                 t))
+              (xs (filter (λ (symb) (eq? symb 'x)) t))]
+         (= (+ 2 (length onlyas&bs)) (length xs)))))
+
+
+
+;; tape natnum --> Boolean
+;; Purpose: Determine head in position => 2 AND tape[1] = BLANK AND |xs| = |as|+|bs| AND tape[i] = b
+(define (Q-INV-rev t i)
+  (and (>= i 2)
+       (eq? (list-ref t 1) BLANK)
+       (eq? (list-ref t i) 'b)
+       (let* [(onlyas&bs (filter (λ (symb) (or (eq? 'a symb)
+                                               (eq? 'b symb)))
+                                 t))
+              (xs (filter (λ (symb) (eq? symb 'x)) t))]
+         (= (length onlyas&bs) (length xs)))))
+
+
+
+;; tape natnum --> Boolean
+;; Purpose: Determine head in position => 2 AND tape[1] = BLANK AND |as|+|bs| => |xs|
+(define (R-INV-rev t i)
+  (and (>= i 2)
+       (eq? (list-ref t 1) BLANK)
+       (let* [(onlyas&bs (filter (λ (symb) (or (eq? 'a symb)
+                                               (eq? 'b symb)))
+                                 t))
+              (xs (filter (λ (symb) (eq? symb 'x)) t))]
+         (>= (length onlyas&bs) (length xs)))))
+
+
+
+;; tape natnum --> Boolean
+;; Purpose: Determine head in position => 4 AND tape[1] = BLANK AND |as|+|bs| > |xs| AND tape[i] = BLANK
+(define (T-INV-rev t i)
+  (and (>= i 4)
+       (eq? (list-ref t 1) BLANK)
+       (eq? (list-ref t i) BLANK)
+       (let* [(onlyas&bs (filter (λ (symb) (or (eq? 'a symb)
+                                               (eq? 'b symb)))
+                                 t))
+              (xs (filter (λ (symb) (eq? symb 'x)) t))]
+         (> (length onlyas&bs) (length xs)))))
+
+
+;; tape natnum --> Boolean
+;; Purpose: Determine head in position => 2 AND tape[1] = BLANK AND |xs| = 0 AND tape[i] = BLANK
+(define (Y-INV-rev t i)
+  (and (>= i 2)
+       (eq? (list-ref t 1) BLANK)
+       (eq? (list-ref t i) BLANK)
+       (let* [(xs (filter (λ (symb) (eq? symb 'x)) t))]
+         (= 0 (length xs)))))
+
+
 ;; word symbol → word
 ;; Purpose: Return the subword at the front of the
 ;; given word that only contains the given
@@ -1794,6 +2189,179 @@
    4
    'Y))
 
+(define MULT
+  (make-unchecked-mttm
+   '(S A B C D E F G H I J K L M N P Q R Y)
+   '(d)
+   'S
+   '(Y)
+   (list
+
+    ;; Phase 1: copy a's d's to tape 1, copy b's d's to tape 2
+
+    (list (list 'S (list BLANK BLANK BLANK BLANK))
+          (list 'A (list RIGHT RIGHT RIGHT RIGHT)))
+
+    (list (list 'A (list 'd BLANK BLANK BLANK))
+          (list 'B (list 'd 'd BLANK BLANK)))
+
+    (list (list 'B (list 'd 'd BLANK BLANK))
+          (list 'A (list RIGHT RIGHT BLANK BLANK)))
+
+    (list (list 'A (list BLANK BLANK BLANK BLANK))
+          (list 'C (list RIGHT BLANK BLANK BLANK)))
+
+    (list (list 'C (list 'd BLANK BLANK BLANK))
+          (list 'D (list 'd BLANK 'd BLANK)))
+
+    (list (list 'D (list 'd BLANK 'd BLANK))
+          (list 'C (list RIGHT BLANK RIGHT BLANK)))
+
+    (list (list 'C (list BLANK BLANK BLANK BLANK))
+          (list 'E (list BLANK LEFT LEFT BLANK)))
+
+    ;; Phase 2 setup: rewind tape 1 in E, then tape 2 in F
+
+    (list (list 'E (list BLANK 'd BLANK BLANK))
+          (list 'E (list BLANK LEFT BLANK BLANK)))
+    (list (list 'E (list BLANK 'd 'd BLANK))
+          (list 'E (list BLANK LEFT 'd BLANK)))
+
+    (list (list 'E (list BLANK BLANK BLANK BLANK))
+          (list 'F (list BLANK RIGHT BLANK BLANK)))
+    (list (list 'E (list BLANK BLANK 'd BLANK))
+          (list 'F (list BLANK RIGHT 'd BLANK)))
+
+    (list (list 'F (list BLANK BLANK 'd BLANK))
+          (list 'F (list BLANK BLANK LEFT BLANK)))
+    (list (list 'F (list BLANK 'd 'd BLANK))
+          (list 'F (list BLANK 'd LEFT BLANK)))
+
+    (list (list 'F (list BLANK BLANK BLANK BLANK))
+          (list 'G (list BLANK BLANK RIGHT BLANK)))
+    (list (list 'F (list BLANK 'd BLANK BLANK))
+          (list 'G (list BLANK 'd RIGHT BLANK)))
+
+    ;; Phase 2 main loop: for each d on tape 2, copy all of tape 1 onto tape 3
+
+    (list (list 'G (list BLANK 'd 'd BLANK))
+          (list 'H (list BLANK 'd BLANK BLANK)))
+    (list (list 'G (list BLANK BLANK 'd BLANK))
+          (list 'H (list BLANK BLANK BLANK BLANK)))
+
+    (list (list 'G (list BLANK 'd BLANK BLANK))
+          (list 'L (list BLANK 'd BLANK LEFT)))
+    (list (list 'G (list BLANK BLANK BLANK BLANK))
+          (list 'L (list BLANK BLANK BLANK LEFT)))
+
+    (list (list 'H (list BLANK 'd BLANK BLANK))
+          (list 'I (list BLANK 'd RIGHT BLANK)))
+    (list (list 'H (list BLANK BLANK BLANK BLANK))
+          (list 'I (list BLANK BLANK RIGHT BLANK)))
+
+    (list (list 'I (list BLANK 'd 'd BLANK))
+          (list 'J (list BLANK 'd 'd 'd)))
+    (list (list 'I (list BLANK 'd BLANK BLANK))
+          (list 'J (list BLANK 'd BLANK 'd)))
+
+    (list (list 'I (list BLANK BLANK 'd BLANK))
+          (list 'K (list BLANK LEFT 'd BLANK)))
+    (list (list 'I (list BLANK BLANK BLANK BLANK))
+          (list 'K (list BLANK LEFT BLANK BLANK)))
+
+    (list (list 'J (list BLANK 'd 'd 'd))
+          (list 'I (list BLANK RIGHT 'd RIGHT)))
+    (list (list 'J (list BLANK 'd BLANK 'd))
+          (list 'I (list BLANK RIGHT BLANK RIGHT)))
+
+    (list (list 'K (list BLANK 'd 'd BLANK))
+          (list 'K (list BLANK LEFT 'd BLANK)))
+    (list (list 'K (list BLANK 'd BLANK BLANK))
+          (list 'K (list BLANK LEFT BLANK BLANK)))
+
+    (list (list 'K (list BLANK BLANK 'd BLANK))
+          (list 'G (list BLANK RIGHT 'd BLANK)))
+    (list (list 'K (list BLANK BLANK BLANK BLANK))
+          (list 'G (list BLANK RIGHT BLANK BLANK)))
+
+    ;; Phase 3: rewind tape 3, erase tape 0, copy tape 3 onto tape 0
+
+    (list (list 'L (list BLANK 'd BLANK 'd))
+          (list 'L (list BLANK 'd BLANK LEFT)))
+    (list (list 'L (list BLANK BLANK BLANK 'd))
+          (list 'L (list BLANK BLANK BLANK LEFT)))
+
+    (list (list 'L (list BLANK 'd BLANK BLANK))
+          (list 'M (list LEFT 'd BLANK RIGHT)))
+    (list (list 'L (list BLANK BLANK BLANK BLANK))
+          (list 'M (list LEFT BLANK BLANK RIGHT)))
+
+    (list (list 'M (list 'd 'd BLANK 'd))
+          (list 'N (list BLANK 'd BLANK 'd)))
+    (list (list 'M (list 'd BLANK BLANK 'd))
+          (list 'N (list BLANK BLANK BLANK 'd)))
+    (list (list 'M (list 'd 'd BLANK BLANK))
+          (list 'N (list BLANK 'd BLANK BLANK)))
+    (list (list 'M (list 'd BLANK BLANK BLANK))
+          (list 'N (list BLANK BLANK BLANK BLANK)))
+
+    (list (list 'M (list BLANK 'd BLANK 'd))
+          (list 'M (list LEFT 'd BLANK 'd)))
+    (list (list 'M (list BLANK BLANK BLANK 'd))
+          (list 'M (list LEFT BLANK BLANK 'd)))
+    (list (list 'M (list BLANK 'd BLANK BLANK))
+          (list 'M (list LEFT 'd BLANK BLANK)))
+    (list (list 'M (list BLANK BLANK BLANK BLANK))
+          (list 'M (list LEFT BLANK BLANK BLANK)))
+
+    (list (list 'M (list LM 'd BLANK 'd))
+          (list 'R (list RIGHT 'd BLANK 'd)))
+    (list (list 'M (list LM BLANK BLANK 'd))
+          (list 'R (list RIGHT BLANK BLANK 'd)))
+    (list (list 'M (list LM 'd BLANK BLANK))
+          (list 'R (list RIGHT 'd BLANK BLANK)))
+    (list (list 'M (list LM BLANK BLANK BLANK))
+          (list 'R (list RIGHT BLANK BLANK BLANK)))
+
+    (list (list 'N (list BLANK 'd BLANK 'd))
+          (list 'M (list LEFT 'd BLANK 'd)))
+    (list (list 'N (list BLANK BLANK BLANK 'd))
+          (list 'M (list LEFT BLANK BLANK 'd)))
+    (list (list 'N (list BLANK 'd BLANK BLANK))
+          (list 'M (list LEFT 'd BLANK BLANK)))
+    (list (list 'N (list BLANK BLANK BLANK BLANK))
+          (list 'M (list LEFT BLANK BLANK BLANK)))
+
+    (list (list 'R (list BLANK 'd BLANK 'd))
+          (list 'P (list RIGHT 'd BLANK 'd)))
+    (list (list 'R (list BLANK BLANK BLANK 'd))
+          (list 'P (list RIGHT BLANK BLANK 'd)))
+    (list (list 'R (list BLANK 'd BLANK BLANK))
+          (list 'P (list RIGHT 'd BLANK BLANK)))
+    (list (list 'R (list BLANK BLANK BLANK BLANK))
+          (list 'P (list RIGHT BLANK BLANK BLANK)))
+
+    (list (list 'P (list BLANK 'd BLANK 'd))
+          (list 'Q (list 'd 'd BLANK 'd)))
+    (list (list 'P (list BLANK BLANK BLANK 'd))
+          (list 'Q (list 'd BLANK BLANK 'd)))
+
+    (list (list 'P (list BLANK 'd BLANK BLANK))
+          (list 'Y (list BLANK 'd BLANK BLANK)))
+    (list (list 'P (list BLANK BLANK BLANK BLANK))
+          (list 'Y (list BLANK BLANK BLANK BLANK)))
+
+    (list (list 'Q (list 'd 'd BLANK 'd))
+          (list 'P (list RIGHT 'd BLANK RIGHT)))
+    (list (list 'Q (list 'd BLANK BLANK 'd))
+          (list 'P (list RIGHT BLANK BLANK RIGHT)))
+
+    )
+   4
+   #|
+     Why do you have an accept state?
+   |#
+   'Y))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 #|
