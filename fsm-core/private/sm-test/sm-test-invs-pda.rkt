@@ -274,8 +274,8 @@
                         (filter
                          (λ (rule) (eq? (get-source-state rule) (sm-start a-machine))) ;;  <- ⚙️getting the rules that come out of the starting state
                          rules))))
-         #;(find-paths-helper '() (mutable-set))
-         (map reverse
+         (find-paths-helper '() (mutable-set))
+         #;(map reverse
               (filter (λ (x) (member (first (second (first x))) (sm-finals a-machine)))
                       (map (λ (y) (map (λ (x) (list (list (PDA-rule-source x) (PDA-rule-read x) (PDA-rule-pop x))
                                                     (list (PDA-rule-destination x) (PDA-rule-push x))))
