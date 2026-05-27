@@ -171,10 +171,9 @@
   (define R&S (if dead-state-removal?
                   (find-path-rule&states-dead-state-sweep a-machine (find-path-rule&states a-machine))
                   (cons (sm-rules a-machine)
-                        (list (sm-states a-machine)))))
+                        (sm-states a-machine))))
   (define rules&states (find-path-rule&states-dead-state-sweep a-machine (find-path-rule&states a-machine)))
 
-  
   (define new-states (second R&S))
   (define new-rules (first R&S))
        
@@ -182,7 +181,6 @@
   (define starting-state (sm-start a-machine))
   
   (define finals-set (list->seteq (sm-finals a-machine)))
-  
   (define new-finals (filter (λ (x) (set-member? finals-set x)) new-states))
      
   (cond [(not (set-member? new-states starting-state))
