@@ -42,7 +42,7 @@
 ;                                                                                                     
 
 ;; a PATH is a structure: (make-PATH (listof rule) (listof symbol)
-(define-struct PATH (lor stack word path-length))
+(define-struct PATH (lor stack word path-length)#:transparent)
 
 ;; AUXILARY FUNCTIONS FOR PDA RULES
 ;;     pda rule: ((Source read pop) (Destination push))
@@ -354,7 +354,7 @@
          ;; Combine these into a for loop to only traverse the list once -Andres
          (map get-sub-paths
               (filter leads-to-accepting? paths-that-end-in-finals)))
-  
+  ;(display new-mutable-set)
   (set->list new-mutable-set))
 
 
@@ -380,7 +380,7 @@
 
 ;; (listof pda-rule) -> word
 ;; Purpose: To return a word that is made from the given path
-#;(define (word-of-path a-path)
+(define (word-of-path a-path)
   ;; Combine these into a for loop to only traverse the list once -Andres
   (filter (λ (x) (not (eq? 'ε x)))
           (append-map (λ (x) (list (get-elem-read x))) (PATH-lor a-path))))
@@ -511,12 +511,3 @@
                                  ((second start-pair) '() '()))
                              '()
                              (list (list '() '() (sm-start a-machine)))))))
-
-
-
-
-
-
-
-
-
