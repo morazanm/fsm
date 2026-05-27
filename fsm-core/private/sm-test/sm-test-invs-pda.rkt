@@ -4,8 +4,8 @@
 ;; working on optimizations
 
 ;(provide sm-test-invs-pda)
-;(provide sm-test-invs-pda find-paths #;sm-all-possible-words)
-(provide (all-defined-out))
+(provide sm-test-invs-pda find-paths-pda #;sm-all-possible-words)
+#;(provide (all-defined-out))
 (require racket/list
          racket/set
          data/queue
@@ -215,7 +215,7 @@
 
 ;; pda -> (listof PATH)
 ;; Purpose: To return all the paths in the given pda 
-(define (find-paths a-machine #:max-length [max-length 12])
+(define (find-paths-pda a-machine #:max-length [max-length 12])
   (define queue (make-queue))
   (define rules (map rule->PDA-rule (sm-rules a-machine)))
   
@@ -285,7 +285,7 @@
   ;; Don't use member here, use a hash set to determine membership -Andres
   (define paths-that-end-in-finals (map (λ (x) (make-PATH (reverse (PATH-lor x)) (PATH-stack x) (PATH-word x) (PATH-path-length x)))
                                         (filter (λ (x) (member (get-destination-state (first (PATH-lor x))) (sm-finals a-pda)))
-                                                (find-paths a-pda #:max-length max-length))))
+                                                (find-paths-pda a-pda #:max-length max-length))))
 
   ;; PATH -> Boolean
   ;; Purpose: To determine if the given path leads to an accept 
@@ -362,7 +362,7 @@
   ;; Get rid of the keyword argument and make it a regular argument,
   ;; it can lead to optimization blockage on weird occasions -Andres
   (define paths-that-end-in-finals (filter (λ (x) (member (get-destination-state (first (PATH-lor x))) (sm-finals a-pda)))
-                                           (find-paths a-pda #:max-length max-length)))
+                                           (find-paths-pda a-pda #:max-length max-length)))
   ;; For both of the new-rules and new-states, I'd mutate a set inside of nested fors instead. You can do both
   ;; At the same time and only have to traverse the paths once without allocating a ton of extra memory -Andres
   (define new-rules (remove-duplicates (apply append (map (λ (x) (PATH-lor x)) paths-that-end-in-finals))))

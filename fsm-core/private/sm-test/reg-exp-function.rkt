@@ -171,7 +171,7 @@
   (define R&S (if dead-state-removal?
                   (find-path-rule&states-dead-state-sweep a-machine (find-path-rule&states a-machine))
                   (cons (sm-rules a-machine)
-                        (sm-states a-machine))))
+                        (list (sm-states a-machine)))))
   (define rules&states (find-path-rule&states-dead-state-sweep a-machine (find-path-rule&states a-machine)))
 
   (define new-states (second R&S))
