@@ -4,8 +4,8 @@
 ;; working on optimizations
 
 ;(provide sm-test-invs-pda)
-(provide sm-test-invs-pda find-paths-pda #;sm-all-possible-words)
-
+;(provide sm-test-invs-pda find-paths #;sm-all-possible-words)
+(provide (all-defined-out))
 (require racket/list
          racket/set
          data/queue
@@ -49,7 +49,7 @@
 
 
 ;; a PDA-rule is a structure: (make-PDA-rule state symbol (list symbol) state (list symbol))
-(define-struct PDA-rule (source read pop destination push pop-length) #:transparent)
+(define-struct PDA-rule (source read pop destination push pop-length))
 
 ;; pda-rule -> state
 ;; Purpose: To get the source state of a pda rule
@@ -148,7 +148,7 @@
   ;; Accumulator invariant: accum = list of paths
   (define (new-paths-helper next-rules accum #;new-visited)
     (cond [(empty? next-rules) (list accum visited #;new-visited)]
-          [(or #;(set-member? visited #;new-visited ;<- if we are at same state with same word & stack in visited or the path is at the max length
+          [(or (set-member? visited #;new-visited ;<- if we are at same state with same word & stack in visited or the path is at the max length
                             ;; Why is this a list? This is always the same three length list, make this a structure -Andres
                             (list (get-destination-state (first next-rules))
                                   ;; Why are appending to the word here? Work with the word in reverse and cons onto it instead -Andres
@@ -215,7 +215,7 @@
 
 ;; pda -> (listof PATH)
 ;; Purpose: To return all the paths in the given pda 
-(define (find-paths-pda a-machine #:max-length [max-length 12])
+(define (find-paths a-machine #:max-length [max-length 12])
   (define queue (make-queue))
   (define rules (map rule->PDA-rule (sm-rules a-machine)))
   
@@ -274,16 +274,7 @@
                         (filter
                          (λ (rule) (eq? (get-source-state rule) (sm-start a-machine))) ;;  <- ⚙️getting the rules that come out of the starting state
                          rules))))
-         #;(find-paths-helper '() (mutable-set))
-         (map reverse
-              (filter (λ (x) (member (first (second (first x))) (sm-finals a-machine)))
-                      (map (λ (y) (map (λ (x) (list (list (PDA-rule-source x) (PDA-rule-read x) (PDA-rule-pop x))
-                                                    (list (PDA-rule-destination x) (PDA-rule-push x))))
-                                       y))
-                           (map (λ (x) (PATH-lor x))
-                                (filter (λ (x) (empty? (PATH-stack x)))
-                                        (find-paths-helper '() (mutable-set)))))))
-         ))
+         (find-paths-helper '() (mutable-set)) ))
 
 
 
@@ -294,7 +285,8 @@
   ;; Don't use member here, use a hash set to determine membership -Andres
   (define paths-that-end-in-finals (map (λ (x) (make-PATH (reverse (PATH-lor x)) (PATH-stack x) (PATH-word x) (PATH-path-length x)))
                                         (filter (λ (x) (member (get-destination-state (first (PATH-lor x))) (sm-finals a-pda)))
-                                                (find-paths-pda a-pda #:max-length max-length))))
+                                                (find-paths a-pda #:max-length max-length))))
+
   ;; PATH -> Boolean
   ;; Purpose: To determine if the given path leads to an accept 
   (define (leads-to-accepting? a-path)
@@ -370,7 +362,7 @@
   ;; Get rid of the keyword argument and make it a regular argument,
   ;; it can lead to optimization blockage on weird occasions -Andres
   (define paths-that-end-in-finals (filter (λ (x) (member (get-destination-state (first (PATH-lor x))) (sm-finals a-pda)))
-                                           (find-paths-pda a-pda #:max-length max-length)))
+                                           (find-paths a-pda #:max-length max-length)))
   ;; For both of the new-rules and new-states, I'd mutate a set inside of nested fors instead. You can do both
   ;; At the same time and only have to traverse the paths once without allocating a ton of extra memory -Andres
   (define new-rules (remove-duplicates (apply append (map (λ (x) (PATH-lor x)) paths-that-end-in-finals))))
