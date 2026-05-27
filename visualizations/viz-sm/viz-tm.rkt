@@ -987,7 +987,9 @@
                                                   (if (zipper-empty? all-displayed-tape) (list->zipper (list a-word)) all-displayed-tape)
                                                   all-head-pos
                                                   (list->zipper (map2 (λ (trace)
-                                                                        (list (rule-read (trace-rules trace))
+                                                                        (list (rule-source (trace-rules trace))
+                                                                              (rule-read (trace-rules trace))
+                                                                              (rule-destination (trace-rules trace))
                                                                               (rule-action (trace-rules trace))))
                                                                       (first tracked-trace)) )
                                                   (list->zipper (if (empty? tracked-trace) tracked-trace (first tracked-trace)))

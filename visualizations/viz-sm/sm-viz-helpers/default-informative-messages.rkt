@@ -15,7 +15,7 @@
 
 (define FONT-SIZE 20)
 
-(define DUMMY-TM-RULE '(@ @))
+(define DUMMY-TM-RULE '(_ @ _ @))
 
 (define DUMMY-MTTM-RULE '(@ @ @ @))
 
@@ -340,10 +340,11 @@
       (if (zipper-empty? (imsg-state-tm-rules-used imsg-st))
           (text "Head position is not updated when there are multiple rejecting computations." FONT-SIZE FONT-COLOR)
           (beside (text "Last rule used: " FONT-SIZE FONT-COLOR)
-                  (text (format "~a" (if (or (equal? (zipper-current (imsg-state-tm-rules-used imsg-st)) DUMMY-TM-RULE)
-                                             (zipper-empty? (imsg-state-tm-rules-used imsg-st)))
-                                         ""
-                                         (zipper-current (imsg-state-tm-rules-used imsg-st))))
+                  (text (if (or (equal? (zipper-current (imsg-state-tm-rules-used imsg-st)) DUMMY-TM-RULE)
+                                (zipper-empty? (imsg-state-tm-rules-used imsg-st)))
+                            ""
+                            (let ([tm-rule (zipper-current (imsg-state-tm-rules-used imsg-st))])
+                              (format "((~a ~a) (~a ~a))" (first tm-rule) (second tm-rule) (third tm-rule) (fourth tm-rule))))
                         FONT-SIZE
                         (if (equal? (imsg-state-tm-machine-decision imsg-st) 'accept)
                             ACCEPT-COLOR
@@ -440,10 +441,11 @@
       (above/align
        'left
        (beside (text "Last rule used: " FONT-SIZE FONT-COLOR)
-               (text (format "~a" (if (or (equal? (zipper-current (imsg-state-mttm-rules-used imsg-st)) DUMMY-MTTM-RULE)
-                                          (zipper-empty? (imsg-state-mttm-rules-used imsg-st)))
-                                      ""
-                                      (zipper-current (imsg-state-mttm-rules-used imsg-st))))
+               (text (if (or (equal? (zipper-current (imsg-state-mttm-rules-used imsg-st)) DUMMY-MTTM-RULE)
+                             (zipper-empty? (imsg-state-mttm-rules-used imsg-st)))
+                         ""
+                         (let ([mttm-rule (zipper-current (imsg-state-mttm-rules-used imsg-st))])
+                           (format "((~a ~a) (~a ~a))" (first mttm-rule) (second mttm-rule) (third mttm-rule) (fourth mttm-rule))))
                      FONT-SIZE
                      (if (equal? (imsg-state-mttm-machine-decision imsg-st) 'accept)
                          ACCEPT-COLOR
