@@ -52,7 +52,8 @@
                  (overlay (square 21 'solid BLANK-COLOR) (square (add1 21) 'solid BLANK-COLOR)))))])
     (make-tape-img letter-imgs start-index)))
 
-
+;;tm-ismg-st -> image
+;;Purpose: Draws the tape for tm-viz
 (define (draw-imsg imsg-st)
   (let* [(tape (zipper-current (imsg-state-tm-tape imsg-st)))
          (start-index (if (> (length tape) TM-TAPE-SIZE)
@@ -337,9 +338,7 @@
         [CUT-OFF-COLOR (color-palette-ismg-cut-off-color (imsg-state-tm-color-pallete imsg-st))])
     (above/align
       'left
-      (if (zipper-empty? (imsg-state-tm-rules-used imsg-st))
-          (text "Head position is not updated when there are multiple rejecting computations." FONT-SIZE FONT-COLOR)
-          (beside (text "Last rule used: " FONT-SIZE FONT-COLOR)
+      (beside (text "Last rule used: " FONT-SIZE FONT-COLOR)
                   (text (if (or (equal? (zipper-current (imsg-state-tm-rules-used imsg-st)) DUMMY-TM-RULE)
                                 (zipper-empty? (imsg-state-tm-rules-used imsg-st)))
                             ""
@@ -348,8 +347,7 @@
                         FONT-SIZE
                         (if (equal? (imsg-state-tm-machine-decision imsg-st) 'accept)
                             ACCEPT-COLOR
-                            REJECT-COLOR))))
-              
+                            REJECT-COLOR)))
       (text "Tape: " 1 BLANK-COLOR)
       (draw-imsg imsg-st)  
       (text (format "The current number of possible computations is: ~a (without repeated configurations)."

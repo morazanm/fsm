@@ -56,7 +56,6 @@
 
 (define DUMMY-RULE (list (list BLANK BLANK) (list BLANK BLANK)))
 
-(define INIT-HEAD-POS 0)
 (define INIT-COMPUTATION-LENGTH 1)
 (define INIT-TAPE-CONFIG-INDEX 0)
 (define INIT-REACHED-FINAL #f)
