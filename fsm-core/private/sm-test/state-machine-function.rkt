@@ -1,5 +1,5 @@
 #lang racket/base
-(provide get-all-regexp)
+(provide get-all-state-machines)
 (require racket/list
          racket/treelist
          racket/set
@@ -167,7 +167,7 @@
 ;; machine boolean -> hashtable
 ;; Purpose: To return a hashtable of all regular expressions that
 ;;          can be made from the given machine
-(define (get-all-regexp a-machine dead-state-removal?)
+(define (get-all-state-machines a-machine dead-state-removal?)
   (define R&S (if dead-state-removal?
                   (find-path-rule&states-dead-state-sweep a-machine (find-path-rule&states a-machine))
                   (cons (sm-rules a-machine)
@@ -218,12 +218,14 @@
                                     starting-state
                                     (list symb)
                                     (first rules&states)))
-
-             ;(displayln (sm-graph machine-only-paths-to-first-los)) ;<- this will display all the regular expressions of the states
+             ;(displayln symb)
+             ;(displayln (sm-graph machine-only-paths-to-first-los))
+             ;(displayln (sm-graph (ndfa->dfa machine-only-paths-to-first-los)))
+             ;(displayln (sm-graph (complement-fsa machine-only-paths-to-first-los))) ;<- this will display all the regular expressions of the states
              ;(displayln (printable-regexp (simplify-regexp (fsa->regexp machine-only-paths-to-first-los))))
              
              
-             (hash-set! state&its-machine symb (simplify-regexp (fsa->regexp machine-only-paths-to-first-los))))
+             (hash-set! state&its-machine symb machine-only-paths-to-first-los))
            state&its-machine)
 
          
@@ -232,7 +234,11 @@
          (if (empty? paths-to-start-state)
              (begin (hash-set! state&its-machine
                                starting-state
-                               (empty-regexp))
+                               (make-unchecked-ndfa `(,starting-state)
+                                                    (sm-sigma a-machine)
+                                                    (first `(,starting-state))
+                                                    `(,starting-state)
+                                                    '())                               )
                     (get-all-regexp-helper states-no-start-state))
              (get-all-regexp-helper states))]))
  
