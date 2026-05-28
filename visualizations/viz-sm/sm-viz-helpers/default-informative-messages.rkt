@@ -15,14 +15,16 @@
 
 (define FONT-SIZE 20)
 
-(define DUMMY-TM-RULE '(_ @ _ @))
+(define DUMMY-TM-RULE (rule '_ '@ '_ '@))
 
-(define DUMMY-MTTM-RULE '(@ @ @ @))
+(define DUMMY-MTTM-RULE (vector '@ '@ '@ '@))
 
 (define MAX-AUX-TAPE-AMOUNT 2)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;;tape natnum (listof (list natnum color)) color-palette -> tape
+;;Purpose: Makes the tape image for ndfa- and pda-viz
 (define (make-tape-img tape start-index color-pair color-scheme)
   (define (make-tape-img loi start-index)
     (if (empty? (rest loi))
@@ -94,13 +96,13 @@
                                                                FONT-COLOR))))))]
       (make-tape-img letter-imgs start-index))))
 
-;;image-state -> image
-;;Purpose: Determines which informative message is displayed to the user
+;;ndfa-imsg-st -> image
+;;Purpose: Creates the informative messages for ndfa-viz
 (define (ndfa-create-draw-informative-message imsg-st)
-  (let* ([upci (ci-upci (zipper-current (imsg-state-ndfa-ci imsg-st)))]
+  (let* (;;unprocessed consumed input
+         [upci (ci-upci (zipper-current (imsg-state-ndfa-ci imsg-st)))]
+         ;;processed consumed input
          [pci (ci-pci (zipper-current (imsg-state-ndfa-ci imsg-st)))]
-         ;;(listof symbols)
-         ;;Purpose: The entire given word
          [entire-word (append pci upci)]
          [pci-length (length pci)]
          [sub1-pci-length (sub1 pci-length)]
@@ -184,15 +186,14 @@
               (text "All computations do not consume the entire word and the machine rejects." FONT-SIZE REJECT-COLOR)]
              [else (text "Word Status: accept " FONT-SIZE BLANK-COLOR)]))))
 
-
+;;pda-imsg-st -> image
+;;Purpose: Creates the informative messages for pda-viz
 (define (pda-create-draw-informative-message imsg-st)
-  (let* ([upci (ci-upci (zipper-current (imsg-state-pda-ci imsg-st)))]
+  (let* (;;unprocessed consumed input
+         [upci (ci-upci (zipper-current (imsg-state-pda-ci imsg-st)))]
+         ;;consumed input
          [pci (ci-pci (zipper-current (imsg-state-pda-ci imsg-st)))]
-         ;;(listof symbols)
-         ;;Purpose: The entire given word
          [entire-word (append pci upci)]
-         ;;(listof symbols)
-         ;;Purpose: Holds what needs to displayed for the stack based off the upci
          [current-stack (pda-config-stack (zipper-current (imsg-state-pda-stack imsg-st)))]
          [machine-decision (if (imsg-state-pda-accepted? imsg-st) 'accept 'reject)]
          [farthest-consumed-input (pda-config-word (imsg-state-pda-farthest-consumed-input imsg-st))]
@@ -203,9 +204,7 @@
          [ACCEPT-COLOR (color-palette-imsg-accept-color (imsg-state-pda-color-pallete imsg-st))]
          [FADED-WORD-COLOR (color-palette-faded-word-color (imsg-state-pda-color-pallete imsg-st))]
          [COMPUTATION-LENGTH-COLOR (color-palette-computation-length-color (imsg-state-pda-color-pallete imsg-st))]
-         [CUT-OFF-COLOR (color-palette-ismg-cut-off-color (imsg-state-pda-color-pallete imsg-st))]
-         [FONT-SIZE 20])
-    ;(displayln 
+         [CUT-OFF-COLOR (color-palette-ismg-cut-off-color (imsg-state-pda-color-pallete imsg-st))])
     (above/align
       'left
       (cond [(and (empty? pci)
@@ -328,6 +327,8 @@
              (text "All computations end in a non-final configuration and the machine rejects." FONT-SIZE REJECT-COLOR)]
             [else (text "Word Status: accept " FONT-SIZE BLANK-COLOR)]))))
 
+;;tm-imsg-st -> image
+;;Purpose: Creates the informative messages for tm-viz
 (define (tm-create-draw-informative-message imsg-st)
   (let ([FONT-COLOR (color-palette-font-color (imsg-state-tm-color-pallete imsg-st))]
         [BLANK-COLOR (color-palette-blank-color (imsg-state-tm-color-pallete imsg-st))]
@@ -343,11 +344,15 @@
                                 (zipper-empty? (imsg-state-tm-rules-used imsg-st)))
                             ""
                             (let ([tm-rule (zipper-current (imsg-state-tm-rules-used imsg-st))])
-                              (format "((~a ~a) (~a ~a))" (first tm-rule) (second tm-rule) (third tm-rule) (fourth tm-rule))))
+                              (format "((~a ~a) (~a ~a))" (rule-source tm-rule) (rule-read tm-rule) (rule-destination tm-rule) (rule-action tm-rule))))
                         FONT-SIZE
                         (if (equal? (imsg-state-tm-machine-decision imsg-st) 'accept)
                             ACCEPT-COLOR
                             REJECT-COLOR)))
+      #;(list (rule-source (trace-rules trace))
+            (rule-read (trace-rules trace))
+            (rule-destination (trace-rules trace))
+            (rule-action (trace-rules trace)))
       (text "Tape: " 1 BLANK-COLOR)
       (draw-imsg imsg-st)  
       (text (format "The current number of possible computations is: ~a (without repeated configurations)."
@@ -375,6 +380,8 @@
                  (text "The machine did not reach a halting state." FONT-SIZE ACCEPT-COLOR))] 
             [else (text "Word Status: accept " FONT-SIZE BLANK-COLOR)]))))
 
+;;mttm-imsg-st -> image
+;;Purpose: Creates the informative messages for mttm-viz
 (define (mttm-create-draw-informative-message imsg-st)
   (let ([FONT-COLOR (color-palette-font-color (imsg-state-mttm-color-pallete imsg-st))]
         [BLANK-COLOR (color-palette-blank-color (imsg-state-mttm-color-pallete imsg-st))]
@@ -383,6 +390,8 @@
         [FADED-WORD-COLOR (color-palette-faded-word-color (imsg-state-mttm-color-pallete imsg-st))]
         [COMPUTATION-LENGTH-COLOR (color-palette-computation-length-color (imsg-state-mttm-color-pallete imsg-st))]
         [CUT-OFF-COLOR (color-palette-ismg-cut-off-color (imsg-state-mttm-color-pallete imsg-st))])
+    ;;tape head-pos -> image
+    ;;Purpose: Draws the given tape
     (define (draw-tape tape head-pos)
       (let [(start-index (if (> (length tape) TM-TAPE-SIZE)
                              (imsg-state-mttm-word-img-offset imsg-st)
@@ -415,7 +424,8 @@
                                                                    FONT-COLOR))))))]
           (make-tape-img letter-imgs start-index))))
 
-  
+    ;;natnum natnum -> image
+    ;;Purpose: Makes the auxillary tape images
     (define (make-tapes aux-tape-index max-aux-tapes-index)
       (let ([tapes (zipper-current (imsg-state-mttm-tapes imsg-st))]
             [head-positions (zipper-current (imsg-state-mttm-head-positions imsg-st))])
@@ -443,7 +453,11 @@
                              (zipper-empty? (imsg-state-mttm-rules-used imsg-st)))
                          ""
                          (let ([mttm-rule (zipper-current (imsg-state-mttm-rules-used imsg-st))])
-                           (format "((~a ~a) (~a ~a))" (first mttm-rule) (second mttm-rule) (third mttm-rule) (fourth mttm-rule))))
+                           (format "((~a ~a) (~a ~a))"
+                                   (vector-ref mttm-rule 0)
+                                   (vector-ref mttm-rule 1)
+                                   (vector-ref mttm-rule 2)
+                                   (vector-ref mttm-rule 3))))
                      FONT-SIZE
                      (if (equal? (imsg-state-mttm-machine-decision imsg-st) 'accept)
                          ACCEPT-COLOR

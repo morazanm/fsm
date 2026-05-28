@@ -107,12 +107,12 @@ destination -> the rest of a mttm rule | half-rule
     ;;configuration -> configuration
     ;;Purpose: Applys the given rule to the given config and returns the updated configuraton 
     (define (apply-rule-helper a-config)
-      ;;head-position tm-action -> head-position
+      ;;tape-config tm-action -> tape-config
       ;;Purpose: Applies the action portion of given rule to the given config to update the head position
-      (define (update-head-position head-pos tm-action)
-        (cond [(eq? tm-action RIGHT) (add1 (tape-config-head-position head-pos))]
-              [(eq? tm-action LEFT)  (sub1 (tape-config-head-position head-pos))]
-              [else (tape-config-head-position head-pos)]))
+      (define (update-head-position tape-config tm-action)
+        (cond [(eq? tm-action RIGHT) (add1 (tape-config-head-position tape-config))]
+              [(eq? tm-action LEFT)  (sub1 (tape-config-head-position tape-config))]
+              [else (tape-config-head-position tape-config)]))
       ;;tape head-position tm-action -> tape
       ;;Purpose: Updates the given tape by using the given tm-action at the given head-position
       (define (update-tape tape head-position tm-action)
@@ -161,25 +161,18 @@ destination -> the rest of a mttm rule | half-rule
   ;;Purpose: Makes all the computations based around the (queueof computation) and (listof rule)
   ;;     that are within the bounds of the max computation limit
   (define (make-computations QoC path)
-
-    (define (update-computation a-comp)
-      a-comp #;(if (> head-pos (computation-length a-comp))
-          (struct-copy computation a-comp
-               [LoC (treelist-drop (computation-LoC a-comp) head-pos)]
-               [LoR (treelist-drop (computation-LoR a-comp) head-pos)])
-          a-comp))
-    
     (if (qempty? QoC)
         path
-        (let* ([current-config (treelist-last (computation-LoC (qfirst QoC)))]
+        (let* ([first-computation (qfirst QoC)]
+               [current-config (treelist-last (computation-LoC first-computation))]
                [current-state (mttm-config-state current-config)]
                [current-lotc (mttm-config-lotc current-config)]
                [member-of-finals? (member? current-state finals eq?)]
-               [reached-threshold? (> (computation-length (qfirst QoC)) max-cmps)])
+               [reached-threshold? (> (computation-length first-computation) max-cmps)])
           (if (or reached-threshold? member-of-finals?)
               (make-computations (dequeue QoC) (if (eq? current-state accepting-final)
                                                    (struct-copy paths path
-                                                                [accepting (treelist-add (paths-accepting path) (update-computation (qfirst QoC)))]
+                                                                [accepting (treelist-add (paths-accepting path) first-computation)]
                                                                 [reached-final? (cond [(paths-reached-final? path) (paths-reached-final? path)]
                                                                                       [member-of-finals? #t]
                                                                                       [else (paths-reached-final? path)])]
@@ -187,7 +180,7 @@ destination -> the rest of a mttm rule | half-rule
                                                                                 [reached-threshold? #t]
                                                                                 [else (paths-cut-off? path)])])
                                                    (struct-copy paths path
-                                                                [rejecting (treelist-add (paths-rejecting path) (update-computation (qfirst QoC)))]
+                                                                [rejecting (treelist-add (paths-rejecting path) first-computation)]
                                                                 [reached-final? (cond [(paths-reached-final? path) (paths-reached-final? path)]
                                                                                       [member-of-finals? #t]
                                                                                       [else (paths-reached-final? path)])]
@@ -202,14 +195,14 @@ destination -> the rest of a mttm rule | half-rule
                                                             lor)]
                      ;;(listof computation)
                      [new-configs (treelist-filter (λ (new-c) 
-                                                     (not (set-member? (computation-visited (qfirst QoC)) (treelist-last (computation-LoC new-c)))))
-                                                   (treelist-map connected-read-rules (λ (rule) (apply-rule (qfirst QoC) rule))))])
+                                                     (not (set-member? (computation-visited first-computation) (treelist-last (computation-LoC new-c)))))
+                                                   (treelist-map connected-read-rules (λ (rule) (apply-rule first-computation rule))))])
                 ;new-configs
                 (if (treelist-empty? new-configs)
                     (make-computations (dequeue QoC)
                                        (struct-copy paths path
                                                     [rejecting (treelist-add (paths-rejecting path)
-                                                                             (update-computation (qfirst QoC)))]))
+                                                                             first-computation)]))
                     (make-computations (enqueue new-configs (dequeue QoC)) path)))))))
   (let (;;computation
         ;;Purpose: The starting computation
@@ -1166,17 +1159,18 @@ destination -> the rest of a mttm rule | half-rule
              DEFAULT-ZOOM-CAP
              DEFAULT-ZOOM-FLOOR
              (informative-messages mttm-create-draw-informative-message
-                                   (imsg-state-mttm M
+                                   (let ([tracked-trace (first tracked-trace)])
+                                     (imsg-state-mttm M
                                                     all-displayed-tape
                                                     all-head-pos
                                                     (list->zipper (map2 (λ (trace)
-                                                                         (list (half-rule-state (rule-source (trace-rules trace)))
-                                                                               (half-rule-lota (rule-source (trace-rules trace)))
-                                                                               (half-rule-state (rule-destination (trace-rules trace)))
-                                                                               (half-rule-lota (rule-destination (trace-rules trace)))))
-                                                                       (first tracked-trace)))
-                                                    (list->zipper (if (empty? accepting-trace) accepting-trace (first tracked-trace)))
-                                                    (list->zipper (if (empty? accepting-trace) (first tracked-trace) rejecting-trace))
+                                                                          (vector (half-rule-state (rule-source (trace-rules trace)))
+                                                                                  (half-rule-lota (rule-source (trace-rules trace)))
+                                                                                  (half-rule-state (rule-destination (trace-rules trace)))
+                                                                                  (half-rule-lota (rule-destination (trace-rules trace)))))
+                                                                        tracked-trace))
+                                                    (list->zipper (if (empty? accepting-trace) accepting-trace tracked-trace))
+                                                    (list->zipper (if (empty? accepting-trace) tracked-trace rejecting-trace))
                                                     (list->zipper failed-inv-configs) 
                                                     (list->zipper cut-off-computations-lengths)
                                                     cut-off
@@ -1186,7 +1180,7 @@ destination -> the rest of a mttm rule | half-rule
                                                     (let ([offset-cap (- (length a-word) TM-TAPE-SIZE)])
                                                       (if (> 0 offset-cap) 0 offset-cap))
                                                     0
-                                                    color-scheme)
+                                                    color-scheme))
                                    mttm-img-bounding-limit)
              (instructions-graphic (above color-legend MTTM-E-SCENE-TOOLS)
                                    (bounding-limits 0

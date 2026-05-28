@@ -83,7 +83,8 @@
     ;;Purpose: "Mutates" the tape if possible 
     (define (update-tape tape head-position)
     
-
+     ;;tape -> tape
+     ;;Purpose: "Mutates" the tape if possible
      (define (mutate-tape tape)
       (if (or (eq? (rule-action a-rule) RIGHT)
               (eq? (rule-action a-rule) LEFT))
@@ -149,30 +150,21 @@
   ;;(queueof computation) (treelistof computation) -> (list (listof computation) hashtable)
   ;;Purpose: Makes all the computations based around the (queueof computation) and (listof rule)
   ;;     that are within the bounds of the max computation limit
-  (define (make-computations QoC path)
-
-    (define (update-computation a-comp)
-      a-comp #;(if (> head-pos INIT-COMPUTATION-LENGTH)
-          (struct-copy computation a-comp
-               [LoC (treelist-drop (computation-LoC a-comp) head-pos)]
-               [LoR (treelist-drop (computation-LoR a-comp) head-pos)])
-          a-comp))
-    
+  (define (make-computations QoC path)    
     (if (qempty? QoC)
         path
-        (let* ([current-config (treelist-last (computation-LoC (qfirst QoC)))]
+        (let* ([first-computation (qfirst QoC)]
+               [current-config (treelist-last (computation-LoC first-computation))]
                [current-state (tm-config-state current-config)]
                [current-tape (tm-config-tape current-config)]
                [current-head-position (tm-config-head-position current-config)]
                [member-of-finals? (member? current-state finals eq?)]
-               [reached-threshold? (> (computation-length (qfirst QoC)) max-cmps)])
+               [reached-threshold? (> (computation-length first-computation) max-cmps)])
           (if (or reached-threshold? (member? current-state finals eq?))
-              (begin
-                ;(update-hash current-config current-tape)
-                (make-computations (dequeue QoC)
+              (make-computations (dequeue QoC)
                                    (if (eq? current-state accepting-final)
                                        (struct-copy paths path
-                                                    [accepting (treelist-add (paths-accepting path) (update-computation (qfirst QoC)))]
+                                                    [accepting (treelist-add (paths-accepting path) first-computation)]
                                                     [reached-final? (cond [(paths-reached-final? path) (paths-reached-final? path)]
                                                                           [member-of-finals? #t]
                                                                           [else (paths-reached-final? path)])]
@@ -180,31 +172,29 @@
                                                                     [reached-threshold? #t]
                                                                     [else (paths-cut-off? path)])])
                                        (struct-copy paths path
-                                                    [rejecting (treelist-add (paths-rejecting path) (update-computation (qfirst QoC)))]
+                                                    [rejecting (treelist-add (paths-rejecting path) first-computation)]
                                                     [reached-final? (cond [(paths-reached-final? path) (paths-reached-final? path)]
                                                                           [member-of-finals? #t]
                                                                           [else (paths-reached-final? path)])]
                                                     [cut-off? (cond [(paths-cut-off? path) (paths-cut-off? path)]
                                                                     [reached-threshold? #t]
-                                                                    [else (paths-cut-off? path)])]))))
+                                                                    [else (paths-cut-off? path)])])))
               (let* (;;(listof rules)
                      ;;Purpose: Filters all the rules that can be applied to the configuration by reading the element in the rule
                      [connected-read-rules (treelist-filter (λ (rule)
-                                                     (and (< current-head-position(length current-tape))
+                                                     (and (< current-head-position (length current-tape))
                                                           (eq? (rule-source rule) current-state)
                                                           (eq? (rule-read rule) (list-ref current-tape current-head-position))))
                                                    lor)]
                      ;;(listof computation)
                      [new-configs (treelist-filter (λ (new-c) 
-                                            (not (set-member? (computation-visited (qfirst QoC)) (treelist-last (computation-LoC new-c)))))
-                                          (treelist-map connected-read-rules (λ (rule) (apply-rule (qfirst QoC) rule))))])
-                (begin
-                  ;(update-hash current-config current-tape)
-                  (if (treelist-empty? new-configs)
+                                            (not (set-member? (computation-visited first-computation) (treelist-last (computation-LoC new-c)))))
+                                          (treelist-map connected-read-rules (λ (rule) (apply-rule first-computation rule))))])
+                (if (treelist-empty? new-configs)
                       (make-computations (dequeue QoC)
                                          (struct-copy paths path
-                                                      [rejecting (treelist-add (paths-rejecting path) (update-computation (qfirst QoC)))]))
-                      (make-computations (enqueue new-configs (dequeue QoC)) path))))))))
+                                                      [rejecting (treelist-add (paths-rejecting path) first-computation)]))
+                      (make-computations (enqueue new-configs (dequeue QoC)) path)))))))
   (let (;;computation
         ;;Purpose: The starting computation
         [starting-computation (computation (treelist (tm-config start head-pos a-word INIT-TAPE-CONFIG-INDEX))
@@ -409,9 +399,9 @@
                                          [found-accept-rule?   (color-palette-other-accept-color color-scheme)]
                                          [found-reject-rule?   (color-palette-other-reject-color color-scheme)]
                                          [else (color-palette-font-color color-scheme)])
-                                   'style (cond [found-tracked-rule? #;(and found-tracked-rule? accepted?)
+                                   'style (cond [found-tracked-rule? 
                                                  (edge-data-accept-edge graph-attributes)]
-                                                [(or found-accept-rule? #;found-tracked-rule? found-reject-rule?)
+                                                [(or found-accept-rule? found-reject-rule?)
                                                  (edge-data-reject-edge graph-attributes)]
                                                 [else (edge-data-regular-edge graph-attributes)])
                                    'fontsize FONT-SIZE))))
@@ -930,7 +920,7 @@
                                  [(and (not reached-final?) (eq? (tm-type M) 'tm)) 'halted]
                                  [else 'reject])]
          
-         [tracked-trace (list (if (not rejected?) accepting-trace rejecting-trace))]
+         [tracked-trace (box (if (not rejected?) accepting-trace rejecting-trace))]
          ;;(listof number) ;;Purpose: Gets all the invariant configurations
          [all-inv-configs (if (empty? invs)
                               '()
@@ -942,7 +932,7 @@
          ;;building-state struct
          [building-state (building-viz-state all-displayed-tape
                                              LoC
-                                             tracked-trace
+                                             (list (unbox tracked-trace))
                                              (if rejected? '() (rest accepting-traces))
                                              (if rejected? (filter (λ (config) (not (equal? config rejecting-trace)))
                                                                                    rejecting-traces)
@@ -983,15 +973,12 @@
              DEFAULT-ZOOM-FLOOR
              (informative-messages tm-create-draw-informative-message
                                    (imsg-state-tm M
-                                                  (if (zipper-empty? all-displayed-tape) (list->zipper (list a-word)) all-displayed-tape)
+                                                  all-displayed-tape
                                                   all-head-pos
                                                   (list->zipper (map2 (λ (trace)
-                                                                        (list (rule-source (trace-rules trace))
-                                                                              (rule-read (trace-rules trace))
-                                                                              (rule-destination (trace-rules trace))
-                                                                              (rule-action (trace-rules trace))))
-                                                                      (first tracked-trace)) )
-                                                  (list->zipper (if (empty? tracked-trace) tracked-trace (first tracked-trace)))
+                                                                       (trace-rules trace))
+                                                                      (unbox tracked-trace)))
+                                                  (list->zipper (unbox tracked-trace))
                                                   (list->zipper failed-inv-configs) 
                                                   (list->zipper cut-off-computations-lengths)
                                                   cut-off
