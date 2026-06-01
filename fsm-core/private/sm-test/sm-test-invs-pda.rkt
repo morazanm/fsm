@@ -267,7 +267,7 @@
 ;; Purpose: Returns all the paths that lead to an accepting word of the given machine
 (define (get-accepting-paths a-pda max-length)
   (define finals-set (list->set (sm-finals a-pda)))
-  (define paths-that-end-in-finals (for/list ([i (find-paths a-pda #:max-length max-length)]
+  (define paths-that-end-in-finals (for/list ([i (find-paths-pda a-pda #:max-length max-length)]
                                               #:when (set-member? finals-set (get-destination-state (first (PATH-lor i)))))
                                      (make-PATH (reverse (PATH-lor i)) (PATH-stack i) (PATH-word i) (PATH-path-length i) (PATH-destination-state i))))
 
@@ -348,7 +348,7 @@
   (define new-states (mutable-set))
 
   (for ([path (filter (λ (x) (set-member? finals-set (get-destination-state (first (PATH-lor x))))) ;<- paths that end in finals
-                                           (find-paths a-pda #:max-length max-length))])
+                                           (find-paths-pda a-pda #:max-length max-length))])
        (for ([rule (PATH-lor path)])
             (set-add! new-rules rule)
             (set-add! new-states (get-source-state rule))
