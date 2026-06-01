@@ -38,7 +38,9 @@
   ;;list -> Boolean
   ;;Purpose: Determines if the given list is length 2
   (define (length-is-two? L)
-    (= (length L) 2))
+    (and (not (null? L))
+         (not (null? (cdr L)))
+         (null? (cddr L))))
   (and (list? X)
        (length-is-two? X)
        (symbol? (car X))
@@ -321,18 +323,19 @@
 ;;(listof symbol) (listof symbol) symbol -> contract
 ;;Purpose: Determines if the invariants contain states in the tm and are predicates
 (define (valid-tm-invariant/c states word m-type)
-  (define sample-index (sub1 (length word))) ;;may cause errors
   (make-flat-contract
    #:name 'all-letters-in-sigma
    #:first-order (λ (val) (and (andmap (λ (inv-state) (member inv-state states)) (map car val))
-                               (andmap (λ (inv-func) (boolean? (inv-func word sample-index))) (map cadr val))))
+                               (andmap (λ (inv-func) (and (procedure? inv-func)
+                                                          (= (procedure-arity inv-func) 2))) (map cadr val))))
    #:projection (λ (blame)
                   (λ (val)
                     (current-blame-format format-error)
                     (raise-blame-error
                      blame
                      (filter-not (λ (inv)
-                                   (and (boolean? ((cadr inv) word sample-index))
+                                   (and (procedure? (cadr inv))
+                                        (= (procedure-arity (cadr inv)) 2)
                                         (member (car inv) states))) val)
                      (format "~a-viz expects a list of state invariants predicates, given"
                              (if (eq? 'tm m-type)
@@ -343,12 +346,11 @@
 ;;(listof symbol) natnum (listof symbol) symbol -> contract
 ;;Purpose: Determines if the invariants contain states in the mttm and are procedures
 (define (valid-mttm-invariant/c states num-tapes word m-type)
-  ;(define sample-tape (list 3 word))
-  ;(define sample-tape-config (cons sample-tape (make-list (sub1 num-tapes) sample-tape)))
   (make-flat-contract
    #:name 'all-letters-in-sigma
    #:first-order (λ (val) (and (andmap (λ (inv-state) (member inv-state states)) (map car val))
-                               (andmap (λ (inv-func) (procedure? inv-func)) (map cadr val))))
+                               (andmap (λ (inv-func) (and (procedure? inv-func)
+                                                          (= (procedure-arity inv-func) 1))) (map cadr val))))
    #:projection (λ (blame)
                   (λ (val)
                     (current-blame-format format-error)
@@ -356,6 +358,7 @@
                      blame
                      (filter-not (λ (inv)
                                    (and (procedure? (cadr inv))
+                                        (= (procedure-arity (cadr inv)) 1)
                                         (member (car inv) states))) val)
                      (format "~a-viz expects a list of state invariants predicates, given"
                              (if (eq? 'tm m-type)
@@ -432,6 +435,3 @@
        (#:cut-off [cut-off (valid-cutoff-input/c "cut-off" "postive integer greater than 0")]
         #:palette [palette (valid-palette-input/c "palette" "symbol [prot, deut or trit]")])
        [result void?]))
-
-
-

@@ -4,8 +4,8 @@
 ;; working on optimizations
 
 ;(provide sm-test-invs-pda)
-;(provide sm-test-invs-pda find-paths #;sm-all-possible-words)
-(provide (all-defined-out))
+(provide sm-test-invs-pda find-paths-pda #;sm-all-possible-words)
+#;(provide (all-defined-out))
 (require racket/list
          racket/set
          data/queue
@@ -194,7 +194,7 @@
 
 ;; pda -> (listof PATH)
 ;; Purpose: To return all the paths in the given pda 
-(define (find-paths a-machine #:max-length [max-length 12])
+(define (find-paths-pda a-machine #:max-length [max-length 12])
   (define queue (make-queue))
   (define rules (map rule->PDA-rule (sm-rules a-machine)))
   

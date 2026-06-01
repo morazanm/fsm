@@ -17,6 +17,8 @@
 
 (define DUMMY-TM-RULE '(@ @))
 
+(define DUMMY-MTTM-RULE '(@ @ @ @))
+
 (define MAX-AUX-TAPE-AMOUNT 2)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -418,7 +420,8 @@
     (define (make-tapes aux-tape-index max-aux-tapes-index)
       (let ([tapes (zipper-current (imsg-state-mttm-tapes imsg-st))]
             [head-positions (zipper-current (imsg-state-mttm-head-positions imsg-st))])
-        (if (or (= aux-tape-index max-aux-tapes-index) (= aux-tape-index (sub1 (mttm-tape-amount (imsg-state-mttm-M imsg-st)))))
+        (if (or (= aux-tape-index max-aux-tapes-index)
+                (= aux-tape-index (sub1 (mttm-tape-amount (imsg-state-mttm-M imsg-st)))))
             (beside
              (text (format "T~s: " aux-tape-index) 20 FONT-COLOR)
              (draw-tape (list-ref tapes aux-tape-index) (list-ref head-positions aux-tape-index)))
@@ -437,7 +440,7 @@
       (above/align
        'left
        (beside (text "Last rule used: " FONT-SIZE FONT-COLOR)
-               (text (format "~a" (if (or (equal? (zipper-current (imsg-state-mttm-rules-used imsg-st)) DUMMY-TM-RULE)
+               (text (format "~a" (if (or (equal? (zipper-current (imsg-state-mttm-rules-used imsg-st)) DUMMY-MTTM-RULE)
                                           (zipper-empty? (imsg-state-mttm-rules-used imsg-st)))
                                       ""
                                       (zipper-current (imsg-state-mttm-rules-used imsg-st))))

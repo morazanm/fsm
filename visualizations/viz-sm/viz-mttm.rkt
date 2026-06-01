@@ -426,9 +426,7 @@ destination -> the rest of a mttm rule | half-rule
          
          ;;(listof rules)
          ;;Purpose: All of the pda rules converted to triples
-         [all-rules (make-rule-triples (filter (λ (rule)
-                                                 (not (equal? (first (half-rule-lota (rule-source rule))) LM)))
-                                               (treelist->list (mttm-rules (building-viz-state-M a-vs)))))]
+         [all-rules (make-rule-triples (treelist->list (mttm-rules (building-viz-state-M a-vs))))]
          
          ;;(listof (listof symbol ((listof symbols) (listof symbols) -> boolean))) (listof symbols))
          ;;Purpose: Extracts all invariants for the states that the machine can be in
@@ -749,8 +747,10 @@ destination -> the rest of a mttm rule | half-rule
 (define (f-key-pressed a-vs)
   (let ([imsg-state-aux-tape-index (imsg-state-mttm-aux-tape-index (informative-messages-component-state (viz-state-informative-messages a-vs)))]
         [imsg-state-M (imsg-state-mttm-M (informative-messages-component-state (viz-state-informative-messages a-vs)))])
-    (if (and (>= (mttm-tape-amount imsg-state-M) MAX-TAPES-SHOWN)
-             (= imsg-state-aux-tape-index (- (mttm-tape-amount imsg-state-M) (sub1 MAX-TAPES-SHOWN))))
+    (if (or (<= (mttm-tape-amount imsg-state-M) MAX-TAPES-SHOWN)
+            (and (> (mttm-tape-amount imsg-state-M) MAX-TAPES-SHOWN)
+                 (= imsg-state-aux-tape-index (- (mttm-tape-amount imsg-state-M) (sub1 MAX-TAPES-SHOWN)))))
+          
         a-vs
         (struct-copy
          viz-state
@@ -771,7 +771,9 @@ destination -> the rest of a mttm rule | half-rule
 (define (e-key-pressed a-vs)
   (let ([imsg-state-aux-tape-index (imsg-state-mttm-aux-tape-index (informative-messages-component-state (viz-state-informative-messages a-vs)))]
         [imsg-state-M (imsg-state-mttm-M (informative-messages-component-state (viz-state-informative-messages a-vs)))])
-    (if (and (>= (mttm-tape-amount imsg-state-M) MAX-TAPES-SHOWN) (= imsg-state-aux-tape-index MIN-AUX-TAPE-INDEX))
+    (if (or (<= (mttm-tape-amount imsg-state-M) MAX-TAPES-SHOWN)
+              (and (> (mttm-tape-amount imsg-state-M) MAX-TAPES-SHOWN)
+                   (= imsg-state-aux-tape-index MIN-AUX-TAPE-INDEX)))
         a-vs
         (struct-copy
          viz-state
@@ -945,7 +947,7 @@ destination -> the rest of a mttm rule | half-rule
 ;;Purpose: Visualizes the given mttm processing the given tape
 ;;Assumption: The given machine is an mttm
 (define/contract (mttm-viz M a-word head-pos #:cut-off [cut-off 100] #:palette [palette 'default] invs)
-  mttm-viz/c
+   mttm-viz/c
   ;;Mttm -> mttm-struct
   ;;Purpose: Converts a mttm interface into the mttm structure
   (define (remake-mttm M)
@@ -1035,7 +1037,7 @@ destination -> the rest of a mttm rule | half-rule
   (define (return-brk-inv-configs inv-config-results)
     (remove-duplicates (filter-map (λ (config) (and (not (second config)) (first config))) inv-config-results)))
   
-  (let* (;;tm-struct
+  (let* (;;mttm-struct
          [M (remake-mttm M)]
          ;;paths ;Purpose: All computations that the machine can have seperated by accepting and rejecting and whether 
          [all-paths (get-computations a-word
@@ -1155,8 +1157,6 @@ destination -> the rest of a mttm rule | half-rule
                                    (text "Accept not traced" 20 (color-palette-legend-other-accept-color color-scheme))
                                    spacer
                                    (text "Reject not traced" 20 (color-palette-legend-other-reject-color color-scheme)))))])
-    #;
-    (void)
     ;#;
     (run-viz graphs
              (list->vector (map (λ (x) (λ (grph) grph)) graphs))
@@ -1170,8 +1170,10 @@ destination -> the rest of a mttm rule | half-rule
                                                     all-displayed-tape
                                                     all-head-pos
                                                     (list->zipper (map2 (λ (trace)
-                                                                         (list (half-rule-lota (rule-source (trace-rules trace)))
-                                                                               (half-rule-lota (rule-destination (trace-rules trace)))))
+                                                                         (list (half-rule-state (rule-source (trace-rules trace)))
+                                                                               (half-rule-lota (rule-source (trace-rules trace)))
+                                                                               (half-rule-lota (rule-destination (trace-rules trace)))
+                                                                               (half-rule-state (rule-destination (trace-rules trace)))))
                                                                        (first tracked-trace)))
                                                     (list->zipper (if (empty? accepting-trace) accepting-trace (first tracked-trace)))
                                                     (list->zipper (if (empty? accepting-trace) (first tracked-trace) rejecting-trace))
