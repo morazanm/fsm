@@ -247,7 +247,8 @@
   
   (begin
     (for/list ([i rules]
-               #:when (eq? (get-source-state i) (sm-start a-machine)))
+               #:when (and (eq? 'ε (get-pop i)) ;<-- need to make sure that the rule can be applied to an empty stack to start off
+                           (eq? (get-source-state i) (sm-start a-machine))))
       (enqueue! queue (make-PATH (list i) ;<- current lor of the path
                                  (if (eq? 'ε (get-push i))  ;;  ⚙️making/adding the first paths to the queue
                                      '()
