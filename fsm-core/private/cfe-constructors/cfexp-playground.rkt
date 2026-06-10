@@ -201,12 +201,12 @@
 
 #;(sm-graph Gina-aˆnbˆn)
 
-#;(pda->cfe Gina-aˆnbˆn)
+;;(pda->cfe Gina-aˆnbˆn)
 
 
 #;(sm-graph Gina-AiBj)
+(pda->cfe Gina-AiBj)
 ;(pda->cfe Gina-AiBj2)
-
 
 
 ;;w = a*

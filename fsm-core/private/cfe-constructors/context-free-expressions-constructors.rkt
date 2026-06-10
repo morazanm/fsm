@@ -590,24 +590,22 @@
   ;;pda-rule -> (list (list state symbol los) (list state los))
   ;;Purpose: Converts the given pda-rule to a pda rule
   (define (struct->rules rule)
-     ;;cfe-template -> pda-rule / (listof pda-rule)
-  ;;Purpose: Extracts of the rule(s) out of the given cfe-template
-  (define (template->rules temp)
-    (cond [(symbol? temp) temp]
-          [(empty? temp) (action->string (empty-rule temp))]
-          [(singleton? temp) (action->string (singleton-rule temp))]
-          [(union? temp) (apply string-append
-                                (map template->rules #;(compose1 pda-rule-action template->rules) (union-rules temp))
-                                #;(map (λ (x) (string-append (template->rules x) "U")) #;(compose1 pda-rule-action template->rules) (union-rules temp))
-                                #;(cons "U" (map (λ (x) (string-append (template->rules x) "U")) #;(compose1 pda-rule-action template->rules) (union-rules temp))))]
-          [(concat? temp) (apply string-append
-                                (map template->rules (concat-rules temp)))]
-          [else (template->rules (kleene-rule temp))]))
+    ;;cfe-template -> pda-rule / (listof pda-rule)
+    ;;Purpose: Extracts of the rule(s) out of the given cfe-template
+    (define (template->rules temp)
+      (cond [(symbol? temp) temp]
+            [(empty? temp) (action->string (empty-rule temp))]
+            [(singleton? temp) (action->string (singleton-rule temp))]
+            [(union? temp) (apply string-append
+                                  (map template->rules (union-rules temp)))]
+            [(concat? temp) (apply string-append
+                                   (map template->rules (concat-rules temp)))]
+            [else (template->rules (kleene-rule temp))]))
     (list (list (pda-rule-source rule)
-                (string->symbol (template->rules (pda-rule-action rule))) #;(pda-action-read (pda-rule-action rule))
-                 EMP #;(pda-action-pop (pda-rule-action rule)))
+                (string->symbol (template->rules (pda-rule-action rule)))
+                EMP)
           (list (pda-rule-destin rule)
-                EMP #;(pda-action-push (pda-rule-action rule)))))
+                EMP)))
 
   ;;pda-action pda-action -> Boolean
   ;;Purpose: Determines if the given pda-actions have inverse stack operations
@@ -688,7 +686,7 @@
     ;;Purpose: If the given list has many rules (e.i more than 1), merge their tags together and create a union.
     ;;         Otherwise return the given list
     (define (merge-rules rules)
-      (if (or (null? rules)(is-length-one? rules))
+      (if (or (null? rules) (is-length-one? rules))
           rules
           (list (struct-copy pda-rule (first rules)
                              [action (union (map pda-rule-action rules))]))))
@@ -859,37 +857,84 @@
                #:when (inverse-stack-operations? (pda-rule-action push) (pda-rule-action pop))
                [pair (list (inverse-pair push pop))])
       pair))
+
+
+  
+  (define (make-sub-languages cfe-template)
+
+    (define (make-concat-sublanguage concat-rules acc)
+      #;(process-template (first concat-rules) acc)
+      (if (null? concat-rules)
+          acc
+          (make-concat-sublanguage (rest concat-rules)
+                                   (process-template (first concat-rules) acc))))
+
+    (define (process-template cfe-temp acc)
+
+      (define (process-kleene-temp kleene-temp acc)
+        (cond [(kleene? kleene-temp) (kleene-rule kleene-temp)]
+              [(union? kleene-temp) (union-rules kleene-temp)]
+              [(concat? kleene-temp) (concat-rules kleene-temp)]
+              [else kleene-temp]))
+
+      (define (process-union-temp union-temp acc)
+        (cond [(kleene? union-temp) (kleene-rule union-temp)]
+              [(union? union-temp) (union-rules union-temp)]
+              [(concat? union-temp) (concat-rules union-temp)]
+              [else union-temp]))
+
+      (define (process-concat-temp concat-temp acc)
+        (cond [(kleene? concat-temp) (kleene-rule concat-temp)]
+              [(union? concat-temp) (union-rules concat-temp)]
+              [(concat? concat-temp) (concat-rules concat-temp)]
+              [else concat-temp]))
+      
+      (cond [(kleene? cfe-temp) (map (λ (cfe-acc)
+                                       (struct-copy concat cfe-acc
+                                                    [rules (append (concat-rules cfe-acc) (list cfe-temp))]))
+                                     acc)]
+            [(union? cfe-temp) (append-map (λ (cfe-acc)
+                                             (map (λ (temp)
+                                                    (struct-copy concat cfe-acc
+                                                                 [rules (append (concat-rules cfe-acc) (list temp))]))                                            
+                                                  (union-rules cfe-temp)))
+                                           acc)]
+            [(concat? cfe-temp) (append-map (λ (cfe-acc)
+                                             (map (λ (temp)
+                                                    (struct-copy concat cfe-acc
+                                                                 [rules (append (concat-rules cfe-acc) (list temp))]))                                            
+                                                  (concat-rules cfe-temp)))
+                                           acc)]
+            [else acc]))
+      
+      
+    
+    (define (rule-extractor cfe-template)
+      (cond [(kleene? cfe-template) (kleene-rule cfe-template)]
+             [(union? cfe-template) (union-rules cfe-template)]
+             [(concat? cfe-template) (concat-rules cfe-template)]
+             [else cfe-template]))
+      
+    (cond [(kleene? cfe-template) (kleene-rule cfe-template)]
+          [(union? cfe-template) (union-rules cfe-template)]
+          [(concat? cfe-template) (make-concat-sublanguage (concat-rules cfe-template) (list (concat (list))))]
+          [else cfe-template]))
+    
+  
   
   (let* ([new-P (make-new-machine P)]
          [shrunken-P (rip-nodes new-P)]
          [simple-P (make-new-machine (pda->spda P))]
+         [sub-langs (make-sub-languages (pda-rule-action (first (pda-rules shrunken-P))))]
          #;[cfe-templates (pda-rule-tag (first (pda-rules shrunken-P)))]
          #;[extracted-rules (flatten (template->rules cfe-templates))]
          #;[inverse-pairs (make-inverse-pairs (get-push-only-rules extracted-rules) (get-pop-only-rules extracted-rules))])
     
     
     (values (sm-graph P)
-            ;(pda-rules new-P)
-           ; (sm-graph (pda->unchecked shrunken-P))
             (pda-rule-action (first (pda-rules shrunken-P)))
-           #;shrunken-P)
-    ;(sm-graph (pda->spda P))
-    #;(values simple-P
-            ;(pda2cfg P)
-            ;(printable-tag (pda-rule-action (first (pda-rules shrunken-P))))
-            ;(pda-rule-action (first (pda-rules shrunken-P)))
-            )
-    ;(sm-graph (pda->unchecked shrunken-P))
-      #;(values #;(sm-graph (pda->unchecked new-P))
-              #;(sm-graph (pda->unchecked shrunken-P))
-              cfe-templates
-              (printable-tag cfe-templates)
-              
-              #;extracted-rules
-              (get-push-only-rules extracted-rules)
-              (get-pop-only-rules extracted-rules)
-              (get-push&pop-rules extracted-rules)
-              (get-read-only-rules extracted-rules))
+            sub-langs)
+    
       
       
       ))
