@@ -257,10 +257,10 @@
       '()
       (let [(start-pair (hash-ref a-loi-hash (sm-start a-machine) #f))]
               (if (or
-                   (not (pair? start-pair)) ;; <- starting inv not given
-                   ((cadr start-pair) '())) ;; <- testing if empty holds for starting state's inv 
+                   (not (procedure? start-pair)) ;; <- starting inv not given
+                   (start-pair '())) ;; <- testing if empty holds for starting state's inv 
                   (order-output (sm-test-invs-helper all-paths-new-machine))
-                  (order-output (cons (list (list '() (sm-start a-machine)))
+                  (order-output (cons (list '() (sm-start a-machine))
                         (sm-test-invs-helper all-paths-new-machine)))))))
 
 ;; this is to order the output to be the list of the list of the state and the words it doesn't hold for:
