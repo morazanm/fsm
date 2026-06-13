@@ -268,7 +268,7 @@
 (define (get-accepting-paths a-pda max-length)
   (define finals-set (list->set (sm-finals a-pda)))
   (define paths-that-end-in-finals (for/list ([i (find-paths-pda a-pda #:max-length max-length)]
-                                              #:when (set-member? finals-set (get-destination-state (first (PATH-lor i)))))
+                                              #:when (set-member? finals-set (PATH-destination-state i)))
                                      (make-PATH (reverse (PATH-lor i)) (PATH-stack i) (PATH-word i) (PATH-path-length i) (PATH-destination-state i))))
 
   ;; PATH -> Boolean
@@ -309,18 +309,18 @@
     (define (get-sub-paths-helper length-cur-path)
       (let [(new-lor (take (PATH-lor a-path) length-cur-path))]
         (cond [(= length-cur-path (PATH-path-length a-path))
-               (set-add! a-m-set (make-PATH new-lor
-                                            (get-stack (take (PATH-lor a-path) length-cur-path))
-                                            (get-word (take (PATH-lor a-path) length-cur-path))
-                                            length-cur-path
+               (set-add! a-m-set (make-PATH '()
+                                            (get-stack (take (PATH-lor a-path) length-cur-path))  ;;;<- the lor and path length is set to 0 
+                                            (get-word (take (PATH-lor a-path) length-cur-path))    ;;   and '() to prevent duplicates from 
+                                            0                                                      ;;   other sub paths from other computations
                                             (get-destination-state (last new-lor))
                                             ))
                a-m-set]
               [else
-               (set-add! a-m-set (make-PATH new-lor
+               (set-add! a-m-set (make-PATH '()
                                             (get-stack (take (PATH-lor a-path) length-cur-path))
                                             (get-word (take (PATH-lor a-path) length-cur-path))
-                                            length-cur-path
+                                            0
                                             (get-destination-state (last new-lor))
                                             ))
                (get-sub-paths-helper  (+ 1 length-cur-path))])))
