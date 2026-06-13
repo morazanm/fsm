@@ -1,6 +1,6 @@
 #lang racket/base
 
-(provide sm-all-possible-words sm-test-invs-fsa find-paths)
+(provide sm-all-possible-words sm-test-invs-fsa find-paths order-output)
 (require "../sm-getters.rkt"
          "../fsa.rkt"
          racket/list
@@ -257,8 +257,72 @@
       '()
       (let [(start-pair (hash-ref a-loi-hash (sm-start a-machine) #f))]
               (if (or
-                   (not (pair? start-pair))
-                   ((cadr start-pair) '()))
-                  (sm-test-invs-helper all-paths-new-machine)
-                  (cons (list (list '() (sm-start a-machine)))
-                        (sm-test-invs-helper all-paths-new-machine))))))
+                   (not (pair? start-pair)) ;; <- starting inv not given
+                   ((cadr start-pair) '())) ;; <- testing if empty holds for starting state's inv 
+                  (order-output (sm-test-invs-helper all-paths-new-machine))
+                  (order-output (cons (list (list '() (sm-start a-machine)))
+                        (sm-test-invs-helper all-paths-new-machine)))))))
+
+;; this is to order the output to be the list of the list of the state and the words it doesn't hold for:
+;   '(((a) A) ((b a) A) ((a b a) A) ((b b a) A) ((a b b a) A))
+
+;; the results is a list of lists, and these lists are the word and the state
+(define (order-output results)
+  ;; have to get the states of the results
+  (define state-set (mutable-set))
+  
+  (for ([pair (in-list results)])
+    (set-add! state-set (second pair)))  ;<-- adds all the states in the set
+
+  ;; making the lists for the states
+  
+  ;; (listof symbol) -> (listof (symbol (listof word)))
+  ;; Purpose: To generate a list of lists of a state and an empty list for each given states
+  (define (build-list-of-states-&-empty-low states)
+    ;; (listof symbol) (listof word)-> (listof (symbol '()))
+    ;; Purpose: To generate a list of lists of a state and an empty list for each given states
+    ;; Accumulator Invariant: accum = list containing a list with the state and an empty list of words
+    (define (build-list-of-states-&-empty-low-helper states accum)
+      (if (null? states) accum
+          (build-list-of-states-&-empty-low-helper (cdr states) (cons (list (car states) '()) accum))))
+    (build-list-of-states-&-empty-low-helper states '()))
+  
+  (define states-&-empty-low (build-list-of-states-&-empty-low (set->list state-set)))
+
+  ;; now adding in all the words to the lists
+
+  ;; (listof (listof word state)) -> (listof (listof state (listof word)))
+  ;; Purpose: To sort the words to be a list of the state and the words that can possibly reach that state
+  (define (sort-words listof-all-words-&-states)
+    ;; (listof (word state)) -> (listof word)
+    ;; Purpose: To make the given (listof (word state)) into a list of words
+    (define (make-low list-of-words-&-states)
+      ;; (listof (word state)) -> (listof word)
+      ;; Purpose: To make the given (listof (word state)) into a list of words
+      ;; Accumulator Invariant: accum = current list of words for the state
+      (define (make-low-helper list-of-words-&-states accum)
+        (if (null? list-of-words-&-states) accum
+            (make-low-helper (cdr list-of-words-&-states) (cons (car (car list-of-words-&-states)) accum))))
+      (make-low-helper list-of-words-&-states '()))
+    ;; (listof (listof word state)) -> (listof (listof state (listof word)))
+    ;; Purpose: To sort the words to be a list of the state and the words that can possibly reach that state
+    ;; Accumulator Invairant: accum = list of states with all the possible words in them 
+    (define (sort-words-helper states-&-empty-low accum)
+      (if (null? states-&-empty-low) accum
+          (sort-words-helper (cdr states-&-empty-low)
+                             (cons (list (car (car states-&-empty-low))
+                                         (make-low (remove-duplicates
+                                                    (filter (λ (x) (eq? (car (car states-&-empty-low)) (cadr x)))
+                                                           listof-all-words-&-states)))) accum))))
+            
+    (sort-words-helper states-&-empty-low '()))
+
+  (sort-words results))
+
+
+
+
+
+
+
+                         
