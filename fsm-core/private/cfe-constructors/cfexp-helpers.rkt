@@ -171,11 +171,6 @@
                           (λ (r) (convert-beta=1 r states))
                           beta>=2-rules))))
 
-;; Tests for generate-beta<1-rules
-
-
-
-
 ;; (listof pda-rule) (listof symbols) --> (listof pda-rules)
 ;; Purpose: Substitute pop nothing rules with pop 1 rules
 (define (generate-beta=1-rules rls gamma)
@@ -255,7 +250,10 @@
          (beta=1-rules (generate-beta=1-rules beta<2-rules (cons bottom pgamma)))
          (theta<=2-rules (generate-theta<=2-rules beta=1-rules
                                                   (extract-states beta=1-rules)))]
-    (make-unchecked-ndpda (append (list  new-final new-start)
+    (rename-states-pda (append (list  new-final new-start)
+                                  (remove-duplicates
+                                   (cons pstart (extract-states theta<=2-rules))))
+                       (make-unchecked-ndpda (append (list  new-final new-start)
                                   (remove-duplicates
                                    (cons pstart (extract-states theta<=2-rules))))
                         
@@ -263,4 +261,4 @@
                           (cons bottom pgamma)
                           new-start
                           (list new-final)
-                          (cons initr (append theta<=2-rules frules)))))
+                          (cons initr (append theta<=2-rules frules))))))
