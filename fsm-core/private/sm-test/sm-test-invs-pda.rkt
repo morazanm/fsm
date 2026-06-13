@@ -450,9 +450,11 @@
 
 ;; pda (listof (list state (word -> boolean))) -> (listof (word stack state))
 ;; Purpose: To return a list of the invarients that don't hold and the words that cause it not to hold
-(define (sm-test-invs-pda a-machine max-path-length a-loi)
+(define (sm-test-invs-pda a-machine max-path-length ds-remove? a-loi)
   ;; the given machine without the states and rules of states that cannot reach a final state
-  (define new-machine (remove-states-that-cannot-reach-finals a-machine max-path-length))
+  (define new-machine (if ds-remove?
+                          (remove-states-that-cannot-reach-finals a-machine max-path-length)  ;<- refactored
+                          a-machine))
   ;; list of invariants that are reachable from the starting configuration
   (define reachable-inv (for/list ([i a-loi]
                                    #:when (member (first i) (sm-states new-machine)))
@@ -477,9 +479,77 @@
                                              (PATH-destination-state (first all-paths))) accum)
                                  accum))))
           
-  (sm-test-invs-helper all-paths-new-machine
+  (order-output (sm-test-invs-helper all-paths-new-machine
                        (let [(start-pair (assoc (sm-start a-machine) a-loi))]
                          (if (or (not (pair? start-pair))
                                  ((second start-pair) '() '()))
                              '()
-                             (list (list '() '() (sm-start a-machine)))))))
+                             (list (list '() '() (sm-start a-machine))))))))
+
+
+
+
+
+
+;; this part organized the output:
+
+;; '(((a) (a) S) (() () S))
+
+
+;; the results is a list of lists, and these lists are the word and the state
+(define (order-output results)
+  ;; have to get the states of the results
+  (define state-set (mutable-set))
+  
+  (for ([triple (in-list results)])
+    (set-add! state-set (third triple)))  ;<-- adds all the states in the set
+
+  ;; making the lists for the states
+  
+  ;; (listof symbol) -> (listof (symbol (listof word)))
+  ;; Purpose: To generate a list of lists of a state and an empty list for each given states
+  (define (build-list-of-states-&-empty-low states)
+    ;; (listof symbol) (listof word)-> (listof (symbol '()))
+    ;; Purpose: To generate a list of lists of a state and an empty list for each given states
+    ;; Accumulator Invariant: accum = list containing a list with the state and an empty list of words
+    (define (build-list-of-states-&-empty-low-helper states accum)
+      (if (null? states) accum
+          (build-list-of-states-&-empty-low-helper (cdr states) (cons (list (car states) '()) accum))))
+    (build-list-of-states-&-empty-low-helper states '()))
+  
+  (define states-&-empty-low (build-list-of-states-&-empty-low (set->list state-set)))
+
+  ;; now adding in all the words and stacks to the lists
+
+  ;; (listof (listof word state)) -> (listof (listof state (listof word)))
+  ;; Purpose: To sort the words to be a list of the state and the words that can possibly reach that state
+  (define (sort-words listof-all-words-&-states)
+    ;; (listof (word state)) -> (listof word)
+    ;; Purpose: To make the given (listof (word state)) into a list of words
+    (define (make-low list-of-words-&-stacks-&-states)
+      ;; (listof (word state)) -> (listof word)
+      ;; Purpose: To make the given (listof (word state)) into a list of words
+      ;; Accumulator Invariant: accum = current list of words for the state
+      (define (make-low-helper list-of-words-&-states accum)
+        (if (null? list-of-words-&-states) accum
+            (make-low-helper (cdr list-of-words-&-states) (cons (list (car (car list-of-words-&-states))
+                                                                      (cadr (car list-of-words-&-states))) accum))))
+      (make-low-helper list-of-words-&-stacks-&-states '()))
+    ;; (listof (listof word state)) -> (listof (listof state (listof word)))
+    ;; Purpose: To sort the words to be a list of the state and the words that can possibly reach that state
+    ;; Accumulator Invairant: accum = list of states with all the possible words in them 
+    (define (sort-words-helper states-&-empty-low accum)
+      (if (null? states-&-empty-low) accum
+          (sort-words-helper (cdr states-&-empty-low)
+                             (cons (list (car (car states-&-empty-low))
+                                         (make-low (remove-duplicates
+                                                    (filter (λ (x) (eq? (car (car states-&-empty-low)) (caddr x)))
+                                                           listof-all-words-&-states)))) accum))))
+            
+    (sort-words-helper states-&-empty-low '()))
+
+  (sort-words results))
+
+
+
+
