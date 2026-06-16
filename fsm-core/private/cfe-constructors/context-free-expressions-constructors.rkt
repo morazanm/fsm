@@ -514,10 +514,10 @@
   sigma  | The alphabet that the given pda works over => (listof symbol)
   gamma  | The stack alphabet that given pda works over => (listof symbol)
   start  | The starting state => symbol
-  finals | The final states => (listof symbol)
+  finals | The final states => symbol
   rules  | The transition relation for the given pda => (listof pda-rule)
   |#
-  (struct pda (states sigma gamma start finals rules) #:transparent)
+  (struct pda (states sigma gamma start final rules) #:transparent)
 
   #|
   pda-rule is a structural representation of a pda rule
@@ -628,7 +628,7 @@
                                           lor)]
                [remaining-rules (filter (λ (rule)
                                           (not (member rule same-destin-rules)))
-                                            lor)]
+                                        lor)]
                [collapsed (if (is-length-one? same-destin-rules)
                               (first same-destin-rules)
                               (pda-rule source (union (map pda-rule-action same-destin-rules)) destin))])
@@ -636,12 +636,12 @@
                 (simplify-rules remaining-rules)))))
   
     
-      ;;make pred for do nothing on stack rule e.i push and pop same element
+  ;;make pred for do nothing on stack rule e.i push and pop same element
   
   
   ;;pda -> pda-struct
   ;;Purpose: Converts the given pda into a pda-struct
-   (define (unchecked->pda P)
+  (define (unchecked->pda P)
     (pda (pda-getstates P)
          (pda-getalphabet P)
          (pda-getgamma P)
@@ -656,13 +656,92 @@
                           (pda-sigma P)
                           (pda-gamma P)
                           (pda-start P)
-                          (pda-finals P)
+                          (pda-final P)
                           (map struct->rules (pda-rules P))))
-  
 
-  ;;pda-struct -> pda-struct
-  ;;Purpose: Recursively rips nodes out from the given M and converts the ripped nodes to cfe-templates
-  (define (rip-nodes M)
+  ;;pda-rule -> Boolean
+  ;;Purpose: Determines if the given pda-rule is a self loop
+  (define (self-loop? pda-rule)
+    (eq? (pda-rule-source pda-rule) (pda-rule-destin pda-rule)))
+
+  ;; pda --> cfe-template
+  ;; Purpose: Recursively rips nodes out from the given M and converts the ripped nodes to cfe-templates
+  ;; Assume: The transition diagram of the given machine is a connected directed graph
+  (define (pda2temp P)
+    ;; dgraph --> dgraph
+    ;; Purpose: Collapse multiple edges between nodes
+    (define (remove-multiple-edges g)
+      ;; (listof pda-rule) -> cfe-template
+      ;; Purpose: Collapse the given pda-rule into a cfe-template
+      (define (collapse-edges loe)
+        ;; (listof pda-rule) (listof pda-action) -> cfe-template
+        ;; Purpose: Collapse the given pda-rule into a cfe-template
+        (define (collapse-edges-helper loe acc)
+          (cond [(null? loe) (error "erm 2")]
+                [(null? (rest loe)) (union (cons (pda-rule-action (first loe)) acc))]
+                [else (collapse-edges-helper (rest loe) (cons (pda-rule-action (first loe)) acc))]))
+        (cond [(null? loe) (error "erm")]
+              [(null? (rest loe)) (pda-rule-action (first loe))]
+              [else (collapse-edges-helper (rest loe) (cons (pda-rule-action (first loe)) (list)))]))
+      (if (null? g)
+          '()
+          (let* [(curr-edge (first g))
+                 (from-state (pda-rule-source curr-edge))
+                 (to-state (pda-rule-destin curr-edge))
+                 (to-collapse (filter (λ (e) (and (eq? (pda-rule-source e) from-state)
+                                                  (eq? (pda-rule-destin e) to-state)))
+                                      g))
+                 (remaining-g (filter (λ (e) (not (member e to-collapse))) g))]
+            (cons (pda-rule from-state (collapse-edges to-collapse) to-state)
+                  (remove-multiple-edges remaining-g)))))
+
+
+    ;; (listof node) dgraph --> dgraph
+    ;; Purpose: Rip out the given nodes from the given graph
+    (define (rip-out-nodes lon g)
+      ;; node dgraph --> dgraph
+      ;; Purpose: Rip out given state from given graph
+      (define (rip-out-node n g)
+        ;;rule -> (listof rules)
+        ;;Purpose: Extracts the rules that make the concat if possible
+        (define (extract-concat rule)
+          (if (concat? rule)
+              (concat-rules rule)
+              (list rule)))
+        (let* [(non (filter (λ (r) (and (not (eq? (pda-rule-destin r) n))
+                                        (not (eq? (pda-rule-source r) n))))
+                            g))
+               (into-n (filter (λ (r) (and (eq? (pda-rule-destin r) n)
+                                           (not (eq? (pda-rule-source r) n))))
+                               g))
+               (outof-n (filter (λ (r) (and (eq? (pda-rule-source r) n)
+                                            (not (eq? (pda-rule-destin r) n))))
+                                g))
+               (self-edges (filter (λ (r) (and (eq? (pda-rule-source r) n)
+                                               (eq? (pda-rule-destin r) n)))
+                                   g))]
+          (remove-multiple-edges
+           (append
+            non
+            (if (not (null? self-edges))
+                (let [(self-edge (first self-edges))]
+                  (append-map (λ (into-edge)
+                                (map (λ (outof-edge) (pda-rule (pda-rule-source into-edge)
+                                                               (concat (append (extract-concat (pda-rule-action into-edge))
+                                                                               (list (kleene (pda-rule-action self-edge)))
+                                                                               (extract-concat (pda-rule-action outof-edge))))
+                                                               (pda-rule-destin outof-edge)))
+                                     outof-n))
+                              into-n))
+                (append-map (λ (into-edge)
+                              (map (λ (outof-edge) (pda-rule (pda-rule-source into-edge)
+                                                             (concat (append (extract-concat (pda-rule-action into-edge))
+                                                                             (extract-concat (pda-rule-action outof-edge))))
+                                                             (pda-rule-destin outof-edge)))
+                                   outof-n))
+                            into-n))))))
+      (foldr (λ (s g) (rip-out-node s g)) g lon))
+  
     ;;cfe-template -> cfe-template
     ;;Purpose: Simplifies the given cfe-template
     (define (simplify-templates temp)
@@ -672,86 +751,37 @@
         (if (andmap empty? (union-rules temp))
             (empty (first (union-rules temp)))
             (union (map simplify-templates (union-rules temp)))))
-      (cond [(concat? temp) (concat (filter-not empty? (map simplify-templates (concat-rules temp))))]
+      (cond [(concat? temp) (let ([res (filter-not empty? (map simplify-templates (concat-rules temp)))])
+                              (if (is-length-one? res)
+                                  (first res)
+                                  (concat res)))]
             [(union? temp) (simplify-empty temp)]
             [(kleene? temp) (kleene (simplify-templates (kleene-rule temp)))]
             [else temp]))
+  
+    (let* ([new-states (for/fold ([st (pda-getstates P)])
+                                 ([x (in-range 2)])
+                         (cons (gen-state st) st))]
+           [new-start (first new-states)]
+           [new-final (second new-states)]
+           [new-rules-to-final (for/fold ([acc '()])
+                                         ([final (pda-getfinals P)])
+                                 (cons (list (list final EMP EMP) (list new-final EMP)) acc))]
+           [new-rules-to-start (list (list new-start EMP EMP) (list (pda-getstart P) EMP))]
+           [init-dgraph (map rule->struct (append (cons new-rules-to-start new-rules-to-final) (pda-getrules P)))]
+           [collapsed-dgraph (rip-out-nodes (pda-getstates P)
+                                            (remove-multiple-edges init-dgraph))])
     
-    ;;pda-rule -> Boolean
-    ;;Purpose: Determines if the given pda-rule is a self loop
-    (define (self-loop? pda-rule)
-      (eq? (pda-rule-source pda-rule) (pda-rule-destin pda-rule)))
-    
-    ;;(listof pda-rule) -> pda-rule
-    ;;Purpose: If the given list has many rules (e.i more than 1), merge their tags together and create a union.
-    ;;         Otherwise return the given list
-    (define (merge-rules rules)
-      (if (or (null? rules) (is-length-one? rules))
-          rules
-          (list (struct-copy pda-rule (first rules)
-                             [action (union (map pda-rule-action rules))]))))
-
-    ;;rule -> (listof rules)
-    ;;Purpose: Extracts the rules that make the concat if possible
-    (define (extract-concat rule)
-      (if (concat? rule)
-          (concat-rules rule)
-          (list rule)))
-    
-    (let ([states-to-rip-out (filter (λ (state) (and (not (eq? state (pda-start M)))
-                                                     (not (eq? state (first (pda-finals M))))))
-                                     (pda-states M))])
-      (if (null? states-to-rip-out)
-          (let ([new-rule (first (merge-rules (pda-rules M)))])
-            (struct-copy pda M
-                         [rules (list (struct-copy pda-rule new-rule
-                                                   [action (simplify-templates (pda-rule-action new-rule))]))]))
-          (let* ([state-to-rip (first states-to-rip-out)]
-                 [rules-frm-ripped-state (filter (λ (rule) (or (eq? state-to-rip (pda-rule-source rule))
-                                                               (eq? state-to-rip (pda-rule-destin rule))))
-                                                 (pda-rules M))]
-                 [rule-frm-start (first (filter (λ (rule) (eq? (pda-start M) (pda-rule-source rule))) rules-frm-ripped-state))]
-                 [frm-ripped-state-rules (filter (λ (rule) (and (not (self-loop? rule))
-                                                                (eq? state-to-rip (pda-rule-source rule))))
-                                                 rules-frm-ripped-state)]
-                 [to-ripped-state-rules (filter (λ (rule) (and (not (self-loop? rule))   
-                                                               (eq? state-to-rip (pda-rule-destin rule))))
-                                                rules-frm-ripped-state)]
-                 [self-loop-rules (filter (λ (rule) (self-loop? rule)) rules-frm-ripped-state)]
-                 [new-states-for-P (filter (λ (state) (not (eq? state-to-rip state))) (pda-states M))]
-                 [updated-self-loop (map (λ (rule)
-                                           (struct-copy pda-rule rule
-                                                        [source (pda-start M)]
-                                                        [action (kleene (pda-rule-action rule))]))
-                                         self-loop-rules)]
-                 [updated-destins (map (λ (rule)
-                                         (struct-copy pda-rule rule
-                                                      [source (pda-start M)]
-                                                      [action (concat (append (extract-concat (pda-rule-action rule-frm-start))
-                                                                              (map pda-rule-action updated-self-loop)
-                                                                              (extract-concat (pda-rule-action rule))))]))
-                                       frm-ripped-state-rules)]
-                 [updated-to-rules (if (null? frm-ripped-state-rules)
-                                       '()
-                                       (let ([rule-frm-ripped (first frm-ripped-state-rules)])
-                                         (filter-map (λ (rule)
-                                                       (and (and (eq? (pda-rule-source rule-frm-ripped)
-                                                                      (pda-rule-destin rule))
-                                                                 (eq? (pda-rule-destin rule-frm-ripped)
-                                                                      (pda-rule-source rule)))
-                                                            (struct-copy pda-rule rule
-                                                                         [action (concat (list
-                                                                                          (pda-rule-action rule)
-                                                                                          (pda-rule-action rule-frm-ripped)))]
-                                                                         [destin (pda-rule-source rule)])))
-                                                     to-ripped-state-rules)))])
-            (rip-nodes (struct-copy pda M
-                                    [states new-states-for-P]
-                                    [rules (append updated-to-rules
-                                                   updated-destins
-                                                   (filter (λ (rule) (and (not (eq? state-to-rip (pda-rule-source rule)))
-                                                                          (not (eq? state-to-rip (pda-rule-destin rule)))))
-                                                           (pda-rules M)))]))))))
+      (pda (take new-states 2)
+           (pda-getalphabet P)
+           (pda-getgamma P)
+           new-start
+           new-final
+           (if (null? collapsed-dgraph)
+               '()
+               (struct-copy pda-rule (first collapsed-dgraph)
+                            [action (simplify-templates (pda-rule-action (first collapsed-dgraph)))])))))
+  
 
 
   ;;pda-action -> string
@@ -780,24 +810,7 @@
           [(concat? tag) (printable-helper (concat-rules tag) "")]
           [else (format "(~a)*" (printable-tag (kleene-rule tag)))]))
 
-  ;;pda -> pda-struct
-  ;;Purpose: Converts given pda into a pda-struct
-  (define (make-new-machine P)
-    (let* ([new-states (for/fold ([st (pda-getstates P)])
-                                 ([x (in-range 2)])
-                         (cons (gen-state st) st))]
-           [new-start (first new-states)]
-           [new-final (second new-states)]
-           [new-rules-to-final (for/fold ([acc '()])
-                                         ([final (pda-getfinals P)])
-                                 (cons (list (list final EMP EMP) (list new-final EMP)) acc))]
-           [new-rules-to-start (list (list new-start EMP EMP) (list (pda-getstart P) EMP))])
-      (pda new-states
-           (pda-getalphabet P)
-           (pda-getgamma P)
-           new-start
-           (list new-final)
-           (simplify-rules (map rule->struct (append (cons new-rules-to-start new-rules-to-final) (pda-getrules P)))))))
+  
   
 
   ;;pda-rule -> Boolean
@@ -858,86 +871,62 @@
                [pair (list (inverse-pair push pop))])
       pair))
 
-
+  (define (rule-extractor cfe-template)
+    (cond [(kleene? cfe-template) (kleene-rule cfe-template)]
+          [(union? cfe-template) (union-rules cfe-template)]
+          [(concat? cfe-template) (concat-rules cfe-template)]
+          [else cfe-template]))
   
   (define (make-sub-languages cfe-template)
 
-    (define (make-concat-sublanguage concat-rules acc)
-      #;(process-template (first concat-rules) acc)
-      (if (null? concat-rules)
+    (define (make-concat-sublanguage rules acc)
+      (define (process-concat-temp cfe-temp acc)
+        (cond [(kleene? cfe-temp) (map (λ (cfe-acc)
+                                         (struct-copy concat cfe-acc
+                                                      [rules (append (concat-rules cfe-acc) (list cfe-temp))]))
+                                       acc)]
+              [(union? cfe-temp) (append-map (λ (cfe-acc)
+                                               (map (λ (temp)
+                                                      (struct-copy concat cfe-acc
+                                                                   [rules (append (concat-rules cfe-acc) (list temp))]))                                            
+                                                    (union-rules cfe-temp)))
+                                             acc)]
+              [(concat? cfe-temp) (append-map (λ (cfe-acc)
+                                                (map (λ (temp)
+                                                       (struct-copy concat cfe-acc
+                                                                    [rules (append (concat-rules cfe-acc) (list temp))]))                                            
+                                                     (concat-rules cfe-temp)))
+                                              acc)]
+              [else acc]))
+      (if (null? rules)
           acc
-          (make-concat-sublanguage (rest concat-rules)
-                                   (process-template (first concat-rules) acc))))
-
-    (define (process-template cfe-temp acc)
-
-      (define (process-kleene-temp kleene-temp acc)
-        (cond [(kleene? kleene-temp) (kleene-rule kleene-temp)]
-              [(union? kleene-temp) (union-rules kleene-temp)]
-              [(concat? kleene-temp) (concat-rules kleene-temp)]
-              [else kleene-temp]))
-
-      (define (process-union-temp union-temp acc)
-        (cond [(kleene? union-temp) (kleene-rule union-temp)]
-              [(union? union-temp) (union-rules union-temp)]
-              [(concat? union-temp) (concat-rules union-temp)]
-              [else union-temp]))
-
-      (define (process-concat-temp concat-temp acc)
-        (cond [(kleene? concat-temp) (kleene-rule concat-temp)]
-              [(union? concat-temp) (union-rules concat-temp)]
-              [(concat? concat-temp) (concat-rules concat-temp)]
-              [else concat-temp]))
-      
-      (cond [(kleene? cfe-temp) (map (λ (cfe-acc)
-                                       (struct-copy concat cfe-acc
-                                                    [rules (append (concat-rules cfe-acc) (list cfe-temp))]))
-                                     acc)]
-            [(union? cfe-temp) (append-map (λ (cfe-acc)
-                                             (map (λ (temp)
-                                                    (struct-copy concat cfe-acc
-                                                                 [rules (append (concat-rules cfe-acc) (list temp))]))                                            
-                                                  (union-rules cfe-temp)))
-                                           acc)]
-            [(concat? cfe-temp) (append-map (λ (cfe-acc)
-                                             (map (λ (temp)
-                                                    (struct-copy concat cfe-acc
-                                                                 [rules (append (concat-rules cfe-acc) (list temp))]))                                            
-                                                  (concat-rules cfe-temp)))
-                                           acc)]
-            [else acc]))
-      
-      
+          (make-concat-sublanguage (rest rules)
+                                   (process-concat-temp (first rules) acc))))
     
-    (define (rule-extractor cfe-template)
-      (cond [(kleene? cfe-template) (kleene-rule cfe-template)]
-             [(union? cfe-template) (union-rules cfe-template)]
-             [(concat? cfe-template) (concat-rules cfe-template)]
-             [else cfe-template]))
-      
-    (cond [(kleene? cfe-template) (kleene-rule cfe-template)]
-          [(union? cfe-template) (union-rules cfe-template)]
+    (cond [(kleene? cfe-template) cfe-template]
+          [(union? cfe-template) cfe-template]
           [(concat? cfe-template) (make-concat-sublanguage (concat-rules cfe-template) (list (concat (list))))]
           [else cfe-template]))
     
   
   
-  (let* ([new-P (make-new-machine P)]
-         [shrunken-P (rip-nodes new-P)]
-         [simple-P (make-new-machine (pda->spda P))]
-         [sub-langs (make-sub-languages (pda-rule-action (first (pda-rules shrunken-P))))]
+  (let* ([new-P (pda2temp P)]
+         #;[simple-P (make-new-machine (pda->spda P))]
+         [sub-langs (make-sub-languages (pda-rule-action (pda-rules new-P)))]
          #;[cfe-templates (pda-rule-tag (first (pda-rules shrunken-P)))]
          #;[extracted-rules (flatten (template->rules cfe-templates))]
          #;[inverse-pairs (make-inverse-pairs (get-push-only-rules extracted-rules) (get-pop-only-rules extracted-rules))])
     
-    
-    (values (sm-graph P)
-            (pda-rule-action (first (pda-rules shrunken-P)))
+    (void)
+    #;(values (sm-graph P)
+            new-P
+            #;(pda-rule-action (first (pda-rules shrunken-P)))
+            
             sub-langs)
     
       
       
-      ))
+    ))
 
 
 ;;cfe -> pda

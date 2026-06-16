@@ -91,6 +91,41 @@
 (define BNAN (make-cfe ([BNAN (union-cfexp EMPTY (concat-cfexp B BNAN A))])
             BNAN) )
 
+
+(define aibj1 (make-cfe ([L (union-cfexp B
+                                      (concat-cfexp A L B)
+                                      (concat-cfexp A L B B))])
+                         (concat-cfexp A L)))
+
+(define aibj2 (make-cfe ([L (union-cfexp B
+                                      (concat-cfexp A L B)
+                                      (concat-cfexp A L B B))])
+                         (concat-cfexp A L)))
+
+(define aibj3 (make-cfe ([L (union-cfexp B
+                                      (concat-cfexp A L B)
+                                      (concat-cfexp A L B B))])
+                         (concat-cfexp A L)))
+
+(define aibj4 (make-cfe ([L (union-cfexp B
+                                      (concat-cfexp A L B)
+                                      (concat-cfexp A L B B))])
+                         (concat-cfexp A L)))
+
+(define aibj5 (make-cfe ([L (union-cfexp B
+                                      (concat-cfexp A L B)
+                                      (concat-cfexp A L B B))])
+                         (concat-cfexp A L)))
+
+(define aibj6 (make-cfe ([L (union-cfexp B
+                                      (concat-cfexp A L B)
+                                      (concat-cfexp A L B B))])
+                         (concat-cfexp A L)))
+
+
+  
+
+
 ;;w = a^ib^jc^k, i=j or j=k
 
 ;;AiBjCk =>  a^ib^ic^k or a^ib^kc^k, i=j or j=k

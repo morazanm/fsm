@@ -48,6 +48,17 @@
                                             ((M b (a)) (M ,EMP))
                                             ((M ,EMP ,EMP) (F ,EMP)))))
 
+(define Gina-aˆnbˆn* (make-unchecked-ndpda '(S M F)
+                                          '(a b)
+                                          '(a Z)
+                                          'S
+                                          '(S)
+                                          `(((S ,EMP ,EMP) (M (Z)))
+                                            ((M a ,EMP) (M (a)))
+                                            ((F b (a)) (F ,EMP))
+                                            ((M ,EMP ,EMP) (F ,EMP))
+                                            ((F ,EMP (Z)) (S ,EMP)))))
+
 (define Gina-wcwˆr (make-unchecked-ndpda '(S P Q F)
                           '(a b c)
                           '(a b)
@@ -197,7 +208,7 @@
      ((F b ,EMP) (S ,EMP))
      ((F a ,EMP) (X ,EMP))))) 
 
-(define LOPDA (list Gina-aˆnbˆn A* Gina-wcwˆr Gina-palindrome-pda Gina-AiBj Gina-A^nB^mA^n Gina-a^mb^nc^pd^q Gina-a^mb^nc^p))
+(define LOPDA (list Gina-aˆnbˆn Gina-aˆnbˆn* A* Gina-wcwˆr Gina-palindrome-pda Gina-AiBj Gina-A^nB^mA^n Gina-a^mb^nc^pd^q Gina-a^mb^nc^p))
 
 #;(sm-graph Gina-aˆnbˆn)
 
@@ -205,9 +216,11 @@
 
 
 #;(sm-graph Gina-AiBj)
-(pda->cfe Gina-AiBj)
-;(pda->cfe Gina-AiBj2)
 
+
+;(pda->cfe Gina-AiBj)
+;(pda->cfe Gina-AiBj2)
+(pda->cfe Gina-aˆnbˆn*)
 
 ;;w = a*
 #|
