@@ -876,10 +876,15 @@
           [(union? cfe-template) (union-rules cfe-template)]
           [(concat? cfe-template) (concat-rules cfe-template)]
           [else cfe-template]))
-  
-  (define (make-sub-languages cfe-template)
 
+  ;;cfe-template -> (listof cfe-template)
+  ;;Purpose: Simplifies the main cfe-template by splitting it into sub cfe-template 
+  (define (make-sub-languages cfe-template)
+    ;;(listof cfe-template) (listof cfe-template) -> (listof cfe-template)
+    ;;Purpose: Constructs sublanguages from the given concat cfe-template
     (define (make-concat-sublanguage rules acc)
+      ;;(listof cfe-template) (listof cfe-template) -> (listof cfe-template)
+      ;;Purpose: Constructs sublanguages from the given concat cfe-template
       (define (process-concat-temp cfe-temp acc)
         (cond [(kleene? cfe-temp) (map (λ (cfe-acc)
                                          (struct-copy concat cfe-acc
@@ -897,18 +902,31 @@
                                                                     [rules (append (concat-rules cfe-acc) (list temp))]))                                            
                                                      (concat-rules cfe-temp)))
                                               acc)]
-              [else acc]))
+              [else (map (λ (cfe-acc)
+                           (struct-copy concat cfe-acc
+                                        [rules (append (concat-rules cfe-acc) (list cfe-temp))]))
+                         acc)]))
       (if (null? rules)
           acc
           (make-concat-sublanguage (rest rules)
-                                   (process-concat-temp (first rules) acc))))
-    
-    (cond [(kleene? cfe-template) cfe-template]
-          [(union? cfe-template) cfe-template]
+                                   (process-concat-temp (first rules) acc))))    
+    (cond [(kleene? cfe-template) (let ([res (make-sub-languages (kleene-rule cfe-template))])
+                                    (list (kleene (if (is-length-one? res) (first res) (union res)))))]
+          [(union? cfe-template) (list cfe-template)]
           [(concat? cfe-template) (make-concat-sublanguage (concat-rules cfe-template) (list (concat (list))))]
-          [else cfe-template]))
-    
-  
+          [else (list cfe-template)]))
+
+  (define (contruct-cfe loCT)
+    (define (contruct-cfe-helper cfe-template)
+      (cond [(kleene? cfe-template) (mk-kleene-cfexp (contruct-cfe-helper (kleene-rule cfe-template)))]
+            [(union? cfe-template) (mk-union-cfexp (map contruct-cfe-helper (union-rules cfe-template)))]
+            [(concat? cfe-template) (mk-concat-cfexp (map contruct-cfe-helper (concat-rules cfe-template)))]
+            [(singleton? cfe-template) (mk-singleton-cfexp (singleton-rule cfe-template))]
+            [else cfe-template]))
+    (let ([res (map contruct-cfe-helper loCT)])
+      (if (is-length-one? res)
+          (first res)
+          (mk-union-cfexp res))))
   
   (let* ([new-P (pda2temp P)]
          #;[simple-P (make-new-machine (pda->spda P))]
@@ -917,12 +935,13 @@
          #;[extracted-rules (flatten (template->rules cfe-templates))]
          #;[inverse-pairs (make-inverse-pairs (get-push-only-rules extracted-rules) (get-pop-only-rules extracted-rules))])
     
-    (void)
-    #;(values (sm-graph P)
-            new-P
+    
+    (values (sm-graph P)
+            ;new-P
             #;(pda-rule-action (first (pda-rules shrunken-P)))
             
-            sub-langs)
+            sub-langs
+            (contruct-cfe sub-langs))
     
       
       
