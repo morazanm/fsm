@@ -197,7 +197,7 @@
 (define (find-paths-pda a-machine #:max-length [max-length 12])
   (define queue (make-queue))
   (define rules (map rule->PDA-rule (sm-rules a-machine)))
-  
+  (define finals-set (list->set (sm-finals a-machine)))
   
   
   ;; (queueof (listof PATH)) (listof PATH) -> (listof PATH)
@@ -206,11 +206,8 @@
   ;;                        visited = set of a state, word, and stack that has
   ;;                                  been visited
   (define (find-paths-helper paths visited)
-    (if (queue-empty? queue) (map (λ (x) (make-PATH (PATH-lor x)
-                                                    (PATH-stack x)
-                                                    (reverse (PATH-word x))  ;<- have to unreverse the word
-                                                    (PATH-path-length x)
-                                                    (PATH-destination-state x))) paths)
+    (if (queue-empty? queue)
+        paths
         (let* [(qfirst (dequeue! queue))
                ;; hash table of the state (<- the key) and the rules that COME OUT of that state (the source state is that state) ;; need to change when reverse paths
                #;(stack-applicable-rules (filter
@@ -236,7 +233,17 @@
                                           i))))
                (next-rules-first-path (get-next-rules (first (PATH-lor qfirst))
                                                       rule-ht))
-               (paths-with-qfirst (cons qfirst paths))] ;; <-- the paths with the first of the queue included (the new accumulated paths)
+               #;(paths-with-qfirst (cons qfirst paths))
+
+               (paths-with-qfirst (if (and (empty? (PATH-stack qfirst))  ;<- only accumulating the accepting paths, no subpaths
+                                           (set-member? finals-set (PATH-destination-state qfirst)))
+                                      (cons (make-PATH (reverse (PATH-lor qfirst))
+                                                       (PATH-stack qfirst)
+                                                       (reverse (PATH-word qfirst))  ;<- have to unreverse the word
+                                                       (PATH-path-length qfirst)
+                                                       (PATH-destination-state qfirst))
+                                            paths)
+                                      paths))] ;; <-- the paths with the first of the queue included (the new accumulated paths)
           (if (empty? next-rules-first-path)
               (find-paths-helper paths-with-qfirst
                                  visited)
@@ -266,15 +273,12 @@
 ;; pda -> (listof PATH)
 ;; Purpose: Returns all the paths that lead to an accepting word of the given machine
 (define (get-accepting-paths a-pda max-length)
-  (define finals-set (list->set (sm-finals a-pda)))
-  (define paths-that-end-in-finals (for/list ([i (find-paths-pda a-pda #:max-length max-length)]
+  #;(define finals-set (list->set (sm-finals a-pda)))
+  #;(define paths-that-end-in-finals (for/list ([i (find-paths-pda a-pda #:max-length max-length)]
                                               #:when (set-member? finals-set (PATH-destination-state i)))
                                      (make-PATH (reverse (PATH-lor i)) (PATH-stack i) (PATH-word i) (PATH-path-length i) (PATH-destination-state i))))
-
-  ;; PATH -> Boolean
-  ;; Purpose: To determine if the given path leads to an accept 
-  (define (leads-to-accepting? a-path)
-    (empty? (PATH-stack a-path)))
+  (define paths-that-end-in-finals (find-paths-pda a-pda #:max-length max-length))
+  
 
   ;; PATH -> (listof PATH)
   ;; Purpose: To return all the sub paths of the given
@@ -329,8 +333,7 @@
   (define new-mutable-set (mutable-set))
 
   (apply (curry set-union! new-mutable-set)
-         (for/list ([i paths-that-end-in-finals]
-                    #:when (leads-to-accepting? i))
+         (for/list ([i paths-that-end-in-finals])
            (get-sub-paths i)))
   ;(display new-mutable-set)
   (set->list new-mutable-set))
@@ -347,7 +350,7 @@
   (define new-rules (mutable-set))
   (define new-states (mutable-set))
 
-  (for ([path (filter (λ (x) (set-member? finals-set (get-destination-state (first (PATH-lor x))))) ;<- paths that end in finals
+  (for ([path (filter (λ (x) (set-member? finals-set (PATH-destination-state x))) ;<- paths that end in finals
                                            (find-paths-pda a-pda #:max-length max-length))])
        (for ([rule (PATH-lor path)])
             (set-add! new-rules rule)
