@@ -4,7 +4,7 @@
 ;; working on optimizations
 
 ;(provide sm-test-invs-pda)
-(provide sm-test-invs-pda-new #;find-paths-pda #;sm-all-possible-words)
+(provide sm-test-invs-pda #;find-paths-pda #;sm-all-possible-words)
 #;(provide (all-defined-out))
 (require racket/list
          racket/set
@@ -459,7 +459,7 @@
 
 ;; pda (listof (list state (word -> boolean))) -> (listof (word stack state))
 ;; Purpose: To return a list of the invarients that don't hold and the words that cause it not to hold
-(define (sm-test-invs-pda-new a-machine max-path-length ds-remove? a-loi)
+(define (sm-test-invs-pda a-machine max-path-length ds-remove? a-loi)
   ;; the given machine without the states and rules of states that cannot reach a final state
   (define new-machine (if ds-remove?
                           (remove-states-that-cannot-reach-finals a-machine max-path-length)  ;<- refactored
