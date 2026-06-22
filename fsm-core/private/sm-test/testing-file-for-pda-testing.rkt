@@ -2,6 +2,7 @@
 (require racket/list
          rackunit
          "sm-test-invs-pda.rkt"
+          "sm-test-invs-pda-new-path-representation.rkt"
          "../pda-constructors.rkt"
          "../constants.rkt"
          "../../../sm-graph.rkt"

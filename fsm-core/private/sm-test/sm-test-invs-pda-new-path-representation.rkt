@@ -4,7 +4,7 @@
 ;; working on optimizations
 
 ;(provide sm-test-invs-pda)
-(provide sm-test-invs-pda find-paths-pda #;sm-all-possible-words)
+(provide sm-test-invs-pda-new #;find-paths-pda #;sm-all-possible-words)
 #;(provide (all-defined-out))
 (require racket/list
          racket/set
@@ -221,7 +221,7 @@
                                                                                 (get-pop i))))
                                                                (eq? state (get-source-state i))))
                                           i))))
-               (next-rules-first-path (get-next-rules (get-destination-state qfirst)
+               (next-rules-first-path (get-next-rules (PATH-destination-state qfirst)
                                                       rule-ht))
                (paths-with-qfirst (if (and (empty? (PATH-stack qfirst))  ;<- only accumulating the accepting paths, no subpaths
                                            (set-member? finals-set (PATH-destination-state qfirst)))
@@ -459,7 +459,7 @@
 
 ;; pda (listof (list state (word -> boolean))) -> (listof (word stack state))
 ;; Purpose: To return a list of the invarients that don't hold and the words that cause it not to hold
-(define (sm-test-invs-pda a-machine max-path-length ds-remove? a-loi)
+(define (sm-test-invs-pda-new a-machine max-path-length ds-remove? a-loi)
   ;; the given machine without the states and rules of states that cannot reach a final state
   (define new-machine (if ds-remove?
                           (remove-states-that-cannot-reach-finals a-machine max-path-length)  ;<- refactored
@@ -481,10 +481,10 @@
         (sm-test-invs-helper (rest all-paths)
                              (if (path-inv-not-hold? (first all-paths)  ;<- current config
                                                      (for/list ([i (map list-pair->inv-pair reachable-inv)] ; <- reachable inv pair structures
-                                                                #:when (eq? (PATH-destination-state (first all-paths))
+                                                                #:when (eq? (config-state (first all-paths))
                                                                             (inv-pair-state i))) ;<- getting the inv for the current config
                                                        i))
-                                 (cons (list (config-rev-word (first all-paths))
+                                 (cons (list (reverse (config-rev-word (first all-paths)))
                                              (config-stack (first all-paths))
                                              (config-state (first all-paths))) accum)
                                  accum))))
