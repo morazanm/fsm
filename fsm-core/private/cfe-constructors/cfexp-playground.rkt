@@ -38,6 +38,34 @@
                                 `(((S a ,EMP) (S ,EMP)))))
 
 
+(define A*2 (make-unchecked-ndpda '(S F)
+                                '(a b)
+                                '(a b)
+                                'S
+                                '(F)
+                                `(((S a ,EMP) (S (a b)))
+                                  ((S ,EMP ,EMP) (F ,EMP))
+                                  ((S a (a b)) (S ,EMP)))))
+
+(define A3 (make-unchecked-ndpda '(S K F M)
+                                '(a b)
+                                '(a b)
+                                'S
+                                '(M)
+                                `(((S a ,EMP) (K (a b)))
+                                  ((K a (a)) (F ,EMP))
+                                  ((F a (b)) (M ,EMP)))))
+
+
+(define j (make-unchecked-ndpda '(S F)
+                                '(a b)
+                                '(a b)
+                                'S
+                                '(S)
+                                `(((S a ,EMP) (S (a b)))
+                                  ((S ,EMP ,EMP) (F ,EMP))
+                                  ((F a (a b)) (F ,EMP)))))
+
 (define Gina-aˆnbˆn (make-unchecked-ndpda '(S M F)
                                           '(a b)
                                           '(a)
