@@ -43,9 +43,10 @@
                                 '(a b)
                                 'S
                                 '(F)
-                                `(((S a ,EMP) (S (a b)))
+                                `(((S a (a b)) (S ,EMP))
+                                  ((S a ,EMP) (S (a b)))
                                   ((S ,EMP ,EMP) (F ,EMP))
-                                  ((S a (a b)) (S ,EMP)))))
+                                  #;((S a (a b)) (S ,EMP)))))
 
 (define A3 (make-unchecked-ndpda '(S K F M)
                                 '(a b)

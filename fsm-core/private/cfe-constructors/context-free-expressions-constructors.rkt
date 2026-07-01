@@ -782,12 +782,21 @@
                (eq? EMP (pda-action-push action))))
   
 
-      ;;pda-action -> Boolean
+  ;;pda-action -> Boolean
       ;;Purpose: Determines if the given pda-rule ONLY pushes to the stack
       (define (push-only? action)
         (and (eq? EMP (pda-action-read action))
              (eq? EMP (pda-action-pop action))
              (list? (pda-action-push action))))
+
+  ;;pda-action -> Boolean
+      ;;Purpose: Determines if the given pda-rule ONLY pushes to the stack
+      (define (push? action)
+        (list? (pda-action-push action)))
+  ;;pda-action -> Boolean
+      ;;Purpose: Determines if the given pda-rule ONLY pops off the stack
+      (define (pop? action)
+        (list? (pda-action-pop action)))
 
       ;;pda-action -> Boolean
       ;;Purpose: Determines if the given pda-rule ONLY pops off the stack
@@ -917,14 +926,20 @@
               #;(struct-copy inverse-pair push-pair
                           [pop (cons (first pop-rules) (inverse-pair-pop push-pair))])]
             [else (pair-operations-helper push-pair (rest pop-rules))]))
-    (let* ([push-rules (remove-duplicates (filter (λ (rule) (or (push-only? rule)
-                                             (read-and-push? rule)))
-                               lopa))]
+
+
+    (define (find-applicable-rules push-rule lopa)
+      (let* ([rule-idx (index-of lopa push-rule)]
+             [rules-after-push (rest (drop lopa rule-idx))])
+         (cond [(null? rules-after-push) (filter (λ (rule) (pop? rule)) lopa)] ;<--- band-aid fix to pop rule appearing before push rule
+               [else (filter (λ (rule) (pop? rule)) rules-after-push)]) #;(filter (λ (rule) (pop? rule)) rules-after-push) #;(dropf-right rules-after-push (λ (x) (push? x))))) 
+    (let* ([push-rules (remove-duplicates (filter (λ (rule) (push? rule)
+                                                    #;(or (push-only? rule)
+                                                          (read-and-push? rule)))
+                                                  lopa))]
            [push-pairs (map (λ (x) (inverse-pair x '() (pda-action-push x) (= (set-count (list->set (pda-action-push x))) 1))) push-rules)]
-           [pop-rules (remove-duplicates (filter (λ (rule) (or (pop-only? rule)
-                                            (read-and-pop? rule)))
-                              lopa))]
-           [pair-operations (map (λ (x) (pair-operations-helper x pop-rules)) push-pairs)])
+           [pop-rules (map (λ (pu-rule) (find-applicable-rules pu-rule lopa)) push-rules)]
+           [pair-operations (map (λ (x y) (pair-operations-helper x y)) push-pairs pop-rules)])
     pair-operations))
   
   (define (rule-extractor cfe-template)
