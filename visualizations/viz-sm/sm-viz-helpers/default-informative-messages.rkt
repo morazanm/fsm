@@ -17,6 +17,8 @@
 
 (define DUMMY-TM-RULE '(@ @))
 
+(define DUMMY-MTTM-RULE '(@ @ @ @))
+
 (define MAX-AUX-TAPE-AMOUNT 2)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -438,7 +440,7 @@
       (above/align
        'left
        (beside (text "Last rule used: " FONT-SIZE FONT-COLOR)
-               (text (format "~a" (if (or (equal? (zipper-current (imsg-state-mttm-rules-used imsg-st)) DUMMY-TM-RULE)
+               (text (format "~a" (if (or (equal? (zipper-current (imsg-state-mttm-rules-used imsg-st)) DUMMY-MTTM-RULE)
                                           (zipper-empty? (imsg-state-mttm-rules-used imsg-st)))
                                       ""
                                       (zipper-current (imsg-state-mttm-rules-used imsg-st))))
