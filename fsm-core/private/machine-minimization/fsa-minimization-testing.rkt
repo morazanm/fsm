@@ -439,9 +439,16 @@
                                            (J a S) (J b S))
                                  'no-dead))
 
+
+(define ends-1-2-bs (make-unchecked-ndfa '(S A B C)
+                                         '(a b)
+                                         'S
+                                         '(A C)
+                                         '((S a S) (S b S) (S b A) (S b B) (B b C))))
+
 (define listofmachines
   (list EX1 EX2-trans EX3-vid EX4-vid EX5 EX5-vid EX6-vid ODDL M L aa*Uab* AT-LEAST-ONE-MISSING p2-ndfa AB*B*UAB* AB*B*UAB*2 aa-ab ends-with-two-bs
-        nd n nk ab*-U-ab*b*-ndfa PROP-BI DNA-SEQUENCE ND ND2 ND3 ND4 ND5 ENDS-WITH-TWO-Bs nd-a* missing-exactly-one EVEN-NUM-Bs M2 a*))
+        nd n nk ab*-U-ab*b*-ndfa PROP-BI DNA-SEQUENCE ND ND2 ND3 ND4 ND5 ENDS-WITH-TWO-Bs nd-a* missing-exactly-one EVEN-NUM-Bs M2 a* ends-1-2-bs))
 
 
 ;;to use the old viz, the incantation is (minimization-viz <FSA>) 
@@ -462,7 +469,7 @@
 (* 100 (/ (length (filter (λ (s) (status-result s)) minimize5-test)) (length listofmachines)))
 |#
 #;(map (λ (M)
-         (time (minimization-viz M)))
+         (minimization-viz M))
        listofmachines)
 
 #;(map (λ (M)

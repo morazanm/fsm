@@ -781,9 +781,9 @@ A Path is a (treelistof dfa-rule)
                                                    (hash-ref old-state-assoc (third rule) (λ () (third rule)))))
                                    applicable-rules)])
               (list (list (create-graph-struct (phase-M phase) palette #:merge-state (if (symbol? merge-state)
-                                                                                 (box (cons (hash-ref old-state-assoc merge-state)
-                                                                                            old-rules))
-                                                                                 merge-state))
+                                                                                         (box (cons (hash-ref old-state-assoc merge-state)
+                                                                                                    old-rules))
+                                                                                         merge-state))
                           (create-graph-struct rebuild-M palette #:merge-state merge-state))
                     (draw-table (phase-state-pairing-table phase) (dfa-finals (phase-M phase))
                                 (if (symbol? merge-state)
@@ -886,10 +886,10 @@ A Path is a (treelistof dfa-rule)
                                       (first (dfa-states (phase-5-attributes-rebuild-M phase-attribute))))
                               FONT-SIZE BLACK)
                         (text (format "States remaining to be used for building the minimized machine: ~a"
-                               (if (empty? remaining-states)
-                                   IMSG-NONE
-                                   (convert-to-string symbol->string remaining-states)))
-                       FONT-SIZE BLACK))
+                                      (if (empty? remaining-states)
+                                          IMSG-NONE
+                                          (convert-to-string symbol->string remaining-states)))
+                              FONT-SIZE BLACK))
                  (above (text (format "States ~a have been merged to create state ~s"
                                       (convert-to-string symbol->string (set->list (merged-state-old-symbols merged-state)))
                                       (merged-state-new-symbol merged-state))
@@ -941,6 +941,8 @@ A Path is a (treelistof dfa-rule)
              (let ([member-of-finals? (set-member? finals state)]
                    [found-state-from-state-pair?
                     (or (eq? state merge-states)
+                        (and (set? merge-states)
+                             (set-member? merge-states state))
                         (and (not (list? state-pair))
                              (or (eq? state (state-pair-s1 state-pair))
                                  (eq? state (state-pair-s2 state-pair)))))])
@@ -1000,12 +1002,12 @@ A Path is a (treelistof dfa-rule)
                                           [(or (symbol? merge-states)
                                                (empty? merge-states))
                                            merge-states]
-                                          [else (merged-state-old-symbols merge-states)]))     
+                                          [else (set-add (merged-state-old-symbols merge-states) (merged-state-new-symbol merge-states))]))     
                    (cond [(box? merge-states) (rest (unbox merge-states))]
                          [(or (symbol? merge-states)
                               (empty? merge-states))
                           merge-states]
-                         [else (merged-state-old-symbols merge-states)])))
+                         [else (set-add (merged-state-old-symbols merge-states) (merged-state-new-symbol merge-states))])))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;VIZ-PRIMITIVE;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; 
@@ -1013,7 +1015,7 @@ A Path is a (treelistof dfa-rule)
 
 ;; fsa -> void
 ;; Purpose: Displays the process of minimizing a dfa
-(define/contract (minimization-viz M #:palette [palette 'default])
+(define #|/contract|# (minimization-viz M #:palette [palette 'default])
   minimization-viz/c
   ;;dfa dfa -> boolean
   ;;Purpose: Determines if the two dfa have any changes
@@ -1149,7 +1151,7 @@ A Path is a (treelistof dfa-rule)
       ;;Purpose: Determines if the state-pair is newly marked
       (define (newly-marked? state-pairing)
         (let ([sp (struct-copy state-pair state-pairing [marked? #f])])
-              (set-member? seen-unmarkings sp)))
+          (set-member? seen-unmarkings sp)))
       (if (treelist-empty? loSP)
           (phase-results (reverse acc) state-pairing-table)
           (let ([state-pairing (treelist-first loSP)])
@@ -1279,7 +1281,7 @@ A Path is a (treelistof dfa-rule)
          
          [phase-5 (if can-be-minimized?
                       (make-phase-5 no-unreachables-M rebuilding-machines merged-states filled-table (dfa-states post-conversion-M-states)
-                       (minimization-results-state-assoc results-from-minimization))
+                                    (minimization-results-state-assoc results-from-minimization))
                       empty)]
          [phase-6 (list (phase PHASE-6 (last rebuilding-machines) filled-table (phase-6-attributes can-be-minimized?)))]
          [all-phases (append phase--1 phase-0 phase-1 phase-2 phase-3 phase-4 phase-5 phase-6)]
