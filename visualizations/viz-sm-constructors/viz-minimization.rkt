@@ -773,8 +773,7 @@ A Path is a (treelistof dfa-rule)
         (if (= (phase-number phase) PHASE-5)
             (let* ([rebuild-M (phase-5-attributes-rebuild-M (phase-attributes phase))]
                    [applicable-rules (filter (λ (rule)
-                                               (or (eq? (first rule) merge-state)
-                                                   (eq? (third rule) merge-state)))
+                                               (eq? (first rule) merge-state))
                                              (dfa-rules rebuild-M))]
                    [old-rules (map (λ (rule) (list (hash-ref old-state-assoc (first rule) (λ () (first rule)))
                                                    (second rule)
@@ -977,7 +976,8 @@ A Path is a (treelistof dfa-rule)
                      (or (and (list? merge-states)
                               (ormap (λ (r) (or (and (eq? (first r) (first rule))
                                                      (eq? (second r) (second rule)))
-                                                (equal? r rule))) merge-states))
+                                                (equal? r rule)))
+                                     merge-states))
                          (and (symbol? merge-states)
                               (eq? source-state merge-states))
                          (and (set? merge-states)
@@ -1017,8 +1017,8 @@ A Path is a (treelistof dfa-rule)
 
 ;; fsa -> void
 ;; Purpose: Displays the process of minimizing a dfa
-(define #|/contract|# (minimization-viz M #:palette [palette 'default])
-  ;minimization-viz/c
+(define/contract (minimization-viz M #:palette [palette 'default])
+  minimization-viz/c
   ;;dfa dfa -> boolean
   ;;Purpose: Determines if the two dfa have any changes
   (define (machine-changed? old-M new-M)
@@ -1285,7 +1285,7 @@ A Path is a (treelistof dfa-rule)
                       (make-phase-5 no-unreachables-M rebuilding-machines merged-states filled-table (dfa-states no-unreachables-M)
                                     (minimization-results-state-assoc results-from-minimization))
                       empty)]
-         [phase-6 (list (phase PHASE-6 (last rebuilding-machines) filled-table (phase-6-attributes can-be-minimized?)))]
+         [phase-6 (list (phase PHASE-6 (if can-be-minimized? (last rebuilding-machines) no-unreachables-M) filled-table (phase-6-attributes can-be-minimized?)))]
          [all-phases (append phase--1 phase-0 phase-1 phase-2 phase-3 phase-4 phase-5 phase-6)]
          [color-scheme (cond [(eq? palette 'prot) prot-color-scheme] ;;red color blind
                              [(eq? palette 'deut) deut-color-scheme] ;;green color blind 
@@ -1297,8 +1297,6 @@ A Path is a (treelistof dfa-rule)
                                     color-scheme)]
          
          )
-    ;(dfa-states no-unreachables-M) ;(dfa-states post-conversion-M-states) ;phase-5
-    ;#;
     (run-viz (map first graphs)
              (list->vector (map (λ (x table)
                                   (if (list? (first x))
