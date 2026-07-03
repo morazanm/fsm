@@ -468,7 +468,7 @@
 "success rate"
 (* 100 (/ (length (filter (λ (s) (status-result s)) minimize5-test)) (length listofmachines)))
 |#
-#;(map (λ (M)
+(map (λ (M)
          (minimization-viz M))
        listofmachines)
 

@@ -815,11 +815,12 @@ A Path is a (treelistof dfa-rule)
 
   ;;(listof state) -> string
   ;;Purpose: Converts the given (listof state) into a string
-  (define (convert-to-string f los)
-    (if (= (length los) 1)
-        (f (first los))
-        (string-append (f (first los)) ", "
-                       (convert-to-string f (rest los)))))
+  (define (convert-to-string f los)    
+    (if (and (not (null? los))
+             (null? (cdr los)))
+        (f (car los))
+        (string-append (f (car los)) ", "
+                       (convert-to-string f (cdr los)))))
 
   ;;phase-attributes -> image
   ;;Purpose: Makes the imsg for phase 1
@@ -831,7 +832,8 @@ A Path is a (treelistof dfa-rule)
                   (convert-to-string symbol->string (phase-1-attributes-unreachable-state phase-attribute)))
           FONT-SIZE BLACK))
   
-  (define PHASE2-IMSG (text "Making State Pairing Table" FONT-SIZE BLACK))
+  (define PHASE2-IMSG (above (text "Making State Pairing Table" FONT-SIZE BLACK)
+                             (text "Using lower triangular matrix because pair order is superfluous" FONT-SIZE BLACK)))
 
   ;;state-pair -> string
   ;;Purpose: Makes the state pair readable
@@ -862,8 +864,8 @@ A Path is a (treelistof dfa-rule)
                  (beside (text "State pair " FONT-SIZE BLACK)
                          (text (pretty-print-state-pair phase-4-state-pair) FONT-SIZE (color-palette-select-color palette))
                          (text (if (state-pair-marked? phase-4-state-pair)
-                                   " is marked because at least one of it's destination state pairing:"
-                                   " remains unmarked because all of it's destination state pairings:")
+                                   " is marked because at least one of its destination state pairing:"
+                                   " remains unmarked because all of its destination state pairings:")
                                FONT-SIZE BLACK)
                          (apply beside (map pretty-print-destination-state-pair (state-pair-destination-pairs phase-4-state-pair)))
                          (text (if (state-pair-marked? phase-4-state-pair)
@@ -919,7 +921,7 @@ A Path is a (treelistof dfa-rule)
   (define (make-phase6-imsg phase-attribute)
     (text (if (phase-6-attributes-minimized? phase-attribute)
               "Minimized machine"
-              "This machine is already minimized")
+              "This machine is already minimal")
           FONT-SIZE BLACK))
   (let ([current-phase (zipper-current (imsg-state-phase imsg-state))])
     (cond [(= (phase-number current-phase) PHASE--1) PHASE--1-IMSG]
@@ -1016,7 +1018,7 @@ A Path is a (treelistof dfa-rule)
 ;; fsa -> void
 ;; Purpose: Displays the process of minimizing a dfa
 (define #|/contract|# (minimization-viz M #:palette [palette 'default])
-  minimization-viz/c
+  ;minimization-viz/c
   ;;dfa dfa -> boolean
   ;;Purpose: Determines if the two dfa have any changes
   (define (machine-changed? old-M new-M)
@@ -1280,7 +1282,7 @@ A Path is a (treelistof dfa-rule)
          [rebuilding-machines (reconstruct-machine minimized-M merged-states)]
          
          [phase-5 (if can-be-minimized?
-                      (make-phase-5 no-unreachables-M rebuilding-machines merged-states filled-table (dfa-states post-conversion-M-states)
+                      (make-phase-5 no-unreachables-M rebuilding-machines merged-states filled-table (dfa-states no-unreachables-M)
                                     (minimization-results-state-assoc results-from-minimization))
                       empty)]
          [phase-6 (list (phase PHASE-6 (last rebuilding-machines) filled-table (phase-6-attributes can-be-minimized?)))]
@@ -1295,6 +1297,8 @@ A Path is a (treelistof dfa-rule)
                                     color-scheme)]
          
          )
+    ;(dfa-states no-unreachables-M) ;(dfa-states post-conversion-M-states) ;phase-5
+    ;#;
     (run-viz (map first graphs)
              (list->vector (map (λ (x table)
                                   (if (list? (first x))
