@@ -536,8 +536,6 @@
   |#
   (struct pda-action (read pop push) #:transparent)
 
- 
-
   #|
   A cfe-template is an annotation for a pda-rule in preparation to be converted to a cfe
   A cfe-template is either:
@@ -585,15 +583,6 @@
     (pda-rule (first (first rule))
               (rules->cfe (make-pda-action (second (first rule)) (third (first rule)) (second (second rule))))
               (first (second rule))))
-
-  ;;pda-action pda-action -> Boolean
-  ;;Purpose: Determines if the given pda-actions have inverse stack operations
-  (define (inverse-stack-operations? push-action pop-action)
-    (let ([push (pda-action-push push-action)]
-          [pop (pda-action-pop pop-action)])
-      (and (equal? pop push)
-           (not (eq? pop EMP))
-           (not (eq? push EMP)))))
   
   ;; pda --> cfe-template
   ;; Purpose: Recursively rips nodes out from the given M and converts the ripped nodes to cfe-templates
@@ -712,28 +701,6 @@
                (struct-copy pda-rule (first collapsed-dgraph)
                             [action (simplify-templates (pda-rule-action (first collapsed-dgraph)))])))))
 
-  ;;(listof pda-rule) -> (listof pda-rule)
-  ;;Purpose: Extracts all the pda-rules both push and pop off the stack
-  (define (get-push&pop-rules rules)
-    (filter (λ (rule)
-              (and (list? (pda-action-push (pda-rule-action rule)))
-                   (list? (pda-action-pop (pda-rule-action rule)))))
-              
-            rules))
-
-  #;(define (get-read-only-rules rules)
-    (filter read-only? rules))
-
-  (define (find-largest accessor rules acc)
-    (if (null? rules)
-        acc
-        (let ([oper-amount (length (accessor (first rules)))])
-          (if (> oper-amount acc)
-              (find-largest accessor (rest rules) oper-amount)
-              (find-largest accessor (rest rules) acc)))))
-        
-  
-  
 
   ;;cfe-template -> (listof cfe-template)
   ;;Purpose: Simplifies the main cfe-template by splitting it into sub cfe-template 
@@ -775,49 +742,49 @@
           [else (list cfe-template)]))
 
   ;;pda-action -> Boolean
-      ;;Purpose: Determines if the given pda-rule only reads an letter in sigma
-      (define (read-only? action)
-        (and (not (eq? EMP (pda-action-read action)))
-               (eq? EMP (pda-action-pop action))
-               (eq? EMP (pda-action-push action))))
+  ;;Purpose: Determines if the given pda-rule only reads an letter in sigma
+  (define (read-only? action)
+    (and (not (eq? EMP (pda-action-read action)))
+         (eq? EMP (pda-action-pop action))
+         (eq? EMP (pda-action-push action))))
   
 
   ;;pda-action -> Boolean
-      ;;Purpose: Determines if the given pda-rule ONLY pushes to the stack
-      (define (push-only? action)
-        (and (eq? EMP (pda-action-read action))
-             (eq? EMP (pda-action-pop action))
-             (list? (pda-action-push action))))
+  ;;Purpose: Determines if the given pda-rule ONLY pushes to the stack
+  (define (push-only? action)
+    (and (eq? EMP (pda-action-read action))
+         (eq? EMP (pda-action-pop action))
+         (list? (pda-action-push action))))
 
   ;;pda-action -> Boolean
-      ;;Purpose: Determines if the given pda-rule ONLY pushes to the stack
-      (define (push? action)
-        (list? (pda-action-push action)))
+  ;;Purpose: Determines if the given pda-rule ONLY pushes to the stack
+  (define (push? action)
+    (list? (pda-action-push action)))
   ;;pda-action -> Boolean
-      ;;Purpose: Determines if the given pda-rule ONLY pops off the stack
-      (define (pop? action)
-        (list? (pda-action-pop action)))
+  ;;Purpose: Determines if the given pda-rule ONLY pops off the stack
+  (define (pop? action)
+    (list? (pda-action-pop action)))
 
-      ;;pda-action -> Boolean
-      ;;Purpose: Determines if the given pda-rule ONLY pops off the stack
-      (define (pop-only? action)
-        (and (eq? EMP (pda-action-read action))
-               (list? (pda-action-pop action))
-               (eq? EMP (pda-action-push action))))
+  ;;pda-action -> Boolean
+  ;;Purpose: Determines if the given pda-rule ONLY pops off the stack
+  (define (pop-only? action)
+    (and (eq? EMP (pda-action-read action))
+         (list? (pda-action-pop action))
+         (eq? EMP (pda-action-push action))))
 
-      ;;pda-action -> Boolean
-      ;;Purpose: Determines if the given pda-rule reads AND pops off the stack
-      (define (read-and-pop? action)
-        (and (not (eq? EMP (pda-action-read action)))
-               (list? (pda-action-pop action))
-               (eq? EMP (pda-action-push action))))
+  ;;pda-action -> Boolean
+  ;;Purpose: Determines if the given pda-rule reads AND pops off the stack
+  (define (read-and-pop? action)
+    (and (not (eq? EMP (pda-action-read action)))
+         (list? (pda-action-pop action))
+         (eq? EMP (pda-action-push action))))
 
-      ;;pda-action -> Boolean
-      ;;Purpose: Determines if the given pda-action reads AND pushes to the stack
-      (define (read-and-push? action)
-        (and (not (eq? EMP (pda-action-read action)))
-               (eq? EMP (pda-action-pop action))
-               (list? (pda-action-push action))))
+  ;;pda-action -> Boolean
+  ;;Purpose: Determines if the given pda-action reads AND pushes to the stack
+  (define (read-and-push? action)
+    (and (not (eq? EMP (pda-action-read action)))
+         (eq? EMP (pda-action-pop action))
+         (list? (pda-action-push action))))
 
   (define (contruct-cfe loCT)
     (define (contruct-cfe-helper cfe-template)
@@ -867,9 +834,60 @@
           (first res)
           (mk-union-cfexp res))))
 
-   (struct inverse-pair (push pop stack homogenous?) #:transparent)
+  (struct inverse-pair (push pop stack homogenous?) #:transparent)
+  
+  (define (rule-extractor cfe-template)
+    (cond [(kleene? cfe-template) (rule-extractor (kleene-rule cfe-template))]
+          [(union? cfe-template) (map rule-extractor (union-rules cfe-template))]
+          [(concat? cfe-template) (map rule-extractor (concat-rules cfe-template))]
+          [(singleton? cfe-template) (singleton-rule cfe-template)]
+          [(empty? cfe-template) (empty-rule cfe-template)]
+          [else cfe-template]))
 
-  (define (pair-operations lopa)
+
+  (define (find-reachables rule-structs)
+
+    (define (find-reachables-helper state-to-search states visited-states acc)
+      (cond [(and (null? states) (set-member? visited-states state-to-search)) acc]
+            [(null? states)
+             (let ([next-states (filter-map (λ (rule)
+                                              (and (eq? (pda-rule-source rule) state-to-search)
+                                                   (pda-rule-destin rule)))
+                                            rule-structs)])
+               (find-reachables-helper (if (null? next-states) state-to-search (first next-states))
+                                       (if (null? next-states) next-states (rest next-states))
+                                       (set-add visited-states state-to-search)
+                                       (append acc (filter (λ (rule)
+                                                             (eq? (pda-rule-source rule) state-to-search))
+                                                           rule-structs))))]
+            [(set-member? visited-states state-to-search)
+             (find-reachables-helper (first states) (rest states) visited-states acc)]
+            [else (find-reachables-helper (first states)
+                                          (append (rest states)
+                                                  (filter-map (λ (rule)
+                                                                (and (eq? (pda-rule-source rule) state-to-search)
+                                                                     (pda-rule-destin rule)))
+                                                              rule-structs))
+                                          (set-add visited-states state-to-search)
+                                          (append acc (filter (λ (rule)
+                                                                (eq? (pda-rule-source rule) state-to-search))
+                                                              rule-structs)))]))
+      
+    
+    (let ([states (pda-getstates P)])
+      (foldl (λ (state acc)
+               (hash-set acc state (find-reachables-helper state
+                                                           (filter-map (λ (rule)
+                                                                         (and (eq? (pda-rule-source rule) state)
+                                                                              (pda-rule-destin rule)))
+                                                                       rule-structs)
+                                                           (set)
+                                                           (list))))
+             (hash)
+             states)))
+
+  (define (pair-stack-operations reachables-ht rules)
+
     (define (pair-operations-helper push-pair pop-rules)
       ;;stack (listof symbol) -> Boolean
       ;;Purpose: Determines if the give (listof symbol) and pop the elements off the stack
@@ -884,14 +902,16 @@
             (and (>= stack-length pop-amount)
                  (equal? (take stack pop-amount) pop))))
         (cond [(null? stack) push-pair]
-              [(null? pop-rules) (error (format "i dunno ~a" push-pair))]
-              [(equal? stack (pda-action-pop (first pop-rules)))
-               (struct-copy inverse-pair push-pair
-                          [pop (append (inverse-pair-pop push-pair) (list (first pop-rules)))])]
-              [(can-pop? stack (pda-action-pop (first pop-rules)))
+              [(null? pop-rules) push-pair]
+              [(equal? stack (pda-action-pop (pda-rule-action (first pop-rules))))
                (match-operations (struct-copy inverse-pair push-pair
                                               [pop (append (inverse-pair-pop push-pair) (list (first pop-rules)))])
-                                 (drop stack (length (pda-action-pop (first pop-rules))))
+                                 stack
+                                 (rest pop-rules))]
+              [(can-pop? stack (pda-action-pop (pda-rule-action (first pop-rules))))
+               (match-operations (struct-copy inverse-pair push-pair
+                                              [pop (append (inverse-pair-pop push-pair) (list (first pop-rules)))])
+                                 (drop stack (length (pda-action-pop (pda-rule-action (first pop-rules)))))
                                  (rest pop-rules))]
               [else (match-operations push-pair stack (rest pop-rules))]))
 
@@ -899,76 +919,69 @@
         (define (balance-pop stack-length acc)
           (if (= 0 stack-length)
               (struct-copy inverse-pair push-pair
-                          [pop (append (inverse-pair-pop push-pair) acc)])
+                           [pop (append (inverse-pair-pop push-pair) acc)])
               (balance-pop (sub1 stack-length) (cons pop-rule acc))))
 
         (define (balance-push pop-amount acc)
           push-pair
           #;(if (= 0 stack-length)
-              (struct-copy inverse-pair push-pair
-                          [pop (append (inverse-pair-pop push-pair) acc)])
-              (balance-pop (sub1 stack-length) (cons pop-rule acc))))
+                (struct-copy inverse-pair push-pair
+                             [pop (append (inverse-pair-pop push-pair) acc)])
+                (balance-pop (sub1 stack-length) (cons pop-rule acc))))
         
         (let ([stack-length (length (inverse-pair-stack push-pair))]
-              [pop-amount (length (pda-action-pop pop-rule))])
+              [pop-amount (length (pda-action-pop (pda-rule-action pop-rule)))])
           (if (> stack-length pop-amount)
               (balance-pop stack-length '())
               (balance-push pop-amount '()))))
-          
+
+      (define (stack-wall? pop-rule)
+        (and (not (equal? (inverse-pair-stack push-pair) (pda-action-pop (pda-rule-action pop-rule))))
+             (push? (pda-rule-action pop-rule))
+             (equal? (pda-action-push (pda-rule-action pop-rule)) (pda-action-pop (pda-rule-action pop-rule)))))
       
       (cond [(not (inverse-pair-homogenous? push-pair)) (match-operations push-pair (inverse-pair-stack push-pair) pop-rules)]
-            [(null? pop-rules) push-pair]
-            [(equal? (inverse-pair-stack push-pair) (pda-action-pop (first pop-rules)))
+            [(or (null? pop-rules)
+                 (stack-wall? (first pop-rules)))
+             push-pair]
+            [(and (not (equal? push-pair (first pop-rules)))
+                  (push? (pda-rule-action (first pop-rules)))
+                  (equal? (inverse-pair-stack push-pair) (pda-action-pop (pda-rule-action (first pop-rules)))))
              (struct-copy inverse-pair push-pair
-                          [pop (cons (first pop-rules) (inverse-pair-pop push-pair))])]
-            [(same-elements? (inverse-pair-stack push-pair) (pda-action-pop (first pop-rules)))
+                          [pop (append (inverse-pair-pop push-pair) (list (first pop-rules)))])]
+            [(equal? (inverse-pair-stack push-pair) (pda-action-pop (pda-rule-action (first pop-rules))))
+             (pair-operations-helper (struct-copy inverse-pair push-pair
+                                                  [pop (append (inverse-pair-pop push-pair) (list (first pop-rules)))])
+                                     (rest pop-rules))]
+            [(same-elements? (inverse-pair-stack push-pair) (pda-action-pop (pda-rule-action (first pop-rules))))
              (balance-stack push-pair (first pop-rules))
-              #;(struct-copy inverse-pair push-pair
-                          [pop (cons (first pop-rules) (inverse-pair-pop push-pair))])]
+             #;(struct-copy inverse-pair push-pair
+                            [pop (cons (first pop-rules) (inverse-pair-pop push-pair))])]
             [else (pair-operations-helper push-pair (rest pop-rules))]))
-
-
-    (define (find-applicable-rules push-rule lopa)
-      (let* ([rule-idx (index-of lopa push-rule)]
-             [rules-after-push (rest (drop lopa rule-idx))])
-         (cond [(null? rules-after-push) (filter (λ (rule) (pop? rule)) lopa)] ;<--- band-aid fix to pop rule appearing before push rule
-               [else (filter (λ (rule) (pop? rule)) rules-after-push)]) #;(filter (λ (rule) (pop? rule)) rules-after-push) #;(dropf-right rules-after-push (λ (x) (push? x))))) 
-    (let* ([push-rules (remove-duplicates (filter (λ (rule) (push? rule)
-                                                    #;(or (push-only? rule)
-                                                          (read-and-push? rule)))
-                                                  lopa))]
-           [push-pairs (map (λ (x) (inverse-pair x '() (pda-action-push x) (= (set-count (list->set (pda-action-push x))) 1))) push-rules)]
-           [pop-rules (map (λ (pu-rule) (find-applicable-rules pu-rule lopa)) push-rules)]
+    (let* ([push-rules (remove-duplicates (filter (λ (rule) (push? (pda-rule-action rule))) rules))]
+           [push-pairs (map (λ (x) (inverse-pair x '() (pda-action-push (pda-rule-action x)) (= (set-count (list->set (pda-action-push (pda-rule-action x)))) 1))) push-rules)]
+           [pop-rules (map (λ (pu-rule) (filter (λ (rule) (pop? (pda-rule-action rule))) (hash-ref reachables-ht (pda-rule-source pu-rule)))) push-rules)]
            [pair-operations (map (λ (x y) (pair-operations-helper x y)) push-pairs pop-rules)])
-    pair-operations))
-  
-  (define (rule-extractor cfe-template)
-    (cond [(kleene? cfe-template) (rule-extractor (kleene-rule cfe-template))]
-          [(union? cfe-template) (map rule-extractor (union-rules cfe-template))]
-          [(concat? cfe-template) (map rule-extractor (concat-rules cfe-template))]
-          [(singleton? cfe-template) (singleton-rule cfe-template)]
-          [(empty? cfe-template) (empty-rule cfe-template)]
-          [else cfe-template]))
+      pair-operations))
 
   
   (let* ([new-P (pda2temp P)]
-         #;[simple-P (make-new-machine (pda->spda P))]
          [sub-langs (make-sub-languages (pda-rule-action (pda-rules new-P)))]
-         [stack-operations (map pair-operations (map (compose1 flatten rule-extractor) sub-langs))]
-         #;[cfe-templates (pda-rule-tag (first (pda-rules shrunken-P)))]
-         #;[extracted-rules (flatten (template->rules cfe-templates))]
-         #;[inverse-pairs (make-inverse-pairs (get-push-only-rules extracted-rules) (get-pop-only-rules extracted-rules))])
+         [rule-structs (map (λ (rule)
+                              (pda-rule (first (first rule))
+                                        (pda-action (second (first rule)) (third (first rule)) (second (second rule)))
+                                        (first (second rule))))
+                            (pda-getrules P))]
+         [reachable-rules (find-reachables rule-structs)]
+         [stack-operations (pair-stack-operations reachable-rules rule-structs)])
     
     
-    (values (sm-graph P)
-            ;sub-langs
-            
-            stack-operations
-            #;(contruct-cfe sub-langs))
-    
-      
-      
-    ))
+    (list (sm-graph P)
+          ;sub-langs
+          ;(map (compose1 flatten rule-extractor) sub-langs)
+          ;reachable-rules
+          stack-operations
+          #;(contruct-cfe sub-langs))))
 
 
 ;;cfe -> pda

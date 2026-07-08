@@ -14,6 +14,15 @@
 
 ;;PDA->CFE
 
+(define idk (make-cfe ([A (singleton-cfexp "a")]
+                       [B (singleton-cfexp "b")]
+                       [C (singleton-cfexp "c")]
+                       [D (singleton-cfexp "d")]
+                       [X (union-cfexp (concat-cfexp A X D)
+                                       Y)]
+                       [Y (union-cfexp (concat-cfexp B Y C)
+                                       (empty-cfexp))])
+                       X))
 
 (define anbkckdn (make-unchecked-ndpda '(S D M C)
                                        '(a b c d)
@@ -237,7 +246,7 @@
      ((F b ,EMP) (S ,EMP))
      ((F a ,EMP) (X ,EMP))))) 
 
-(define LOPDA (list Gina-aˆnbˆn Gina-aˆnbˆn* A* Gina-wcwˆr Gina-palindrome-pda Gina-AiBj Gina-A^nB^mA^n Gina-a^mb^nc^pd^q Gina-a^mb^nc^p))
+(define LOPDA (list Gina-aˆnbˆn Gina-aˆnbˆn* Gina-AiBj2 A* A*2 A3 marco-anbncndn Gina-wcwˆr Gina-palindrome-pda Gina-AiBj Gina-A^nB^mA^n Gina-a^mb^nc^pd^q Gina-a^mb^nc^p anbkckdn j))
 
 #;(sm-graph Gina-aˆnbˆn)
 
