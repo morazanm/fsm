@@ -105,7 +105,7 @@
   (cond [(< (length S) n) (error "Pop-n of small stack error")]
         [else (list-tail S n)]))
 
-(struct stack (elems len))
+(struct stack (elems len) #:transparent)
 ;;; end stack
   
   
