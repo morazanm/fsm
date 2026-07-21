@@ -888,7 +888,7 @@
 
   (define (pair-stack-operations reachables-ht rules)
 
-    (define (pair-operations-helper push-pair pop-rules)
+    (define (pair-operations-helper push-pair pop-rules acc)
       ;;stack (listof symbol) -> Boolean
       ;;Purpose: Determines if the give (listof symbol) and pop the elements off the stack
       (define (same-elements? stack pop)
@@ -935,6 +935,11 @@
               (balance-pop stack-length '())
               (balance-push pop-amount '()))))
 
+      (define (same-rule? r1 r2)
+        (and (eq? (pda-rule-source r1) (pda-rule-source r2))
+             (equal? (pda-rule-action r1) (pda-rule-action r2))
+             (eq? (pda-rule-destin r1) (pda-rule-destin r2))))
+
       (define (stack-wall? pop-rule)
         (and (not (equal? (inverse-pair-stack push-pair) (pda-action-pop (pda-rule-action pop-rule))))
              (push? (pda-rule-action pop-rule))
@@ -943,25 +948,29 @@
       (cond [(not (inverse-pair-homogenous? push-pair)) (match-operations push-pair (inverse-pair-stack push-pair) pop-rules)]
             [(or (null? pop-rules)
                  (stack-wall? (first pop-rules)))
-             push-pair]
-            [(and (not (equal? push-pair (first pop-rules)))
+             
+             (reverse acc)]
+            [(and (not (equal? (inverse-pair-push push-pair) (first pop-rules)))
                   (push? (pda-rule-action (first pop-rules)))
                   (equal? (inverse-pair-stack push-pair) (pda-action-pop (pda-rule-action (first pop-rules)))))
-             (struct-copy inverse-pair push-pair
-                          [pop (append (inverse-pair-pop push-pair) (list (first pop-rules)))])]
-            [(equal? (inverse-pair-stack push-pair) (pda-action-pop (pda-rule-action (first pop-rules))))
-             (pair-operations-helper (struct-copy inverse-pair push-pair
-                                                  [pop (append (inverse-pair-pop push-pair) (list (first pop-rules)))])
-                                     (rest pop-rules))]
-            [(same-elements? (inverse-pair-stack push-pair) (pda-action-pop (pda-rule-action (first pop-rules))))
-             (balance-stack push-pair (first pop-rules))
+             (cons (struct-copy inverse-pair push-pair
+                          [pop (first pop-rules)]) acc)]
+            [(and (not (same-rule? (inverse-pair-push push-pair) (first pop-rules)))
+                  (equal? (inverse-pair-stack push-pair) (pda-action-pop (pda-rule-action (first pop-rules)))))
+                   (pair-operations-helper push-pair
+                                     (rest pop-rules)
+                                     (cons (struct-copy inverse-pair push-pair
+                                                  [pop (first pop-rules)]) acc))]
+            [(and (not (same-rule? (inverse-pair-push push-pair) (first pop-rules)))
+                  (same-elements? (inverse-pair-stack push-pair) (pda-action-pop (pda-rule-action (first pop-rules)))))
+             (cons (balance-stack push-pair (first pop-rules)) acc)
              #;(struct-copy inverse-pair push-pair
                             [pop (cons (first pop-rules) (inverse-pair-pop push-pair))])]
-            [else (pair-operations-helper push-pair (rest pop-rules))]))
+            [else (pair-operations-helper push-pair (rest pop-rules) acc)]))
     (let* ([push-rules (remove-duplicates (filter (λ (rule) (push? (pda-rule-action rule))) rules))]
            [push-pairs (map (λ (x) (inverse-pair x '() (pda-action-push (pda-rule-action x)) (= (set-count (list->set (pda-action-push (pda-rule-action x)))) 1))) push-rules)]
            [pop-rules (map (λ (pu-rule) (filter (λ (rule) (pop? (pda-rule-action rule))) (hash-ref reachables-ht (pda-rule-source pu-rule)))) push-rules)]
-           [pair-operations (map (λ (x y) (pair-operations-helper x y)) push-pairs pop-rules)])
+           [pair-operations (map (λ (x y) (pair-operations-helper x y '())) push-pairs pop-rules)])
       pair-operations))
 
   
