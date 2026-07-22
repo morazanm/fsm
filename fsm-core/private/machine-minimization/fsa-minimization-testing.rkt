@@ -1,10 +1,12 @@
 #lang racket/base
 
-(require "../constants.rkt"
+(require profile-flame-graph
+         "../constants.rkt"
          "../fsa.rkt"
          "./fsa-minimization.rkt"
          "../regexp.rkt"
          "../../../sm-graph.rkt"
+         racket/bool
          "../../../visualizations/viz-sm-constructors/viz-minimization.rkt")
 
 
@@ -476,8 +478,8 @@
 |#
 
 #;(map (λ (M)
-         (minimization-viz M))   ;;;<---RUN THIS
-       (reverse listofmachines))
+       (minimization-viz M))   ;;;<---RUN THIS
+     (reverse listofmachines))
 
 #;(map (λ (M)
          (list (sm-graph M)
@@ -491,3 +493,6 @@
 ;(minimization-viz AT-LEAST-ONE-MISSING)
 
 ;(time (minimization-viz EX3-vid))
+
+#;(profile (minimization-viz aba) #:svg-path (string->path "/home/yungdave/Downloads/flame-profile.svg") #:repeat 50 #:preview? #t)
+(time (minimization-viz aba))

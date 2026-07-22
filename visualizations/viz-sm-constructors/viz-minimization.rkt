@@ -1017,13 +1017,12 @@ A Path is a (treelistof dfa-rule)
 
 ;; fsa -> void
 ;; Purpose: Displays the process of minimizing a dfa
-(define/contract (minimization-viz M #:palette [palette 'default])
-  minimization-viz/c
+(define #;define/contract (minimization-viz M #:palette [palette 'default])
+  ;minimization-viz/c
   ;;dfa dfa -> boolean
   ;;Purpose: Determines if the two dfa have any changes
   (define (machine-changed? old-M new-M)
-    (and (test-equiv-fsa old-M new-M)
-         (not (= (length (fsa-getstates old-M)) (length (fsa-getstates new-M))))))
+    (not (= (length (fsa-getstates old-M)) (length (fsa-getstates new-M)))))
   
   ;; dfa -> (vectorof (vectorof marking))
   ;; Purpose: Creates the representation of the state pairing table
@@ -1276,11 +1275,9 @@ A Path is a (treelistof dfa-rule)
                                        (list->set (map (compose1 phase-3-attributes-initial-pairings phase-attributes)
                                                        (phase-results-loPhase phase3+new-table))))]
          [phase-4 (phase-results-loPhase phase4+new-table)]
-   
          [filled-table (phase-results-new-table phase4+new-table)]
          [merged-states (minimization-results-merged-states results-from-minimization)]
          [rebuilding-machines (reconstruct-machine minimized-M merged-states)]
-         
          [phase-5 (if can-be-minimized?
                       (make-phase-5 no-unreachables-M rebuilding-machines merged-states filled-table (dfa-states no-unreachables-M)
                                     (minimization-results-state-assoc results-from-minimization))
@@ -1297,7 +1294,8 @@ A Path is a (treelistof dfa-rule)
                                     color-scheme)]
          
          )
-    (run-viz (map first graphs)
+    (void)
+    #;(run-viz (map first graphs)
              (list->vector (map (λ (x table)
                                   (if (list? (first x))
                                       (λ (graph1 graph2)
