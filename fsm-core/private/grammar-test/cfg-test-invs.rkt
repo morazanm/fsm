@@ -31,6 +31,7 @@
          "../constants.rkt"
          "../pda.rkt"
          "../misc.rkt"
+         "../../../sm-graph.rkt"
          racket/set
          racket/list
          data/queue)
@@ -246,5 +247,5 @@
               (A ,ARROW bA))
             'S))
 
-(time (cfg-test-invs numb>numa 15 (list (list 'S (lambda (x) #t))
-                                        (list 'A (lambda (x) #t)))))
+(cfg-test-invs numb>numa 15 (list (list 'S (lambda (x) #f))
+                                  (list 'A (lambda (x) #f))))
