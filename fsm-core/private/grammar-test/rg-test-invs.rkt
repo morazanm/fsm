@@ -41,6 +41,7 @@
          racket/set
          racket/list
          data/queue
+         racket/treelist
          "../sm-getters.rkt"
          "../grammar-getters.rkt")
 (provide rg-test-invs)
@@ -199,7 +200,7 @@
 
 
 ;; OLD VERSION OF SM-TEST-INVS-FSA
-(define REPETITION-LIMIT 5)
+(define REPETITION-LIMIT 1)
 
 ;(struct path-with-hash (path hash) #:transparent) ;<- old path structure
 (struct path-with-hash (config-path word-of-path path-starting-state hash) #:transparent)
@@ -216,7 +217,7 @@
   ;; Accumulator invarient: paths = list of current paths
   (define (find-paths-helper)
     (if (queue-empty? queue)
-        '()
+        empty-treelist
         (let [(qfirst (dequeue! queue))]
           (for ([rule (in-list rules)]
                 #:when (and #;(eq? (caddr (car (path-with-hash-path qfirst))) (car rule)) ;; when the dest of last rule is equal to the first of another
@@ -245,7 +246,7 @@
                                                         (add1 (hash-ref (path-with-hash-hash qfirst)
                                                                         rule
                                                                         0))))))
-          (cons qfirst (find-paths-helper)))))
+          (treelist-cons (find-paths-helper) qfirst))))
   (for ([rule (in-list (sm-rules a-machine))]
         #:when (eq? (car rule) (sm-start a-machine)))
     (enqueue! queue #;(path-with-hash (list rule) (hash rule 1))
@@ -254,11 +255,11 @@
                               (sm-start a-machine)
                               (hash rule 1))))
   #;(map (lambda (x) (path-with-hash-path x)) (find-paths-helper))
-  (map (λ (x) (path-with-hash (reverse (path-with-hash-config-path x))
-                              (path-with-hash-word-of-path x)
-                              (path-with-hash-path-starting-state x)
-                              (path-with-hash-hash x)))
-       (find-paths-helper)))
+  (treelist-map (find-paths-helper)
+                (λ (x) (path-with-hash (reverse (path-with-hash-config-path x))
+                                       (path-with-hash-word-of-path x)
+                                       (path-with-hash-path-starting-state x)
+                                       (path-with-hash-hash x)))))
 
 
 
@@ -272,7 +273,7 @@
   ;; for each path, split the path if state dif from cur path state
   ;; purpose: returns a ht of the key being the nt and the value being a set of words to test the inv of the nt
   (define (add&split paths)
-    (for ([path (in-list paths)])  ;<- adding all the words to test the nt into its set in the ht
+    (for ([path (in-treelist paths)])  ;<- adding all the words to test the nt into its set in the ht
       (let ([cur-set (hash-ref nts-hash (path-with-hash-path-starting-state path))])
         (for ([config (in-list (path-with-hash-config-path path))])   
           (set-add! cur-set (reverse (second config))))) ;<- the word is in reverse in the configs so have to unreverse it
@@ -312,7 +313,7 @@
                                         length-to-drop-word))))
         (break-up-path-helper path (set (path-with-hash-path-starting-state path)) (length (second (first (path-with-hash-config-path path))))))
       
-      (map break-up-path paths)
+      (treelist-map paths break-up-path)
       ))        
   (add&split paths)
   nts-hash)
@@ -407,7 +408,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; this is the old one
-(define (rg-test-invs a-rg a-loi)
+#;(define (rg-test-invs a-rg a-loi)
     (define state-fsas
       (map (lambda (start) (list start (rg->state-ndfa a-rg start))) (rg-getnts a-rg)))
      (displayln (map (λ (x) (sm-graph (second x))) state-fsas))
@@ -416,13 +417,13 @@
              '()]
             [else
              (define rg-pair (car rg-lst))
-             (cons (sm-test-invs-fsa-spooky (cadr rg-pair) 5 (car rg-pair) (cadr (assoc (car rg-pair) a-loi)))
+             (cons (sm-test-invs-fsa-spooky (cadr rg-pair) 1 (car rg-pair) (cadr (assoc (car rg-pair) a-loi)))
                    (test-rgs (cdr rg-lst)))]))
     (test-rgs state-fsas))
 
 
 ;; this is the new one 
-#;(define (rg-test-invs a-rg a-loi)
+(define (rg-test-invs a-rg a-loi)
   (define a-loi-hash (for/hash ([inv (in-list a-loi)])
                        (values (car inv) (cadr inv))))
   ;; turning the rg into an fsa
