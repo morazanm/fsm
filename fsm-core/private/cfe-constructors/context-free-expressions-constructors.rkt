@@ -559,7 +559,7 @@
   (struct empty (rule) #:transparent)
   ;;singleton is a cfe-template
   ;;rule | the rule to be annotated with a singleton
-  (struct singleton (rule) #:transparent)
+  (struct singleton (rule source destin) #:transparent)
 
   ;;(list (list state symbol los) (list state los)) -> pda-rule
   ;;Purpose: Converts the given pda rule into a pda-rule struct
@@ -570,7 +570,7 @@
       (pda-action read pop push))
     ;;pda-rule -> cfe-template
     ;;Purpose: Converts the given pda-rule to a cfe-template
-    (define (rules->cfe pda-action)
+    (define (rules->cfe pda-action source destin)
       ;;pda-rule -> Boolean
       ;;Purpose: Determines if the given pda-rule is an empty transition
       (define (e-transition? action)
@@ -579,9 +579,9 @@
              (eq? EMP (pda-action-push action))))
       (if (e-transition? pda-action)
           (empty pda-action) 
-          (singleton pda-action)))
+          (singleton pda-action source destin)))
     (pda-rule (first (first rule))
-              (rules->cfe (make-pda-action (second (first rule)) (third (first rule)) (second (second rule))))
+              (rules->cfe (make-pda-action (second (first rule)) (third (first rule)) (second (second rule))) (first (first rule)) (first (second rule)))
               (first (second rule))))
   
   ;; pda --> cfe-template
@@ -590,7 +590,7 @@
   (define (pda2temp P)
     ;; dgraph --> dgraph
     ;; Purpose: Collapse multiple edges between nodes
-    (define (remove-multiple-edges g)
+    (define (remove-multiple-edges graph)
       ;; (listof pda-rule) -> cfe-template
       ;; Purpose: Collapse the given pda-rule into a cfe-template
       (define (collapse-edges loe)
@@ -603,15 +603,15 @@
         (cond [(null? loe) (error "erm")]
               [(null? (rest loe)) (pda-rule-action (first loe))]
               [else (collapse-edges-helper (rest loe) (cons (pda-rule-action (first loe)) (list)))]))
-      (if (null? g)
+      (if (null? graph)
           '()
-          (let* [(curr-edge (first g))
+          (let* [(curr-edge (first graph))
                  (from-state (pda-rule-source curr-edge))
                  (to-state (pda-rule-destin curr-edge))
-                 (to-collapse (filter (λ (e) (and (eq? (pda-rule-source e) from-state)
-                                                  (eq? (pda-rule-destin e) to-state)))
-                                      g))
-                 (remaining-g (filter (λ (e) (not (member e to-collapse))) g))]
+                 (to-collapse (filter (λ (edge) (and (eq? (pda-rule-source edge) from-state)
+                                                  (eq? (pda-rule-destin edge) to-state)))
+                                      graph))
+                 (remaining-g (filter (λ (e) (not (member e to-collapse))) graph))]
             (cons (pda-rule from-state (collapse-edges to-collapse) to-state)
                   (remove-multiple-edges remaining-g)))))
 
@@ -620,25 +620,25 @@
     (define (rip-out-nodes lon g)
       ;; node dgraph --> dgraph
       ;; Purpose: Rip out given state from given graph
-      (define (rip-out-node n g)
+      (define (rip-out-node node graph)
         ;;rule -> (listof rules)
         ;;Purpose: Extracts the rules that make the concat if possible
         (define (extract-concat rule)
           (if (concat? rule)
               (concat-rules rule)
               (list rule)))
-        (let* [(non (filter (λ (r) (and (not (eq? (pda-rule-destin r) n))
-                                        (not (eq? (pda-rule-source r) n))))
-                            g))
-               (into-n (filter (λ (r) (and (eq? (pda-rule-destin r) n)
-                                           (not (eq? (pda-rule-source r) n))))
-                               g))
-               (outof-n (filter (λ (r) (and (eq? (pda-rule-source r) n)
-                                            (not (eq? (pda-rule-destin r) n))))
-                                g))
-               (self-edges (filter (λ (r) (and (eq? (pda-rule-source r) n)
-                                               (eq? (pda-rule-destin r) n)))
-                                   g))]
+        (let* [(non (filter (λ (rule) (and (not (eq? (pda-rule-destin rule) node))
+                                        (not (eq? (pda-rule-source rule) node))))
+                            graph))
+               (into-n (filter (λ (rule) (and (eq? (pda-rule-destin rule) node)
+                                           (not (eq? (pda-rule-source rule) node))))
+                               graph))
+               (outof-n (filter (λ (rule) (and (eq? (pda-rule-source rule) node)
+                                            (not (eq? (pda-rule-destin rule) node))))
+                                graph))
+               (self-edges (filter (λ (rule) (and (eq? (pda-rule-source rule) node)
+                                               (eq? (pda-rule-destin rule) node)))
+                                   graph))]
           (remove-multiple-edges
            (append
             non
@@ -834,6 +834,15 @@
           (first res)
           (mk-union-cfexp res))))
 
+
+  (define (build-cfe sub-langs stack-operations)
+    (define (build-cfe-helper sub-lang)
+      sub-lang)
+    (let ([res (map build-cfe-helper sub-langs)])
+      (if (is-length-one? res)
+          (first res)
+          (mk-union-cfexp res))))
+  
   (struct inverse-pair (push pop stack homogenous?) #:transparent)
   
   (define (rule-extractor cfe-template)
@@ -935,6 +944,22 @@
               (balance-pop stack-length '())
               (balance-push pop-amount '()))))
 
+
+      (define (update-stack push-pair pop-rules)
+        (cond [(or (null? pop-rules)
+                   (null? (inverse-pair-stack push-pair)))
+               (struct-copy inverse-pair push-pair
+                            [pop (reverse (inverse-pair-pop push-pair))])]
+              [(and (not (same-rule? (inverse-pair-push push-pair) (first pop-rules)))
+                    (equal? (inverse-pair-stack push-pair) (pda-action-pop (pda-rule-action (first pop-rules)))))
+               (update-stack (struct-copy inverse-pair push-pair
+                                          [pop (cons (first pop-rules) (inverse-pair-pop push-pair))]
+                                          [stack (drop (inverse-pair-stack push-pair) (length (pda-action-pop (pda-rule-action (first pop-rules)))))])
+                             (rest pop-rules))]
+              [else (update-stack push-pair (rest pop-rules))]))
+              
+        
+
       (define (same-rule? r1 r2)
         (and (eq? (pda-rule-source r1) (pda-rule-source r2))
              (equal? (pda-rule-action r1) (pda-rule-action r2))
@@ -946,10 +971,7 @@
              (equal? (pda-action-push (pda-rule-action pop-rule)) (pda-action-pop (pda-rule-action pop-rule)))))
       
       (cond [(not (inverse-pair-homogenous? push-pair)) (match-operations push-pair (inverse-pair-stack push-pair) pop-rules)]
-            [(or (null? pop-rules)
-                 (stack-wall? (first pop-rules)))
-             
-             (reverse acc)]
+            [(or (null? pop-rules) (stack-wall? (first pop-rules))) (reverse acc)]
             [(and (not (equal? (inverse-pair-push push-pair) (first pop-rules)))
                   (push? (pda-rule-action (first pop-rules)))
                   (equal? (inverse-pair-stack push-pair) (pda-action-pop (pda-rule-action (first pop-rules)))))
@@ -962,16 +984,28 @@
                                      (cons (struct-copy inverse-pair push-pair
                                                   [pop (first pop-rules)]) acc))]
             [(and (not (same-rule? (inverse-pair-push push-pair) (first pop-rules)))
-                  (same-elements? (inverse-pair-stack push-pair) (pda-action-pop (pda-rule-action (first pop-rules)))))
-             (cons (balance-stack push-pair (first pop-rules)) acc)
-             #;(struct-copy inverse-pair push-pair
-                            [pop (cons (first pop-rules) (inverse-pair-pop push-pair))])]
+                  (same-elements? (inverse-pair-stack push-pair) (pda-action-pop (pda-rule-action (first pop-rules))))
+                  (not (eq? (pda-rule-source (first pop-rules)) (pda-rule-destin (first pop-rules)))))
+             (pair-operations-helper push-pair
+                                     (rest pop-rules)
+                                     (cons (update-stack (struct-copy inverse-pair push-pair
+                                                                      [pop (list (first pop-rules))]
+                                                                      [stack (drop (inverse-pair-stack push-pair) (length (pda-action-pop (pda-rule-action (first pop-rules)))))])
+                                                         (rest pop-rules))
+                                           acc))]
+            [(and (not (same-rule? (inverse-pair-push push-pair) (first pop-rules)))
+                  (same-elements? (inverse-pair-stack push-pair) (pda-action-pop (pda-rule-action (first pop-rules))))
+                  (eq? (pda-rule-source (first pop-rules)) (pda-rule-destin (first pop-rules))))
+             (cons (balance-stack push-pair (first pop-rules)) acc)]
             [else (pair-operations-helper push-pair (rest pop-rules) acc)]))
     (let* ([push-rules (remove-duplicates (filter (λ (rule) (push? (pda-rule-action rule))) rules))]
            [push-pairs (map (λ (x) (inverse-pair x '() (pda-action-push (pda-rule-action x)) (= (set-count (list->set (pda-action-push (pda-rule-action x)))) 1))) push-rules)]
            [pop-rules (map (λ (pu-rule) (filter (λ (rule) (pop? (pda-rule-action rule))) (hash-ref reachables-ht (pda-rule-source pu-rule)))) push-rules)]
-           [pair-operations (map (λ (x y) (pair-operations-helper x y '())) push-pairs pop-rules)])
+           [pair-operations (append-map (λ (x y) (pair-operations-helper x y '())) push-pairs pop-rules)])
       pair-operations))
+
+  (define (find-applicable-opers sub-lang stack-operations)
+    sub-lang)
 
   
   (let* ([new-P (pda2temp P)]
@@ -982,14 +1016,18 @@
                                         (first (second rule))))
                             (pda-getrules P))]
          [reachable-rules (find-reachables rule-structs)]
-         [stack-operations (pair-stack-operations reachable-rules rule-structs)])
+         [stack-operations (pair-stack-operations reachable-rules rule-structs)]
+         [sublang-stack-pairs (map (λ (sub-lang) (find-applicable-opers sub-lang stack-operations)) sub-langs)])
     
     
-    (list (sm-graph P)
+    (values #;(sm-graph P)
           ;sub-langs
           ;(map (compose1 flatten rule-extractor) sub-langs)
           ;reachable-rules
-          stack-operations
+          ;stack-operations
+          ;sub-langs
+          #;sublang-stack-pairs
+          #;(build-cfe sub-langs stack-operations)
           #;(contruct-cfe sub-langs))))
 
 

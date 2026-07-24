@@ -14,7 +14,7 @@
          racket/list
          )
 
-(define WORD-AMOUNT 10)
+(define WORD-AMOUNT 500)
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;CFEXP;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -122,10 +122,6 @@
                                       (concat-cfexp A L B B))])
                          (concat-cfexp A L)))
 
-
-  
-
-
 ;;w = a^ib^jc^k, i=j or j=k
 
 ;;AiBjCk =>  a^ib^ic^k or a^ib^kc^k, i=j or j=k
@@ -224,6 +220,29 @@
 
 
 
+;;L = {a^mb^nc^pd^q | m,n,p,q ≥ 0 ∧ m + n = p + q}
+(define a^mb^nc^pd^q (make-cfe ([A (singleton-cfexp "a")]
+                                [B (singleton-cfexp "b")]
+                                [C (singleton-cfexp "c")]
+                                [D (singleton-cfexp "d")]
+                                [EMP (empty-cfexp)]
+                                [AACD (union-cfexp (concat-cfexp A AACD D)
+                                                   AC)]
+                                [AC (union-cfexp (concat-cfexp A AC C)
+                                                 EMP)]
+                                [BBCD (union-cfexp (concat-cfexp B BBCD D)
+                                                   BC)]
+                                [BC (union-cfexp (concat-cfexp B BC C)
+                                                 EMP)]
+                                [ABCD (union-cfexp (concat-cfexp A ABCD D)
+                                                   BC)]
+                                [ABCC (union-cfexp (concat-cfexp A ABCC C)
+                                                   BC)]
+                                [ABDD (union-cfexp (concat-cfexp A BD D)
+                                                   EMP)]
+                                [BD (union-cfexp (concat-cfexp B BD D)
+                                                 EMP)])
+                               (union-cfexp AACD BBCD ABCD ABCC ABDD)))
 
 (define G2 (cfe->cfg AiBjCk2))
 
@@ -725,8 +744,9 @@
          (Bs (takef (drop ci (length As)) (λ (x) (eq? x 'b))))
          (Cs (takef (drop ci (+ (length As) (length Bs))) (λ (x) (eq? x 'c))))
          (Ds (takef (drop ci (+ (length As) (length Bs) (length Cs))) (λ (x) (eq? x 'd))))]
-    (and (equal? (append As Bs Cs Ds) ci)
-         (= 0 (- (+ (length As) (length Bs)) (length Cs) (length Ds))))))
+    (or (eq? EMP ci)
+        (and (equal? (append As Bs Cs Ds) ci)
+             (= (+ (length As) (length Bs)) (+ (length Cs) (length Ds)))))))
 
 ;;word -> boolean
 ;;Purpose: Determines if the given word is a valid word for w = a^mb^nc^p
@@ -789,6 +809,7 @@
 (define converted-A2iBi-WORDS (gen-cfe-words (pda->cfe (cfe->pda A2iBi))))
 
 (define converted-AiBj-WORDS (gen-cfe-words (pda->cfe (cfe->pda AiBj))))
+
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;TESTING;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -956,3 +977,10 @@
 (pda-checker Gina-a^mb^nc^p (gen-cfe-words Gina-a^mb^nc^p-tbh))
 (pda-checker marco-anbncndn (gen-cfe-words marco-anbncndn-tbh))
 |#
+
+
+
+(define a^mb^nc^pd^q-WORDS (gen-cfe-words a^mb^nc^pd^q))
+
+(check-pred (λ (low) (andmap valid-Gina-a^mb^nc^pd^q-word? low)) a^mb^nc^pd^q-WORDS)
+(check-true (pda-checker Gina-a^mb^nc^pd^q a^mb^nc^pd^q-WORDS))

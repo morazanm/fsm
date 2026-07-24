@@ -14,15 +14,24 @@
 
 ;;PDA->CFE
 
-(define idk (make-cfe ([A (singleton-cfexp "a")]
-                       [B (singleton-cfexp "b")]
-                       [C (singleton-cfexp "c")]
-                       [D (singleton-cfexp "d")]
-                       [X (union-cfexp (concat-cfexp A X D)
-                                       Y)]
-                       [Y (union-cfexp (concat-cfexp B Y C)
-                                       (empty-cfexp))])
-                       X))
+(define converted-Gina-a^mb^nc^pd^q (make-cfe ([A (singleton-cfexp "a")]
+                                               [B (singleton-cfexp "b")]
+                                               [C (singleton-cfexp "c")]
+                                               [D (singleton-cfexp "d")]
+                                               [EMP (empty-cfexp)]
+                                               [AD (union-cfexp (concat-cfexp A AD D)
+                                                                AC)]
+                                               [AC (union-cfexp (concat-cfexp A AC C)
+                                                                EMP)]
+                                               [BD (union-cfexp (concat-cfexp B BD D)
+                                                                BC)]
+                                               [BC (union-cfexp (concat-cfexp B BC C)
+                                                                EMP)]
+                                               [AX (union-cfexp (concat-cfexp A AX D)
+                                                                BX)]
+                                               [BX (union-cfexp (concat-cfexp B BX C)
+                                                                EMP)])
+                                              (union-cfexp AD BD BX)))
 
 (define anbkckdn (make-unchecked-ndpda '(S D M C)
                                        '(a b c d)
@@ -258,7 +267,9 @@
 
 ;(pda->cfe Gina-AiBj)
 ;(pda->cfe Gina-AiBj2)
-(pda->cfe Gina-aˆnbˆn*)
+#;(pda->cfe Gina-aˆnbˆn*)
+(pda->cfe Gina-aˆnbˆn)
+#;(map pda->cfe LOPDA)
 
 ;;w = a*
 #|
