@@ -14,24 +14,7 @@
 
 ;;PDA->CFE
 
-(define converted-Gina-a^mb^nc^pd^q (make-cfe ([A (singleton-cfexp "a")]
-                                               [B (singleton-cfexp "b")]
-                                               [C (singleton-cfexp "c")]
-                                               [D (singleton-cfexp "d")]
-                                               [EMP (empty-cfexp)]
-                                               [AD (union-cfexp (concat-cfexp A AD D)
-                                                                AC)]
-                                               [AC (union-cfexp (concat-cfexp A AC C)
-                                                                EMP)]
-                                               [BD (union-cfexp (concat-cfexp B BD D)
-                                                                BC)]
-                                               [BC (union-cfexp (concat-cfexp B BC C)
-                                                                EMP)]
-                                               [AX (union-cfexp (concat-cfexp A AX D)
-                                                                BX)]
-                                               [BX (union-cfexp (concat-cfexp B BX C)
-                                                                EMP)])
-                                              (union-cfexp AD BD BX)))
+
 
 (define anbkckdn (make-unchecked-ndpda '(S D M C)
                                        '(a b c d)
@@ -255,20 +238,22 @@
      ((F b ,EMP) (S ,EMP))
      ((F a ,EMP) (X ,EMP))))) 
 
-(define LOPDA (list Gina-aˆnbˆn Gina-aˆnbˆn* Gina-AiBj2 A* A*2 A3 marco-anbncndn Gina-wcwˆr Gina-palindrome-pda Gina-AiBj Gina-A^nB^mA^n Gina-a^mb^nc^pd^q Gina-a^mb^nc^p anbkckdn j))
+(define LOPDA   (list Gina-aˆnbˆn Gina-aˆnbˆn* Gina-AiBj2 A* A*2 A3 marco-anbncndn Gina-wcwˆr Gina-palindrome-pda Gina-AiBj Gina-A^nB^mA^n Gina-a^mb^nc^pd^q Gina-a^mb^nc^p anbkckdn j))
 
+(define working (list Gina-aˆnbˆn Gina-aˆnbˆn*            A*     A3 marco-anbncndn Gina-wcwˆr Gina-palindrome-pda           Gina-A^nB^mA^n                   Gina-a^mb^nc^p anbkckdn j))
 #;(sm-graph Gina-aˆnbˆn)
 
 ;;(pda->cfe Gina-aˆnbˆn)
 
-
+#;(pda->cfe A*2) 
+(pda->cfe Gina-a^mb^nc^pd^q)
 #;(sm-graph Gina-AiBj)
 
-
+#;(pda->cfe Gina-wcwˆr)
 ;(pda->cfe Gina-AiBj)
 ;(pda->cfe Gina-AiBj2)
 #;(pda->cfe Gina-aˆnbˆn*)
-(pda->cfe Gina-aˆnbˆn)
+
 #;(map pda->cfe LOPDA)
 
 ;;w = a*

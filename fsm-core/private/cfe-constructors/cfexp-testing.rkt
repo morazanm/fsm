@@ -5,8 +5,8 @@
          "../cfg.rkt"
          "../constants.rkt"
          "../../../sm-graph.rkt"          
-          "construct-cfe-macro.rkt"
-          "../cfg-struct.rkt"
+         "construct-cfe-macro.rkt"
+         "../cfg-struct.rkt"
          "./context-free-expressions-constructors.rkt"
          rackunit
          rackunit/text-ui
@@ -20,31 +20,31 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;CFEXP;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define EMPTY (make-cfe [(EMPTY (empty-cfexp))]
-                 EMPTY))
+                        EMPTY))
 
 (define NULL (make-cfe [(NULL (null-cfexp))]
-                 NULL))
+                       NULL))
 
 (define ONEorTWO (make-cfe ([one (singleton-cfexp "1")]
-                             [two (singleton-cfexp "2")])
-                      (union-cfexp one two)))
+                            [two (singleton-cfexp "2")])
+                           (union-cfexp one two)))
 
 
 (define A (make-cfe [(A (singleton-cfexp "a"))]
-                 A))
+                    A))
 
 (define B (make-cfe [(B (singleton-cfexp "b"))]
-                 B))
+                    B))
 
 (define C (make-cfe [(C (singleton-cfexp "c"))]
-                 C))
+                    C))
 
 (define D (make-cfe [(D (singleton-cfexp "d"))]
-                 D))
+                    D))
 
 (define G (make-cfe [(B (singleton-cfexp "g"))
                      (test (kleenestar-cfexp B))]
-                 test))
+                    test))
 
 
 ;; w = ww^r
@@ -64,16 +64,16 @@
                       AUB))
 (define cAUB (make-cfe ([AUB (union-cfexp A B)]
                         [aAUB (concat-cfexp C AUB)])
-                      aAUB))
+                       aAUB))
 
 (define cAUB2 (make-cfe ([aAUB (concat-cfexp C (union-cfexp A B))]) ;; now boxes the union-cfexp 
-                      aAUB))
+                        aAUB))
 
 (define CUAUB (make-cfe ([CUAUB (union-cfexp C (union-cfexp A B))]) ;;now lifts nested unions
-                      CUAUB))
+                        CUAUB))
 
 (define CUAUBUD (make-cfe ([CUAUBUD (union-cfexp C (union-cfexp A (union-cfexp D B)))]) ;;now lifts nested unions
-                      CUAUBUD))
+                          CUAUBUD))
 
 
 ;;w = a^2ib^i
@@ -82,45 +82,45 @@
 
 ;;w = A^iB^j | i <= j <= 2i
 (define AiBj (make-cfe ([AiBj (union-cfexp EMPTY
-                          (concat-cfexp A AiBj B)
-                          (concat-cfexp A AiBj B B))])
-            AiBj))
+                                           (concat-cfexp A AiBj B)
+                                           (concat-cfexp A AiBj B B))])
+                       AiBj))
 
 
 ;;w = b^na^n
 (define BNAN (make-cfe ([BNAN (union-cfexp EMPTY (concat-cfexp B BNAN A))])
-            BNAN) )
+                       BNAN) )
 
 
 (define aibj1 (make-cfe ([L (union-cfexp B
-                                      (concat-cfexp A L B)
-                                      (concat-cfexp A L B B))])
-                         (concat-cfexp A L)))
+                                         (concat-cfexp A L B)
+                                         (concat-cfexp A L B B))])
+                        (concat-cfexp A L)))
 
 (define aibj2 (make-cfe ([L (union-cfexp B
-                                      (concat-cfexp A L B)
-                                      (concat-cfexp A L B B))])
-                         (concat-cfexp A L)))
+                                         (concat-cfexp A L B)
+                                         (concat-cfexp A L B B))])
+                        (concat-cfexp A L)))
 
 (define aibj3 (make-cfe ([L (union-cfexp B
-                                      (concat-cfexp A L B)
-                                      (concat-cfexp A L B B))])
-                         (concat-cfexp A L)))
+                                         (concat-cfexp A L B)
+                                         (concat-cfexp A L B B))])
+                        (concat-cfexp A L)))
 
 (define aibj4 (make-cfe ([L (union-cfexp B
-                                      (concat-cfexp A L B)
-                                      (concat-cfexp A L B B))])
-                         (concat-cfexp A L)))
+                                         (concat-cfexp A L B)
+                                         (concat-cfexp A L B B))])
+                        (concat-cfexp A L)))
 
 (define aibj5 (make-cfe ([L (union-cfexp B
-                                      (concat-cfexp A L B)
-                                      (concat-cfexp A L B B))])
-                         (concat-cfexp A L)))
+                                         (concat-cfexp A L B)
+                                         (concat-cfexp A L B B))])
+                        (concat-cfexp A L)))
 
 (define aibj6 (make-cfe ([L (union-cfexp B
-                                      (concat-cfexp A L B)
-                                      (concat-cfexp A L B B))])
-                         (concat-cfexp A L)))
+                                         (concat-cfexp A L B)
+                                         (concat-cfexp A L B B))])
+                        (concat-cfexp A L)))
 
 ;;w = a^ib^jc^k, i=j or j=k
 
@@ -181,41 +181,41 @@
       ASB)))
 
 (define ANBN-2 (make-cfe ([ASB (union-cfexp EMPTY (concat-cfexp A ASB B))])
-            ASB))
+                         ASB))
 
 (define ANBN* (kleenestar-cfexp ANBN-2))
 
 (define A-STAR (make-cfe ([EMPTY (empty-cfexp)]
-             [A (singleton-cfexp "a")]
-             [A* (union-cfexp EMPTY (concat-cfexp A A*))])
-             A*))
+                          [A (singleton-cfexp "a")]
+                          [A* (union-cfexp EMPTY (concat-cfexp A A*))])
+                         A*))
 
 
 (define AiBjCk2 (make-cfe ([A (singleton-cfexp "a")]
-             [B (singleton-cfexp "b")]
-             [C (singleton-cfexp "c")]
-             [AEB (union-cfexp EMPTY (concat-cfexp A AEB B))]
-             [CF (union-cfexp (concat-cfexp C CF) EMPTY)]
-             [BWC (union-cfexp (concat-cfexp B BWC C) EMPTY)]
-             [AZ (union-cfexp (concat-cfexp A AZ) EMPTY)]
-             [AiBjCk (union-cfexp (concat-cfexp AEB CF) (concat-cfexp AZ BWC))])
-            AiBjCk))
+                           [B (singleton-cfexp "b")]
+                           [C (singleton-cfexp "c")]
+                           [AEB (union-cfexp EMPTY (concat-cfexp A AEB B))]
+                           [CF (union-cfexp (concat-cfexp C CF) EMPTY)]
+                           [BWC (union-cfexp (concat-cfexp B BWC C) EMPTY)]
+                           [AZ (union-cfexp (concat-cfexp A AZ) EMPTY)]
+                           [AiBjCk (union-cfexp (concat-cfexp AEB CF) (concat-cfexp AZ BWC))])
+                          AiBjCk))
 
 (define AiBjCk4 (make-cfe ([A (singleton-cfexp "a")]
-             [B (singleton-cfexp "b")]
-             [C (singleton-cfexp "c")]
-             [AEB (union-cfexp EMPTY (concat-cfexp A AEB B))]
-             [CF (kleenestar-cfexp C)]
-             [BWC (union-cfexp (concat-cfexp B BWC C) EMPTY)]
-             [AZ (kleenestar-cfexp A)]
-             [AiBjCk (union-cfexp (concat-cfexp AEB CF) (concat-cfexp AZ BWC))])
-            AiBjCk))
+                           [B (singleton-cfexp "b")]
+                           [C (singleton-cfexp "c")]
+                           [AEB (union-cfexp EMPTY (concat-cfexp A AEB B))]
+                           [CF (kleenestar-cfexp C)]
+                           [BWC (union-cfexp (concat-cfexp B BWC C) EMPTY)]
+                           [AZ (kleenestar-cfexp A)]
+                           [AiBjCk (union-cfexp (concat-cfexp AEB CF) (concat-cfexp AZ BWC))])
+                          AiBjCk))
 
 
 ;;L = wcw^r
 (define WcWr (make-cfe ([WcWr (union-cfexp (concat-cfexp A WcWr A)
-                                     (concat-cfexp B WcWr B)
-                                     C)])
+                                           (concat-cfexp B WcWr B)
+                                           C)])
                        WcWr))
 
 
@@ -291,8 +291,8 @@
                                  'X))
 ;;w = (abc)^na^n
 (define thesis-cfe (make-cfe ([ABY (union-cfexp (concat-cfexp A B CXA) EMPTY)]
-             [CXA (concat-cfexp C ABY A)])
-            ABY))
+                              [CXA (concat-cfexp C ABY A)])
+                             ABY))
 
 (define thesis-cfe21
   (let ([ABY (box (void))]
@@ -301,21 +301,21 @@
       (set-box! ABY (union-cfexp (concat-cfexp A B CXA) EMPTY))
       (set-box! CXA (concat-cfexp C ABY A))
       ABY))
-    #;(make-cfe ([ABY (union-cfexp (concat-cfexp A B CXA) EMPTY)]
-             [CXA (concat-cfexp C ABY A)])
-            ABY))
+  #;(make-cfe ([ABY (union-cfexp (concat-cfexp A B CXA) EMPTY)]
+               [CXA (concat-cfexp C ABY A)])
+              ABY))
 
 ;;w = (abc)^na^n
 #;(define thesis-cfe2
-  (let* [(X (var-cfexp 'X))
-         (Y (var-cfexp 'Y))
-         (ABY (concat-cfexp A B Y))
-         (CXA (concat-cfexp C X A))]
-    (begin
-      (update-binding! X 'X EMPTY)
-      (update-binding! X 'X ABY)
-      (update-binding! Y 'Y CXA)
-      X)))
+    (let* [(X (var-cfexp 'X))
+           (Y (var-cfexp 'Y))
+           (ABY (concat-cfexp A B Y))
+           (CXA (concat-cfexp C X A))]
+      (begin
+        (update-binding! X 'X EMPTY)
+        (update-binding! X 'X ABY)
+        (update-binding! Y 'Y CXA)
+        X)))
 
 ;;w = (abc)^na^n
 (define thesis-cfg1 (make-unchecked-cfg '(X Y)
@@ -338,11 +338,11 @@
 
 ;;w = a*
 (define A* (make-unchecked-ndpda '(S)
-                                '(a b)
-                                '(a)
-                                'S
-                                '(S)
-                                `(((S a ,EMP) (S ,EMP)))))
+                                 '(a b)
+                                 '(a)
+                                 'S
+                                 '(S)
+                                 `(((S a ,EMP) (S ,EMP)))))
 
 
 (define Gina-aˆnbˆn (make-unchecked-ndpda '(S M F)
@@ -356,48 +356,48 @@
                                             ((M ,EMP ,EMP) (F ,EMP)))))
 ;;L = {wcw^r | sig = {a b}}
 (define Gina-wcwˆr (make-unchecked-ndpda '(S P Q F)
-                          '(a b c)
-                          '(a b)
-                          'S
-                          '(F)
-                          `(((S ,EMP ,EMP) (P ,EMP))
-                            ((P a ,EMP) (P (a)))
-                            ((P b ,EMP) (P (b)))
-                            ((P c ,EMP) (Q ,EMP))
-                            ((Q a (a)) (Q ,EMP))
-                            ((Q b (b)) (Q ,EMP))
-                            ((Q ,EMP ,EMP) (F ,EMP)))))
+                                         '(a b c)
+                                         '(a b)
+                                         'S
+                                         '(F)
+                                         `(((S ,EMP ,EMP) (P ,EMP))
+                                           ((P a ,EMP) (P (a)))
+                                           ((P b ,EMP) (P (b)))
+                                           ((P c ,EMP) (Q ,EMP))
+                                           ((Q a (a)) (Q ,EMP))
+                                           ((Q b (b)) (Q ,EMP))
+                                           ((Q ,EMP ,EMP) (F ,EMP)))))
 
 (define Gina-palindrome-pda (make-unchecked-ndpda '(S A B C)
-                                   '(a b)
-                                   '(a b)
-                                   'S
-                                   '(C)
-                                   `(((S ,EMP ,EMP) (A ,EMP))
-                                     ((A a ,EMP) (A (a)))
-                                     ((A b ,EMP) (A (b)))
-                                     ((A a ,EMP) (B,EMP))
-                                     ((A b ,EMP) (B ,EMP))
-                                     ((A ,EMP ,EMP) (B ,EMP))
-                                     ((B a (a)) (B ,EMP))
-                                     ((B b (b)) (B ,EMP))
-                                     ((B ,EMP ,EMP) (C ,EMP)))))
+                                                  '(a b)
+                                                  '(a b)
+                                                  'S
+                                                  '(C)
+                                                  `(((S ,EMP ,EMP) (A ,EMP))
+                                                    ((A a ,EMP) (A (a)))
+                                                    ((A b ,EMP) (A (b)))
+                                                    ((A a ,EMP) (B,EMP))
+                                                    ((A b ,EMP) (B ,EMP))
+                                                    ((A ,EMP ,EMP) (B ,EMP))
+                                                    ((B a (a)) (B ,EMP))
+                                                    ((B b (b)) (B ,EMP))
+                                                    ((B ,EMP ,EMP) (C ,EMP)))))
 ;;L = {a^ib^j | i ≤ j ≤ 2i}
 (define Gina-AiBj (make-unchecked-ndpda '(S A B C)
-                         '(a b)
-                         '(a)
-                         'S
-                         '(C)
-                         `(((S a ,EMP) (A (a)))
-                           ((S a ,EMP) (A (a a)))
-                           ((S ,EMP ,EMP) (A ,EMP))
-                           ((A a ,EMP) (A (a)))
-                           ((A a ,EMP) (A (a a)))
-                           ((A b (a)) (B ,EMP))
-                           ((A ,EMP ,EMP) (B ,EMP))
-                           ((B b (a)) (B ,EMP))
-                           ((B ,EMP ,EMP) (C ,EMP))
-                           )))
+                                        '(a b)
+                                        '(a)
+                                        'S
+                                        '(C)
+                                        `(((S a ,EMP) (A (a)))
+                                          ((S a ,EMP) (A (a a)))
+                                          ((S ,EMP ,EMP) (A ,EMP))
+                                          ((A a ,EMP) (A (a)))
+                                          ((A a ,EMP) (A (a a)))
+                                          ((A b (a)) (B ,EMP))
+                                          ((A ,EMP ,EMP) (B ,EMP))
+                                          ((B b (a)) (B ,EMP))
+                                          ((B ,EMP ,EMP) (C ,EMP))
+                                          )))
 
 (define Gina-Aibj-TBH (make-cfe ([EMP (empty-cfexp)]
                                  [A (singleton-cfexp "a")]
@@ -408,50 +408,50 @@
 
 ;;L = {a^nb^ma^n | n,m ≥ 0}
 (define Gina-A^nB^mA^n (make-unchecked-ndpda '(S A B)
-                              '(a b)
-                              '(a)
-                              'S
-                              '(B)
-                              `(((S a ,EMP) (S (a)))
-                                ((S ,EMP ,EMP) (A ,EMP))
-                                ((S b ,EMP) (A ,EMP))
-                                ((A b ,EMP) (A ,EMP))
-                                ((A ,EMP ,EMP) (B ,EMP))
-                                ((A a (a)) (B ,EMP))
-                                ((B a (a)) (B ,EMP)))))
+                                             '(a b)
+                                             '(a)
+                                             'S
+                                             '(B)
+                                             `(((S a ,EMP) (S (a)))
+                                               ((S ,EMP ,EMP) (A ,EMP))
+                                               ((S b ,EMP) (A ,EMP))
+                                               ((A b ,EMP) (A ,EMP))
+                                               ((A ,EMP ,EMP) (B ,EMP))
+                                               ((A a (a)) (B ,EMP))
+                                               ((B a (a)) (B ,EMP)))))
 
 ;;L = {a^mb^nc^pd^q | m,n,p,q ≥ 0 ∧ m + n = p + q}
 (define Gina-a^mb^nc^pd^q (make-unchecked-ndpda '(S A B C)
-                                 '(a b c d)
-                                 '(a)
-                                 'S
-                                 '(C)
-                                 `(((S a ,EMP) (S (a)))
-                                   ((S ,EMP ,EMP) (A ,EMP))
-                                   ((A b ,EMP) (A (a)))
-                                   ((A ,EMP ,EMP) (B ,EMP))
-                                   ((B c (a)) (B ,EMP))
-                                   ((B ,EMP ,EMP) (C ,EMP))
-                                   ((C d (a)) (C ,EMP)))))
+                                                '(a b c d)
+                                                '(a)
+                                                'S
+                                                '(C)
+                                                `(((S a ,EMP) (S (a)))
+                                                  ((S ,EMP ,EMP) (A ,EMP))
+                                                  ((A b ,EMP) (A (a)))
+                                                  ((A ,EMP ,EMP) (B ,EMP))
+                                                  ((B c (a)) (B ,EMP))
+                                                  ((B ,EMP ,EMP) (C ,EMP))
+                                                  ((C d (a)) (C ,EMP)))))
 
 ;;L = {a^mb^nc^p | m,n,p≥0 ∧ (m = n ∨ n = p)}
 (define Gina-a^mb^nc^p (make-unchecked-ndpda '(S A B C D E F)
-                              '(a b c)
-                              '(a)
-                              'S
-                              '(C F)
-                              `(((S ,EMP ,EMP) (A ,EMP))
-                                ((S ,EMP ,EMP) (D ,EMP))
-                                ((A a ,EMP) (A (a)))
-                                ((A ,EMP ,EMP) (B ,EMP))
-                                ((B b (a)) (B ,EMP))
-                                ((B ,EMP ,EMP) (C ,EMP))
-                                ((C c ,EMP) (C ,EMP))
-                                ((D a ,EMP) (D ,EMP))
-                                ((D ,EMP ,EMP) (E ,EMP))
-                                ((E b ,EMP) (E (a)))
-                                ((E ,EMP ,EMP) (F ,EMP))
-                                ((F c (a)) (F ,EMP)))))
+                                             '(a b c)
+                                             '(a)
+                                             'S
+                                             '(C F)
+                                             `(((S ,EMP ,EMP) (A ,EMP))
+                                               ((S ,EMP ,EMP) (D ,EMP))
+                                               ((A a ,EMP) (A (a)))
+                                               ((A ,EMP ,EMP) (B ,EMP))
+                                               ((B b (a)) (B ,EMP))
+                                               ((B ,EMP ,EMP) (C ,EMP))
+                                               ((C c ,EMP) (C ,EMP))
+                                               ((D a ,EMP) (D ,EMP))
+                                               ((D ,EMP ,EMP) (E ,EMP))
+                                               ((E b ,EMP) (E (a)))
+                                               ((E ,EMP ,EMP) (F ,EMP))
+                                               ((F c (a)) (F ,EMP)))))
 
 
 (define Gina-a^mb^nc^p-tbh (make-cfe ([L (union-cfexp w1 w3)]
@@ -619,8 +619,8 @@
 ;;cfg cfexp -> boolean
 ;;Purpose: Determines if the given cfe can generate a natnum amount of words that the grammar can derive
 #;(define (grammar-checker g words)
-  (for/and ([w (in-list words)])
-    (list? (cfg-derive g (if (eq? w EMP) '() w)))))
+    (for/and ([w (in-list words)])
+      (list? (cfg-derive g (if (eq? w EMP) '() w)))))
 
 ;;pda cfexp -> boolean
 ;;Purpose: Determines if the given cfe can generate a natnum amount of words that the pda can accept
