@@ -4,7 +4,6 @@
           "context-free-expressions-constructors.rkt"
           "../cfg-struct.rkt"
           "../pda.rkt"
-          ;"../visualizations/viz-grammar-constructors/cfg-derive-leftmost.rkt"
           "../../../sm-graph.rkt"          
           "construct-cfe-macro.rkt"
           )
@@ -38,6 +37,21 @@
                                 '(S)
                                 `(((S a ,EMP) (S ,EMP)))))
 
+(define aibj (make-unchecked-ndpda '(S F)
+                                   '(a b)
+                                   '(b)
+                                   'S
+                                   '(F)
+                                   `(((S a ,EMP) (S (b b))) ((S ,EMP ,EMP)(F ,EMP))
+                                      ((F b (b))(F ,EMP)) ((F b (b b))(F ,EMP)))))
+
+(define bug-aibj (make-unchecked-ndpda '(S F)
+                                   '(a b)
+                                   '(b)
+                                   'S
+                                   '(F)
+                                   `(((S a ,EMP) (S (a a))) ((S ,EMP ,EMP)(F ,EMP))
+                                      ((F b (b))(F ,EMP)) ((F b (b b))(F ,EMP)))))
 
 (define A*2 (make-unchecked-ndpda '(S F)
                                 '(a b)
@@ -240,7 +254,7 @@
 
 (define LOPDA   (list Gina-aˆnbˆn Gina-aˆnbˆn* Gina-AiBj2 A* A*2 A3 marco-anbncndn Gina-wcwˆr Gina-palindrome-pda Gina-AiBj Gina-A^nB^mA^n Gina-a^mb^nc^pd^q Gina-a^mb^nc^p anbkckdn j))
 
-(define working (list Gina-aˆnbˆn Gina-aˆnbˆn*            A*     A3 marco-anbncndn Gina-wcwˆr Gina-palindrome-pda           Gina-A^nB^mA^n                   Gina-a^mb^nc^p anbkckdn j))
+(define working (list Gina-aˆnbˆn Gina-aˆnbˆn*            A*     A3 marco-anbncndn Gina-wcwˆr Gina-palindrome-pda           Gina-A^nB^mA^n                   Gina-a^mb^nc^p anbkckdn j aibj))
 #;(sm-graph Gina-aˆnbˆn)
 
 ;;(pda->cfe Gina-aˆnbˆn)

@@ -241,7 +241,7 @@
   
   (define NULL-REGEXP-STRING "∅")
   (define EMPTY-REGEXP-STRING (symbol->string EMP))
-  (displayln (format "cfe: ~a\nseen: ~a\n\n" cfe seen))
+  #;(displayln (format "cfe: ~a\nseen: ~a\n\n" cfe seen))
   (cond [(mk-null-cfexp? cfe) NULL-REGEXP-STRING]
         [(mk-empty-cfexp? cfe) EMPTY-REGEXP-STRING]
         [(mk-singleton-cfexp? cfe) (mk-singleton-cfexp-char cfe)]
@@ -580,7 +580,11 @@
           (empty pda-action) 
           (singleton pda-action source destin)))
     (pda-rule (first (first rule))
-              (rules->cfe (make-pda-action (second (first rule)) (third (first rule)) (second (second rule))) (first (first rule)) (first (second rule)))
+              (rules->cfe (make-pda-action (second (first rule))
+                                           (third (first rule))
+                                           (second (second rule)))
+                          (first (first rule))
+                          (first (second rule)))
               (first (second rule))))
   
   ;; pda --> cfe-template
@@ -918,7 +922,8 @@
                     (equal? (inverse-pair-stack push-pair) (pda-action-pop (pda-rule-action (first pop-rules)))))
                (update-stack (struct-copy inverse-pair push-pair
                                           [pop (cons (first pop-rules) (inverse-pair-pop push-pair))]
-                                          [stack (drop (inverse-pair-stack push-pair) (length (pda-action-pop (pda-rule-action (first pop-rules)))))])
+                                          [stack (drop (inverse-pair-stack push-pair)
+                                                       (length (pda-action-pop (pda-rule-action (first pop-rules)))))])
                              (rest pop-rules))]
               [else (update-stack push-pair (rest pop-rules))]))
               
@@ -957,36 +962,55 @@
                                      (cons (update-stack (struct-copy inverse-pair push-pair
                                                                       [pop (list (first pop-rules))]
                                                                       [stack (drop (inverse-pair-stack push-pair)
-                                                                                   (length (pda-action-pop (pda-rule-action (first pop-rules)))))])
+                                                                                   (length (pda-action-pop (pda-rule-action
+                                                                                                            (first pop-rules)))))])
                                                          (rest pop-rules))
                                            acc))]
             [(and (not (same-rule? (inverse-pair-push push-pair) (first pop-rules)))
                   (same-elements? (inverse-pair-stack push-pair) (pda-action-pop (pda-rule-action (first pop-rules))))
                   (eq? (pda-rule-source (first pop-rules)) (pda-rule-destin (first pop-rules))))
-             (cons (balance-stack push-pair (first pop-rules)) acc)]
+             (pair-operations-helper push-pair
+                                     (rest pop-rules)
+                                     (cons (balance-stack push-pair (first pop-rules)) acc))]
             [else (pair-operations-helper push-pair (rest pop-rules) acc)]))
+
+    (define (make-inverse-pair push-rule)
+      (inverse-pair push-rule
+                    '()
+                    (pda-action-push (pda-rule-action push-rule))
+                    (= (set-count (list->set (pda-action-push (pda-rule-action push-rule)))) 1)))
     (let* ([push-rules (remove-duplicates (filter (λ (rule) (push? (pda-rule-action rule))) rules))]
-           [push-pairs (map (λ (x) (inverse-pair x '() (pda-action-push (pda-rule-action x)) (= (set-count (list->set (pda-action-push (pda-rule-action x)))) 1))) push-rules)]
-           [pop-rules (map (λ (pu-rule) (filter (λ (rule) (pop? (pda-rule-action rule))) (hash-ref reachables-ht (pda-rule-source pu-rule)))) push-rules)]
+           [push-pairs (map (λ (push-rule)
+                              (make-inverse-pair push-rule))
+                            push-rules)]
+           [pop-rules (map (λ (pu-rule)
+                             (filter (λ (rule)
+                                       (pop? (pda-rule-action rule)))
+                                     (hash-ref reachables-ht (pda-rule-source pu-rule))))
+                           push-rules)]
            [pair-operations (append-map (λ (x y) (pair-operations-helper x y '())) push-pairs pop-rules)])
       (if (list? pair-operations)
           pair-operations
           (list pair-operations))))
 
-    ;;(X -> Y) inverse-pair pda-rule -> Boolean
-    ;;Purpose: Determines if the given inverse-pair and pda-rule are the same
-    (define (same-rule? accessor oper rule)
-      (and (not (empty? rule))
-           (equal? (pda-rule-action (accessor oper)) (singleton-rule rule))
-           (eq? (pda-rule-source (accessor oper)) (singleton-source rule))
-           (eq? (pda-rule-destin (accessor oper)) (singleton-destin rule))))
+  ;;(X -> Y) inverse-pair pda-rule -> Boolean
+  ;;Purpose: Determines if the given inverse-pair and pda-rule are the same
+  (define (same-rule? accessor oper rule)
+    (and (not (empty? rule))
+         (let ([oper (if (and (list? (accessor oper))
+                              (inverse-pair-homogenous? oper))
+                         (first (accessor oper))
+                         (accessor oper))])
+           (and (equal? (pda-rule-action oper) (singleton-rule rule))
+                (eq? (pda-rule-source oper) (singleton-source rule))
+                (eq? (pda-rule-destin oper) (singleton-destin rule))))))
 
-    ;;(X -> Y) inverse-pair pda-rule -> Boolean
-    ;;Purpose: Determines if the given inverse-pair and pda-rule are the same
-    (define (same-rules? accessor oper rules)
-      (ormap (λ (rule)
-               (same-rule? accessor oper rule))
-             rules))
+  ;;(X -> Y) inverse-pair pda-rule -> Boolean
+  ;;Purpose: Determines if the given inverse-pair and pda-rule are the same
+  (define (same-rules? accessor oper rules)
+    (ormap (λ (rule)
+             (same-rule? accessor oper rule))
+           rules))
 
   ;;(listof cfe-template) -> Boolean
   ;;Purpose: Determines if the given list of cfe-template uses the stack
@@ -1066,8 +1090,8 @@
       (define (get-stack-oper accessor lang stack-opers)
         (let ([rule (extractor-prims lang)])
           (filter (λ (oper)
-                   (same-rule? accessor oper rule))
-                 stack-opers)))
+                    (same-rule? accessor oper rule))
+                  stack-opers)))
 
       ;;(X -> Y) cfe-template (listof inverse-pair) -> (listof inverse-pair)
       ;;Purpose: Returns the inverse pairs applicable to given cfe-template
@@ -1075,46 +1099,83 @@
       (define (get-stack-opers accessor lang stack-opers)
         (let ([rule (extractor-prims lang)])
           (flatten (map (λ (rule) (get-stack-oper accessor rule stack-opers))
-               rule))))
+                        rule))))
 
       ;;inverse-pair -> Boolean
-        ;;Purpose: Determines if the push rule and pop rule are self-loops
-        (define (recursive? pair)
-          (and (eq? (pda-rule-source (inverse-pair-push pair))  (pda-rule-destin (inverse-pair-push pair)))
-               (if (list? (inverse-pair-pop pair))
-                   (andmap (λ (x) (eq? (pda-rule-source (inverse-pair-pop pair))  (pda-rule-destin (inverse-pair-pop pair)))))
-                   (eq? (pda-rule-source (inverse-pair-pop pair))  (pda-rule-destin (inverse-pair-pop pair))))))
-        ;;(X -> Y) inverse-pair -> cfe
-        ;;Purpose: Converts the given inverse-pair into a cfe
-        (define (rule->cfe accessor pair)
-          (if (pda-rule? (accessor pair))
-              (let ([sym (pda-action-read (pda-rule-action (accessor pair)))])
-                (if (eq? EMP sym)
-                    (mk-empty-cfexp)
-                    (mk-singleton-cfexp (symbol->string sym))))
-              (mk-concat-cfexp (list->vector (map (λ (rule) (mk-singleton-cfexp (symbol->string (pda-action-read (pda-rule-action rule))))) (accessor pair))))))
+      ;;Purpose: Determines if the push rule and pop rule are self-loops
+      (define (recursive? pair)
+        (and (eq? (pda-rule-source (inverse-pair-push pair))  (pda-rule-destin (inverse-pair-push pair)))
+             (cond [(and (list? (inverse-pair-pop pair))
+                         (inverse-pair-homogenous? pair))
+                    (eq? (pda-rule-source (first (inverse-pair-pop pair)))  (pda-rule-destin (first (inverse-pair-pop pair))))]
+                   [(list? (inverse-pair-pop pair))
+                    (andmap (λ (pop-rule)
+                              (eq? (pda-rule-source pop-rule) (pda-rule-destin pop-rule)))
+                            (inverse-pair-pop pair))]
+                 (eq? (pda-rule-source (inverse-pair-pop pair)) (pda-rule-destin (inverse-pair-pop pair))))))
+      ;;(X -> Y) inverse-pair -> cfe
+      ;;Purpose: Converts the given inverse-pair into a cfe
+      (define (rule->cfe accessor pair)
+        (if (pda-rule? (accessor pair))
+            (let ([sym (pda-action-read (pda-rule-action (accessor pair)))])
+              (if (eq? EMP sym)
+                  (mk-empty-cfexp)
+                  (mk-singleton-cfexp (symbol->string sym))))
+            (mk-concat-cfexp (list->vector (map (λ (rule)
+                                                  (mk-singleton-cfexp (symbol->string (pda-action-read (pda-rule-action rule)))))
+                                                (accessor pair))))))
       
       ;;inverse-pair (listof cfe-template) -> cfe
       ;;Purpose: Converts the given inverse pair into a cfe
       (define (inverse-pair->cfe inverse-pair middle)
-        (let* ([lang-box (box (void))]
-               [RHS (rule->cfe inverse-pair-push inverse-pair)]
-               [LHS (rule->cfe inverse-pair-pop inverse-pair)]
-               [middle (if (null? middle)
-                           (mk-empty-cfexp)
-                           (make-concat middle '()))])
+        (let ([middle (if (null? middle)
+                          (mk-empty-cfexp)
+                          (make-concat middle '()))])
           (if (recursive? inverse-pair)
+              (build-rec-cfe inverse-pair middle)
+              (build-non-rec-cfe inverse-pair middle))))
+
+      ;;(listof inverse-pair) (listof cfe-template) -> cfe
+      ;;Purpose: Converts the given inverse pairs into a cfe
+      (define (inverse-pairs->cfe inverse-pairs middle)
+        (let ([middle (if (null? middle)
+                          (mk-empty-cfexp)
+                          (make-concat middle '()))])
+          (if (andmap recursive? inverse-pairs)
+              (build-rec-cfes inverse-pairs middle)
+              (build-non-rec-cfes inverse-pairs middle))))
+      
+      (define (build-rec-cfe stack-pair middle)
+        (let ([lang-box (box (void))]
+              [RHS (rule->cfe inverse-pair-push stack-pair)]
+              [LHS (rule->cfe inverse-pair-pop stack-pair)])
+          (if (mk-union-cfexp? middle)
+              (let ([cfes (mk-union-cfexp-locfe middle)])
+                (mk-union-cfexp (vector-map (λ (cfe) (build-rec-cfe stack-pair cfe))  cfes)))
               (begin
-                (set-box! lang-box (mk-union-cfexp (if (list? middle)
-                                                       (vector-append (vector (mk-concat-cfexp (if (mk-concat-cfexp? LHS)
-                                                                                                   (vector-append (vector RHS lang-box) (mk-concat-cfexp-locfe LHS))
-                                                                                                   (vector RHS lang-box LHS))))
-                                                                              (list->vector middle))
-                                                       (vector (mk-concat-cfexp (if (mk-concat-cfexp? LHS)
-                                                                                (vector-append (vector RHS lang-box) (mk-concat-cfexp-locfe LHS))
-                                                                                (vector RHS lang-box LHS)))
-                                                           middle))))
-                lang-box)
+                (set-box! lang-box (mk-union-cfexp
+                                    (if (list? middle)
+                                        (vector-append (vector (mk-concat-cfexp
+                                                                (if (mk-concat-cfexp? LHS)
+                                                                    (vector-append (vector RHS lang-box)
+                                                                                   (mk-concat-cfexp-locfe LHS))
+                                                                    (vector RHS lang-box LHS))))
+                                                       (list->vector middle))
+                                        (vector (mk-concat-cfexp (if (mk-concat-cfexp? LHS)
+                                                                     (vector-append (vector RHS lang-box)
+                                                                                    (mk-concat-cfexp-locfe LHS))
+                                                                     (vector RHS lang-box LHS)))
+                                                middle))))
+                lang-box))))
+      
+      
+
+      (define (build-non-rec-cfe stack-pair middle)
+        (let ([RHS (rule->cfe inverse-pair-push stack-pair)]
+              [LHS (rule->cfe inverse-pair-pop stack-pair)])
+          (if (mk-union-cfexp? middle)
+              (let ([cfes (mk-union-cfexp-locfe middle)])
+                (mk-union-cfexp (vector-map (λ (cfe) (build-non-rec-cfe stack-pair cfe))  cfes)))
               (mk-concat-cfexp (if (mk-concat-cfexp? LHS)
                                    (vector-append (if (list? middle)
                                                       (list->vector (cons RHS middle))
@@ -1124,38 +1185,40 @@
                                        (list->vector (append (cons RHS middle) (list LHS)))
                                        (vector RHS middle LHS)))))))
 
-      ;;(listof inverse-pair) (listof cfe-template) -> cfe
-      ;;Purpose: Converts the given inverse pair into a cfe
-      (define (inverse-pairs->cfe inverse-pairs middle)
-        (let* ([lang-box (box (void))]
-               [RHS (map (λ (inverse-pair) (rule->cfe inverse-pair-push inverse-pair)) inverse-pairs)]
-               [LHS (map (λ (inverse-pair) (rule->cfe inverse-pair-pop inverse-pair)) inverse-pairs)]
-               [middle (if (null? middle)
-                           (mk-empty-cfexp)
-                           (make-concat middle '()))])
-          (if (andmap recursive? inverse-pairs)
-             (begin
-               (set-box! lang-box (mk-union-cfexp (list->vector
-                                                   (append (map (λ (RHS LHS)
-                                                                  (mk-concat-cfexp (if (mk-concat-cfexp? LHS)
-                                                                                       (vector-append (vector RHS lang-box) (mk-concat-cfexp-locfe LHS))
-                                                                                       (vector RHS lang-box LHS))))
-                                                                RHS
-                                                                LHS)
-                                                           (if (list? middle) middle (list middle))))))
-                lang-box)
-             (mk-union-cfexp (list->vector (map (λ (RHS LHS)
-                                                  (mk-concat-cfexp (if (mk-concat-cfexp? LHS)
-                                                                       (vector-append (if (list? middle)
-                                                                                          (list->vector (cons RHS middle))
-                                                                                          (vector RHS middle) )
-                                                                                      (mk-concat-cfexp-locfe LHS))
-                                                                       (if (list? middle)
-                                                                           (list->vector (append (cons RHS middle) (list LHS)))
-                                                                           (vector RHS middle LHS)))))
-                                                RHS
-                                                LHS))))))  
+      (define (build-non-rec-cfes stack-pairs middle)
+        (let* ([RHS (map (λ (inverse-pair) (rule->cfe inverse-pair-push inverse-pair)) stack-pairs)]
+               [LHS (map (λ (inverse-pair) (rule->cfe inverse-pair-pop inverse-pair)) stack-pairs)])
+          (mk-union-cfexp (list->vector (map (λ (RHS LHS)
+                                               (mk-concat-cfexp (if (mk-concat-cfexp? LHS)
+                                                                    (vector-append (if (list? middle)
+                                                                                       (list->vector (cons RHS middle))
+                                                                                       (vector RHS middle))
+                                                                                   (mk-concat-cfexp-locfe LHS))
+                                                                    (if (list? middle)
+                                                                    (list->vector (append (cons RHS middle) (list LHS)))
+                                                                    (vector RHS middle LHS)))))
+                                             RHS
+                                             LHS)))))
+      
 
+      (define (build-rec-cfes stack-pairs middle)
+        (let* ([lang-box (box (void))]
+               [RHS (map (λ (inverse-pair) (rule->cfe inverse-pair-push inverse-pair)) stack-pairs)]
+               [LHS (map (λ (inverse-pair) (rule->cfe inverse-pair-pop inverse-pair)) stack-pairs)])
+          (begin
+            (set-box! lang-box (mk-union-cfexp (list->vector
+                                                (append (map (λ (RHS LHS)
+                                                               (mk-concat-cfexp
+                                                                (if (mk-concat-cfexp? LHS)
+                                                                    (vector-append (vector RHS lang-box)
+                                                                                   (mk-concat-cfexp-locfe LHS))
+                                                                    (vector RHS lang-box LHS))))
+                                                             RHS
+                                                             LHS)
+                                                        (if (list? middle) middle (list middle))))))
+            lang-box)))
+      
+      
       ;;(listof cfe-template) (listof cfe) -> (listof cfe)
       ;;Purpose: Makes a concat cfexp
       (define (make-concat sub-lang acc)
@@ -1176,7 +1239,7 @@
                   [(and (is-length-one? stack-pairs) (list? (inverse-pair-pop (first stack-pairs))))
                    (search-for-after (struct-copy inverse-pair (first stack-pairs)
                                                   [pop (last (inverse-pair-pop (first stack-pairs)))]) sub-langs)]
-                  [(let ([pda-rules (map inverse-pair-pop stack-pairs)])
+                  [(let ([pda-rules (flatten (map inverse-pair-pop stack-pairs))])
                      (goes-to-same-state? pda-rules (pda-rule-destin (first pda-rules))))
                    (search-for-after (last stack-pairs) sub-langs)]
                   [else (error (format "i need to think: ~a" stack-pairs))]))
@@ -1189,7 +1252,7 @@
                   [(and (is-length-one? stack-pairs) (list? (inverse-pair-pop (first stack-pairs))))
                    (search-for-before (struct-copy inverse-pair (first stack-pairs)
                                                    [pop (first (inverse-pair-pop (first stack-pairs)))]) sub-langs (list))]
-                  [(let ([pda-rules (map inverse-pair-pop stack-pairs)])
+                  [(let ([pda-rules (flatten (map inverse-pair-pop stack-pairs))])
                      (goes-to-same-state? pda-rules (pda-rule-destin (first pda-rules))))
                    (search-for-before (first stack-pairs) sub-langs (list))]
                   [else (error (format "i need to think: ~a" stack-pairs))]))
@@ -1210,83 +1273,17 @@
                             [stack-pair (get-stack-oper inverse-pair-pop temp stack-pair)])
                        (cond [(null? stack-pair) (mk-concat-cfexp (vector middle (build-cfe temp)))]
                              [(is-length-one? stack-pair)
-                              (let* ([lang-box (box (void))]
-                                     [RHS (rule->cfe inverse-pair-push (first stack-pair))]
-                                     [LHS (rule->cfe inverse-pair-pop (first stack-pair))])
-                                (if (recursive? (first stack-pair))
-                                    (begin
-                                      (set-box! lang-box (mk-union-cfexp (vector (mk-concat-cfexp (if (mk-concat-cfexp? LHS)
-                                                                                                      (vector-append (vector RHS lang-box) (mk-concat-cfexp-locfe LHS))
-                                                                                                      (vector RHS lang-box LHS)))
-                                                                                 middle)))
-                                      lang-box)
-                                    (mk-concat-cfexp (if (mk-concat-cfexp? LHS)
-                                                         (vector-append (vector RHS middle) (mk-concat-cfexp-locfe LHS))
-                                                         (vector RHS middle LHS)))))]
-                             [else (let* ([lang-box (box (void))]
-                                          [RHS (map (λ (inverse-pair) (rule->cfe inverse-pair-push inverse-pair)) stack-pair)]
-                                          [LHS (map (λ (inverse-pair) (rule->cfe inverse-pair-pop inverse-pair)) stack-pair)])
-                                     (if (andmap recursive? stack-pair)
-                                         (begin
-                                           (set-box! lang-box (mk-union-cfexp (list->vector
-                                                                               (append (map (λ (RHS LHS)
-                                                                                              (mk-concat-cfexp (if (mk-concat-cfexp? LHS)
-                                                                                                                   (vector-append (vector RHS lang-box) (mk-concat-cfexp-locfe LHS))
-                                                                                                                   (vector RHS lang-box LHS))))
-                                                                                            RHS
-                                                                                            LHS)
-                                                                                       middle))))
-                                           lang-box)
-                                         (mk-union-cfexp (list->vector (map (λ (RHS LHS)
-                                                                              (mk-concat-cfexp (if (mk-concat-cfexp? LHS)
-                                                                                                   (vector-append (if (list? middle)
-                                                                                                                      (list->vector (cons RHS middle))
-                                                                                                                      (vector RHS middle) )
-                                                                                                                  (mk-concat-cfexp-locfe LHS))
-                                                                                                   (vector RHS middle LHS))))
-                                                                            RHS
-                                                                            LHS)))))]))]
+                              (if (recursive? (first stack-pair))
+                                  (build-rec-cfe (first stack-pair) middle)
+                                  (build-non-rec-cfe (first stack-pair) middle))]
+                             [else (if (andmap recursive? stack-pair)
+                                       (build-rec-cfes stack-pair middle)
+                                       (build-non-rec-cfes stack-pair middle))]))]
                     [else (mk-union-cfexp (list->vector (map (λ (temps) (make-concats-after (list temps) middle)) temps-after)))]))
 
             ;;(listof cfe-templates) inverse-pair -> cfe
             ;;Purpose: 
-            (define (make-concats-before temps-before stack-pair)
-
-              (define (build-rec-cfe stack-pair middle)
-                (let ([lang-box (box (void))]
-                      [RHS (rule->cfe inverse-pair-push stack-pair)]
-                      [LHS (rule->cfe inverse-pair-pop stack-pair)])
-                  (if (mk-union-cfexp? middle)
-                      (let ([cfes (mk-union-cfexp-locfe middle)])
-                        (mk-union-cfexp (vector-map (λ (cfe) (build-rec-cfe stack-pair cfe))  cfes)))
-                      (begin
-                        (set-box! lang-box (mk-union-cfexp (if (list? middle)
-                                                               (vector-append (vector (mk-concat-cfexp
-                                                                                       (if (mk-concat-cfexp? LHS)
-                                                                                           (vector-append (vector RHS lang-box) (mk-concat-cfexp-locfe LHS))
-                                                                                           (vector RHS lang-box LHS))))
-                                                                              (list->vector middle))
-                                                               (vector (mk-concat-cfexp (if (mk-concat-cfexp? LHS)
-                                                                                            (vector-append (vector RHS lang-box) (mk-concat-cfexp-locfe LHS))
-                                                                                            (vector RHS lang-box LHS)))
-                                                                       middle))))
-                        lang-box))))
-
-              (define (build-non-rec-cfe stack-pair middle)
-                (let ([RHS (rule->cfe inverse-pair-push stack-pair)]
-                      [LHS (rule->cfe inverse-pair-pop stack-pair)])
-                  (if (mk-union-cfexp? middle)
-                      (let ([cfes (mk-union-cfexp-locfe middle)])
-                        (mk-union-cfexp (vector-map (λ (cfe) (build-non-rec-cfe stack-pair cfe))  cfes)))
-                      (mk-concat-cfexp (if (mk-concat-cfexp? LHS)
-                                           (vector-append (if (list? middle)
-                                                              (list->vector (cons RHS middle))
-                                                              (vector RHS middle) )
-                                                          (mk-concat-cfexp-locfe LHS))
-                                           (if (list? middle)
-                                               (list->vector (append (cons RHS middle) (list LHS)))
-                                               (vector RHS middle LHS)))))))
-              
+            (define (make-concats-before temps-before stack-pair)                       
               (let ([middle (cond [(null? temps-before) (mk-empty-cfexp)]
                                   [(is-length-one? temps-before) (make-concat temps-before '())]
                                   [else (map (λ (middle) (make-concat (list middle) '())) temps-before)])])
@@ -1304,7 +1301,7 @@
                           (map (λ (cfe)
                                  (build-non-rec-cfe stack-pair cfe))
                                middle)))
-                         (build-non-rec-cfe stack-pair middle)))))
+                        (build-non-rec-cfe stack-pair middle)))))
             
             ;;cfe-info -> cfe
             ;;Purpose: 
@@ -1312,19 +1309,9 @@
               (let* ([temps-after (cfe-info-temp-after concat-temp)]
                      [temps-before (cfe-info-temp-before concat-temp)]
                      [stack-pair (cfe-info-stack-pair concat-temp)]
-                     [lang-box (box (void))]
-                     [RHS (rule->cfe inverse-pair-push stack-pair)]
-                     [LHS (rule->cfe inverse-pair-pop stack-pair)]
                      [middle (if (recursive? stack-pair)
-                                 (begin
-                                   (set-box! lang-box (mk-union-cfexp (vector (mk-concat-cfexp (if (mk-concat-cfexp? LHS)
-                                                                                                   (vector-append (vector RHS lang-box) (mk-concat-cfexp-locfe LHS))
-                                                                                                   (vector RHS lang-box LHS)))
-                                                                              (mk-empty-cfexp))))
-                                   lang-box)
-                                 (mk-concat-cfexp (if (mk-concat-cfexp? LHS)
-                                                      (vector-append (vector RHS) (mk-concat-cfexp-locfe LHS))
-                                                      (vector RHS LHS))))]
+                                 (build-rec-cfe stack-pair (mk-empty-cfexp))
+                                 (build-non-rec-cfe stack-pair (mk-empty-cfexp)))]
                      [cfes-after (make-concats-after temps-after middle)]
                      [cfes-before (make-concats-before temps-before stack-pair)])
                 cfes-before))
@@ -1341,7 +1328,7 @@
                 sub-langs
                 (let ([rule (extractor-prims (first sub-langs))])
                   (if (or (and (list? rule) (same-rules? inverse-pair-pop stack-pair rule))
-                          (same-rule? inverse-pair-pop stack-pair rule))
+                          (and (singleton? rule) (same-rule? inverse-pair-pop stack-pair rule)))
                       (rest sub-langs)
                       (search-for-after stack-pair (rest sub-langs))))))
 
@@ -1352,7 +1339,7 @@
                 sub-langs
                 (let ([rule (extractor-prims (first sub-langs))])
                   (if (or (and (list? rule) (same-rules? inverse-pair-pop stack-pair rule))
-                          (same-rule? inverse-pair-pop stack-pair rule))
+                          (and (singleton? rule) (same-rule? inverse-pair-pop stack-pair rule)))
                       (reverse acc)
                       (search-for-before stack-pair (rest sub-langs) (cons (first sub-langs) acc))))))
                     
@@ -1362,7 +1349,7 @@
                                                        (search-for-before (first stack-pair) sub-lang (list)))
                                     acc))]
                 [(or (and (is-length-one? stack-pair) (list? (inverse-pair-pop (first stack-pair))))
-                     (let ([pda-rules (map inverse-pair-pop stack-pair)])
+                     (let ([pda-rules (flatten (map inverse-pair-pop stack-pair))]) ;flatten might be an issue
                        (goes-to-same-state? pda-rules (pda-rule-destin (first pda-rules)))))
                  (make-concat (get-temps-after sub-lang stack-pair)
                               (cons (inverse-pairs->cfe stack-pair
@@ -1417,15 +1404,15 @@
                         sub-langs
                         sublang-stack-pairs)
                 (set-member? (list->set (pda-getfinals P)) (pda-getstart P)))
-          (mk-empty-cfexp)]
+           (mk-empty-cfexp)]
           [else (build-cfe sub-langs sublang-stack-pairs)])
     
     
     #;(values 
-            stack-operations
-            sub-langs
-            sublang-stack-pairs
-              #;(build-cfe sub-langs sublang-stack-pairs))))
+       stack-operations
+       sub-langs
+       sublang-stack-pairs
+       #;(build-cfe sub-langs sublang-stack-pairs))))
 
 
 ;;cfe -> pda
