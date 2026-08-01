@@ -13,8 +13,6 @@
 
 ;;PDA->CFE
 
-
-
 (define anbkckdn (make-unchecked-ndpda '(S D M C)
                                        '(a b c d)
                                        '(n k)
@@ -254,7 +252,7 @@
 
 (define LOPDA   (list Gina-aˆnbˆn Gina-aˆnbˆn* Gina-AiBj2 A* A*2 A3 marco-anbncndn Gina-wcwˆr Gina-palindrome-pda Gina-AiBj Gina-A^nB^mA^n Gina-a^mb^nc^pd^q Gina-a^mb^nc^p anbkckdn j))
 
-(define working (list Gina-aˆnbˆn Gina-aˆnbˆn*            A*     A3 marco-anbncndn Gina-wcwˆr Gina-palindrome-pda           Gina-A^nB^mA^n                   Gina-a^mb^nc^p anbkckdn j aibj))
+(define working (list Gina-aˆnbˆn Gina-aˆnbˆn* Gina-AiBj2 A*     A3 marco-anbncndn Gina-wcwˆr Gina-palindrome-pda Gina-AiBj Gina-A^nB^mA^n                   Gina-a^mb^nc^p anbkckdn j aibj))
 #;(sm-graph Gina-aˆnbˆn)
 
 ;;(pda->cfe Gina-aˆnbˆn)

@@ -854,7 +854,7 @@
   ;;Purpose: Pairs all push operations with pop operations
   (define (pair-stack-operations reachables-ht rules)
     ;; inverse-pair (listof pda-rule) (listof inverse-pair) -> (listof inverse-pair)
-    ;;Purpose: 
+    ;;Purpose: Creates completed inverse-pairs where every push-rule is matched with it's corresponding pop-rule
     (define (pair-operations-helper push-pair pop-rules acc)
       ;;stack (listof symbol) -> Boolean
       ;;Purpose: Determines if the give (listof symbol) and pop the elements off the stack
@@ -862,7 +862,7 @@
         (and (= (set-count (list->set pop)) 1)
              (andmap (λ (x) (member x stack)) pop)))
       ;;inverse-pair stack (listof pda-rule) -> inverse-pair
-      ;;Purpose:
+      ;;Purpose: Matches the pop operations to the given push rule 
       (define (match-operations push-pair stack pop-rules)
         ;;stack (listof symbol)-> Boolean?
         ;;Purpose: Determines if the given stack can have the given elements popped off
@@ -974,6 +974,8 @@
                                      (cons (balance-stack push-pair (first pop-rules)) acc))]
             [else (pair-operations-helper push-pair (rest pop-rules) acc)]))
 
+    ;;pda-rule -> inverse-pair
+    ;;Purpose: Makes an inverse-pair from the corresponding push-rule
     (define (make-inverse-pair push-rule)
       (inverse-pair push-rule
                     '()
@@ -1081,7 +1083,7 @@
       ;;Purpose: Determines if the given the cfe-template is a member of the given (listof pda-rule)
       ;;Note: For union cfe-templates
       (define (members-of? lang stack-opers)
-        (let ([rule (extractor-prims lang)])
+        (let ([rule (flatten (extractor-prims lang))])
           (ormap (λ (rule) (member-of? rule stack-opers))
                  rule)))
 
@@ -1097,7 +1099,7 @@
       ;;Purpose: Returns the inverse pairs applicable to given cfe-template
       ;;Note: For union cfe-templates
       (define (get-stack-opers accessor lang stack-opers)
-        (let ([rule (extractor-prims lang)])
+        (let ([rule (flatten (extractor-prims lang))])
           (flatten (map (λ (rule) (get-stack-oper accessor rule stack-opers))
                         rule))))
 
@@ -1140,11 +1142,22 @@
       (define (inverse-pairs->cfe inverse-pairs middle)
         (let ([middle (if (null? middle)
                           (mk-empty-cfexp)
-                          (make-concat middle '()))])
-          (if (andmap recursive? inverse-pairs)
-              (build-rec-cfes inverse-pairs middle)
-              (build-non-rec-cfes inverse-pairs middle))))
-      
+                          (make-concat middle '()))]
+              [recursive-inverse-pairs (filter recursive? inverse-pairs)]
+              [non-recursive-inverse-pairs (filter-not recursive? inverse-pairs)])
+          (cond [(and (not (null? recursive-inverse-pairs))
+                      (not (null? non-recursive-inverse-pairs)))
+                 (mk-union-cfexp (vector (build-rec-cfes recursive-inverse-pairs middle)
+                                         (build-non-rec-cfes non-recursive-inverse-pairs middle)))]
+                [(and (null? recursive-inverse-pairs)
+                      (not (null? non-recursive-inverse-pairs)))
+                 (build-non-rec-cfes inverse-pairs middle)]
+                [(and (not (null? recursive-inverse-pairs))
+                      (null? non-recursive-inverse-pairs))
+                 (build-rec-cfes inverse-pairs middle)])))
+
+      ;;inverse-pair cfe -> cfe
+      ;;Purpose: Builds a recursive cfe using middle as the base case
       (define (build-rec-cfe stack-pair middle)
         (let ([lang-box (box (void))]
               [RHS (rule->cfe inverse-pair-push stack-pair)]
@@ -1167,9 +1180,9 @@
                                                                      (vector RHS lang-box LHS)))
                                                 middle))))
                 lang-box))))
-      
-      
-
+           
+      ;;inverse-pair cfe -> cfe
+      ;;Purpose: Builds a non-recursive cfe 
       (define (build-non-rec-cfe stack-pair middle)
         (let ([RHS (rule->cfe inverse-pair-push stack-pair)]
               [LHS (rule->cfe inverse-pair-pop stack-pair)])
@@ -1185,6 +1198,9 @@
                                        (list->vector (append (cons RHS middle) (list LHS)))
                                        (vector RHS middle LHS)))))))
 
+      ;;(listof inverse-pair) cfe -> cfe
+      ;;Purpose: Builds a non-recursive cfe
+      ;;Note: Used when there are multiple rules on the same states
       (define (build-non-rec-cfes stack-pairs middle)
         (let* ([RHS (map (λ (inverse-pair) (rule->cfe inverse-pair-push inverse-pair)) stack-pairs)]
                [LHS (map (λ (inverse-pair) (rule->cfe inverse-pair-pop inverse-pair)) stack-pairs)])
@@ -1199,8 +1215,10 @@
                                                                     (vector RHS middle LHS)))))
                                              RHS
                                              LHS)))))
-      
 
+      ;;(listof inverse-pair) cfe -> cfe
+      ;;Purpose: Builds a recursive cfe using middle as the base case
+      ;;Note: Used when there are multiple rules on the same states
       (define (build-rec-cfes stack-pairs middle)
         (let* ([lang-box (box (void))]
                [RHS (map (λ (inverse-pair) (rule->cfe inverse-pair-push inverse-pair)) stack-pairs)]
@@ -1224,7 +1242,7 @@
       (define (make-concat sub-lang acc)
 
         ;;(listof cfe-template) (listof stack-pair) (listof cfe) -> (listof cfe)
-        ;;Purpose:
+        ;;Purpose: Builds a cfexp
         (define (finish-concat sub-lang stack-pair acc)
           ;;(listof pda-rule) state -> Boolean
           ;;Purpose: Determines if the given pda-rules goes to the same state
@@ -1232,7 +1250,7 @@
             (andmap (λ (rule) (eq? state (pda-rule-destin rule))) pda-rules))
 
           ;;(listof cfe-template) (listof inverse-pair) -> (listof cfe-template)
-          ;;Purpose:
+          ;;Purpose: Returns all of the cfe-templates AFTER the given pop rule from the inverse pair
           (define (get-temps-after sub-langs stack-pairs)
             (cond [(and (is-length-one? stack-pairs) (singleton? (inverse-pair-pop (first stack-pairs))))
                    (search-for-after (first stack-pairs) sub-langs)]
@@ -1245,7 +1263,7 @@
                   [else (error (format "i need to think: ~a" stack-pairs))]))
 
           ;;(listof cfe-template) (listof inverse-pair) -> (listof cfe-template)
-          ;;Purpose:
+          ;;Purpose: Returns all of the cfe-templates BEFORE the given pop rule from the inverse pair
           (define (get-temps-before sub-langs stack-pairs)
             (cond [(and (is-length-one? stack-pairs) (singleton? (inverse-pair-pop (first stack-pairs))))
                    (search-for-before (first stack-pairs) sub-langs (list))]
@@ -1257,15 +1275,20 @@
                    (search-for-before (first stack-pairs) sub-langs (list))]
                   [else (error (format "i need to think: ~a" stack-pairs))]))
 
-          
+          #|
+          cfe-info is a struct outline how to build a concat-cfexp
+          temp-after  | the cfe-templates after the pop rule of the stack pair  => (listof cfe-template)
+          temp-before | the cfe-templates before the pop rule of the stack pair => (listof cfe-template)
+          stack-pair  | the stack-pair to used to build the concat-cfexp => inverse-pair
+          |#
           (struct cfe-info (temp-after temp-before stack-pair) #:transparent)
 
           ;;(listof cfe-template) (listof cfe-template) (listof inverse-pair) (listof cfe-template) -> cfe
-          ;;Purpose:
+          ;;Purpose: Makes many concat-cfexp using the given (listof cfe-template) (listof cfe-template) (listof inverse-pair)
           (define (make-concats temps-before temps-after stack-pair)
 
             ;;(listof cfe-template) cfe -> cfe
-            ;;Purpose:
+            ;;Purpose: Makes cfexps from the templates after the given rule
             (define (make-concats-after temps-after middle)
               (cond [(null? temps-after) middle]
                     [(is-length-one? temps-after)
@@ -1282,7 +1305,7 @@
                     [else (mk-union-cfexp (list->vector (map (λ (temps) (make-concats-after (list temps) middle)) temps-after)))]))
 
             ;;(listof cfe-templates) inverse-pair -> cfe
-            ;;Purpose: 
+            ;;Purpose: Makes cfexps from the templates before 
             (define (make-concats-before temps-before stack-pair)                       
               (let ([middle (cond [(null? temps-before) (mk-empty-cfexp)]
                                   [(is-length-one? temps-before) (make-concat temps-before '())]
@@ -1304,7 +1327,7 @@
                         (build-non-rec-cfe stack-pair middle)))))
             
             ;;cfe-info -> cfe
-            ;;Purpose: 
+            ;;Purpose: Converts concat-templates to a cfexp
             (define (concat-temps->cfe concat-temp)
               (let* ([temps-after (cfe-info-temp-after concat-temp)]
                      [temps-before (cfe-info-temp-before concat-temp)]
@@ -1322,7 +1345,7 @@
               (mk-union-cfexp (list->vector (map concat-temps->cfe concat-temps)))))
 
           ;;inverse-pair (listof cfe-template) -> (listof cfe-template)
-          ;;Purpose:
+          ;;Purpose: Returns the (listof cfe-template) that comes AFTER the inverse-pair pop rule
           (define (search-for-after stack-pair sub-langs)
             (if (null? sub-langs)
                 sub-langs
@@ -1333,11 +1356,12 @@
                       (search-for-after stack-pair (rest sub-langs))))))
 
           ;;inverse-pair (listof cfe-template) (listof cfe-template) -> (listof cfe-template)
-          ;;Purpose:
+          ;;Purpose: Returns the (listof cfe-template) that comes BEFORE the inverse-pair pop rule
+          ;;ACC: The cfe-template found before the inverse-pair pop rule in reverse order
           (define (search-for-before stack-pair sub-langs acc)
             (if (null? sub-langs)
                 sub-langs
-                (let ([rule (extractor-prims (first sub-langs))])
+                (let ([rule (flatten (extractor-prims (first sub-langs)))])
                   (if (or (and (list? rule) (same-rules? inverse-pair-pop stack-pair rule))
                           (and (singleton? rule) (same-rule? inverse-pair-pop stack-pair rule)))
                       (reverse acc)
