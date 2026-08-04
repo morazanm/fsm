@@ -255,11 +255,16 @@
                               (sm-start a-machine)
                               (hash rule 1))))
   #;(map (lambda (x) (path-with-hash-path x)) (find-paths-helper))
-  (treelist-map (find-paths-helper)
-                (λ (x) (path-with-hash (reverse (path-with-hash-config-path x))
+  #;(treelist-map (find-paths-helper)
+                (λ (x) (path-with-hash (reverse (path-with-hash-config-path x))  ;<- NEED THIS IF USING SPLIT-PATHS
                                        (path-with-hash-word-of-path x)
                                        (path-with-hash-path-starting-state x)
-                                       (path-with-hash-hash x)))))
+                                       (path-with-hash-hash x))))
+  (treelist-map (find-paths-helper)
+                (λ (x) (path-with-hash (path-with-hash-config-path x) 
+                                       (reverse (path-with-hash-word-of-path x))
+                                       (path-with-hash-path-starting-state x)
+                                       (path-with-hash-hash x))))) ;<- NEED THIS IF USING original version of sm-test-invs 
 
 
 
@@ -350,15 +355,19 @@
                                        p))
   (filter (λ (p) (has-only? p states)) paths))
 
-;;(sm-test-invs-fsa a-machine rep-limit nt-tested inv)
+
+;; the difference with this verision of sm-test-invs and the original one is that this one tests the inv with words that reach final states
+
 
 ;; machine . (list state (word -> boolean)) -> (listof (listof symbol))
 ;; Purpose: To return a list of the invarients that don't hold and the words that cause it not to hold
-(define (sm-test-invs-fsa a-machine rep-limit nt-tested a-loi)
-  (define a-loi-hash (for/hash ([inv (in-list a-loi)])
+(define (sm-test-invs-fsa a-machine rep-limit nt-tested #;a-loi inv)
+  #;(define a-loi-hash (for/hash ([inv (in-list a-loi)])
                        (values (car inv) (cadr inv))))
-
-  (define machine-paths (find-paths a-machine rep-limit))
+  (define finals-set (list->seteq (fsa-getfinals a-machine)))
+  (define machine-paths (treelist-filter (λ (x) (set-member? finals-set (first (first (path-with-hash-config-path x)))))
+                                         (find-paths a-machine rep-limit)))
+  #;(define machine-paths (find-paths a-machine rep-limit))
   #;(define machine-paths (find-paths a-machine REPETITION-LIMIT)) 
 
   
@@ -382,19 +391,18 @@
   ;; Accumulator Invarient: accum = list of lists of words that cause the invarient not to hold
   ;;                                & the state that it doesn't hold for
 
-  (define (always-true x)
-    #t)
-  (define (always-true-thunk)
-    always-true)
+
   
   (define (sm-test-invs-helper all-paths)
-    (for/list ([path (in-list all-paths)]
-               #:do [(define cache (caddr (car path)))
-                     (define a-config (list (word-of-path path) cache))]
-               #:when (not ((hash-ref a-loi-hash cache always-true-thunk) (car a-config))))
-      a-config))
+    (for/list ([path (in-treelist all-paths)]
+               #:do [;(define cache (caddr (car path)))
+                     #;(define a-config (list (word-of-path path) cache))
+                     (define a-config (list nt-tested (path-with-hash-word-of-path path)))]
+               #:when (not (inv (second a-config))))
+      #;a-config
+      (second a-config)))
   
-  (if (null? a-loi)
+  #;(if (null? a-loi)
       '()
       (let [(start-pair (hash-ref a-loi-hash (sm-start a-machine) #f))]
         (if (or
@@ -402,24 +410,26 @@
              (start-pair '())) ;; <- testing if empty holds for starting state's inv 
             (sm-test-invs-helper all-paths-new-machine)
             (cons (list '() (sm-start a-machine))
-                  (sm-test-invs-helper all-paths-new-machine))))))
+                  (sm-test-invs-helper all-paths-new-machine)))))
+  (list nt-tested (sm-test-invs-helper all-paths-new-machine)))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; this is the old one
-#;(define (rg-test-invs a-rg a-loi)
-    (define state-fsas
-      (map (lambda (start) (list start (rg->state-ndfa a-rg start))) (rg-getnts a-rg)))
-     (displayln (map (λ (x) (sm-graph (second x))) state-fsas))
+(define (rg-test-invs-andres a-rg a-loi)
+  (define inv-nts (map (λ (inv-pair) (first inv-pair)) a-loi)) ;; <- all nts that need to be tested
+  (define state-fsas
+    (map (lambda (start) (list start (rg->state-ndfa a-rg start))) (filter (λ (nt) (member nt inv-nts))  (rg-getnts a-rg))))
+     ;(displayln (map (λ (x) (sm-graph (second x))) state-fsas))
     (define (test-rgs rg-lst)
       (cond [(null? rg-lst)
              '()]
             [else
              (define rg-pair (car rg-lst))
-             (cons (sm-test-invs-fsa-spooky (cadr rg-pair) 1 (car rg-pair) (cadr (assoc (car rg-pair) a-loi)))
+             (cons (sm-test-invs-fsa (cadr rg-pair) 1 (car rg-pair) (cadr (assoc (car rg-pair) a-loi)))
                    (test-rgs (cdr rg-lst)))]))
-    (test-rgs state-fsas))
+    (filter (λ (x) (not (empty? (second x)))) (test-rgs state-fsas)))
 
 
 ;; this is the new one 
@@ -458,6 +468,13 @@
     test-result)
   )
 
+
+
+
+;; syntactic categories
+;;  S = words that start with aa, starting nonterminal
+;;  A = words that start with a
+;;  B = words that start with either a or b
 (define rg-STARTS-WITH-aa (make-rg '(S A B) 
                                    '(a b) 
                                    '((S -> aA)
@@ -468,9 +485,46 @@
                                      (B -> b)
                                      (B -> bB))
                                    'S))
-(time (rg-test-invs rg-STARTS-WITH-aa #;2 (list (list 'S (lambda (x) #f))
+
+(define rg-STARTS-WITH-aa-buggy (make-rg '(S B) 
+                                   '(a b) 
+                                   '((S -> aB)
+                                     (B -> a)
+                                     (B -> aB)
+                                     (B -> b)
+                                     (B -> bB))
+                                   'S))
+
+;(check-derive? rg-STARTS-WITH-aa-buggy '(a a) '(a a b a) '(a a a) '(a a b b b))
+;(check-not-derive? rg-STARTS-WITH-aa-buggy '(b) '(b a) '(a))
+
+;; invariants
+
+;; word -> boolean
+;;purpose: to determine if a would ought to be generated by S
+(define (S-INV w)
+  (<= 2 (length (takef w (λ (x) (eq? 'a x))))))
+
+;; word -> boolean
+;;purpose: to determine if a would ought to be generated by A
+(define (A-INV w)
+  (<= 1 (length (takef w (λ (x) (eq? 'a x))))))
+
+;; word -> boolean
+;;purpose: to determine if a would ought to be generated by B
+(define (B-INV w)
+  (equal? w (takef w (λ (x) (or (eq? 'b x)
+                                (eq? 'a x))))))
+
+  
+(rg-test-invs-andres rg-STARTS-WITH-aa #;2 (list (list 'S S-INV #;(lambda (x) #t))
+                                          (list 'A A-INV #;(lambda (x) #t))
+                                          (list 'B B-INV #;(lambda (x) #t))))
+
+
+(rg-test-invs-andres rg-STARTS-WITH-aa #;2 (list (list 'S (lambda (x) #f))
                                           (list 'A (lambda (x) #f))
-                                          (list 'B (lambda (x) #f)))))
+                                          (list 'B (lambda (x) #f))))
 
 
 
@@ -481,7 +535,6 @@
                                      (A -> a)
                                      (A -> aA))
                                    'S))
-
 
 
 
@@ -540,15 +593,3 @@
       (sort-words-helper states-&-empty-low '()))
 
     (sort-words results))
-
-
-
-
-
-
-
-
-
-
-
-
