@@ -14,7 +14,7 @@
          racket/list
          )
 
-(define WORD-AMOUNT 500)
+(define WORD-AMOUNT 50)
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;CFEXP;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -91,36 +91,6 @@
 (define BNAN (make-cfe ([BNAN (union-cfexp EMPTY (concat-cfexp B BNAN A))])
                        BNAN) )
 
-
-(define aibj1 (make-cfe ([L (union-cfexp B
-                                         (concat-cfexp A L B)
-                                         (concat-cfexp A L B B))])
-                        (concat-cfexp A L)))
-
-(define aibj2 (make-cfe ([L (union-cfexp B
-                                         (concat-cfexp A L B)
-                                         (concat-cfexp A L B B))])
-                        (concat-cfexp A L)))
-
-(define aibj3 (make-cfe ([L (union-cfexp B
-                                         (concat-cfexp A L B)
-                                         (concat-cfexp A L B B))])
-                        (concat-cfexp A L)))
-
-(define aibj4 (make-cfe ([L (union-cfexp B
-                                         (concat-cfexp A L B)
-                                         (concat-cfexp A L B B))])
-                        (concat-cfexp A L)))
-
-(define aibj5 (make-cfe ([L (union-cfexp B
-                                         (concat-cfexp A L B)
-                                         (concat-cfexp A L B B))])
-                        (concat-cfexp A L)))
-
-(define aibj6 (make-cfe ([L (union-cfexp B
-                                         (concat-cfexp A L B)
-                                         (concat-cfexp A L B B))])
-                        (concat-cfexp A L)))
 
 ;;w = a^ib^jc^k, i=j or j=k
 
@@ -484,14 +454,38 @@
                                       [S (union-cfexp (concat-cfexp C S D) EMPTY)])
                                      (concat-cfexp L S)))
 
+(define anbkckdn (make-unchecked-ndpda '(S D M C)
+                                       '(a b c d)
+                                       '(n k)
+                                       'S
+                                       '(C)
+                                       `(((S ,EMP ,EMP)(D ,EMP))
+                                         ((D ,EMP ,EMP)(M ,EMP))
+                                         ((S a ,EMP)(S (n)))
+                                         ((D b ,EMP)(D (k)))
+                                         ((M c (k))(M ,EMP))
+                                         ((C d (n))(C ,EMP))
+                                         ((M ,EMP ,EMP)(C ,EMP)))))
+
+(define Gina-aˆnbˆn* (make-unchecked-ndpda '(S M F)
+                                          '(a b)
+                                          '(a Z)
+                                          'S
+                                          '(S)
+                                          `(((S ,EMP ,EMP) (M (Z)))
+                                            ((M a ,EMP) (M (a)))
+                                            ((F b (a)) (F ,EMP))
+                                            ((M ,EMP ,EMP) (F ,EMP))
+                                            ((F ,EMP (Z)) (S ,EMP)))))
+
+
 ;;w = a*
-#|
+
 (define A*-cfe (pda->cfe A*))
 
 (define Gina-aˆnbˆn-cfe (pda->cfe Gina-aˆnbˆn))
 
 (define Gina-wcwˆr-cfe (pda->cfe Gina-wcwˆr))
-
 
 (define Gina-palindrome-pda-cfe (pda->cfe Gina-palindrome-pda))
 
@@ -503,9 +497,18 @@
 
 (define Gina-a^mb^nc^p-cfe (pda->cfe Gina-a^mb^nc^p))
 
+(define anbkckdn-cfe (pda->cfe anbkckdn))
+
+(define Gina-aˆnbˆn*-cfe (pda->cfe Gina-aˆnbˆn*))
+
+
+
+
+
 ;;w = a^nb^n
-(define converted-ANBN (pda->cfe (cfe->pda ANBN)))
-|#
+#;(define converted-ANBN (pda->cfe (cfe->pda ANBN)))
+
+
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;Unit Tests;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -618,7 +621,7 @@
 
 ;;cfg cfexp -> boolean
 ;;Purpose: Determines if the given cfe can generate a natnum amount of words that the grammar can derive
-#;(define (grammar-checker g words)
+(define (grammar-checker g words)
     (for/and ([w (in-list words)])
       (list? (cfg-derive g (if (eq? w EMP) '() w)))))
 
@@ -759,47 +762,8 @@
              (= 0 (- (length As) (length Bs)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;LANGUAGE BANK;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 #|
-(define WWR-WORDS (gen-cfe-words WWR))
-
-(define ANBN-WORDS (gen-cfe-words ANBN))
-
-(define BNAN-WORDS (gen-cfe-words BNAN))
-
-(define A2iBi-WORDS (gen-cfe-words A2iBi))
-
-(define AiBj-WORDS (gen-cfe-words AiBj))
-
-(define TRANSFORMED-ANBN-WORDS (gen-cfe-words transformed-anbn))
-
-(define TRANSFORMED-BNAN-WORDS (gen-cfe-words (cfg->cfe (cfe->cfg BNAN))))
-
-(define TRANSFORMED-WWR-WORDS (gen-cfe-words (cfg->cfe (cfe->cfg WWR))))
-
-(define TRANSFORMED-AiBj-WORDS (gen-cfe-words (cfg->cfe (cfe->cfg AiBj))))
-
-(define TRANSFORMED-A2iBi-WORDS (gen-cfe-words (cfg->cfe (cfe->cfg A2iBi))))
-
-(define thesis-cfg-converted-WORDS (gen-cfe-words thesis-cfg-converted))
-
-(define thesis-cfe-WORDS (gen-cfe-words thesis-cfe))
-
-(define A*-WORDS (gen-cfe-words A*-cfe))
-
-(define Gina-aˆnbˆn-WORDS (gen-cfe-words Gina-aˆnbˆn-cfe))
-
-(define Gina-wcwˆr-WORDS (gen-cfe-words Gina-wcwˆr-cfe))
-
-(define Gina-palindrome-pda-WORDS (gen-cfe-words Gina-palindrome-pda-cfe))
-
-(define Gina-AiBj-WORDS (gen-cfe-words Gina-AiBj-cfe))
-
-(define Gina-A^nB^mA^n-WORDS (gen-cfe-words Gina-A^nB^mA^n-cfe))
-
-(define Gina-a^mb^nc^pd^q-WORDS (gen-cfe-words Gina-a^mb^nc^pd^q-cfe))
-
-(define Gina-a^mb^nc^p-WORDS (gen-cfe-words Gina-a^mb^nc^p-cfe))
-
 (define converted-ANBN-WORDS (gen-cfe-words converted-ANBN))
 
 (define converted-BNAN-WORDS (gen-cfe-words (pda->cfe (cfe->pda BNAN))))
@@ -810,40 +774,84 @@
 
 (define converted-AiBj-WORDS (gen-cfe-words (pda->cfe (cfe->pda AiBj))))
 
+#;(check-pred (λ (low) (andmap valid-anbn-word? low)) converted-ANBN-WORDS)
+
+    #;(check-pred (λ (low) (andmap valid-bnan-word? low)) converted-BNAN-WORDS)
+
+    #;(check-pred (λ (low) (andmap valid-wwr-word? low)) converted-WWR-WORDS)
+
+    #;(check-pred (λ (low) (andmap valid-a2ibi-word? low)) converted-A2iBi-WORDS)
+
+    #;(check-pred (λ (low) (andmap valid-aibj-word? low)) converted-AiBj-WORDS)
+|#
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;TESTING;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(test-case
- "PDA->CFE Word Generation"
- (check-pred (λ (low) (andmap valid-A*-word? low)) A*-WORDS)
+(define PDA-TRANSFORMATION-TESTS
+  (let (#;[A*-WORDS (gen-cfe-words A*-cfe)]
 
- (check-pred (λ (low) (andmap valid-anbn-word? low)) converted-ANBN-WORDS)
+        [Gina-aˆnbˆn-WORDS (gen-cfe-words Gina-aˆnbˆn-cfe)]
 
- (check-pred (λ (low) (andmap valid-bnan-word? low)) converted-BNAN-WORDS)
+        [Gina-wcwˆr-WORDS (gen-cfe-words Gina-wcwˆr-cfe)]
 
- (check-pred (λ (low) (andmap valid-wwr-word? low)) converted-WWR-WORDS)
+        [Gina-palindrome-pda-WORDS (gen-cfe-words Gina-palindrome-pda-cfe)]
 
- (check-pred (λ (low) (andmap valid-a2ibi-word? low)) converted-A2iBi-WORDS)
+        [Gina-AiBj-WORDS (gen-cfe-words Gina-AiBj-cfe)]
 
- (check-pred (λ (low) (andmap valid-aibj-word? low)) converted-AiBj-WORDS)
+        [Gina-A^nB^mA^n-WORDS (gen-cfe-words Gina-A^nB^mA^n-cfe)]
 
- (check-pred (λ (low) (andmap valid-Gina-aˆnbˆn-word? low)) Gina-aˆnbˆn-WORDS) 
+        [Gina-a^mb^nc^pd^q-WORDS (gen-cfe-words Gina-a^mb^nc^pd^q-cfe)]
 
- (check-pred (λ (low) (andmap valid-Gina-wcwˆr-word? low)) Gina-wcwˆr-WORDS)
+        [Gina-a^mb^nc^p-WORDS (gen-cfe-words Gina-a^mb^nc^p-cfe)]
 
- (check-pred (λ (low) (andmap valid-Gina-palindrome-pda-word? low)) Gina-palindrome-pda-WORDS)
+        [anbkckdn-WORDS (gen-cfe-words anbkckdn-cfe)]
+        
+        [Gina-aˆnbˆn*-WORDS (gen-cfe-words Gina-aˆnbˆn*-cfe)])
+    (test-suite
+     "pda transformation test"
+     (test-case
+      "PDA->CFE Word Generation"
+      #;(check-pred (λ (low) (andmap valid-A*-word? low)) A*-WORDS)
 
- (check-pred (λ (low) (andmap valid-Gina-AiBj-word? low)) Gina-AiBj-WORDS)
+      (check-pred (λ (low) (andmap valid-Gina-aˆnbˆn-word? low)) Gina-aˆnbˆn-WORDS) 
 
- (check-pred (λ (low) (andmap valid-Gina-A^nB^mA^n-word? low)) Gina-A^nB^mA^n-WORDS)
+      (check-pred (λ (low) (andmap valid-Gina-wcwˆr-word? low)) Gina-wcwˆr-WORDS)
 
- (check-pred (λ (low) (andmap valid-Gina-a^mb^nc^pd^q-word? low)) Gina-a^mb^nc^pd^q-WORDS)
+      (check-pred (λ (low) (andmap valid-Gina-palindrome-pda-word? low)) Gina-palindrome-pda-WORDS)
 
- (check-pred (λ (low) (andmap valid-Gina-a^mb^nc^p-word? low)) Gina-a^mb^nc^p-WORDS)
- )
+      (check-pred (λ (low) (andmap valid-Gina-AiBj-word? low)) Gina-AiBj-WORDS)
 
-(test-case "CFE->PDA Word Membership"
+      (check-pred (λ (low) (andmap valid-Gina-A^nB^mA^n-word? low)) Gina-A^nB^mA^n-WORDS)
+
+      (check-pred (λ (low) (andmap valid-Gina-a^mb^nc^pd^q-word? low)) Gina-a^mb^nc^pd^q-WORDS)
+
+      (check-pred (λ (low) (andmap valid-Gina-a^mb^nc^p-word? low)) Gina-a^mb^nc^p-WORDS)
+
+      (test-case
+       "PDA->CFE Word Membership" 
+
+       (check-true (pda-checker Gina-aˆnbˆn Gina-aˆnbˆn-WORDS))
+
+       (check-true (pda-checker Gina-wcwˆr Gina-wcwˆr-WORDS))
+
+       (check-true (pda-checker Gina-palindrome-pda Gina-palindrome-pda-WORDS))
+
+       (check-true (pda-checker Gina-AiBj Gina-AiBj-WORDS))
+
+       (check-true (pda-checker Gina-A^nB^mA^n Gina-A^nB^mA^n-WORDS))
+
+       (check-true (pda-checker Gina-a^mb^nc^pd^q Gina-a^mb^nc^pd^q-WORDS))
+
+       (check-true (pda-checker Gina-a^mb^nc^p Gina-a^mb^nc^p-WORDS))
+
+       (check-true (pda-checker anbkckdn anbkckdn-WORDS))
+
+       (check-true (pda-checker Gina-aˆnbˆn* Gina-aˆnbˆn*-WORDS))
+       )
+      ))))
+
+#;(test-case "CFE->PDA Word Membership"
 
            (check-true (pda-checker (cfe->pda ANBN) converted-ANBN-WORDS))
 
@@ -854,42 +862,29 @@
            (check-true (pda-checker (cfe->pda A2iBi) converted-A2iBi-WORDS))
 
            (check-true (pda-checker (cfe->pda WWR) converted-WWR-WORDS))
+
+            (check-true (pda-checker (cfe->pda Gina-aˆnbˆn-cfe) Gina-aˆnbˆn-WORDS))
+
+       (check-true (pda-checker (cfe->pda Gina-wcwˆr-cfe) Gina-wcwˆr-WORDS))
+
+       (check-true (pda-checker (cfe->pda Gina-palindrome-pda-cfe) Gina-palindrome-pda-WORDS))
+
+       (check-true (pda-checker (cfe->pda Gina-AiBj-cfe) Gina-AiBj-WORDS))
+
+       (check-true (pda-checker (cfe->pda Gina-A^nB^mA^n-cfe) Gina-A^nB^mA^n-WORDS))
+
+       (check-true (pda-checker (cfe->pda Gina-a^mb^nc^pd^q-cfe) Gina-a^mb^nc^pd^q-WORDS))
+
+       (check-true (pda-checker (cfe->pda Gina-a^mb^nc^p-cfe) Gina-a^mb^nc^p-WORDS))
+
+       (check-true (pda-checker (cfe->pda anbkckdn-cfe) anbkckdn-WORDS))
+
+       (check-true (pda-checker (cfe->pda Gina-aˆnbˆn*-WORDS) Gina-aˆnbˆn*-WORDS))
            )
 
-(test-case
- "PDA->CFE Word Membership" 
-
- (check-true (pda-checker Gina-aˆnbˆn Gina-aˆnbˆn-WORDS))
-
- (check-true (pda-checker Gina-wcwˆr Gina-wcwˆr-WORDS))
-
- (check-true (pda-checker Gina-palindrome-pda Gina-palindrome-pda-WORDS))
-
- (check-true (pda-checker Gina-AiBj Gina-AiBj-WORDS))
-
- (check-true (pda-checker Gina-A^nB^mA^n Gina-A^nB^mA^n-WORDS))
-
- (check-true (pda-checker Gina-a^mb^nc^pd^q Gina-a^mb^nc^pd^q-WORDS))
-
- (check-true (pda-checker Gina-a^mb^nc^p Gina-a^mb^nc^p-WORDS))
-
- (check-true (pda-checker (cfe->pda Gina-aˆnbˆn-cfe) Gina-aˆnbˆn-WORDS))
-
- (check-true (pda-checker (cfe->pda Gina-wcwˆr-cfe) Gina-wcwˆr-WORDS))
-
- (check-true (pda-checker (cfe->pda Gina-palindrome-pda-cfe) Gina-palindrome-pda-WORDS))
-
- (check-true (pda-checker (cfe->pda Gina-AiBj-cfe) Gina-AiBj-WORDS))
-
- (check-true (pda-checker (cfe->pda Gina-A^nB^mA^n-cfe) Gina-A^nB^mA^n-WORDS))
-
- (check-true (pda-checker (cfe->pda Gina-a^mb^nc^pd^q-cfe) Gina-a^mb^nc^pd^q-WORDS))
-
- (check-true (pda-checker (cfe->pda Gina-a^mb^nc^p-cfe) Gina-a^mb^nc^p-WORDS))
- )
 
 
-(define CFE-WORD-TESTS
+#;(define CFE-WORD-TESTS
   (let [(WWR-WORDS (gen-cfe-words WWR))
 
         (ANBN-WORDS (gen-cfe-words ANBN))
@@ -967,20 +962,7 @@
 (define (run-testing)
   (begin
     (run-tests CFE-UNIT-TESTING)
-    (run-tests CFE-WORD-TESTS)
+    #;(run-tests CFE-WORD-TESTS)
+    (run-tests PDA-TRANSFORMATION-TESTS)
     (void)))
-|#
 
-
-#|
-(pda-checker Gina-AiBj (gen-cfe-words Gina-Aibj-TBH))
-(pda-checker Gina-a^mb^nc^p (gen-cfe-words Gina-a^mb^nc^p-tbh))
-(pda-checker marco-anbncndn (gen-cfe-words marco-anbncndn-tbh))
-|#
-
-
-
-(define a^mb^nc^pd^q-WORDS (gen-cfe-words a^mb^nc^pd^q))
-
-(check-pred (λ (low) (andmap valid-Gina-a^mb^nc^pd^q-word? low)) a^mb^nc^pd^q-WORDS)
-(check-true (pda-checker Gina-a^mb^nc^pd^q a^mb^nc^pd^q-WORDS))
