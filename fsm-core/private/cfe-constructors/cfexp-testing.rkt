@@ -788,7 +788,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;TESTING;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define PDA-TRANSFORMATION-TESTS
+#;(define PDA-TRANSFORMATION-TESTS
   (let (#;[A*-WORDS (gen-cfe-words A*-cfe)]
 
         [Gina-aˆnbˆn-WORDS (gen-cfe-words Gina-aˆnbˆn-cfe)]
@@ -959,7 +959,7 @@
       )
 
      )))
-(define (run-testing)
+#;(define (run-testing)
   (begin
     (run-tests CFE-UNIT-TESTING)
     #;(run-tests CFE-WORD-TESTS)

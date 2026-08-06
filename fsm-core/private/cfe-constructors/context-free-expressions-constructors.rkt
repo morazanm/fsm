@@ -7,7 +7,6 @@
          "../misc.rkt"
          "cfexp-contracts.rkt"
          "cfexp-structs.rkt"
-         "cfexp-helpers.rkt"
          racket/contract/region
          racket/vector
          racket/list
@@ -163,27 +162,6 @@
 (define (string-empty? str)
   (string=? str ""))
 
-
-;;string -> (listof symbol)
-;;Purpose: Converts the given string into a fsm word
-(define (string->word2 str)
-
-  (define (string-first str)
-    (substring str 0 1))
-  
-  (define (string-rest str)
-    (substring str 1))
- 
-  ;;natnum (listof symbol) -> (listof symbol)
-  ;;Purpose: Converts the string into a fsm word
-  (define (string->word-helper str acc)
-    (if (string-empty? str)
-        (reverse acc)
-        (string->word-helper (string-rest str)
-                             (cons (string->symbol (string-first str)) acc))))
-  (string->word-helper str '()))
-
-
 ;;string -> (listof symbol)
 ;;Purpose: Converts the given string into a fsm word
 (define (string->word str)
@@ -321,7 +299,7 @@
 ;;Purpose: Converts the given cfe into its corresponding cfg
 (define/contract (cfe->cfg cfe)
   cfe->cfg/c
-  ;;vars    | the accumulated variables found from traversing the given cfe  | (listof var-cfexp)
+  ;;vars    | the accumulated variables found from traversing the given cfe  | (listof union-cfexp)
   ;;singles | the accumulated singletons found from traversing the given cfe | (listof singleton-cfexp)
   (struct extraction-results (lang-boxes singles) #:transparent)
 
@@ -373,6 +351,38 @@
   ;;cfe -> extraction-results
   ;;Purpose: Extracts all var-cfexp and singleton-cfexp from the given cfe
   (define (extract-var-and-singles-cfe cfe)
+    ;;cfe -> (listof cfe)
+    ;;Purpose: Extracts the sub-expressions from the given cfe
+    (define (extract-cfe-data cfe)
+      (cond [(mk-concat-cfexp? cfe) (vector->treelist (mk-concat-cfexp-locfe cfe))]
+            [(mk-union-cfexp? cfe) (vector->treelist (mk-union-cfexp-locfe cfe))]
+            [(mk-kleene-cfexp? cfe) (treelist (mk-kleene-cfexp-cfe cfe))]
+            [(box? cfe) (treelist (unbox cfe))]
+            [else empty-treelist]))
+    ;;cfe extraction-results -> extraction-results
+    ;;Purpose: Updates the given extraction-results to add the given cfe if it is a singleton or variable
+    (define (update-extraction-results cfe extract-res)
+      (cond [(or (mk-kleene-cfexp? cfe)
+                 (box? cfe)) (struct-copy extraction-results
+                                          extract-res
+                                          [lang-boxes (cons cfe (extraction-results-lang-boxes extract-res))])]
+            [(mk-singleton-cfexp? cfe) (struct-copy extraction-results
+                                                    extract-res
+                                                    [singles (cons cfe (extraction-results-singles extract-res))])]
+            [else extract-res]))
+    
+    ;;(queueof cfe) extraction-results (listof cfe) -> extraction-results
+    ;;Purpose: Extracts the cfe and adds it to the extraction-results if its a singleton or variable
+    (define (extract-var-and-singles qocfe extract-res visited)
+      (if (qempty? qocfe)
+          extract-res
+          (let* ([cfe (qfirst qocfe)]
+                 [cfes-to-add (extract-cfe-data cfe)]
+                 [new-queue (enqueue (dequeue qocfe)
+                                     (treelist-filter (λ (cfe) (not (set-member? visited cfe))) cfes-to-add))]
+                 [new-acc (update-extraction-results cfe extract-res)]
+                 [new-visited (set-add visited cfe)])
+            (extract-var-and-singles new-queue new-acc new-visited))))
     (let ([init-queue (tl-foldl (λ (env acc)
                                   (enqueue acc (treelist env)))
                                 E-QUEUE
@@ -380,40 +390,6 @@
       (extract-var-and-singles init-queue
                                (update-extraction-results cfe (extraction-results '() '()))
                                (set cfe))))
-
-  ;;cfe extraction-results -> extraction-results
-  ;;Purpose: Updates the given extraction-results to add the given cfe if it is a singleton or variable
-  (define (update-extraction-results cfe extract-res)
-    (cond [(or (mk-kleene-cfexp? cfe)
-               (box? cfe)) (struct-copy extraction-results
-                                        extract-res
-                                        [lang-boxes (cons cfe (extraction-results-lang-boxes extract-res))])]
-          [(mk-singleton-cfexp? cfe) (struct-copy extraction-results
-                                                  extract-res
-                                                  [singles (cons cfe (extraction-results-singles extract-res))])]
-          [else extract-res]))
-
-  ;;(queueof cfe) extraction-results (listof cfe) -> extraction-results
-  ;;Purpose: Extracts the cfe and adds it to the extraction-results if its a singleton or variable
-  (define (extract-var-and-singles qocfe extract-res visited)
-    (if (qempty? qocfe)
-        extract-res
-        (let* ([cfe (qfirst qocfe)]
-               [cfes-to-add (extract-cfe-data cfe)]
-               [new-queue (enqueue (dequeue qocfe)
-                                   (treelist-filter (λ (cfe) (not (set-member? visited cfe))) cfes-to-add))]
-               [new-acc (update-extraction-results cfe extract-res)]
-               [new-visited (set-add visited cfe)])
-          (extract-var-and-singles new-queue new-acc new-visited))))
-
-  ;;cfe -> (listof cfe)
-  ;;Purpose: Extracts the sub-expressions from the given cfe
-  (define (extract-cfe-data cfe)
-    (cond [(mk-concat-cfexp? cfe) (vector->treelist (mk-concat-cfexp-locfe cfe))]
-          [(mk-union-cfexp? cfe) (vector->treelist (mk-union-cfexp-locfe cfe))]
-          [(mk-kleene-cfexp? cfe) (treelist (mk-kleene-cfexp-cfe cfe))]
-          [(box? cfe) (treelist (unbox cfe))]
-          [else empty-treelist]))
 
   ;;(listof lang-boxes) (hash old-nt . new-nt) (listof rule) -> (listof rule)
   ;;Purpose: Converts every var-cfexp into the corresponding grammar rule
@@ -745,20 +721,6 @@
           [else (list cfe-template)]))
 
   ;;pda-action -> Boolean
-  ;;Purpose: Determines if the given pda-rule only reads an letter in sigma
-  (define (read-only? action)
-    (and (not (eq? EMP (pda-action-read action)))
-         (eq? EMP (pda-action-pop action))
-         (eq? EMP (pda-action-push action))))
-  
-  ;;pda-action -> Boolean
-  ;;Purpose: Determines if the given pda-rule ONLY pushes to the stack
-  (define (push-only? action)
-    (and (eq? EMP (pda-action-read action))
-         (eq? EMP (pda-action-pop action))
-         (list? (pda-action-push action))))
-
-  ;;pda-action -> Boolean
   ;;Purpose: Determines if the given pda-rule ONLY pushes to the stack
   (define (push? action)
     (list? (pda-action-push action)))
@@ -768,26 +730,6 @@
   (define (pop? action)
     (list? (pda-action-pop action)))
 
-  ;;pda-action -> Boolean
-  ;;Purpose: Determines if the given pda-rule ONLY pops off the stack
-  (define (pop-only? action)
-    (and (eq? EMP (pda-action-read action))
-         (list? (pda-action-pop action))
-         (eq? EMP (pda-action-push action))))
-
-  ;;pda-action -> Boolean
-  ;;Purpose: Determines if the given pda-rule reads AND pops off the stack
-  (define (read-and-pop? action)
-    (and (not (eq? EMP (pda-action-read action)))
-         (list? (pda-action-pop action))
-         (eq? EMP (pda-action-push action))))
-
-  ;;pda-action -> Boolean
-  ;;Purpose: Determines if the given pda-action reads AND pushes to the stack
-  (define (read-and-push? action)
-    (and (not (eq? EMP (pda-action-read action)))
-         (eq? EMP (pda-action-pop action))
-         (list? (pda-action-push action))))
   #|
     inverse-pair is struct containing a pda rules that keep the stack empty
     push        | pda-rule that pushes to the stack => pda-rule
@@ -808,7 +750,6 @@
   ;;pda-rule -> (hash state . (listof pda-rule))
   ;;Purpose: Finds the rules reachable from each state of the given pda
   (define (find-reachables rule-structs)
-
     ;;state (listof state) (setof state) (listof pda-rule) -> (listof pda-rule)
     ;;Purpose: Finds the rules reachable from the given state
     (define (find-reachables-helper state-to-search states visited-states acc)
@@ -835,9 +776,7 @@
                                           (set-add visited-states state-to-search)
                                           (append acc (filter (λ (rule)
                                                                 (eq? (pda-rule-source rule) state-to-search))
-                                                              rule-structs)))]))
-      
-    
+                                                              rule-structs)))]))    
     (let ([states (pda-getstates P)])
       (foldl (λ (state acc)
                (hash-set acc state (find-reachables-helper state
@@ -1530,4 +1469,219 @@
 ;;cfe -> pda
 ;;Purpose: Converts the given cfe into a pda
 (define (cfe->pda cfe)
-  (cfg->pda (cfe->cfg cfe)))
+  ;;vars    | the accumulated variables found from traversing the given cfe  | (listof union-cfexp)
+  ;;singles | the accumulated singletons found from traversing the given cfe | (setof singleton-cfexp)
+  (struct extraction-results (lang-boxes singles) #:transparent)
+
+  (define qempty? treelist-empty?)
+
+  (define E-QUEUE empty-treelist) 
+
+  ;; (qof X) → X throws error
+  ;; Purpose: Return first X of the given queue
+  (define (qfirst a-qox)
+    (if (qempty? a-qox)
+        (error "qfirst applied to an empty queue")
+        (treelist-first a-qox)))
+
+  ;; (tllistof X) (qof X) → (qof X)
+  ;; Purpose: Add the given list of X to the given queue of X
+  (define (enqueue a-lox a-qox) (treelist-append a-qox a-lox))
+
+  ;; (qof X) → (qof X) throws error
+  ;; Purpose: Return the rest of the given queue
+  (define (dequeue a-qox)
+    (if (qempty? a-qox)
+        (error "dequeue applied to an empty queue")
+        (treelist-rest a-qox)))
+
+  ;;(X -> Y) Z (treelistof X) -> Z
+  (define (tl-foldl f acc tl)
+    (if (treelist-empty? tl)
+        acc
+        (tl-foldl f (f (treelist-first tl) acc) (treelist-rest tl))))
+  
+  ;;cfe -> extraction-results
+  ;;Purpose: Extracts all var-cfexp and singleton-cfexp from the given cfe
+  (define (extract-var-and-singles-cfe cfe)
+    ;;cfe -> (listof cfe)
+    ;;Purpose: Extracts the sub-expressions from the given cfe
+    (define (extract-cfe-data cfe)
+      (cond [(mk-concat-cfexp? cfe) (vector->treelist (mk-concat-cfexp-locfe cfe))]
+            [(mk-union-cfexp? cfe) (vector->treelist (mk-union-cfexp-locfe cfe))]
+            [(mk-kleene-cfexp? cfe) (treelist (mk-kleene-cfexp-cfe cfe))]
+            [(box? cfe) (treelist (unbox cfe))]
+            [else empty-treelist]))
+    ;;cfe extraction-results -> extraction-results
+    ;;Purpose: Updates the given extraction-results to add the given cfe if it is a singleton or variable
+    (define (update-extraction-results cfe extract-res)
+      (cond [(or (mk-kleene-cfexp? cfe) (box? cfe))
+             (struct-copy extraction-results
+                          extract-res
+                          [lang-boxes (set-add (extraction-results-lang-boxes extract-res) cfe)])]
+            [(mk-singleton-cfexp? cfe)
+             (struct-copy extraction-results
+                          extract-res
+                          [singles (set-add (extraction-results-singles extract-res) (string->symbol (mk-singleton-cfexp-char cfe)))])]
+            [else extract-res]))
+    
+    ;;(queueof cfe) extraction-results (listof cfe) -> extraction-results
+    ;;Purpose: Extracts the cfe and adds it to the extraction-results if its a singleton or variable
+    (define (extract-var-and-singles qocfe extract-res visited)
+      (if (qempty? qocfe)
+          extract-res
+          (let* ([cfe (qfirst qocfe)]
+                 [cfes-to-add (extract-cfe-data cfe)]
+                 [new-queue (enqueue (dequeue qocfe)
+                                     (treelist-filter (λ (cfe) (not (set-member? visited cfe))) cfes-to-add))]
+                 [new-acc (update-extraction-results cfe extract-res)]
+                 [new-visited (set-add visited cfe)])
+            (extract-var-and-singles new-queue new-acc new-visited))))
+    (let ([init-queue (tl-foldl (λ (env acc)
+                                  (enqueue acc (treelist env)))
+                                E-QUEUE
+                                (extract-cfe-data cfe))])
+      (extract-var-and-singles init-queue
+                               (update-extraction-results cfe (extraction-results (set) (set)))
+                               (set cfe))))
+
+  #|
+  pda-struct is a structural representation of a pda
+  states | The states for the given pda => (listof states)
+  sigma  | The alphabet that the given pda works over => (listof symbol)
+  gamma  | The stack alphabet that given pda works over => (listof symbol)
+  start  | The starting state => symbol
+  finals | The final states => (listof symbol)
+  rules  | The transition relation for the given pda => (listof pda-rule)
+  |#
+  (struct pda (states sigma gamma start finals rules) #:transparent)
+
+  #|
+  pda-rule is a structural representation of a pda rule
+  source | The state the rule is coming from => symbol
+  action | The action the pda takes when using the rule => pda-action
+  destin | The state the rule transitions to => symbol
+  |#
+  (struct pda-rule (source action destin) #:transparent)
+
+  #|
+  a pda-action is a structural representation of a pda action
+  read | The element that the pda reads => symbol
+  pop  | The element(s) that the pda pops of the stack => symbol / (listof symbol)
+  push | The element(s) that the pda pushes to the stack => symbol / (listof symbol)
+  |#
+  (struct pda-action (read pop push) #:transparent)
+
+  (define E-TRANSITION (pda-action EMP EMP EMP))
+
+  ;;pda pda -> pda
+  ;;Purpose: Constructions a pda for the union of the langauges of the given pda
+  ;;ASSUME: P1 and P2 states are disjoint
+  (define (pda-union P1 P2)
+    (let* ([old-states (append (pda-states P1) (pda-states P2))]
+           [new-start (gen-state old-states)]
+           [new-states (cons new-start old-states)]
+           [new-sigma (remove-duplicates (append (pda-sigma P1) (pda-sigma P2)))]
+           [new-gamma (remove-duplicates (append (pda-gamma P1) (pda-gamma P2)))]
+           [new-finals (append (pda-finals P1) (pda-finals P2))]
+           [new-rules (append (list (pda-rule new-start E-TRANSITION (pda-start P1))
+                                    (pda-rule new-start E-TRANSITION (pda-start P2)))
+                              (pda-rules P1)
+                              (pda-rules P2))])
+    (pda new-states new-sigma new-gamma new-start new-finals new-rules)))
+
+  ;;pda pda -> pda
+  ;;Purpose: Constructions a pda for the concatenation of the langauges of the given pda
+  ;;ASSUME: P1 and P2 states are disjoint
+  (define (pda-concat P1 P2)
+    (let* ([old-states (append (pda-states P1) (pda-states P2))]
+           [new-start (gen-state old-states)]
+           [old-gamma (remove-duplicates (append (pda-gamma P1) (pda-gamma P2)))]
+           [new-gamma-sym (gen-state old-gamma)]
+           [new-states (cons new-start old-states)]
+           [new-sigma (remove-duplicates (append (pda-sigma P1) (pda-sigma P2)))]
+           [new-gamma (cons new-gamma-sym old-gamma)]
+           [new-finals (pda-finals P2)]
+           [new-rules (cons (pda-rule new-start (pda-action EMP EMP (list new-gamma-sym)) (pda-start P1))
+                            (append (pda-rules P1)
+                                    (pda-rules P2)
+                                    (map (λ (final)
+                                           (pda-rule final (pda-action EMP (list new-gamma-sym) EMP) (pda-start P2)))
+                                         (pda-finals P1))))])
+      (pda new-states new-sigma new-gamma new-start new-finals new-rules)))
+
+  ;;pda -> pda
+  ;;Purpose: Constructions a pda for the kleenestar of the langauge of the given pda
+  (define (pda-kleenestar P)
+    (let* ([new-start (gen-state (pda-states P))]
+           [new-gamma-sym (gen-state (pda-gamma P))]
+           [new-gamma (cons new-gamma-sym (pda-gamma P))]
+           [new-states (cons new-start (pda-states P))]
+           [new-sigma (pda-sigma P)]
+           [new-finals (list new-start)]
+           [new-rules (cons (pda-rule new-start (pda-action EMP EMP (list new-gamma-sym)) (pda-start P))
+                            (append (pda-rules P)
+                                    (map (λ (final)
+                                           (pda-rule final (pda-action EMP (list new-gamma-sym) EMP) new-start))
+                                         (pda-finals P))))])
+      (pda new-states new-sigma new-gamma new-start new-finals new-rules)))
+
+  ;;(listof state) pda -> pda
+  ;;Purpose: Renames the states of the second pda using the states of first pda
+  (define (rename-pda old-states P2)
+    ;;natnum -> (listof state)
+    ;;Purpose: Generates natnum amount of states
+    (define (gen-states num)
+      (for/fold ([states '()])
+                ([x (in-range num)])
+        (cons (gen-state (append old-states states)) states)))
+    (let* ([new-states (gen-states (length (pda-states P2)))]
+           [associated-state (foldl (λ (new-state old-state acc)
+                                      (hash-set acc old-state new-state))
+                                    (hash)
+                                    new-states
+                                    (pda-states P2))])
+      (pda new-states
+           (pda-sigma P2)
+           (pda-gamma P2)
+           (hash-ref associated-state (pda-start P2))
+           (map (λ (final)
+                  (hash-ref associated-state final))
+                (pda-finals P2))
+           (map (λ (rule)
+                  (struct-copy pda-rule rule
+                               [source (hash-ref associated-state (pda-rule-source rule))]
+                               [destin (hash-ref associated-state (pda-rule-destin rule))]))
+                (pda-rules P2)))))
+
+  ;;pda -> ndpda
+  ;;Purpose: Converts a pda to an ndpda
+  (define (pda->unchecked P)
+    (make-unchecked-ndpda (pda-states P)
+                          (pda-sigma P)
+                          (pda-gamma P)
+                          (pda-start P)
+                          (pda-finals P)
+                          (map (λ (rule)
+                                 (list (list (pda-rule-source rule) (pda-action-read (pda-rule-action rule)) (pda-action-pop (pda-rule-action rule)))
+                                       (list (pda-rule-destin rule) (pda-action-push (pda-rule-action rule)))))
+                               (pda-rules P))))
+     
+  
+  (let* ([extract-res (extract-var-and-singles-cfe cfe)]
+         [alphabet (set->list (extraction-results-singles extract-res))]
+         [sigma-pdas (foldl (λ (sigma acc)
+                              (hash-set acc sigma (pda
+                                                   '(S F)
+                                                   (list sigma)
+                                                   '()
+                                                   'S
+                                                   '(F)
+                                                   (list (pda-rule 'S (pda-action sigma EMP EMP) 'F)))))
+                            (hash)
+                            alphabet)])
+    (values (sm-graph (pda->unchecked (pda-union (hash-ref sigma-pdas 'a) (rename-pda (pda-states (hash-ref sigma-pdas 'a)) (hash-ref sigma-pdas 'b)))))
+            (sm-graph (pda->unchecked (pda-concat (hash-ref sigma-pdas 'b) (rename-pda (pda-states (hash-ref sigma-pdas 'b)) (hash-ref sigma-pdas 'c)))))
+            (sm-graph (pda->unchecked (pda-kleenestar (hash-ref sigma-pdas 'c)))))
+                      
+    #;(cfg->pda (cfe->cfg cfe))))
