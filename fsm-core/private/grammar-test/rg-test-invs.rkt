@@ -44,7 +44,9 @@
          racket/treelist
          "../sm-getters.rkt"
          "../grammar-getters.rkt")
-(provide rg-test-invs)
+(provide rg-test-invs rg-test-invs-andres)
+
+
 ;; andres stuff ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define (determine-num-bits-needed num-rules)   
     (define (helper num)
@@ -398,7 +400,7 @@
                #:do [;(define cache (caddr (car path)))
                      #;(define a-config (list (word-of-path path) cache))
                      (define a-config (list nt-tested (path-with-hash-word-of-path path)))]
-               #:when (not (inv (second a-config))))
+               #:when (not (inv (filter (λ (x) (not (eq? 'ε x))) (second a-config)))))
       #;a-config
       (second a-config)))
   
@@ -419,8 +421,9 @@
 ;; this is the old one
 (define (rg-test-invs-andres a-rg a-loi)
   (define inv-nts (map (λ (inv-pair) (first inv-pair)) a-loi)) ;; <- all nts that need to be tested
+  #;(displayln (grammar-nts a-rg))
   (define state-fsas
-    (map (lambda (start) (list start (rg->state-ndfa a-rg start))) (filter (λ (nt) (member nt inv-nts))  (rg-getnts a-rg))))
+    (map (lambda (start) (list start (rg->state-ndfa a-rg start))) (filter (λ (nt) (member nt inv-nts)) (grammar-nts a-rg))))
      ;(displayln (map (λ (x) (sm-graph (second x))) state-fsas))
     (define (test-rgs rg-lst)
       (cond [(null? rg-lst)
@@ -517,12 +520,12 @@
                                 (eq? 'a x))))))
 
   
-(rg-test-invs-andres rg-STARTS-WITH-aa #;2 (list (list 'S S-INV #;(lambda (x) #t))
+#;(rg-test-invs-andres rg-STARTS-WITH-aa #;2 (list (list 'S S-INV #;(lambda (x) #t))
                                           (list 'A A-INV #;(lambda (x) #t))
                                           (list 'B B-INV #;(lambda (x) #t))))
 
 
-(rg-test-invs-andres rg-STARTS-WITH-aa #;2 (list (list 'S (lambda (x) #f))
+#;(rg-test-invs-andres rg-STARTS-WITH-aa #;2 (list (list 'S (lambda (x) #f))
                                           (list 'A (lambda (x) #f))
                                           (list 'B (lambda (x) #f))))
 
