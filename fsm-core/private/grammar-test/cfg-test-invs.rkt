@@ -389,6 +389,6 @@
                                      (list 'A A-INV-c^mb^na^nd^m)
                                   )))
 
-#;(cfg-test-invs c^mb^na^nd^m 15 (list (list 'S S-INV-c^mb^na^nd^m-buggy)
+#;(cfg-test-invs c^mb^na^nd^m 15 (list (list 'S S-INV-c^mb^na^nd^m)
                                      (list 'A A-INV-c^mb^na^nd^m)
                                   ))

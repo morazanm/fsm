@@ -257,12 +257,12 @@
                               (sm-start a-machine)
                               (hash rule 1))))
   #;(map (lambda (x) (path-with-hash-path x)) (find-paths-helper))
-  #;(treelist-map (find-paths-helper)
+  (treelist-map (find-paths-helper)
                 (λ (x) (path-with-hash (reverse (path-with-hash-config-path x))  ;<- NEED THIS IF USING SPLIT-PATHS
                                        (path-with-hash-word-of-path x)
                                        (path-with-hash-path-starting-state x)
                                        (path-with-hash-hash x))))
-  (treelist-map (find-paths-helper)
+  #;(treelist-map (find-paths-helper)
                 (λ (x) (path-with-hash (path-with-hash-config-path x) 
                                        (reverse (path-with-hash-word-of-path x))
                                        (path-with-hash-path-starting-state x)
@@ -283,7 +283,7 @@
     (for ([path (in-treelist paths)])  ;<- adding all the words to test the nt into its set in the ht
       (let ([cur-set (hash-ref nts-hash (path-with-hash-path-starting-state path))])
         (for ([config (in-list (path-with-hash-config-path path))])   
-          (set-add! cur-set (reverse (second config))))) ;<- the word is in reverse in the configs so have to unreverse it
+          (set-add! cur-set (filter (λ (x) (not (eq? 'ε x)))  (reverse (second config)))))) ;<- the word is in reverse in the configs so have to unreverse it
 
       ;; now gonna go down the list of configs and split them up to add them to the other nt hash sets
 
@@ -303,14 +303,15 @@
                     ;(displayln length-to-drop-word)
                     (let ([cur-set (hash-ref nts-hash (first (first (path-with-hash-config-path cur-path))))])
                       (for ([config (in-list (rest (path-with-hash-config-path cur-path)))])   
-                        (set-add! cur-set (drop (reverse (second config)) length-to-drop-word))))
+                        (set-add! cur-set (filter (λ (x) (not (eq? 'ε x))) (drop (reverse (second config)) length-to-drop-word)))))
                
                     (break-up-path-helper (path-with-hash (rest (path-with-hash-config-path cur-path))
                                                           (path-with-hash-word-of-path cur-path)
                                                           (first (first (path-with-hash-config-path cur-path)))
                                                           (path-with-hash-hash cur-path))
                                           (set-add nts-visited-set (first (path-with-hash-config-path cur-path)))
-                                          (+ length-to-drop-word (length (second (first (path-with-hash-config-path cur-path)))))))
+                                          (+ length-to-drop-word (length (drop (second (first (path-with-hash-config-path cur-path)))
+                                                                               length-to-drop-word)))))
                     
                   (break-up-path-helper (path-with-hash (rest (path-with-hash-config-path cur-path))
                                                         (path-with-hash-word-of-path cur-path)
@@ -444,7 +445,7 @@
 
   ;; gettng ht of nts and words to test them with
   (define test-word-ht (split-paths (find-paths rg-machine REPETITION-LIMIT) (sm-states rg-machine)))
-  
+  ;(displayln test-word-ht)
   ;;testing each nt in ht with the test words
 
   ;; nt (setof word) -> (listof (list nt (listof word))
