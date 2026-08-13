@@ -1,4 +1,4 @@
-#lang racket/base
+          #lang racket/base
 
 (require "../../../sm-graph.rkt"
          "../constants.rkt"
@@ -1515,7 +1515,7 @@
     ;;cfe extraction-results -> extraction-results
     ;;Purpose: Updates the given extraction-results to add the given cfe if it is a singleton or variable
     (define (update-extraction-results cfe extract-res)
-      (cond [(or (mk-kleene-cfexp? cfe) (box? cfe))
+      (cond [(box? cfe)
              (struct-copy extraction-results
                           extract-res
                           [lang-boxes (set-add (extraction-results-lang-boxes extract-res) cfe)])]
@@ -1574,10 +1574,20 @@
 
   (define E-TRANSITION (pda-action EMP EMP EMP))
 
+
+  ;;(listof pda) -> pda
+  ;;Purpose: Constructions a pda for the union of the langauges of the given pda
+  (define (pda-union locfe sigma-pdas seen-cfes)
+    (define (make-unions P locfe)
+      (if (is-length-one? locfe)
+          (union-pda P (rename-pda (pda-states P) (cfe->pda-helper (first locfe) sigma-pdas seen-cfes)))
+          (make-unions (union-pda P (rename-pda (pda-states P) (cfe->pda-helper (first locfe) sigma-pdas seen-cfes))) (rest locfe))))
+    (make-unions (cfe->pda-helper (first locfe) sigma-pdas seen-cfes) (rest locfe)))
+  
   ;;pda pda -> pda
   ;;Purpose: Constructions a pda for the union of the langauges of the given pda
   ;;ASSUME: P1 and P2 states are disjoint
-  (define (pda-union P1 P2)
+  (define (union-pda P1 P2)
     (let* ([old-states (append (pda-states P1) (pda-states P2))]
            [new-start (gen-state old-states)]
            [new-states (cons new-start old-states)]
@@ -1590,10 +1600,20 @@
                               (pda-rules P2))])
     (pda new-states new-sigma new-gamma new-start new-finals new-rules)))
 
+  ;;(listof pda) -> pda
+  ;;Purpose: Constructions a pda for the concatenation of the langauges of the given pda
+  (define (pda-concat vocfe sigma-pdas seen-cfes)
+    (define (make-concats P locfe)
+      (if (is-length-one? locfe)
+          (concat-pda P (rename-pda (pda-states P) (cfe->pda-helper (first locfe) sigma-pdas seen-cfes)))
+          (make-concats (concat-pda P (rename-pda (pda-states P) (cfe->pda-helper (first locfe) sigma-pdas seen-cfes))) (rest locfe))))
+    (let ([locfe (vector->list vocfe)])
+      (make-concats (cfe->pda-helper (first locfe) sigma-pdas seen-cfes) (rest locfe))))
+
   ;;pda pda -> pda
   ;;Purpose: Constructions a pda for the concatenation of the langauges of the given pda
   ;;ASSUME: P1 and P2 states are disjoint
-  (define (pda-concat P1 P2)
+  (define (concat-pda P1 P2)
     (let* ([old-states (append (pda-states P1) (pda-states P2))]
            [new-start (gen-state old-states)]
            [old-gamma (remove-duplicates (append (pda-gamma P1) (pda-gamma P2)))]
@@ -1666,7 +1686,110 @@
                                  (list (list (pda-rule-source rule) (pda-action-read (pda-rule-action rule)) (pda-action-pop (pda-rule-action rule)))
                                        (list (pda-rule-destin rule) (pda-action-push (pda-rule-action rule)))))
                                (pda-rules P))))
-     
+
+
+  (define (recursive? cfexp rec-cfe)
+    (cond [(mk-concat-cfexp? cfexp) (ormap (λ (cfe) (if (box? cfe)
+                                                        (eq? rec-cfe (unbox cfe))
+                                                        #f))
+                                           (vector->list (mk-concat-cfexp-locfe cfexp)))]
+          #;[(mk-union-cfexp? cfe) (mk-union-cfexp-locfe cfe)]
+          [else #f]))
+  
+  ;;cfe -> pda 
+  (define (make-rec-pda cfe sigma-pdas acc)
+    (struct rule-temp (lhs rhs stack) #:transparent)
+    
+    (define (find-lhs rec-cfe)
+      (takef (vector->list (mk-concat-cfexp-locfe rec-cfe)) (compose1 not box?)))
+    
+    (define (find-rhs rec-cfe)
+      (rest (dropf (vector->list (mk-concat-cfexp-locfe rec-cfe)) (compose1 not box?))))
+
+    (define (make-rule-temp rec-cfes)
+      (if (is-length-one? rec-cfes)
+          (let ([lhs (find-lhs (first rec-cfes))]
+                [rhs (find-rhs (first rec-cfes))])
+            (list (rule-temp lhs rhs rhs)))
+          (map (λ (rec-cfe)
+                 (let ([lhs (find-lhs rec-cfe)]
+                       [rhs (find-rhs rec-cfe)])
+                   (rule-temp lhs rhs rhs)))
+               rec-cfes)))
+
+
+    (define (construct-pda rule-temp P)
+      
+      (define (temps->rules rule-temp new-start new-final)
+
+        (define (make-stack-oper stack-oper)
+          (if (is-length-one? stack-oper)
+              (string->symbol (mk-singleton-cfexp-char (first stack-oper)))
+              (map (λ (oper)
+                     (string->symbol (mk-singleton-cfexp-char oper)))
+                   stack-oper)))
+        (append-map (λ (temp)
+                    (list (pda-rule new-start
+                                    (pda-action (string->symbol (mk-singleton-cfexp-char (first (rule-temp-lhs temp))))
+                                                EMP
+                                                (make-stack-oper (rule-temp-stack temp)))
+                                    new-start)
+                          (pda-rule new-final
+                                    (pda-action (string->symbol (mk-singleton-cfexp-char (first (rule-temp-rhs temp))))
+                                                (make-stack-oper (rule-temp-stack temp))
+                                                EMP)
+                                    new-final)))
+                           rule-temp))
+      
+      (let* ([new-start (gen-state (pda-states P))]
+             [new-final (gen-state (cons new-start (pda-states P)))]
+             [converted-temps (remove-duplicates (temps->rules rule-temp new-start new-final))]
+             
+             [new-gamma (append (pda-gamma P)
+                                (remove-duplicates
+                                 (map (λ (temp)
+                                        (string->symbol (mk-singleton-cfexp-char (first (rule-temp-stack temp)))))
+                                      rule-temp)))]
+             
+             [new-states (cons new-final (cons new-start (pda-states P)))]
+             [new-sigma (filter (λ (sym)
+                                  (not (eq? sym EMP)))
+                                (remove-duplicates
+                                 (append (pda-sigma P)
+                                        (map (compose1 pda-action-read pda-rule-action) converted-temps))))]
+             [new-finals (list new-final)]
+             [new-rules (cons (pda-rule new-start E-TRANSITION (pda-start P))
+                              (append converted-temps
+                                      (pda-rules P)
+                                      (map (λ (final)
+                                             (pda-rule final E-TRANSITION new-final))
+                                           (pda-finals P))))])
+        (pda new-states
+             new-sigma
+             new-gamma
+             new-start
+             new-finals
+             new-rules)))
+      
+      
+    (let* ([cfes (vector->list (mk-union-cfexp-locfe cfe))]
+           [rec-cfes (filter (λ (cfexp) (recursive? cfexp cfe)) cfes)]
+           [non-rec-cfes (filter (λ (cfexp) (not (member cfexp rec-cfes))) cfes)]
+           [middle-P (if (is-length-one? non-rec-cfes)
+                         (cfe->pda-helper (first non-rec-cfes) sigma-pdas (set-add acc cfe))
+                         (pda-union non-rec-cfes sigma-pdas (set-add acc cfe)))]
+           [rule-templates (make-rule-temp rec-cfes)])
+      (construct-pda rule-templates middle-P)
+      #;(eq? cfe (unbox (vector-ref (mk-concat-cfexp-locfe (vector-ref cfes 0)) 1)))))
+  
+  (define (cfe->pda-helper cfe sigma-pdas seen-cfes)
+    (cond [(mk-kleene-cfexp? cfe) (pda-kleenestar (cfe->pda-helper (mk-kleene-cfexp-cfe cfe) sigma-pdas (set-add seen-cfes cfe)))]
+          [(mk-concat-cfexp? cfe) (pda-concat (vector->list (mk-concat-cfexp-locfe cfe)) sigma-pdas (set-add seen-cfes cfe))]
+          [(mk-union-cfexp? cfe) (pda-union (vector->list (mk-union-cfexp-locfe cfe)) sigma-pdas (set-add seen-cfes cfe))]
+          [(box? cfe) (make-rec-pda (unbox cfe) sigma-pdas (set-add seen-cfes cfe) #;(cfe->pda-helper (unbox cfe) sigma-pdas (set-add seen-cfes cfe)))]
+          [(mk-empty-cfexp? cfe) (hash-ref sigma-pdas EMP)]
+          [(mk-singleton-cfexp? cfe) (hash-ref sigma-pdas (string->symbol (mk-singleton-cfexp-char cfe)))]
+          [else (set-member? seen-cfes cfe) cfe]))
   
   (let* ([extract-res (extract-var-and-singles-cfe cfe)]
          [alphabet (set->list (extraction-results-singles extract-res))]
@@ -1679,9 +1802,15 @@
                                                    '(F)
                                                    (list (pda-rule 'S (pda-action sigma EMP EMP) 'F)))))
                             (hash)
-                            alphabet)])
-    (values (sm-graph (pda->unchecked (pda-union (hash-ref sigma-pdas 'a) (rename-pda (pda-states (hash-ref sigma-pdas 'a)) (hash-ref sigma-pdas 'b)))))
+                            (cons EMP alphabet))])
+    #;(cfe->pda-helper cfe sigma-pdas (set))
+    (values (cfe->pda-helper cfe sigma-pdas (set))
+            (sm-graph (pda->unchecked (cfe->pda-helper cfe sigma-pdas (set)))))
+    #;(values (sm-graph (pda->unchecked (pda-union (hash-ref sigma-pdas 'a) (rename-pda (pda-states (hash-ref sigma-pdas 'a)) (hash-ref sigma-pdas 'b)))))
+            (pda->cfe (pda->unchecked (pda-union (hash-ref sigma-pdas 'a) (rename-pda (pda-states (hash-ref sigma-pdas 'a)) (hash-ref sigma-pdas 'b)))))
             (sm-graph (pda->unchecked (pda-concat (hash-ref sigma-pdas 'b) (rename-pda (pda-states (hash-ref sigma-pdas 'b)) (hash-ref sigma-pdas 'c)))))
-            (sm-graph (pda->unchecked (pda-kleenestar (hash-ref sigma-pdas 'c)))))
+            (pda->cfe (pda->unchecked (pda-concat (hash-ref sigma-pdas 'b) (rename-pda (pda-states (hash-ref sigma-pdas 'b)) (hash-ref sigma-pdas 'c)))))
+            (sm-graph (pda->unchecked (pda-kleenestar (hash-ref sigma-pdas 'c))))
+            (pda->cfe (pda->unchecked (pda-kleenestar (hash-ref sigma-pdas 'c)))))
                       
     #;(cfg->pda (cfe->cfg cfe))))
