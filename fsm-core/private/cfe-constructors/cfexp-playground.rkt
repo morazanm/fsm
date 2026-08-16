@@ -11,6 +11,34 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;PDA->CFE & CFE->PDA Transformations;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define abdc
+  (make-cfe ([A (singleton-cfexp "a")]
+             [B (singleton-cfexp "b")]
+             [C (singleton-cfexp "c")]
+             [D (singleton-cfexp "d")]             
+             [EMP (empty-cfexp)]
+             [L (union-cfexp EMP
+                             (concat-cfexp A B L D C))])
+            L))
+
+(define adc
+  (make-cfe ([A (singleton-cfexp "a")]             
+             [C (singleton-cfexp "c")]
+             [D (singleton-cfexp "d")]             
+             [EMP (empty-cfexp)]
+             [L (union-cfexp EMP
+                             (concat-cfexp A L D C))])
+            L))
+
+(define abd
+  (make-cfe ([A (singleton-cfexp "a")]
+             [B (singleton-cfexp "b")]
+             [D (singleton-cfexp "d")]             
+             [EMP (empty-cfexp)]
+             [L (union-cfexp EMP
+                             (concat-cfexp A B L D))])
+            L))
+
 (define ABCD
   (make-cfe ([A (singleton-cfexp "a")]
              [B (singleton-cfexp "b")]
