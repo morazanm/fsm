@@ -39,6 +39,7 @@
                        computation-lengths   ;;(zipperof natnum)
                        max-cmps              ;;natnum
                        machine-decision      ;;symbol
+                       step-counter          ;;(zipperof natnum)
                        word-img-offset
                        word-img-offset-cap
                        scroll-accum
@@ -47,8 +48,8 @@
 
 
 (struct imsg-state-mttm (M                      ;;MTTM
-                         tapes                  ;;(zipperof (listof tapes))
-                         head-positions         ;;(zipperof (listof natnums))
+                         tapes                  ;;(zipperof (listof tape))
+                         head-positions         ;;(zipperof (listof natnum))
                          rules-used             ;;(zipperof mttm-rule)
                          shown-accepting-trace  ;;(zipperof trace)
                          shown-rejecting-trace  ;;(zipperof trace)
@@ -57,6 +58,7 @@
                          max-cmps               ;;natnum
                          machine-decision       ;;symbol
                          aux-tape-index         ;;natnum
+                         step-counter           ;;(zipperof natnum)
                          word-img-offset
                          word-img-offset-cap
                          scroll-accum

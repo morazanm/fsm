@@ -480,6 +480,13 @@ destination -> the rest of a mttm rule | half-rule
 ;;viz-state -> viz-state
 ;;Purpose: Progresses the visualization forward by one step
 (define (right-key-pressed a-vs)
+  ;;imsg-state-component -> imsg-state-component
+  ;;Purpose: Processes the given imsg-state-component when right arrow is pressed
+  (define (process-right imsg-state-component)
+    (if (or (zipper-empty? imsg-state-component)
+            (zipper-at-end? imsg-state-component))
+        imsg-state-component 
+        (zipper-next imsg-state-component)))
   (let ([imsg-state-rules-used (imsg-state-mttm-rules-used (informative-messages-component-state
                                                             (viz-state-informative-messages a-vs)))]
         [imsg-state-tape (imsg-state-mttm-tapes (informative-messages-component-state (viz-state-informative-messages a-vs)))]
@@ -491,9 +498,10 @@ destination -> the rest of a mttm rule | half-rule
                                                                                   (viz-state-informative-messages a-vs)))]
         [imsg-state-shown-rejecting-trace (imsg-state-mttm-shown-rejecting-trace (informative-messages-component-state
                                                                                   (viz-state-informative-messages a-vs)))]
+        [imsg-state-step-counter (imsg-state-mttm-step-counter (informative-messages-component-state
+                                                                (viz-state-informative-messages a-vs)))]
         [imsg-state-invs-zipper (imsg-state-mttm-invs-zipper (informative-messages-component-state
                                                               (viz-state-informative-messages a-vs)))])
-    ;(displayln (first (zipper-unprocessed imsg-state-invs-zipper)))
     (struct-copy
      viz-state
      a-vs
@@ -506,31 +514,19 @@ destination -> the rest of a mttm rule | half-rule
          imsg-state-mttm 
          (informative-messages-component-state (viz-state-informative-messages a-vs))
          ;;rules-used
-         [rules-used (if (or (zipper-empty? imsg-state-rules-used) (zipper-at-end? imsg-state-rules-used))
-                         imsg-state-rules-used 
-                         (zipper-next imsg-state-rules-used))]
+         [rules-used (process-right imsg-state-rules-used)]
          ;;tapes
-         [tapes (if (or (zipper-empty? imsg-state-tape) (zipper-at-end? imsg-state-tape))
-                    imsg-state-tape 
-                    (zipper-next imsg-state-tape))]
+         [tapes (process-right imsg-state-tape)]
          ;;head-positions
-         [head-positions (if (or (zipper-empty? imsg-state-head-position) (zipper-at-end? imsg-state-head-position))
-                             imsg-state-head-position
-                             (zipper-next imsg-state-head-position))]
+         [head-positions (process-right imsg-state-head-position)]
          ;;computation-lengths
-         [computation-lengths (if (or (zipper-empty? imsg-state-computation-lengths) (zipper-at-end? imsg-state-computation-lengths))
-                                  imsg-state-computation-lengths 
-                                  (zipper-next imsg-state-computation-lengths))]
+         [computation-lengths (process-right imsg-state-computation-lengths)]
          ;;shown-accepting-trace
-         [shown-accepting-trace (if (or (zipper-empty? imsg-state-shown-accepting-trace)
-                                        (zipper-at-end? imsg-state-shown-accepting-trace))
-                                    imsg-state-shown-accepting-trace
-                                    (zipper-next imsg-state-shown-accepting-trace))]
+         [shown-accepting-trace (process-right imsg-state-shown-accepting-trace)]
          ;;shown-rejecting-trace
-         [shown-rejecting-trace (if (or (zipper-empty? imsg-state-shown-rejecting-trace)
-                                        (zipper-at-end? imsg-state-shown-rejecting-trace))
-                                    imsg-state-shown-rejecting-trace
-                                    (zipper-next imsg-state-shown-rejecting-trace))]
+         [shown-rejecting-trace (process-right imsg-state-shown-rejecting-trace)]
+         ;;step counter
+         [step-counter (process-right imsg-state-step-counter)]
          ;;invs-zipper
          [invs-zipper (cond [(zipper-empty? imsg-state-invs-zipper) imsg-state-invs-zipper]
                             [(and (not (zipper-at-end? imsg-state-invs-zipper))
@@ -545,6 +541,13 @@ destination -> the rest of a mttm rule | half-rule
 ;;viz-state -> viz-state
 ;;Purpose: Progresses the visualization to the end
 (define (down-key-pressed a-vs)
+  ;;imsg-state-component -> imsg-state-component
+  ;;Purpose: Processes the given imsg-state-component when down arrow is pressed
+  (define (process-down imsg-state-component)
+    (if (or (zipper-empty? imsg-state-component)
+            (zipper-at-end? imsg-state-component))
+        imsg-state-component 
+        (zipper-to-end imsg-state-component)))
   (let ([imsg-state-rules-used (imsg-state-mttm-rules-used (informative-messages-component-state
                                                             (viz-state-informative-messages a-vs)))]
         [imsg-state-tape (imsg-state-mttm-tapes (informative-messages-component-state (viz-state-informative-messages a-vs)))]
@@ -556,6 +559,8 @@ destination -> the rest of a mttm rule | half-rule
                                                                                   (viz-state-informative-messages a-vs)))]
         [imsg-state-shown-rejecting-trace (imsg-state-mttm-shown-rejecting-trace (informative-messages-component-state
                                                                                   (viz-state-informative-messages a-vs)))]
+        [imsg-state-step-counter (imsg-state-mttm-step-counter (informative-messages-component-state
+                                                                (viz-state-informative-messages a-vs)))]
         [imsg-state-invs-zipper (imsg-state-mttm-invs-zipper (informative-messages-component-state
                                                               (viz-state-informative-messages a-vs)))])
     (struct-copy
@@ -571,39 +576,32 @@ destination -> the rest of a mttm rule | half-rule
          (informative-messages-component-state
           (viz-state-informative-messages a-vs))
          ;;rules-used
-         [rules-used (if (or (zipper-empty? imsg-state-rules-used) (zipper-at-end? imsg-state-rules-used))
-                         imsg-state-rules-used 
-                         (zipper-to-end imsg-state-rules-used))]
+         [rules-used (process-down imsg-state-rules-used)]
          ;;tapes
-         [tapes (if (or (zipper-empty? imsg-state-tape) (zipper-at-end? imsg-state-tape))
-                    imsg-state-tape
-                    (zipper-to-end imsg-state-tape))]
+         [tapes (process-down imsg-state-tape)]
          ;;head-positions
-         [head-positions (if (or (zipper-empty? imsg-state-head-position) (zipper-at-end? imsg-state-head-position))
-                             imsg-state-head-position
-                             (zipper-to-end imsg-state-head-position))]
+         [head-positions (process-down imsg-state-head-position)]
          ;;computation-lengths
-         [computation-lengths (if (or (zipper-empty? imsg-state-computation-lengths) (zipper-at-end? imsg-state-computation-lengths))
-                                  imsg-state-computation-lengths 
-                                  (zipper-to-end imsg-state-computation-lengths))]
+         [computation-lengths (process-down imsg-state-computation-lengths)]
          ;;shown-accepting-trace
-         [shown-accepting-trace (if (or (zipper-empty? imsg-state-shown-accepting-trace)
-                                        (zipper-at-end? imsg-state-shown-accepting-trace))
-                                    imsg-state-shown-accepting-trace
-                                    (zipper-to-end imsg-state-shown-accepting-trace))]
+         [shown-accepting-trace (process-down imsg-state-shown-accepting-trace)]
          ;;shown-rejecting-trace
-         [shown-rejecting-trace (if (or (zipper-empty? imsg-state-shown-rejecting-trace)
-                                        (zipper-at-end? imsg-state-shown-rejecting-trace))
-                                    imsg-state-shown-rejecting-trace
-                                    (zipper-to-end imsg-state-shown-rejecting-trace))]
+         [shown-rejecting-trace (process-down imsg-state-shown-rejecting-trace)]
+         ;;step counter
+         [step-counter (process-down imsg-state-step-counter)]
          ;;invs-zipper
-         [invs-zipper (if (or (zipper-empty? imsg-state-invs-zipper) (zipper-at-end? imsg-state-invs-zipper))
-                          imsg-state-invs-zipper
-                          (zipper-to-end imsg-state-invs-zipper))])])])))
+         [invs-zipper (process-down imsg-state-invs-zipper)])])])))
 
 ;;viz-state -> viz-state
 ;;Purpose: Progresses the visualization backward by one step
 (define (left-key-pressed a-vs)
+  ;;imsg-state-component -> imsg-state-component
+  ;;Purpose: Processes the given imsg-state-component when left arrow is pressed
+  (define (process-left imsg-state-component)
+    (if (or (zipper-empty? imsg-state-component)
+            (zipper-at-begin? imsg-state-component))
+        imsg-state-component 
+        (zipper-prev imsg-state-component)))
   (let ([imsg-state-rules-used (imsg-state-mttm-rules-used (informative-messages-component-state
                                                             (viz-state-informative-messages a-vs)))]
         [imsg-state-tape (imsg-state-mttm-tapes (informative-messages-component-state
@@ -617,7 +615,9 @@ destination -> the rest of a mttm rule | half-rule
         [imsg-state-shown-rejecting-trace (imsg-state-mttm-shown-rejecting-trace (informative-messages-component-state
                                                                                   (viz-state-informative-messages a-vs)))]
         [imsg-state-invs-zipper (imsg-state-mttm-invs-zipper (informative-messages-component-state
-                                                              (viz-state-informative-messages a-vs)))])
+                                                              (viz-state-informative-messages a-vs)))]
+        [imsg-state-step-counter (imsg-state-mttm-step-counter (informative-messages-component-state
+                                                                (viz-state-informative-messages a-vs)))])
     (struct-copy
      viz-state
      a-vs
@@ -631,35 +631,19 @@ destination -> the rest of a mttm rule | half-rule
          (informative-messages-component-state
           (viz-state-informative-messages a-vs))
          ;;rules-used
-         [rules-used (if (or (zipper-empty? imsg-state-rules-used)
-                             (zipper-at-begin? imsg-state-rules-used))
-                         imsg-state-rules-used 
-                         (zipper-prev imsg-state-rules-used))]
+         [rules-used (process-left imsg-state-rules-used)]
          ;;tapes
-         [tapes (if (or (zipper-empty? imsg-state-tape)
-                        (zipper-at-begin? imsg-state-tape))
-                    imsg-state-tape
-                    (zipper-prev imsg-state-tape))]
+         [tapes (process-left imsg-state-tape)]
          ;;head-positions
-         [head-positions (if (or (zipper-empty? imsg-state-head-position)
-                                 (zipper-at-begin? imsg-state-head-position))
-                             imsg-state-head-position
-                             (zipper-prev imsg-state-head-position))]
+         [head-positions (process-left imsg-state-head-position)]
          ;;computation-lengths
-         [computation-lengths (if (or (zipper-empty? imsg-state-computation-lengths)
-                                      (zipper-at-begin? imsg-state-computation-lengths))
-                                  imsg-state-computation-lengths 
-                                  (zipper-prev imsg-state-computation-lengths))]
+         [computation-lengths (process-left imsg-state-computation-lengths)]
          ;;shown-accepting-trace
-         [shown-accepting-trace (if (or (zipper-empty? imsg-state-shown-accepting-trace)
-                                        (zipper-at-begin? imsg-state-shown-accepting-trace))
-                                    imsg-state-shown-accepting-trace
-                                    (zipper-prev imsg-state-shown-accepting-trace))]
+         [shown-accepting-trace (process-left imsg-state-shown-accepting-trace)]
          ;;shown-rejecting-trace
-         [shown-rejecting-trace (if (or (zipper-empty? imsg-state-shown-rejecting-trace)
-                                        (zipper-at-begin? imsg-state-shown-rejecting-trace))
-                                    imsg-state-shown-rejecting-trace
-                                    (zipper-prev imsg-state-shown-rejecting-trace))]
+         [shown-rejecting-trace (process-left imsg-state-shown-rejecting-trace)]
+         ;;step counter
+         [step-counter (process-left imsg-state-step-counter)]
          ;;invs-zipper
          [invs-zipper (cond [(zipper-empty? imsg-state-invs-zipper) imsg-state-invs-zipper]
                             [(and (not (zipper-at-begin? imsg-state-invs-zipper))
@@ -674,6 +658,13 @@ destination -> the rest of a mttm rule | half-rule
 ;;viz-state -> viz-state
 ;;Purpose: Progresses the visualization to the beginning
 (define (up-key-pressed a-vs)
+  ;;imsg-state-component -> imsg-state-component
+  ;;Purpose: Processes the given imsg-state-component when up arrow is pressed
+  (define (process-up imsg-state-component)
+    (if (or (zipper-empty? imsg-state-component)
+            (zipper-at-begin? imsg-state-component))
+        imsg-state-component 
+        (zipper-to-begin imsg-state-component)))
   (let ([imsg-state-rules-used (imsg-state-mttm-rules-used (informative-messages-component-state
                                                             (viz-state-informative-messages a-vs)))]
         [imsg-state-tape (imsg-state-mttm-tapes (informative-messages-component-state (viz-state-informative-messages a-vs)))]
@@ -686,7 +677,9 @@ destination -> the rest of a mttm rule | half-rule
         [imsg-state-shown-rejecting-trace (imsg-state-mttm-shown-rejecting-trace (informative-messages-component-state
                                                                                   (viz-state-informative-messages a-vs)))]
         [imsg-state-invs-zipper (imsg-state-mttm-invs-zipper (informative-messages-component-state
-                                                              (viz-state-informative-messages a-vs)))])
+                                                              (viz-state-informative-messages a-vs)))]
+        [imsg-state-step-counter (imsg-state-mttm-step-counter (informative-messages-component-state
+                                                                (viz-state-informative-messages a-vs)))])
     (struct-copy
      viz-state
      a-vs
@@ -700,40 +693,21 @@ destination -> the rest of a mttm rule | half-rule
          (informative-messages-component-state
           (viz-state-informative-messages a-vs))
          ;;rules
-         [rules-used (if (or (zipper-empty? imsg-state-rules-used)
-                             (zipper-at-begin? imsg-state-rules-used))
-                         imsg-state-rules-used 
-                         (zipper-to-begin imsg-state-rules-used))]
+         [rules-used (process-up imsg-state-rules-used)]
          ;;tape
-         [tapes (if (or (zipper-empty? imsg-state-tape)
-                        (zipper-at-begin? imsg-state-tape))
-                    imsg-state-tape
-                    (zipper-to-begin imsg-state-tape))]
+         [tapes (process-up imsg-state-tape)]
          ;;head-position
-         [head-positions (if (or (zipper-empty? imsg-state-head-position)
-                                 (zipper-at-begin? imsg-state-head-position))
-                             imsg-state-head-position
-                             (zipper-to-begin imsg-state-head-position))]
+         [head-positions (process-up imsg-state-head-position)]
          ;;computation-lengths
-         [computation-lengths (if (or (zipper-empty? imsg-state-computation-lengths)
-                                      (zipper-at-begin? imsg-state-computation-lengths))
-                                  imsg-state-computation-lengths 
-                                  (zipper-to-begin imsg-state-computation-lengths))]
+         [computation-lengths (process-up imsg-state-computation-lengths)]
          ;;shown-accepting-trace
-         [shown-accepting-trace (if (or (zipper-empty? imsg-state-shown-accepting-trace)
-                                        (zipper-at-begin? imsg-state-shown-accepting-trace))
-                                    imsg-state-shown-accepting-trace
-                                    (zipper-to-begin imsg-state-shown-accepting-trace))]
+         [shown-accepting-trace (process-up imsg-state-shown-accepting-trace)]
          ;;show-rejecting-trace
-         [shown-rejecting-trace (if (or (zipper-empty? imsg-state-shown-rejecting-trace)
-                                        (zipper-at-begin? imsg-state-shown-rejecting-trace))
-                                    imsg-state-shown-rejecting-trace
-                                    (zipper-to-begin imsg-state-shown-rejecting-trace))]
+         [shown-rejecting-trace (process-up imsg-state-shown-rejecting-trace)]
+         ;;step counter
+         [step-counter (process-up imsg-state-step-counter)]
          ;;invariant-zipper
-         [invs-zipper (if (or (zipper-empty? imsg-state-invs-zipper)
-                              (zipper-at-begin? imsg-state-invs-zipper))
-                          imsg-state-invs-zipper
-                          (zipper-to-begin imsg-state-invs-zipper))])])])))
+         [invs-zipper (process-up imsg-state-invs-zipper)])])])))
 
 ;;viz-state -> viz-state
 ;;Purpose: Scrolls the auxillary tapes down
@@ -830,6 +804,8 @@ destination -> the rest of a mttm rule | half-rule
                                                                                    (viz-state-informative-messages a-vs)))]
          [imsg-state-invs-zipper (imsg-state-mttm-invs-zipper (informative-messages-component-state
                                                                (viz-state-informative-messages a-vs)))]
+         [imsg-state-step-counter (imsg-state-mttm-step-counter (informative-messages-component-state
+                                                                 (viz-state-informative-messages a-vs)))]
          [inv-config-frm-trace (get-mttm-config-index-frm-trace (if (eq? (mttm-type (imsg-state-mttm-M (informative-messages-component-state
                                                                                                         (viz-state-informative-messages a-vs))))
                                                                          'mttm-language-recognizer)
@@ -872,6 +848,8 @@ destination -> the rest of a mttm rule | half-rule
                [shown-rejecting-trace (if (zipper-empty? imsg-state-shown-rejecting-trace)
                                           imsg-state-shown-rejecting-trace
                                           (zipper-to-idx imsg-state-shown-rejecting-trace next-inv-index))]
+               ;;step-counter
+               [step-counter (zipper-to-idx imsg-state-step-counter next-inv-index)]
                ;;invs-zipper
                [invs-zipper zip])])])))))
 
@@ -892,6 +870,8 @@ destination -> the rest of a mttm rule | half-rule
                                                                                    (viz-state-informative-messages a-vs)))]
          [imsg-state-invs-zipper (imsg-state-mttm-invs-zipper (informative-messages-component-state
                                                                (viz-state-informative-messages a-vs)))]
+         [imsg-state-step-counter (imsg-state-mttm-step-counter (informative-messages-component-state
+                                                                 (viz-state-informative-messages a-vs)))]
          [inv-config-frm-trace (get-mttm-config-index-frm-trace (if (eq? (mttm-type (imsg-state-mttm-M (informative-messages-component-state
                                                                                                         (viz-state-informative-messages a-vs))))
                                                                          'mttm-language-recognizer)
@@ -933,6 +913,8 @@ destination -> the rest of a mttm rule | half-rule
                [shown-rejecting-trace (if (zipper-empty? imsg-state-shown-rejecting-trace)
                                           imsg-state-shown-rejecting-trace
                                           (zipper-to-idx imsg-state-shown-rejecting-trace next-inv-index))]
+               ;;step-counter
+               [step-counter (zipper-to-idx imsg-state-step-counter next-inv-index)]
                ;;invariant-zipper
                [invs-zipper zip])])])))))
 
@@ -1118,8 +1100,10 @@ destination -> the rest of a mttm rule | half-rule
                      
          ;;(listof graph-thunk) ;;Purpose: Gets all the graphs needed to run the viz
          [graphs (create-graph-thunks building-state '())]
+         [computation-length (length displayed-tape)]
+         [step-counter (list->zipper (build-list computation-length (λ (x) x)))]
          ;;(listof number) ;;Purpose: Gets the number of computations for each step
-         [cut-off-computations-lengths (take (count-computations LoC '()) (length displayed-tape))]
+         [cut-off-computations-lengths (take (count-computations LoC '()) computation-length)]
          [MTTM-E-SCENE-HEIGHT (cond [(= (mttm-tape-amount M) 2) MTTM-2tape-E-SCENE-HEIGHT]
                                     [(= (mttm-tape-amount M) 3) MTTM-3tape-E-SCENE-HEIGHT]
                                     [else MTTM->=4tape-E-SCENE-HEIGHT])]
@@ -1138,7 +1122,6 @@ destination -> the rest of a mttm rule | half-rule
          [viz-max-zoom-out (cond [(= (mttm-tape-amount M) 2) mttm-2tape-viz-max-zoom-out]
                               [(= (mttm-tape-amount M) 3) mttm-3tape-viz-max-zoom-out]
                               [else mttm->=4tape-viz-max-zoom-out])]
-
          [color-legend (let* ([buffer-sqaure (square HEIGHT-BUFFER 'solid (color-palette-blank-color color-scheme))]
                               [spacer (beside buffer-sqaure buffer-sqaure buffer-sqaure buffer-sqaure)])
                          (if rejected?
@@ -1175,7 +1158,8 @@ destination -> the rest of a mttm rule | half-rule
                                                     (list->zipper cut-off-computations-lengths)
                                                     cut-off
                                                     machine-decision
-                                                    1
+                                                    MIN-AUX-TAPE-INDEX
+                                                    step-counter
                                                     0
                                                     (let ([offset-cap (- (length a-word) TM-TAPE-SIZE)])
                                                       (if (> 0 offset-cap) 0 offset-cap))

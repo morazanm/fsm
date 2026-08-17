@@ -60,6 +60,7 @@
                                     (list->zipper '(1))
                                     1
                                     'accept
+                                    (list->zipper '(1 2 3 3 4 4 5 5))
                                     0
                                     (let ([offset-cap (- (length '(a b b)) TM-TAPE-SIZE)])
                                       (if (> 0 offset-cap) 0 offset-cap))
@@ -103,6 +104,7 @@
                                               1
                                               'accept
                                               1
+                                              (list->zipper '(1 2 3 3 4 4 5 5))
                                               0
                                               (let ([offset-cap (- (length '(a b b)) TM-TAPE-SIZE)])
                                                 (if (> 0 offset-cap) 0 offset-cap))
@@ -124,6 +126,7 @@
                                               1
                                               'accept
                                               1
+                                              (list->zipper '(1 2 3 3 4 4 5 5))
                                               0
                                               (let ([offset-cap (- (length '(a b b)) TM-TAPE-SIZE)])
                                                 (if (> 0 offset-cap) 0 offset-cap))
@@ -146,6 +149,7 @@
                                                 1
                                                 'accept
                                                 1
+                                                (list->zipper '(1 2 3 3 4 4 5 5))
                                                 0
                                                 (let ([offset-cap (- (length '(a b b)) TM-TAPE-SIZE)])
                                                   (if (> 0 offset-cap) 0 offset-cap))
