@@ -140,7 +140,7 @@
 
 
 
-(define (rg->state-ndfa a-rg new-start)   
+#;(define (rg->state-ndfa a-rg new-start)   
   (define old-nts (list->seteq (cons EMP (rg-getnts a-rg))))
   (define new-rules (mutable-set))
   (define new-nts (mutable-seteq))
@@ -190,6 +190,39 @@
     (rg->fsa new-rg))
   new-state-ndfa)
 
+;; THIS IS THE NEW ONE
+(define (rg->state-ndfa a-rg new-start)   
+  (define old-nts (list->seteq (cons EMP (rg-getnts a-rg))))
+  (define new-rules (mutable-set))
+  (define new-nts (mutable-seteq))
+  
+  (define all-rules (rg-getunparsedrules a-rg))
+
+  ;; adds all the given nts rules and new nts to the set
+  (define (add-nt-rules nt)
+    (cond [(set-member? new-nts nt)
+           (void)]
+          [else (set-add! new-nts nt)
+                (for ([rule (in-list all-rules)]
+                      #:when (eq? nt (car rule))) ;<- means nt was just discovered, so add all nts rules
+                  (set-add! new-rules rule)
+                  (for ([symb (in-list (symbol->fsmlos (caddr rule)))]
+                        #:when (set-member? old-nts symb))
+                    (when (not (eq? symb EMP))
+                      (add-nt-rules symb))))]))
+    
+  (add-nt-rules new-start)
+  
+  (define new-rg
+    (make-unchecked-rg
+     (set->list new-nts)
+     (rg-getalphabet a-rg)
+     (set->list new-rules)
+     new-start))
+  (define new-state-ndfa
+    (rg->fsa new-rg))
+  new-state-ndfa)
+
 (struct rule-struct (start-state read-elem dest-state) #:transparent)
 (struct path-with-rep-count (path rep-counts) #:transparent)
 
@@ -202,7 +235,7 @@
 
 
 ;; OLD VERSION OF SM-TEST-INVS-FSA
-(define REPETITION-LIMIT 1)
+(define REPETITION-LIMIT 2)
 
 ;(struct path-with-hash (path hash) #:transparent) ;<- old path structure
 (struct path-with-hash (config-path word-of-path path-starting-state hash) #:transparent)
@@ -266,7 +299,7 @@
                 (λ (x) (path-with-hash (path-with-hash-config-path x) 
                                        (reverse (path-with-hash-word-of-path x))
                                        (path-with-hash-path-starting-state x)
-                                       (path-with-hash-hash x))))) ;<- NEED THIS IF USING original version of sm-test-invs 
+                                       (path-with-hash-hash x))))) ;<- NEED THIS IF USING 'original' version of sm-test-invs 
 
 
 
@@ -431,7 +464,7 @@
              '()]
             [else
              (define rg-pair (car rg-lst))
-             (cons (sm-test-invs-fsa (cadr rg-pair) 1 (car rg-pair) (cadr (assoc (car rg-pair) a-loi)))
+             (cons (sm-test-invs-fsa (cadr rg-pair) 3 (car rg-pair) (cadr (assoc (car rg-pair) a-loi)))
                    (test-rgs (cdr rg-lst)))]))
     (filter (λ (x) (not (empty? (second x)))) (test-rgs state-fsas)))
 

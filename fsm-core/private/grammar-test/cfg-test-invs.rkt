@@ -49,6 +49,21 @@
   (define new-rules (mutable-set))
   (define new-nts (mutable-seteq))
 
+  (define all-rules (cfg-get-rules a-cfg))
+ 
+  ;; adds all the given nts rules and new nts to the set
+  (define (add-nt-rules nt)
+    (cond [(set-member? new-nts nt)
+           (void)]
+          [else (set-add! new-nts nt)
+                (for ([rule (in-list all-rules)]
+                      #:when (eq? nt (car rule))) ;<- means nt was just discovered, so add all nts rules
+                  (set-add! new-rules rule)
+                  (for ([symb (in-list (symbol->fsmlos (caddr rule)))]
+                        #:when (set-member? old-nts symb))
+                    (when (not (eq? symb EMP))
+                      (add-nt-rules symb))))]))
+
   (define (found-new-rule rules)
     (cond [(null? rules)
            (find-new-rule (cfg-get-rules a-cfg))]
@@ -78,9 +93,13 @@
            (found-new-rule (cdr rules))]
           [else
            (find-new-rule (cdr rules))]))
-  (set-add! new-nts new-start)
-  (find-new-rule (cfg-get-rules a-cfg))
-        
+  #;(set-add! new-nts new-start)
+  #;(find-new-rule (cfg-get-rules a-cfg))
+
+
+  (add-nt-rules new-start) ;;;;;;;
+
+  
   (define new-cfg
     (make-unchecked-cfg
      (set->list new-nts)
@@ -152,7 +171,7 @@
     (cond [(inv unreversed-word)
            accum]
           [else
-           (cons #;(list unreversed-word ;<- gina change 
+           (cons #;(list unreversed-word ;<- gina change for new output format
                        grammar-nt)
                  unreversed-word
                  accum)]))

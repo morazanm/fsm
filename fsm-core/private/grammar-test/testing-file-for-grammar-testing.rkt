@@ -343,7 +343,8 @@
   (let*[(bs (takef ci (λ (x) (eq? x 'b))))
         (cs (takef (drop ci (length bs)) (λ (x) (eq? x 'c))))
         (d (first (drop ci (+ (length cs) (length bs)))))]
-    (equal? ci (append bs cs (list d)))))
+    (equal? ci (append bs cs (list d))))
+  )
 
 
 ;; B: w= (c)+ d
@@ -877,95 +878,95 @@
 
 
 ;;REGULAR GRAMMARS
-#;(define tests (list
-               (test-case 'EMP-U-ba*
+(define tests (list
+               #|(test-case 'EMP-U-ba*
                           NUM-TESTS-PER-GRAMMAR
-                          (lambda () (rg-test-invs EMP-U-ba* loi-EMP-U-ba*)))
+                          (lambda () (rg-test-invs-andres EMP-U-ba* loi-EMP-U-ba*)))
                
                (test-case 'MULT3-as
                           NUM-TESTS-PER-GRAMMAR
-                          (lambda () (rg-test-invs MULT3-as loi-MULT3-as)))
+                          (lambda () (rg-test-invs-andres MULT3-as loi-MULT3-as)))
 
                (test-case 'NO-AA-grammer
                           NUM-TESTS-PER-GRAMMAR
-                          (lambda () (rg-test-invs NO-AA-grammer loi-NO-AA-grammer)))
+                          (lambda () (rg-test-invs-andres NO-AA-grammer loi-NO-AA-grammer)))
 
                (test-case 'EVEN-NUM-Bs-grammar
                           NUM-TESTS-PER-GRAMMAR
-                          (lambda () (rg-test-invs EVEN-NUM-Bs-grammar loi-EVEN-NUM-Bs-grammar)))
+                          (lambda () (rg-test-invs-andres EVEN-NUM-Bs-grammar loi-EVEN-NUM-Bs-grammar)))
                
                (test-case 'EVEN-A-ODD-B-grammar
                           NUM-TESTS-PER-GRAMMAR
-                          (lambda () (rg-test-invs EVEN-A-ODD-B-grammar loi-EVEN-A-ODD-B-grammar)))
+                          (lambda () (rg-test-invs-andres EVEN-A-ODD-B-grammar loi-EVEN-A-ODD-B-grammar)))|#
 
                (test-case 'a+b+c+d
                           NUM-TESTS-PER-GRAMMAR
-                          (lambda () (rg-test-invs a+b+c+d loi-a+b+c+d)))
+                          (lambda () (rg-test-invs-andres a+b+c+d loi-a+b+c+d)))
                
                
                (test-case 'CONTAINS-ABBA
                           NUM-TESTS-PER-GRAMMAR
-                          (lambda () (rg-test-invs CONTAINS-ABBA loi-CONTAINS-ABBA)))
+                          (lambda () (rg-test-invs-andres CONTAINS-ABBA loi-CONTAINS-ABBA)))
                
                (test-case 'EVEN-B-ODD-A
                           NUM-TESTS-PER-GRAMMAR
-                          (lambda () (rg-test-invs EVEN-B-ODD-A loi-EVEN-B-ODD-A)))
+                          (lambda () (rg-test-invs-andres EVEN-B-ODD-A loi-EVEN-B-ODD-A)))
                
                (test-case 'rg-STARTS-WITH-aa
                           NUM-TESTS-PER-GRAMMAR
-                          (lambda () (rg-test-invs rg-STARTS-WITH-aa loi-rg-STARTS-WITH-aa)))
+                          (lambda () (rg-test-invs-andres rg-STARTS-WITH-aa loi-rg-STARTS-WITH-aa)))
                
                (test-case 'bba-*
                           NUM-TESTS-PER-GRAMMAR
-                          (lambda () (rg-test-invs bba-* loi-bba-*)))
+                          (lambda () (rg-test-invs-andres bba-* loi-bba-*)))
                     
                ))
 
-
+(define path-length-cfgs 16)
 
 ;; CONTEXT-FREE-GRAMMARS
-(define tests (list
+#;(define tests (list
                (test-case 'numb>numa
                           NUM-TESTS-PER-GRAMMAR
-                          (lambda () (cfg-test-invs 15  numb>numa loi-numb>numa)))
+                          (lambda () (cfg-test-invs numb>numa path-length-cfgs  loi-numb>numa)))
                
-               (test-case 'palindrome
+               #|(test-case 'palindrome
                           NUM-TESTS-PER-GRAMMAR
-                          (lambda () (cfg-test-invs 15  palindrome loi-palindrome)))
+                          (lambda () (cfg-test-invs palindrome path-length-cfgs  loi-palindrome)))
 
                (test-case 'c^mb^na^nd^m
                           NUM-TESTS-PER-GRAMMAR
-                          (lambda () (cfg-test-invs 15  c^mb^na^nd^m loi-c^mb^na^nd^m)))
+                          (lambda () (cfg-test-invs c^mb^na^nd^m path-length-cfgs  loi-c^mb^na^nd^m)))
 
                (test-case 'wcw^r
                           NUM-TESTS-PER-GRAMMAR
-                          (lambda () (cfg-test-invs 15  wcw^r loi-wcw^r)))
+                          (lambda () (cfg-test-invs wcw^r path-length-cfgs  loi-wcw^r)))
                
                (test-case 'aibj
                           NUM-TESTS-PER-GRAMMAR
-                          (lambda () (cfg-test-invs 15  aibj loi-aibj)))
+                          (lambda () (cfg-test-invs aibj path-length-cfgs  loi-aibj)))
 
                (test-case 'aibj2
                           NUM-TESTS-PER-GRAMMAR
-                          (lambda () (cfg-test-invs 15  aibj2 loi-aibj2)))
+                          (lambda () (cfg-test-invs aibj2 path-length-cfgs  loi-aibj2)))
                
                
                (test-case 'anbn
                           NUM-TESTS-PER-GRAMMAR
-                          (lambda () (cfg-test-invs 15  anbn loi-anbn)))
+                          (lambda () (cfg-test-invs anbn path-length-cfgs  loi-anbn)))
                
                (test-case 'anbman
                           NUM-TESTS-PER-GRAMMAR
-                          (lambda () (cfg-test-invs 15  anbman loi-anbman)))
+                          (lambda () (cfg-test-invs anbman path-length-cfgs  loi-anbman)))
                
                (test-case 'anbn-*
                           NUM-TESTS-PER-GRAMMAR
-                          (lambda () (cfg-test-invs 15  anbn-* loi-anbn-*)))
+                          (lambda () (cfg-test-invs anbn-* path-length-cfgs  loi-anbn-*)))
                
                (test-case 'a^nb^mc^jd^k
                           NUM-TESTS-PER-GRAMMAR
-                          (lambda () (cfg-test-invs 15 a^nb^mc^jd^k loi-a^nb^mc^jd^k)))
-                    
+                          (lambda () (cfg-test-invs a^nb^mc^jd^k path-length-cfgs  loi-a^nb^mc^jd^k))) 
+                   |# 
                ))
 
 
