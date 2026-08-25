@@ -17,6 +17,7 @@
          "regular-grammar.rkt"
          "regexp.rkt"
          racket/list
+         racket/set
          )
   
 (provide make-unchecked-dfa make-unchecked-ndfa union-fsa concat-fsa kleenestar-fsa complement-fsa intersection-fsa
@@ -667,7 +668,7 @@
            (let ((a1 (build-alphabet (kleenestar-regexp-r1 r))))
              a1)]))
     
-  (define SIGMA (remove-duplicates (build-alphabet r)))
+  (define SIGMA (set->list (fsm-regexp-alphabet r)) #;(remove-duplicates (build-alphabet r)))
     
   ; regexp --> fsa
   ; ASSUMPTION: The given regexp is not a null-regexp
