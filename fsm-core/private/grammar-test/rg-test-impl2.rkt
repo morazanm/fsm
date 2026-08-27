@@ -172,9 +172,9 @@
              null]
             [else ;(displayln path)
                   ;(displayln word)
-                  (if (set-member? finals prev-config-nt)
-                      (set-add! (hash-ref nts-hash start-nt) word)
-                      (set-add! (hash-ref nts-hash (first (first path))) word))
+                  (if (set-member? finals (first (first path)) #;prev-config-nt)
+                      null #;(set-add! (hash-ref nts-hash start-nt) word)
+                      (set-add! (hash-ref nts-hash prev-config-nt #;(first (first path))) word))
                   (add-words (rest path) (if (empty? word)
                                              word
                                              (rest word)) (first (first path)))]))
@@ -182,11 +182,11 @@
     ;(displayln (path-with-hash-config-path path))
     ;(displayln last-config-word)
     (set-add! (hash-ref nts-hash start-nt) last-config-word)
-    (add-words (rest (path-with-hash-config-path path)) (rest last-config-word) start-nt))
+    (path-with-hash-config-path path) #;(add-words (rest (path-with-hash-config-path path)) (rest last-config-word) start-nt))
 
 
   (treelist-map paths process-path)
-  nts-hash
+  #;nts-hash
   )
 
 ;; (listof path) nts -> ht
@@ -317,17 +317,19 @@
 
   ;; gettng ht of nts and words to test them with
   ;(define test-word-ht (split-paths (find-paths rg-machine REPETITION-LIMIT) (sm-states rg-machine)))
-  (define test-word-ht (new-split-paths (find-paths rg-machine REPETITION-LIMIT) (sm-states rg-machine) (sm-finals rg-machine) (sm-start rg-machine))) ;<- with new-split-paths
+  (define test-word-ht (new-split-paths (find-paths rg-machine REPETITION-LIMIT)
+                                        (rest (sm-states rg-machine))
+                                        (sm-finals rg-machine)
+                                        (sm-start rg-machine))) ;<- with new-split-paths
   
-  (displayln test-word-ht)
+  #;(displayln test-word-ht)
   ;;testing each nt in ht with the test words
 
   ;; nt (setof word) -> (listof (list nt (listof word))
   ;; purpose: to return a list of the nt and the words that fail (returns empty if list of fail words empty
   (define (test-nt-inv nt sow)
-    (cond [(member nt inv-nts)
-           (define nt-inv (hash-ref a-loi-hash nt (lambda (x) #t)))
-           (define fail-word-set (mutable-set)) ;<- set of all the words that cause the inv to not hold
+    (define nt-inv (hash-ref a-loi-hash nt nt))
+    (define fail-word-set (mutable-set)) ;<- set of all the words that cause the inv to not hold
 
            ;; every word that the inv doesn't hold for gets put into the set
            (for ([word (in-set sow)]
@@ -336,11 +338,12 @@
 
            (define fail-word-list (set->list fail-word-set))
 
-           (if (empty? fail-word-list)
-               null
-               (list nt fail-word-list))]
-          [else null]))
-  (for/list ([(nt sow) (in-hash test-word-ht)]
+    (if (empty? fail-word-list)
+        null
+        (list nt fail-word-list))
+    )
+  test-word-ht
+  #;(for/list ([(nt sow) (in-hash test-word-ht)]
              #:do [(define test-result (test-nt-inv nt sow))]
              #:when (and (not (empty? test-result))
                          (hash-has-key? a-loi-hash nt)))
