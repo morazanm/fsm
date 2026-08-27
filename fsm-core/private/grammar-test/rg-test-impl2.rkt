@@ -310,6 +310,8 @@
 (define (rg-test-invs-impl2 a-rg a-loi)
   (define a-loi-hash (for/hash ([inv (in-list a-loi)])
                        (values (car inv) (cadr inv))))
+
+  (define inv-nts (map (λ (inv-pair) (first inv-pair)) a-loi));; <- all nts that need to be tested
   ;; turning the rg into an fsa
   (define rg-machine (rg->state-ndfa a-rg (grammar-start a-rg)))
 
@@ -323,20 +325,21 @@
   ;; nt (setof word) -> (listof (list nt (listof word))
   ;; purpose: to return a list of the nt and the words that fail (returns empty if list of fail words empty
   (define (test-nt-inv nt sow)
-    (define nt-inv (hash-ref a-loi-hash nt #t))
-    (define fail-word-set (mutable-set)) ;<- set of all the words that cause the inv to not hold
+    (cond [(member nt inv-nts)
+           (define nt-inv (hash-ref a-loi-hash nt (lambda (x) #t)))
+           (define fail-word-set (mutable-set)) ;<- set of all the words that cause the inv to not hold
 
-    ;; every word that the inv doesn't hold for gets put into the set
-    (for ([word (in-set sow)]
-          #:when (not (nt-inv word)))
-      (set-add! fail-word-set word))
+           ;; every word that the inv doesn't hold for gets put into the set
+           (for ([word (in-set sow)]
+                 #:when (not (nt-inv word)))
+             (set-add! fail-word-set word))
 
-    (define fail-word-list (set->list fail-word-set))
+           (define fail-word-list (set->list fail-word-set))
 
-    (if (empty? fail-word-list)
-        null
-        (list nt fail-word-list))
-    )
+           (if (empty? fail-word-list)
+               null
+               (list nt fail-word-list))]
+          [else null]))
   (for/list ([(nt sow) (in-hash test-word-ht)]
              #:do [(define test-result (test-nt-inv nt sow))]
              #:when (and (not (empty? test-result))
@@ -401,7 +404,7 @@
                                           (list 'B B-INV #;(lambda (x) #t))))
 
 
-#;(rg-test-invs-impl2 rg-STARTS-WITH-aa #;2 (list (list 'S (lambda (x) #f))
+(rg-test-invs-impl2 rg-STARTS-WITH-aa #;2 (list (list 'S (lambda (x) #f))
                                           (list 'A (lambda (x) #f))
                                           (list 'B (lambda (x) #f))))
 
