@@ -44,7 +44,7 @@
          racket/treelist
          "../sm-getters.rkt"
          "../grammar-getters.rkt")
-(provide rg-test-invs rg-test-invs-andres)
+(provide rg-test-invs-andres)
 
 
 ;; andres stuff ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -290,109 +290,17 @@
                               (sm-start a-machine)
                               (hash rule 1))))
   #;(map (lambda (x) (path-with-hash-path x)) (find-paths-helper))
-  (treelist-map (find-paths-helper)
+  #;(treelist-map (find-paths-helper)
                 (λ (x) (path-with-hash (reverse (path-with-hash-config-path x))  ;<- NEED THIS IF USING SPLIT-PATHS
                                        (path-with-hash-word-of-path x)
                                        (path-with-hash-path-starting-state x)
                                        (path-with-hash-hash x))))
-  #;(treelist-map (find-paths-helper)
+  (treelist-map (find-paths-helper)
                 (λ (x) (path-with-hash (path-with-hash-config-path x) 
                                        (reverse (path-with-hash-word-of-path x))
                                        (path-with-hash-path-starting-state x)
                                        (path-with-hash-hash x))))) ;<- NEED THIS IF USING 'original' version of sm-test-invs 
 
-
-
-;; (listof path) nts -> ht
-;; Purpose: returns a hash table of test words for each nt
-(define (split-paths paths nts)
-  ;; making hash table for the nt and all the words that are gonna be used to test them
-  (define nts-hash (for/hash ([nt (in-list nts)])
-                     (values nt (mutable-set))))
-
-  ;; for each path, split the path if state dif from cur path state
-  ;; purpose: returns a ht of the key being the nt and the value being a set of words to test the inv of the nt
-  (define (add&split paths)
-    (for ([path (in-treelist paths)])  ;<- adding all the words to test the nt into its set in the ht
-      (let ([cur-set (hash-ref nts-hash (path-with-hash-path-starting-state path))])
-        (for ([config (in-list (path-with-hash-config-path path))])   
-          (set-add! cur-set (filter (λ (x) (not (eq? 'ε x)))  (reverse (second config)))))) ;<- the word is in reverse in the configs so have to unreverse it
-
-      ;; now gonna go down the list of configs and split them up to add them to the other nt hash sets
-
-      ;; path  ->
-      ;; purpose: to break up a given path and add the words into the nt sets
-      (define (break-up-path path)
-        ;; path (listof symbol) natnum -> 
-        ;; purpose: helper function for break-up-path 
-        (define (break-up-path-helper cur-path nts-visited-set length-to-drop-word) 
-          (if (< (length (path-with-hash-config-path cur-path)) 2)
-              null
-              (if (and (not (eq? (path-with-hash-path-starting-state cur-path) (first (first (path-with-hash-config-path cur-path)))))
-                       (not (set-member? nts-visited-set (first (first (path-with-hash-config-path cur-path))))))                   
-                  (begin
-                    ;; adding all the configs that are in the path to the nt's set
-                    ;(displayln cur-path)
-                    ;(displayln length-to-drop-word)
-                    (let ([cur-set (hash-ref nts-hash (first (first (path-with-hash-config-path cur-path))))])
-                      (for ([config (in-list (rest (path-with-hash-config-path cur-path)))])   
-                        (set-add! cur-set (filter (λ (x) (not (eq? 'ε x))) (drop (reverse (second config)) length-to-drop-word)))))
-               
-                    (break-up-path-helper (path-with-hash (rest (path-with-hash-config-path cur-path))
-                                                          (path-with-hash-word-of-path cur-path)
-                                                          (first (first (path-with-hash-config-path cur-path)))
-                                                          (path-with-hash-hash cur-path))
-                                          (set-add nts-visited-set (first (path-with-hash-config-path cur-path)))
-                                          (+ length-to-drop-word (length (drop (second (first (path-with-hash-config-path cur-path)))
-                                                                               length-to-drop-word)))))
-                    
-                  (break-up-path-helper (path-with-hash (rest (path-with-hash-config-path cur-path))
-                                                        (path-with-hash-word-of-path cur-path)
-                                                        (path-with-hash-path-starting-state cur-path)
-                                                        (path-with-hash-hash cur-path))
-                                        nts-visited-set
-                                        length-to-drop-word))))
-        (break-up-path-helper path (set (path-with-hash-path-starting-state path)) (length (second (first (path-with-hash-config-path path))))))
-      
-      (treelist-map paths break-up-path)
-      ))        
-  (add&split paths)
-  nts-hash)
-
-
-;; MIGHT HAVE TO GET RID OF THIS FUNCTION (below), BUT WE'LL SEE 
-
-;; (listof rules) -> word
-;; Purpose: To return a word that is made from the given list of rules
-(define (word-of-path a-lor)
-  (define (word-of-path-helper accum a-lor)
-    (if (null? a-lor)
-        accum
-        (if (eq? 'ε (cadr (car a-lor)))
-            (word-of-path-helper accum (cdr a-lor))
-            (word-of-path-helper (cons (cadr (car a-lor)) accum) (cdr a-lor)))))
-  (word-of-path-helper '() a-lor))
-
-
-
-(define (get-paths-to-finals paths finals)
-  (filter (λ (path) (member (third (first path)) finals))
-          paths))
-
-(define (extract-rule-set paths)
-  (remove-duplicates (apply append paths)))
-
-(define (extract-state-set rules)
-  (remove-duplicates (append-map (λ (r) (list (first r) (third r))) rules)))
-
-(define (filter-paths paths states)
-  (define (has-only? p states) (andmap (λ (r) (and (member (first r) states)
-                                                   (member (third r) states)))
-                                       p))
-  (filter (λ (p) (has-only? p states)) paths))
-
-
-;; the difference with this verision of sm-test-invs and the original one is that this one tests the inv with words that reach final states
 
 
 ;; machine . (list state (word -> boolean)) -> (listof (listof symbol))
@@ -468,42 +376,6 @@
                    (test-rgs (cdr rg-lst)))]))
     (filter (λ (x) (not (empty? (second x)))) (test-rgs state-fsas)))
 
-
-;; this is the new one 
-(define (rg-test-invs a-rg a-loi)
-  (define a-loi-hash (for/hash ([inv (in-list a-loi)])
-                       (values (car inv) (cadr inv))))
-  ;; turning the rg into an fsa
-  (define rg-machine (rg->state-ndfa a-rg (grammar-start a-rg)))
-
-  ;; gettng ht of nts and words to test them with
-  (define test-word-ht (split-paths (find-paths rg-machine REPETITION-LIMIT) (sm-states rg-machine)))
-  ;(displayln test-word-ht)
-  ;;testing each nt in ht with the test words
-
-  ;; nt (setof word) -> (listof (list nt (listof word))
-  ;; purpose: to return a list of the nt and the words that fail (returns empty if list of fail words empty
-  (define (test-nt-inv nt sow)
-    (define nt-inv (hash-ref a-loi-hash nt #t))
-    (define fail-word-set (mutable-set)) ;<- set of all the words that cause the inv to not hold
-
-    ;; every word that the inv doesn't hold for gets put into the set
-    (for ([word (in-set sow)]
-          #:when (not (nt-inv word)))
-      (set-add! fail-word-set word))
-
-    (define fail-word-list (set->list fail-word-set))
-
-    (if (empty? fail-word-list)
-        null
-        (list nt fail-word-list))
-    )
-  (for/list ([(nt sow) (in-hash test-word-ht)]
-             #:do [(define test-result (test-nt-inv nt sow))]
-             #:when (and (not (empty? test-result))
-                         (hash-has-key? a-loi-hash nt)))
-    test-result)
-  )
 
 
 
