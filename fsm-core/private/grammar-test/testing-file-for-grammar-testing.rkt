@@ -4,6 +4,7 @@
 
 (require "cfg-test-invs.rkt"
          "rg-test-invs.rkt"
+         "rg-test-impl2.rkt"
          
          "../grammar-getters.rkt"
           "../rg-constructors.rkt"
@@ -299,7 +300,7 @@
        (odd? (length (filter (λ (w) (equal? w 'b)) a-word)))))
 
 
-(define loi-EVEN-A-ODD-B-grammar (list (list 'S P-INV-EVEN-A-ODD-B-grammar)
+(define loi-EVEN-A-ODD-B-grammar (list (list 'S S-INV-EVEN-A-ODD-B-grammar)
                                        (list 'M M-INV-EVEN-A-ODD-B-grammar)
                                        (list 'N N-INV-EVEN-A-ODD-B-grammar)
                                        (list 'P P-INV-EVEN-A-ODD-B-grammar)))
@@ -879,46 +880,46 @@
 
 ;;REGULAR GRAMMARS
 (define tests (list
-               #|(test-case 'EMP-U-ba*
+               (test-case 'EMP-U-ba*
                           NUM-TESTS-PER-GRAMMAR
-                          (lambda () (rg-test-invs-andres EMP-U-ba* loi-EMP-U-ba*)))
+                          (lambda () (rg-test-invs-impl2 EMP-U-ba* loi-EMP-U-ba*)))
                
                (test-case 'MULT3-as
                           NUM-TESTS-PER-GRAMMAR
-                          (lambda () (rg-test-invs-andres MULT3-as loi-MULT3-as)))
+                          (lambda () (rg-test-invs-impl2 MULT3-as loi-MULT3-as)))
 
                (test-case 'NO-AA-grammer
                           NUM-TESTS-PER-GRAMMAR
-                          (lambda () (rg-test-invs-andres NO-AA-grammer loi-NO-AA-grammer)))
+                          (lambda () (rg-test-invs-impl2 NO-AA-grammer loi-NO-AA-grammer)))
 
                (test-case 'EVEN-NUM-Bs-grammar
                           NUM-TESTS-PER-GRAMMAR
-                          (lambda () (rg-test-invs-andres EVEN-NUM-Bs-grammar loi-EVEN-NUM-Bs-grammar)))
+                          (lambda () (rg-test-invs-impl2 EVEN-NUM-Bs-grammar loi-EVEN-NUM-Bs-grammar)))
                
                (test-case 'EVEN-A-ODD-B-grammar
                           NUM-TESTS-PER-GRAMMAR
-                          (lambda () (rg-test-invs-andres EVEN-A-ODD-B-grammar loi-EVEN-A-ODD-B-grammar)))|#
+                          (lambda () (rg-test-invs-impl2 EVEN-A-ODD-B-grammar loi-EVEN-A-ODD-B-grammar)))
 
                (test-case 'a+b+c+d
                           NUM-TESTS-PER-GRAMMAR
-                          (lambda () (rg-test-invs-andres a+b+c+d loi-a+b+c+d)))
+                          (lambda () (rg-test-invs-impl2 a+b+c+d loi-a+b+c+d)))
                
                
                (test-case 'CONTAINS-ABBA
                           NUM-TESTS-PER-GRAMMAR
-                          (lambda () (rg-test-invs-andres CONTAINS-ABBA loi-CONTAINS-ABBA)))
+                          (lambda () (rg-test-invs-impl2 CONTAINS-ABBA loi-CONTAINS-ABBA)))
                
                (test-case 'EVEN-B-ODD-A
                           NUM-TESTS-PER-GRAMMAR
-                          (lambda () (rg-test-invs-andres EVEN-B-ODD-A loi-EVEN-B-ODD-A)))
+                          (lambda () (rg-test-invs-impl2 EVEN-B-ODD-A loi-EVEN-B-ODD-A)))
                
                (test-case 'rg-STARTS-WITH-aa
                           NUM-TESTS-PER-GRAMMAR
-                          (lambda () (rg-test-invs-andres rg-STARTS-WITH-aa loi-rg-STARTS-WITH-aa)))
+                          (lambda () (rg-test-invs-impl2 rg-STARTS-WITH-aa loi-rg-STARTS-WITH-aa)))
                
                (test-case 'bba-*
                           NUM-TESTS-PER-GRAMMAR
-                          (lambda () (rg-test-invs-andres bba-* loi-bba-*)))
+                          (lambda () (rg-test-invs-impl2 bba-* loi-bba-*)))
                     
                ))
 
@@ -930,7 +931,7 @@
                           NUM-TESTS-PER-GRAMMAR
                           (lambda () (cfg-test-invs numb>numa path-length-cfgs  loi-numb>numa)))
                
-               #|(test-case 'palindrome
+               (test-case 'palindrome
                           NUM-TESTS-PER-GRAMMAR
                           (lambda () (cfg-test-invs palindrome path-length-cfgs  loi-palindrome)))
 
@@ -966,7 +967,7 @@
                (test-case 'a^nb^mc^jd^k
                           NUM-TESTS-PER-GRAMMAR
                           (lambda () (cfg-test-invs a^nb^mc^jd^k path-length-cfgs  loi-a^nb^mc^jd^k))) 
-                   |# 
+                   
                ))
 
 

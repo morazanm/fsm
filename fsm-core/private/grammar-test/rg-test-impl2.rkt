@@ -176,15 +176,15 @@
             [else ;(displayln path)
                   ;(displayln word)
                   (if (set-member? finals prev-config-nt)
-                      (set-add! (hash-ref nts-hash start-nt) word)
-                      (set-add! (hash-ref nts-hash (first (first path))) word))
+                      (set-add! (hash-ref nts-hash start-nt) (filter (λ (x) (not (eq? x 'ε))) word))
+                      (set-add! (hash-ref nts-hash (first (first path))) (filter (λ (x) (not (eq? x 'ε))) word)))
                   (add-words (rest path) (if (empty? word)
                                              word
                                              (rest word)) (first (first path)))]))
     
     ;(displayln (path-with-hash-config-path path))
     ;(displayln last-config-word)
-    (set-add! (hash-ref nts-hash start-nt) last-config-word)
+    (set-add! (hash-ref nts-hash start-nt) (filter (λ (x) (not (eq? x 'ε))) last-config-word))
     (add-words (rest (path-with-hash-config-path path)) (rest last-config-word) start-nt))
 
 
@@ -325,7 +325,7 @@
                                         (sm-finals rg-machine)
                                         (sm-start rg-machine))) ;<- with new-split-paths
   
-  #;(displayln test-word-ht)
+  ;(displayln test-word-ht)
   ;;testing each nt in ht with the test words
 
   ;; nt (setof word) -> (listof (list nt (listof word))
@@ -406,7 +406,7 @@
                                 (eq? 'a x))))))
 
   
-(rg-test-invs-impl2 rg-STARTS-WITH-aa #;2 (list (list 'S S-INV #;(lambda (x) #t))
+#;(rg-test-invs-impl2 rg-STARTS-WITH-aa #;2 (list (list 'S S-INV #;(lambda (x) #t))
                                           (list 'A A-INV #;(lambda (x) #f))
                                           (list 'B B-INV #;(lambda (x) #t))))
 
