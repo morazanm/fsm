@@ -1,4 +1,4 @@
-          #lang racket/base
+#lang racket/base
 
 (require "../../../sm-graph.rkt"
          "../constants.rkt"
@@ -639,24 +639,6 @@
                                    outof-n))
                             into-n))))))
       (foldr (λ (s g) (rip-out-node s g)) g lon))
-  
-    ;;cfe-template -> cfe-template
-    ;;Purpose: Simplifies the given cfe-template
-    (define (simplify-templates temp)
-      ;;union-cfe-template -> cfe-template
-      ;;Purpose: Simplifies the given union-cfe-template
-      (define (simplify-empty temp)
-        (if (andmap empty? (union-rules temp))
-            (empty (first (union-rules temp)))
-            (union (map simplify-templates (union-rules temp)))))
-      (cond [(concat? temp) (let ([res (filter-not empty? (map simplify-templates (concat-rules temp)))])
-                              (if (is-length-one? res)
-                                  (first res)
-                                  (concat res)))]
-            [(union? temp) (simplify-empty temp)]
-            [(kleene? temp) (kleene (simplify-templates (kleene-rule temp)))]
-            [else temp]))
-  
     (let* ([new-states (for/fold ([st (pda-getstates P)])
                                  ([x (in-range 2)])
                          (cons (gen-state st) st))]
@@ -680,10 +662,34 @@
                (struct-copy pda-rule (first collapsed-dgraph)
                             [action (simplify-templates (pda-rule-action (first collapsed-dgraph)))])))))
 
+  ;;cfe-template -> cfe-template
+    ;;Purpose: Simplifies the given cfe-template
+    (define (simplify-templates temp)
+      ;;union-cfe-template -> cfe-template
+      ;;Purpose: Simplifies the given union-cfe-template
+      (define (simplify-empty temp)
+        (if (andmap empty? (union-rules temp))
+            (empty (first (union-rules temp)))
+            (union (map simplify-templates (union-rules temp)))))
+      (cond [(concat? temp) (let ([res (filter-not empty? (map simplify-templates (concat-rules temp)))])
+                              (cond [(null? res) (empty (first (concat-rules temp)))]
+                                    [(is-length-one? res) (first res)]
+                                    [else (concat (append-map (λ (temp)
+                                                                (if (concat? temp)
+                                                                    (concat-rules temp)
+                                                                    (list temp)))
+                                                              res))]))]
+            [(union? temp) (simplify-empty temp)]
+            [(kleene? temp) (kleene (simplify-templates (kleene-rule temp)))]
+            [else temp]))
+
 
   ;;cfe-template -> (listof cfe-template)
   ;;Purpose: Simplifies the main cfe-template by splitting it into sub cfe-template 
   (define (make-sub-languages cfe-template)
+    ;;cfe-template -> (listof cfe-template)
+  ;;Purpose: Simplifies the main cfe-template by splitting it into sub cfe-template 
+    (define (make-sub-languages-helper cfe-template)
     ;;(listof cfe-template) (listof cfe-template) -> (listof cfe-template)
     ;;Purpose: Constructs sublanguages from the given concat cfe-template
     (define (make-concat-sublanguage rules acc)
@@ -697,13 +703,13 @@
               [(union? cfe-temp) (append-map (λ (cfe-acc)
                                                (map (λ (temp)
                                                       (struct-copy concat cfe-acc
-                                                                   [rules (append (concat-rules cfe-acc) (list temp))]))                                            
+                                                                   [rules (append (concat-rules cfe-acc) (list temp))]))
                                                     (union-rules cfe-temp)))
                                              acc)]
               [(concat? cfe-temp) (append-map (λ (cfe-acc)
                                                 (map (λ (temp)
                                                        (struct-copy concat cfe-acc
-                                                                    [rules (append (concat-rules cfe-acc) (list temp))]))                                            
+                                                                    [rules (append (concat-rules cfe-acc) (list temp))]))
                                                      (concat-rules cfe-temp)))
                                               acc)]
               [else (map (λ (cfe-acc)
@@ -713,12 +719,30 @@
       (if (null? rules)
           acc
           (make-concat-sublanguage (rest rules)
-                                   (process-concat-temp (first rules) acc))))    
-    (cond [(kleene? cfe-template) (let ([res (make-sub-languages (kleene-rule cfe-template))])
-                                    (list (kleene (if (is-length-one? res) (first res) (union res)))))]
-          [(union? cfe-template) (union-rules cfe-template)]
-          [(concat? cfe-template) (make-concat-sublanguage (concat-rules cfe-template) (list (concat (list))))]
-          [else (list cfe-template)]))
+                                   (process-concat-temp (first rules) acc))))
+      (cond [(kleene? cfe-template) (let ([res (make-sub-languages-helper (kleene-rule cfe-template))])
+                                      (list (kleene (if (is-length-one? res) (first res) (union res)))))]
+            [(union? cfe-template)  (flatten (map make-sub-languages-helper (union-rules cfe-template)))]
+            [(concat? cfe-template) (make-concat-sublanguage (concat-rules cfe-template) (list (concat (list))))]
+            [else (list cfe-template)]))
+    (let ([res (make-sub-languages-helper cfe-template)])
+      res
+      (flatten (map (λ (ct)
+                      (cond [(and (concat? ct)
+                                  (ormap union? (concat-rules ct)))
+                             (make-sub-languages-helper ct)]
+                            [(and (concat? ct)
+                                  (ormap concat? (concat-rules ct)))
+                             (make-sub-languages (simplify-templates ct))]
+                            [else ct]))
+                    res))
+      #;(if (ormap (λ (ct)
+                   (or (not (concat? ct))
+                       (and (concat? ct)
+                            (andmap (compose1 not union?) (concat-rules ct)))))
+                 res)
+          res
+          (flatten (map make-sub-languages res)))))
 
   ;;pda-action -> Boolean
   ;;Purpose: Determines if the given pda-rule ONLY pushes to the stack
@@ -881,7 +905,8 @@
              (push? (pda-rule-action pop-rule))
              (equal? (pda-action-push (pda-rule-action pop-rule)) (pda-action-pop (pda-rule-action pop-rule)))))
       
-      (cond [(not (inverse-pair-homogenous? push-pair)) (match-operations push-pair (inverse-pair-stack push-pair) pop-rules pop-rules)]
+      (cond [(not (inverse-pair-homogenous? push-pair))
+             (match-operations push-pair (inverse-pair-stack push-pair) pop-rules pop-rules)]
             [(or (null? pop-rules) (stack-wall? (first pop-rules))) (reverse acc)]
             [(and (not (equal? (inverse-pair-push push-pair) (first pop-rules)))
                   (push? (pda-rule-action (first pop-rules)))
@@ -992,7 +1017,8 @@
              (push? (pda-rule-action push-rule))
              (equal? (pda-action-push (pda-rule-action push-rule)) (pda-action-pop (pda-rule-action push-rule)))))
       
-      (cond [(not (inverse-pair-homogenous? pop-pair)) (match-operations pop-pair (inverse-pair-stack pop-pair) push-rules push-rules)]
+      (cond [(not (inverse-pair-homogenous? pop-pair))
+             (match-operations pop-pair (inverse-pair-stack pop-pair) push-rules push-rules)]
             [(or (null? push-rules) (stack-wall? (first push-rules))) (reverse acc)]
             [(and (not (equal? (inverse-pair-pop pop-pair) (first push-rules)))
                   (push? (pda-rule-action (first push-rules)))
@@ -1141,7 +1167,6 @@
     ;;(listof cfe-template) (listof inverse-pair) -> cfe
     ;;Purpose: Creates a cfe from the given (listof cfe-template)
     (define (build-cfe-helper sub-lang stack-oper)
-
       ;;cfe-template -> cfe
       ;;Purpose: Creates a cfe from the given cfe-template
       (define (build-cfe lang)
@@ -1607,6 +1632,10 @@
                      [reachable-rules (find-reachables rule-structs)]
                      [stack-operations (pair-stack-operations reachable-rules rule-structs)]
                      [sublang-stack-pairs (map (λ (sub-lang) (find-applicable-opers sub-lang stack-operations)) sub-langs)])
+                #;sub-langs
+                #;(values (pda-rule-action (pda-rules new-P))
+                        9
+                        sub-langs #;(map simplify-templates sub-langs))
                 (if (and (andmap (λ (sub-lang stack-pair)
                                    (and (null? stack-pair)
                                         (uses-stack? sub-lang)))
@@ -1673,7 +1702,8 @@
             [(mk-singleton-cfexp? cfe)
              (struct-copy extraction-results
                           extract-res
-                          [singles (set-add (extraction-results-singles extract-res) (string->symbol (mk-singleton-cfexp-char cfe)))])]
+                          [singles (set-add (extraction-results-singles extract-res)
+                                            (string->symbol (mk-singleton-cfexp-char cfe)))])]
             [else extract-res]))
     
     ;;(queueof cfe) extraction-results (listof cfe) -> extraction-results
@@ -1731,7 +1761,8 @@
     (define (make-unions P locfe)
       (if (is-length-one? locfe)
           (union-pda P (rename-pda (pda-states P) (cfe->pda-helper (first locfe) sigma-pdas seen-cfes)))
-          (make-unions (union-pda P (rename-pda (pda-states P) (cfe->pda-helper (first locfe) sigma-pdas seen-cfes))) (rest locfe))))
+          (make-unions (union-pda P (rename-pda (pda-states P) (cfe->pda-helper (first locfe) sigma-pdas seen-cfes)))
+                       (rest locfe))))
     (make-unions (cfe->pda-helper (first locfe) sigma-pdas seen-cfes) (rest locfe)))
   
   ;;pda pda -> pda
@@ -1756,7 +1787,8 @@
     (define (make-concats P locfe)
       (if (is-length-one? locfe)
           (concat-pda P (rename-pda (pda-states P) (cfe->pda-helper (first locfe) sigma-pdas seen-cfes)))
-          (make-concats (concat-pda P (rename-pda (pda-states P) (cfe->pda-helper (first locfe) sigma-pdas seen-cfes))) (rest locfe))))
+          (make-concats (concat-pda P (rename-pda (pda-states P) (cfe->pda-helper (first locfe) sigma-pdas seen-cfes)))
+                        (rest locfe))))
     (make-concats (cfe->pda-helper (first locfe) sigma-pdas seen-cfes) (rest locfe)))
 
   ;;pda pda -> pda
@@ -1833,7 +1865,9 @@
                           (pda-start P)
                           (pda-finals P)
                           (map (λ (rule)
-                                 (list (list (pda-rule-source rule) (pda-action-read (pda-rule-action rule)) (pda-action-pop (pda-rule-action rule)))
+                                 (list (list (pda-rule-source rule)
+                                             (pda-action-read (pda-rule-action rule))
+                                             (pda-action-pop (pda-rule-action rule)))
                                        (list (pda-rule-destin rule) (pda-action-push (pda-rule-action rule)))))
                                (pda-rules P))))
 
@@ -1894,17 +1928,21 @@
               (map (λ (oper)
                      (string->symbol (mk-singleton-cfexp-char oper)))
                    (reverse stack-oper))))
+        ;;singeton-cfexp -> symbol
+        ;;Purpose: Converts the character of the given singleton to a string
+        (define (singleton->symbol cfe)
+          (string->symbol (mk-singleton-cfexp-char (first cfe))))
         ;;state (listof state) rule-temp -> (listof pda-rule)
         ;;Purpose: Creates pda-rules that pushes to the stack one element at a time 
         (define (make-rules-start start new-states temp)
           ;;state (listof state) (listof cfexp) (listof cfexp) (listof pda-rule) -> (listof pda-rule)
           ;;Purpose: Creates pda-rules that pushes to the stack one element at a time 
-          (define (make-rules-start-helper new-source new-states lhs stack acc)
+          (define (make-rules-start-helper new-source new-states lhs stack acc)            
             (if (empty? new-states)
                 (cons (pda-rule new-source
-                                (pda-action (string->symbol (mk-singleton-cfexp-char (first lhs)))                                            
+                                (pda-action (singleton->symbol lhs)                   
                                             EMP
-                                            (list (string->symbol (mk-singleton-cfexp-char (first stack)))))
+                                            (list (singleton->symbol stack)))
                                 start)
                       acc)
                 (make-rules-start-helper (first new-states)
@@ -1912,9 +1950,9 @@
                                          (rest lhs)
                                          (rest stack)
                                          (cons (pda-rule new-source
-                                                         (pda-action (string->symbol (mk-singleton-cfexp-char (first lhs)))
+                                                         (pda-action (singleton->symbol lhs)
                                                                      EMP
-                                                                     (list (string->symbol (mk-singleton-cfexp-char (first stack)))))
+                                                                     (list (singleton->symbol stack)))
                                                          (first new-states))
                                                acc))))
           (let ([lhs (rule-temp-lhs temp)]
@@ -1924,9 +1962,9 @@
                                      (rest lhs)
                                      (rest stack)
                                      (list (pda-rule start
-                                                     (pda-action (string->symbol (mk-singleton-cfexp-char (first lhs)))
+                                                     (pda-action (singleton->symbol lhs)
                                                                  EMP
-                                                                 (list (string->symbol (mk-singleton-cfexp-char (first stack)))))
+                                                                 (list (singleton->symbol stack)))
                                                      (first new-states))))))
         
         ;; state (listof state) rule-temp -> (listof pda-rule)
@@ -1937,8 +1975,8 @@
           (define (make-rules-finals-helper new-source new-states rhs stack acc)
             (if (empty? new-states)
                 (cons (pda-rule new-source
-                                (pda-action (string->symbol (mk-singleton-cfexp-char (first rhs)))
-                                            (list (string->symbol (mk-singleton-cfexp-char (first stack))))
+                                (pda-action (singleton->symbol rhs)
+                                            (list (singleton->symbol stack))
                                             EMP)
                                 final)
                       acc)
@@ -1947,8 +1985,8 @@
                                           (rest rhs)
                                           (rest stack)
                                           (cons (pda-rule new-source
-                                                          (pda-action (string->symbol (mk-singleton-cfexp-char (first rhs)))
-                                                                      (list (string->symbol (mk-singleton-cfexp-char (first stack))))
+                                                          (pda-action (singleton->symbol rhs)
+                                                                      (list (singleton->symbol stack))
                                                                       EMP)
                                                           (first new-states))
                                                 acc))))
@@ -1959,8 +1997,8 @@
                                       (rest rhs)
                                       (rest stack)
                                       (list (pda-rule final
-                                                      (pda-action (string->symbol (mk-singleton-cfexp-char (first rhs)))
-                                                                  (list (string->symbol (mk-singleton-cfexp-char (first stack))))
+                                                      (pda-action (singleton->symbol rhs)
+                                                                  (list (singleton->symbol stack))
                                                                   EMP)
                                                       (first new-states))))))
         
@@ -1969,19 +2007,19 @@
           (cond [(and (is-length-one? (rule-temp-lhs temp))
                       (is-length-one? (rule-temp-rhs temp)))
                  (list (pda-rule new-start
-                                 (pda-action (string->symbol (mk-singleton-cfexp-char (first (rule-temp-lhs temp))))
+                                 (pda-action (singleton->symbol (first (rule-temp-lhs temp)))
                                              EMP
                                              (make-stack-oper (rule-temp-stack temp)))
                                  new-start)
                        (pda-rule new-final
-                                 (pda-action (string->symbol (mk-singleton-cfexp-char (first (rule-temp-rhs temp))))
+                                 (pda-action (singleton->symbol (first (rule-temp-rhs temp)))
                                              (make-stack-oper (rule-temp-stack temp))
                                              EMP)
                                  new-final))]
                 [(and (is-length-one? (rule-temp-lhs temp))
                       (not (is-length-one? (rule-temp-rhs temp))))
                  (cons (pda-rule new-start
-                                 (pda-action (string->symbol (mk-singleton-cfexp-char (first (rule-temp-lhs temp))))
+                                 (pda-action (singleton->symbol (first (rule-temp-lhs temp)))
                                              EMP
                                              (make-stack-oper (rule-temp-stack temp)))
                                  new-start)
@@ -1989,18 +2027,19 @@
                 [(and (not (is-length-one? (rule-temp-lhs temp)))
                       (is-length-one? (rule-temp-rhs temp)))
                  (cons (pda-rule new-final
-                                 (pda-action (string->symbol (mk-singleton-cfexp-char (first (rule-temp-rhs temp))))
+                                 (pda-action (string->symbol (singleton->symbol (first (rule-temp-rhs temp))))
                                              (make-stack-oper (rule-temp-stack temp))
                                              EMP)
                                  new-final)
                        (make-rules-start new-start (gen-states all-states (sub1 (length (rule-temp-stack temp)))) temp))]
                 [(and (not (is-length-one? (rule-temp-lhs temp)))
                       (not (is-length-one? (rule-temp-rhs temp))))
-                 (let ([new-states (gen-states all-states (+ (sub1 (length (rule-temp-lhs temp))) (sub1 (length (rule-temp-rhs temp)))))])
+                 (let ([new-states (gen-states all-states (+ (sub1 (length (rule-temp-lhs temp)))
+                                                             (sub1 (length (rule-temp-rhs temp)))))])
                    (append (make-rules-start new-start (take new-states (sub1 (length (rule-temp-lhs temp)))) temp)
                            (make-rules-finals new-final (take (drop new-states (sub1 (length (rule-temp-lhs temp))))
                                                               (sub1 (length (rule-temp-rhs temp))))
-                                               temp)))]
+                                              temp)))]
                 [else (error "wuh oh")])))
       
       (let* ([new-start (gen-state (pda-states P))]
@@ -2051,7 +2090,7 @@
     (cond [(mk-kleene-cfexp? cfe) (pda-kleenestar (cfe->pda-helper (mk-kleene-cfexp-cfe cfe) sigma-pdas (set-add seen-cfes cfe)))]
           [(mk-concat-cfexp? cfe) (pda-concat (vector->list (mk-concat-cfexp-locfe cfe)) sigma-pdas (set-add seen-cfes cfe))]
           [(mk-union-cfexp? cfe) (pda-union (vector->list (mk-union-cfexp-locfe cfe)) sigma-pdas (set-add seen-cfes cfe))]
-          [(box? cfe) (make-rec-pda (unbox cfe) sigma-pdas (set-add seen-cfes cfe) #;(cfe->pda-helper (unbox cfe) sigma-pdas (set-add seen-cfes cfe)))]
+          [(box? cfe) (make-rec-pda (unbox cfe) sigma-pdas (set-add seen-cfes cfe))]
           [(mk-empty-cfexp? cfe) (hash-ref sigma-pdas EMP)]
           [(mk-singleton-cfexp? cfe) (hash-ref sigma-pdas (string->symbol (mk-singleton-cfexp-char cfe)))]
           [else (set-member? seen-cfes cfe) cfe]))
@@ -2069,6 +2108,11 @@
                             (hash)
                             (cons EMP alphabet))])
     (pda->unchecked (cfe->pda-helper cfe sigma-pdas (set)))
-    
-    #;(values (cfe->pda-helper cfe sigma-pdas (set))
-              (sm-graph (pda->unchecked (cfe->pda-helper cfe sigma-pdas (set)))))))
+    #;(values 
+            (sm-graph (pda->unchecked (concat-pda (hash-ref sigma-pdas (first alphabet))
+                                                  (rename-pda (pda-states (hash-ref sigma-pdas (first alphabet)))
+                                                              (hash-ref sigma-pdas (second alphabet))))))
+            (sm-graph (pda->unchecked (union-pda (hash-ref sigma-pdas (first alphabet))
+                                                 (rename-pda (pda-states (hash-ref sigma-pdas (first alphabet)))
+                                                              (hash-ref sigma-pdas (second alphabet))))))
+            (sm-graph (pda->unchecked (pda-kleenestar (hash-ref sigma-pdas (first alphabet))))))))

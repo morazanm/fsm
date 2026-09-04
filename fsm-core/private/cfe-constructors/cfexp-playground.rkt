@@ -117,6 +117,17 @@
                                            C)])
                        WcWr))
 
+(define dwcwˆr (make-unchecked-ndpda '(S F)
+                                     '(a b c)
+                                     '(a b)
+                                     'S
+                                     '(F)
+                                     `(((S a ,EMP) (S (a)))
+                                       ((S b ,EMP) (S (b)))
+                                       ((S c ,EMP) (F ,EMP))
+                                       ((F a (a)) (F ,EMP))
+                                       ((F b (b)) (F ,EMP)))))
+
 (define Gina-aˆnbˆn (make-unchecked-ndpda '(S M F)
                                           '(a b)
                                           '(a)
@@ -126,6 +137,8 @@
                                             ((S a ,EMP) (S (a)))
                                             ((M b (a)) (M ,EMP))
                                             ((M ,EMP ,EMP) (F ,EMP)))))
+
+
 ;;L = {wcw^r | sig = {a b}}
 (define Gina-wcwˆr (make-unchecked-ndpda '(S P Q F)
                                          '(a b c)
@@ -241,21 +254,26 @@
                                             ((M ,EMP ,EMP) (F ,EMP))
                                             ((F ,EMP (Z)) (S ,EMP)))))
 
+(define ambncp (make-unchecked-ndpda '(S A B C D E F G)
+                                     '(a b c z)
+                                     '(a y)
+                                     'S
+                                     '(F)
+                                     `(((S a ,EMP) (A (a y)))
+                                       ((A a ,EMP) (A (a)))
+                                       ((A b (a)) (B ,EMP))
+                                       ((B b (a)) (B ,EMP))
+                                       ((B c (a)) (C ,EMP))
+                                       ((C c (a)) (C ,EMP))
+                                       ((C z ,EMP) (G ,EMP))
+                                       ((C c (y)) (E (y)))
+                                       ((B b (y)) (D (y)))
+                                       ((D b (y)) (D (y)))
+                                       ((D c (y)) (E (y)))
+                                       ((E c (y)) (E (y)))
+                                       ((E z (y)) (F ,EMP))
+                                       ((G ,EMP (a)) (G ,EMP))
+                                       ((G ,EMP (y)) (F ,EMP))))) ;;<- need to look into
 
-(define Gina-aˆnbˆn-cfe (pda->cfe Gina-aˆnbˆn))
 
-(define Gina-wcwˆr-cfe (pda->cfe Gina-wcwˆr))
 
-(define Gina-palindrome-pda-cfe (pda->cfe Gina-palindrome-pda))
-
-(define Gina-AiBj-cfe (pda->cfe Gina-AiBj))
-
-(define Gina-A^nB^mA^n-cfe (pda->cfe Gina-A^nB^mA^n))
-
-(define Gina-a^mb^nc^pd^q-cfe (pda->cfe Gina-a^mb^nc^pd^q))
-
-(define Gina-a^mb^nc^p-cfe (pda->cfe Gina-a^mb^nc^p))
-
-(define anbkckdn-cfe (pda->cfe anbkckdn))
-
-(define Gina-aˆnbˆn*-cfe (pda->cfe Gina-aˆnbˆn*))

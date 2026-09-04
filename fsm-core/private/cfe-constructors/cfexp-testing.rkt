@@ -615,7 +615,8 @@
   (define (loopinator-helper acc)
     (if (= (set-count acc) WORD-AMOUNT)
         acc
-        (loopinator-helper (set-add acc (gen-cfexp-word cfe)))))
+        (let ([word (gen-cfexp-word cfe)])
+          (loopinator-helper (set-add acc (if (eq? word EMP) '() word))))))
   (set->list (loopinator-helper (set))))
 
 
@@ -705,8 +706,9 @@
   (let* [(as (takef ci (λ (s) (eq? s 'a))))
          (bs (takef (drop ci (length as))
                     (λ (s) (eq? s 'b))))]
-    (and (equal? (append as bs) ci)
-         (= (length as) (length bs)))))
+    (or (eq? ci EMP)
+        (and (equal? (append as bs) ci)
+             (= (length as) (length bs))))))
 
 ;;word -> boolean
 ;;Purpose: Determines if the given word is a valid word for w = wcwˆr
@@ -788,8 +790,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;TESTING;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-#;(define PDA-TRANSFORMATION-TESTS
+(define PDA-TRANSFORMATION-TESTS
   (let (#;[A*-WORDS (gen-cfe-words A*-cfe)]
+
+        [WWR-WORDS (gen-cfe-words WWR)]
+
+        [A2iBi-WORDS (gen-cfe-words A2iBi)]
+
+        [AiBj-WORDS (gen-cfe-words AiBj)]
 
         [Gina-aˆnbˆn-WORDS (gen-cfe-words Gina-aˆnbˆn-cfe)]
 
@@ -809,7 +817,7 @@
         
         [Gina-aˆnbˆn*-WORDS (gen-cfe-words Gina-aˆnbˆn*-cfe)])
     (test-suite
-     "pda transformation test"
+     "PDA transformation test"
      (test-case
       "PDA->CFE Word Generation"
       #;(check-pred (λ (low) (andmap valid-A*-word? low)) A*-WORDS)
@@ -826,65 +834,82 @@
 
       (check-pred (λ (low) (andmap valid-Gina-a^mb^nc^pd^q-word? low)) Gina-a^mb^nc^pd^q-WORDS)
 
-      (check-pred (λ (low) (andmap valid-Gina-a^mb^nc^p-word? low)) Gina-a^mb^nc^p-WORDS)
+      (check-pred (λ (low) (andmap valid-Gina-a^mb^nc^p-word? low)) Gina-a^mb^nc^p-WORDS))
 
-      (test-case
-       "PDA->CFE Word Membership" 
+     (test-case
+      "PDA->CFE Word Membership" 
 
-       (check-true (pda-checker Gina-aˆnbˆn Gina-aˆnbˆn-WORDS))
+      (check-true (pda-checker Gina-aˆnbˆn Gina-aˆnbˆn-WORDS))
 
-       (check-true (pda-checker Gina-wcwˆr Gina-wcwˆr-WORDS))
+      (check-true (pda-checker Gina-wcwˆr Gina-wcwˆr-WORDS))
 
-       (check-true (pda-checker Gina-palindrome-pda Gina-palindrome-pda-WORDS))
+      (check-true (pda-checker Gina-palindrome-pda Gina-palindrome-pda-WORDS))
 
-       (check-true (pda-checker Gina-AiBj Gina-AiBj-WORDS))
+      (check-true (pda-checker Gina-AiBj Gina-AiBj-WORDS))
 
-       (check-true (pda-checker Gina-A^nB^mA^n Gina-A^nB^mA^n-WORDS))
+      (check-true (pda-checker Gina-A^nB^mA^n Gina-A^nB^mA^n-WORDS))
 
-       (check-true (pda-checker Gina-a^mb^nc^pd^q Gina-a^mb^nc^pd^q-WORDS))
+      (check-true (pda-checker Gina-a^mb^nc^pd^q Gina-a^mb^nc^pd^q-WORDS))
 
-       (check-true (pda-checker Gina-a^mb^nc^p Gina-a^mb^nc^p-WORDS))
+      (check-true (pda-checker Gina-a^mb^nc^p Gina-a^mb^nc^p-WORDS))
 
-       (check-true (pda-checker anbkckdn anbkckdn-WORDS))
+      (check-true (pda-checker anbkckdn anbkckdn-WORDS))
 
-       (check-true (pda-checker Gina-aˆnbˆn* Gina-aˆnbˆn*-WORDS))
-       )
-      ))))
+      (check-true (pda-checker Gina-aˆnbˆn* Gina-aˆnbˆn*-WORDS))
+      )
+      
 
-#;(test-case "CFE->PDA Word Membership"
+     #;(test-case "CFE->PDA Word Membership"
 
-           (check-true (pda-checker (cfe->pda ANBN) converted-ANBN-WORDS))
+                #;(check-true (pda-checker (cfe->pda ANBN) converted-ANBN-WORDS))
 
-           (check-true (pda-checker (cfe->pda BNAN) converted-BNAN-WORDS))
+                #;(check-true (pda-checker (cfe->pda BNAN) converted-BNAN-WORDS))
 
-           (check-true (pda-checker (cfe->pda AiBj) converted-AiBj-WORDS))
+                (check-true (pda-checker (cfe->pda AiBj) AiBj-WORDS))
 
-           (check-true (pda-checker (cfe->pda A2iBi) converted-A2iBi-WORDS))
+                (check-true (pda-checker (cfe->pda A2iBi) A2iBi-WORDS))
 
-           (check-true (pda-checker (cfe->pda WWR) converted-WWR-WORDS))
+                (check-true (pda-checker (cfe->pda WWR) WWR-WORDS))
+           
+                (check-true (pda-checker (cfe->pda Gina-aˆnbˆn-cfe) Gina-aˆnbˆn-WORDS))
 
-            (check-true (pda-checker (cfe->pda Gina-aˆnbˆn-cfe) Gina-aˆnbˆn-WORDS))
+                (check-true (pda-checker Gina-AiBj Gina-AiBj-WORDS))
+           
+                (check-true (pda-checker Gina-palindrome-pda Gina-palindrome-pda-WORDS))
 
-       (check-true (pda-checker (cfe->pda Gina-wcwˆr-cfe) Gina-wcwˆr-WORDS))
+                (check-true (pda-checker Gina-A^nB^mA^n Gina-A^nB^mA^n-WORDS))
 
-       (check-true (pda-checker (cfe->pda Gina-palindrome-pda-cfe) Gina-palindrome-pda-WORDS))
+                (check-true (pda-checker Gina-a^mb^nc^pd^q Gina-a^mb^nc^pd^q-WORDS))
 
-       (check-true (pda-checker (cfe->pda Gina-AiBj-cfe) Gina-AiBj-WORDS))
+                (check-true (pda-checker Gina-a^mb^nc^p Gina-a^mb^nc^p-WORDS))
 
-       (check-true (pda-checker (cfe->pda Gina-A^nB^mA^n-cfe) Gina-A^nB^mA^n-WORDS))
+                (check-true (pda-checker anbkckdn anbkckdn-WORDS))
 
-       (check-true (pda-checker (cfe->pda Gina-a^mb^nc^pd^q-cfe) Gina-a^mb^nc^pd^q-WORDS))
+                (check-true (pda-checker Gina-aˆnbˆn* Gina-aˆnbˆn*-WORDS))
+                )
 
-       (check-true (pda-checker (cfe->pda Gina-a^mb^nc^p-cfe) Gina-a^mb^nc^p-WORDS))
+     #;(test-case "Transformation Composition Word Membership"
 
-       (check-true (pda-checker (cfe->pda anbkckdn-cfe) anbkckdn-WORDS))
+                  (check-true (pda-checker (cfe->pda Gina-wcwˆr-cfe) Gina-wcwˆr-WORDS))
 
-       (check-true (pda-checker (cfe->pda Gina-aˆnbˆn*-WORDS) Gina-aˆnbˆn*-WORDS))
-           )
+                  (check-true (pda-checker (cfe->pda Gina-palindrome-pda-cfe) Gina-palindrome-pda-WORDS))
+
+                  (check-true (pda-checker (cfe->pda Gina-AiBj-cfe) Gina-AiBj-WORDS))
+
+                  (check-true (pda-checker (cfe->pda Gina-A^nB^mA^n-cfe) Gina-A^nB^mA^n-WORDS))
+
+                  (check-true (pda-checker (cfe->pda Gina-a^mb^nc^pd^q-cfe) Gina-a^mb^nc^pd^q-WORDS))
+
+                  (check-true (pda-checker (cfe->pda Gina-a^mb^nc^p-cfe) Gina-a^mb^nc^p-WORDS))
+
+                  (check-true (pda-checker (cfe->pda anbkckdn-cfe) anbkckdn-WORDS))
+
+                  (check-true (pda-checker (cfe->pda Gina-aˆnbˆn*-WORDS) Gina-aˆnbˆn*-WORDS))
+                  ))))
 
 
 
-#;(define CFE-WORD-TESTS
+(define CFE-WORD-TESTS
   (let [(WWR-WORDS (gen-cfe-words WWR))
 
         (ANBN-WORDS (gen-cfe-words ANBN))
@@ -893,21 +918,7 @@
 
         (A2iBi-WORDS (gen-cfe-words A2iBi))
 
-        (AiBj-WORDS (gen-cfe-words AiBj))
-
-        (TRANSFORMED-ANBN-WORDS (gen-cfe-words transformed-anbn))
-
-        (TRANSFORMED-BNAN-WORDS (gen-cfe-words (cfg->cfe (cfe->cfg BNAN))))
-
-        (TRANSFORMED-WWR-WORDS (gen-cfe-words (cfg->cfe (cfe->cfg WWR))))
-
-        (TRANSFORMED-AiBj-WORDS (gen-cfe-words (cfg->cfe (cfe->cfg AiBj))))
-
-        (TRANSFORMED-A2iBi-WORDS (gen-cfe-words (cfg->cfe (cfe->cfg A2iBi))))
-
-        (thesis-cfg-converted-WORDS (gen-cfe-words thesis-cfg-converted))
-
-        (thesis-cfe-WORDS (gen-cfe-words thesis-cfe))]
+        (AiBj-WORDS (gen-cfe-words AiBj))]
     (test-suite
      "Word-Generation-&-Membership"
      (test-case
@@ -922,10 +933,25 @@
       (check-pred (λ (low) (andmap valid-a2ibi-word? low)) A2iBi-WORDS)
 
       (check-pred (λ (low) (andmap valid-aibj-word? low)) AiBj-WORDS)
-      )
+      ))))
 
 
+(define CFG-TRANSFORMATION-TESTS
+  (let [(TRANSFORMED-ANBN-WORDS (gen-cfe-words transformed-anbn))
 
+        (TRANSFORMED-BNAN-WORDS (gen-cfe-words (cfg->cfe (cfe->cfg BNAN))))
+
+        (TRANSFORMED-WWR-WORDS (gen-cfe-words (cfg->cfe (cfe->cfg WWR))))
+
+        (TRANSFORMED-AiBj-WORDS (gen-cfe-words (cfg->cfe (cfe->cfg AiBj))))
+
+        (TRANSFORMED-A2iBi-WORDS (gen-cfe-words (cfg->cfe (cfe->cfg A2iBi))))
+
+        (thesis-cfg-converted-WORDS (gen-cfe-words thesis-cfg-converted))
+
+        (thesis-cfe-WORDS (gen-cfe-words thesis-cfe))]
+    (test-suite
+     "CFG transformation tests"
      (test-case
       "CFG->CFE Word Membership"
 
@@ -956,13 +982,14 @@
       (check-true (grammar-checker (cfe->cfg A2iBi) TRANSFORMED-A2iBi-WORDS))
 
       (check-true (grammar-checker (cfe->cfg WWR) TRANSFORMED-WWR-WORDS))
-      )
+      ))))
 
-     )))
-#;(define (run-testing)
+
+(define (run-testing)
   (begin
     (run-tests CFE-UNIT-TESTING)
-    #;(run-tests CFE-WORD-TESTS)
+    (run-tests CFE-WORD-TESTS)
+    (run-tests CFG-TRANSFORMATION-TESTS)
     (run-tests PDA-TRANSFORMATION-TESTS)
     (void)))
 
