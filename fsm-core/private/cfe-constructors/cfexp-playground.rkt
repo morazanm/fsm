@@ -276,4 +276,16 @@
                                        ((G ,EMP (y)) (F ,EMP))))) ;;<- need to look into
 
 
+(define AiBj-marco (make-cfe ([EMPTY (empty-cfexp)]
+                              [A (singleton-cfexp "a")]
+                              [C (singleton-cfexp "c")]
+                              [D (singleton-cfexp "d")]
+                              [B (union-cfexp EMPTY
+                                              (concat-cfexp C B D))]
+                              [AiBj (union-cfexp EMPTY
+                                                 (concat-cfexp A AiBj B)
+                                                 (concat-cfexp A AiBj B B))])
+                             AiBj)) 
+
+
 
