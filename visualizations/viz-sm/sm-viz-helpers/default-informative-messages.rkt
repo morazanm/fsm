@@ -383,7 +383,7 @@
         [SPACER (rectangle (- E-SCENE-WIDTH
                           (image-width LAST-RULE-USED)
                           (image-width CURR-STEP-NUM)
-                          600)
+                          #;600)
                        (image-height CURR-STEP-NUM)
                        'solid
                        'white)]
@@ -510,10 +510,10 @@
                                         (text "The machine did not reach a halting state." FONT-SIZE ACCEPT-COLOR))]
                                    [else (text "Word Status: accept " FONT-SIZE BLANK-COLOR)])]
            [CURR-STEP-NUM (text (format "Current Step: ~a" (zipper-current (imsg-state-mttm-step-counter imsg-st))) FONT-SIZE FONT-COLOR)]
-           [SPACER (rectangle (- E-SCENE-WIDTH
-                          (image-width LAST-RULE-USED)
-                          (image-width CURR-STEP-NUM)
-                          805)
+           [SPACER (rectangle (abs (- E-SCENE-WIDTH
+                                      (image-width LAST-RULE-USED)
+                                      (image-width CURR-STEP-NUM)
+                                      200 #;805-linux))
                        (image-height CURR-STEP-NUM)
                        'solid
                        'white)]
