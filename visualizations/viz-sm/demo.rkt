@@ -10,7 +10,7 @@
 
 ;;Pre-Condition: '(LM BLANK w) AND t0h = 1 AND tape 1 is empty AND t1h = 0
 ;;compute f(w) = ww
-(define ww-func (make-unchecked-mttm '(K H T F E B W D M)
+(define copy (make-unchecked-mttm '(K H T F E B W D M)
                       '(a b)
                       'K
                       '(M)
@@ -155,7 +155,7 @@
          (eq? (list-ref t1 t1h) BLANK)
          (equal? readt0 (append readt1 readt1)))))
 
-#;(sm-viz ww `(,LM ,BLANK a a)  (list 'K k-inv) 
+#;(sm-viz copy `(,LM ,BLANK a b b a b) #:head-pos 1 (list 'K k-inv) 
         (list 'H h-inv)
         (list 'T t-inv)
         (list 'F f-inv)
@@ -312,17 +312,12 @@
        (= (remainder (length (filter (λ (symb) (eq? symb 'b)) t)) 2) 0)))
 
 ;; tape natnum --> Boolean
-;; Purpose: Determine head in position is greater than 2 AND tape[2..i] = xx+ AND |xs|%2 = 1 AND |as|%2 = 1 AND |bs|%2 = 0 AND tape[1] = BLANK
+;; Purpose: Determine head in position is greater than 2 AND tape[2..i] = x AND |xs|%2 = 1 
 (define (N-INV-ww t i)
-  (and (> i 2)
-       (eq? BLANK (list-ref t 1))
-       (let* [(w2->i (take (drop t 2) (- i 1)))]
-         (equal? w2->i (filter (λ (symb) (eq? 'x symb)) w2->i))
-         (>= (length (filter (λ (symb) (eq? 'x symb)) w2->i)) 2))
-       (>= (length (filter (λ (symb) (eq? symb 'x)) t)) 2)
-       (= (remainder (length (filter (λ (symb) (eq? symb 'x)) t)) 2) 1)
-       (= (remainder (length (filter (λ (symb) (eq? symb 'a)) t)) 2) 1)
-       (= (remainder (length (filter (λ (symb) (eq? symb 'b)) t)) 2) 0)))
+  (let* [(w2->i (take (drop t 2) (- i 1)))]
+    (and (>= i 2)
+         (andmap (λ (x) (eq? x 'x)) (takef (drop t 2) (λ (x) (eq? x 'x))))      
+         (= (remainder (length (filter (λ (symb) (eq? symb 'x)) t)) 2) 0))))
 
 
 ;; tape natnum --> Boolean
@@ -363,8 +358,8 @@
          (>= (length (filter (λ (symb) (eq? 'x symb)) w2->i)) 2))
        (>= (length (filter (λ (symb) (eq? symb 'x)) t)) 2)
        (= (remainder (length (filter (λ (symb) (eq? symb 'x)) t)) 2) 1)
-       (= (remainder (length (filter (λ (symb) (eq? symb 'a)) t)) 2) 0)
-       (= (remainder (length (filter (λ (symb) (eq? symb 'b)) t)) 2) 1)))
+       (= (remainder (length (filter (λ (symb) (eq? symb 'a)) t)) 2) 1)
+       (= (remainder (length (filter (λ (symb) (eq? symb 'b)) t)) 2) 0)))
 
 
 ;; tape natnum --> Boolean
@@ -396,21 +391,29 @@
        (= (remainder (length (filter (λ (symb) (eq? symb 'b)) t)) 2) 1)))
 
 (define (P-INV-ww t i)
-  #t)
+  (and (> i 2)
+       (eq? BLANK (list-ref t 1))
+       (let* [(w2->i (take (drop t 2) (- i 1)))]
+         (equal? w2->i (filter (λ (symb) (eq? 'x symb)) w2->i))
+         (>= (length (filter (λ (symb) (eq? 'x symb)) w2->i)) 2))
+       (>= (length (filter (λ (symb) (eq? symb 'x)) t)) 2)
+       (= (remainder (length (filter (λ (symb) (eq? symb 'x)) t)) 2) 1)
+       (= (remainder (length (filter (λ (symb) (eq? symb 'a)) t)) 2) 0)
+       (= (remainder (length (filter (λ (symb) (eq? symb 'b)) t)) 2) 1)))
 
 ;; tape natnum --> Boolean
 ;; Purpose: Determine head in position is greater than 1 AND w = x+ AND |xs|%2 = 0 AND |as| = 0 AND |bs| = 0 AND tape[1] = BLANK
 (define (M-INV-ww t i)
-  (and (> i 1)
+  (and (> i 4)
        (eq? BLANK (list-ref t 1))
-       (eq? 'x (list-ref t 2))
-       (let* [(ww (drop t 2))]
-         (equal? ww (filter (λ (symb) (eq? 'x symb)) ww))
-         (>= (length (filter (λ (symb) (eq? 'x symb)) ww)) 2))
+       (eq? 'x (list-ref t (sub1 i)))
+       (let* [(w2->i (take (drop t 2) (- 3 1)))]
+         (equal? w2->i (filter (λ (symb) (eq? 'x symb)) w2->i))
+         (= (length (filter (λ (symb) (eq? 'x symb)) w2->i)) 2))
        (>= (length (filter (λ (symb) (eq? symb 'x)) t)) 2)
-       (= (remainder (length (filter (λ (symb) (eq? symb 'x)) t)) 2) 0)
+       (= (remainder (length (filter (λ (symb) (eq? symb 'x)) t)) 2) 1)
        (= (remainder (length (filter (λ (symb) (eq? symb 'a)) t)) 2) 0)
-       (= (remainder (length (filter (λ (symb) (eq? symb 'b)) t)) 2) 0)))
+       (= (remainder (length (filter (λ (symb) (eq? symb 'b)) t)) 2) 1)))
 
 
 ;; tape natnum --> Boolean
