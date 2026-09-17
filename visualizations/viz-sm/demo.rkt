@@ -394,6 +394,10 @@
        (= (remainder (length (filter (λ (symb) (eq? symb 'x)) t)) 2) 1)
        (= (remainder (length (filter (λ (symb) (eq? symb 'a)) t)) 2) 0)
        (= (remainder (length (filter (λ (symb) (eq? symb 'b)) t)) 2) 1)))
+
+(define (P-INV-ww t i)
+  #t)
+
 ;; tape natnum --> Boolean
 ;; Purpose: Determine head in position is greater than 1 AND w = x+ AND |xs|%2 = 0 AND |as| = 0 AND |bs| = 0 AND tape[1] = BLANK
 (define (M-INV-ww t i)
@@ -422,7 +426,7 @@
        (= (remainder (length (filter (λ (symb) (eq? symb 'a)) t)) 2) 0)
        (= (remainder (length (filter (λ (symb) (eq? symb 'b)) t)) 2) 0)))
 
-#;(sm-viz ww '(@ _ a a b a a b) (list 'S S-INV-ww)
+#;(sm-viz ww '(@ _ a a b a a b) #:head-pos 1 (list 'S S-INV-ww)
           (list 'A A-INV-ww)
           (list 'D D-INV-ww)
           (list 'E E-INV-ww)
