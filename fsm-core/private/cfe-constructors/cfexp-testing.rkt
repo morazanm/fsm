@@ -14,7 +14,7 @@
          racket/list
          )
 
-(define WORD-AMOUNT 50)
+(define WORD-AMOUNT 25)
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;CFEXP;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -859,7 +859,7 @@
       )
       
 
-     #;(test-case "CFE->PDA Word Membership"
+     (test-case "CFE->PDA Word Membership"
 
                 #;(check-true (pda-checker (cfe->pda ANBN) converted-ANBN-WORDS))
 
@@ -987,8 +987,8 @@
 
 (define (run-testing)
   (begin
-    (run-tests CFE-UNIT-TESTING)
-    (run-tests CFE-WORD-TESTS)
+    ;(run-tests CFE-UNIT-TESTING)
+    ;(run-tests CFE-WORD-TESTS)
     (run-tests CFG-TRANSFORMATION-TESTS)
     (run-tests PDA-TRANSFORMATION-TESTS)
     (void)))

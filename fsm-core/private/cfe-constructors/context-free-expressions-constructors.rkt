@@ -7,7 +7,7 @@
          "../misc.rkt"
          "cfexp-contracts.rkt"
          "cfexp-structs.rkt"
-         "cfe-transformation-helpers.rkt"
+         "cfexp-transformation-helpers.rkt"
          racket/contract/region
          racket/vector
          racket/list
@@ -300,44 +300,13 @@
 ;;Purpose: Converts the given cfe into its corresponding cfg
 (define/contract (cfe->cfg cfe)
   cfe->cfg/c
-  ;;vars    | the accumulated variables found from traversing the given cfe  | (listof union-cfexp)
-  ;;singles | the accumulated singletons found from traversing the given cfe | (listof singleton-cfexp)
-  (struct extraction-results (lang-boxes singles) #:transparent)
-
-  (define qempty? treelist-empty?)
-
-  (define E-QUEUE empty-treelist) 
-
-  ;; (qof X) → X throws error
-  ;; Purpose: Return first X of the given queue
-  (define (qfirst a-qox)
-    (if (qempty? a-qox)
-        (error "qfirst applied to an empty queue")
-        (treelist-first a-qox)))
-
-  ;; (tllistof X) (qof X) → (qof X)
-  ;; Purpose: Add the given list of X to the given queue of X
-  (define (enqueue a-lox a-qox) (treelist-append a-qox a-lox))
-
-  ;; (qof X) → (qof X) throws error
-  ;; Purpose: Return the rest of the given queue
-  (define (dequeue a-qox)
-    (if (qempty? a-qox)
-        (error "dequeue applied to an empty queue")
-        (treelist-rest a-qox)))
   ;;natnum -> (listof nt)
   ;;Purpose: Generates natnum amount of nts
   (define (gen-nts num)
     (for/fold ([nts '()])
               ([x (in-range num)])
       (cons (gen-nt nts) nts)))
-
-  ;;(X -> Y) Z (treelistof X) -> Z
-  (define (tl-foldl f acc tl)
-    (if (treelist-empty? tl)
-        acc
-        (tl-foldl f (f (treelist-first tl) acc) (treelist-rest tl))))
-
+ 
   ;;cfe -> cfe
   ;;Purpose: Updates the cfe to be bound to a box if it is not already a box
   (define (update-cfe cfe)
@@ -346,51 +315,7 @@
         (let ([S (box (void))])
           (begin
             (set-box! S cfe)
-            S))))
-
-  
-  ;;cfe -> extraction-results
-  ;;Purpose: Extracts all var-cfexp and singleton-cfexp from the given cfe
-  (define (extract-var-and-singles-cfe cfe)
-    ;;cfe -> (listof cfe)
-    ;;Purpose: Extracts the sub-expressions from the given cfe
-    (define (extract-cfe-data cfe)
-      (cond [(mk-concat-cfexp? cfe) (vector->treelist (mk-concat-cfexp-locfe cfe))]
-            [(mk-union-cfexp? cfe) (vector->treelist (mk-union-cfexp-locfe cfe))]
-            [(mk-kleene-cfexp? cfe) (treelist (mk-kleene-cfexp-cfe cfe))]
-            [(box? cfe) (treelist (unbox cfe))]
-            [else empty-treelist]))
-    ;;cfe extraction-results -> extraction-results
-    ;;Purpose: Updates the given extraction-results to add the given cfe if it is a singleton or variable
-    (define (update-extraction-results cfe extract-res)
-      (cond [(or (mk-kleene-cfexp? cfe)
-                 (box? cfe)) (struct-copy extraction-results
-                                          extract-res
-                                          [lang-boxes (cons cfe (extraction-results-lang-boxes extract-res))])]
-            [(mk-singleton-cfexp? cfe) (struct-copy extraction-results
-                                                    extract-res
-                                                    [singles (cons cfe (extraction-results-singles extract-res))])]
-            [else extract-res]))
-    
-    ;;(queueof cfe) extraction-results (listof cfe) -> extraction-results
-    ;;Purpose: Extracts the cfe and adds it to the extraction-results if its a singleton or variable
-    (define (extract-var-and-singles qocfe extract-res visited)
-      (if (qempty? qocfe)
-          extract-res
-          (let* ([cfe (qfirst qocfe)]
-                 [cfes-to-add (extract-cfe-data cfe)]
-                 [new-queue (enqueue (dequeue qocfe)
-                                     (treelist-filter (λ (cfe) (not (set-member? visited cfe))) cfes-to-add))]
-                 [new-acc (update-extraction-results cfe extract-res)]
-                 [new-visited (set-add visited cfe)])
-            (extract-var-and-singles new-queue new-acc new-visited))))
-    (let ([init-queue (tl-foldl (λ (env acc)
-                                  (enqueue acc (treelist env)))
-                                E-QUEUE
-                                (extract-cfe-data cfe))])
-      (extract-var-and-singles init-queue
-                               (update-extraction-results cfe (extraction-results '() '()))
-                               (set cfe))))
+            S))))    
 
   ;;(listof lang-boxes) (hash old-nt . new-nt) (listof rule) -> (listof rule)
   ;;Purpose: Converts every var-cfexp into the corresponding grammar rule
@@ -398,7 +323,6 @@
     ;;nonterminal (queueof cfe) (listof rule) -> (listof rule)
     ;;Purpose: Converts each cf in the (queueof cfe) into the proper grammar rules
     (define (remake-rules nt rules-to-convert finished-rules)
-      
       ;;non-terminal cfe -> rule
       ;;Purpose: Converts the cfe into a grammar rule using the given non-terminal
       (define (cfe->rule nt cfe)
@@ -463,55 +387,139 @@
   (if (mk-null-cfexp? cfe)
       (make-unchecked-cfg '(S) '() '() 'S)
       (let* ([cfe (update-cfe cfe)]
-             [extracted-components (extract-var-and-singles-cfe cfe)]
-             [lang-boxes (extraction-results-lang-boxes extracted-components)]
+             [extracted-components (extract-box-and-singles-cfe cfe)]
+             [lang-boxes (set->list (extraction-results-lang-boxes extracted-components))]
              [new-nts (foldl (λ (nt lang-box acc)
                                (hash-set acc lang-box nt))
                              (hash)
                              (gen-nts (length lang-boxes))
                              lang-boxes)]
-             [singletons (foldl (λ (single acc)
-                                  (set-add acc ((compose1 string->symbol mk-singleton-cfexp-char) single)))
-                                (set)
-                                (extraction-results-singles extracted-components))]
-             [alphabet (set->list singletons)]
+             [alphabet (set->list (extraction-results-singles extracted-components))]
              [rules (lang-boxes->rules lang-boxes new-nts)]
              [nts (hash-values new-nts)]
              [starting-nt (hash-ref new-nts cfe)])
         (make-unchecked-cfg nts alphabet rules starting-nt))))
 
+;;cfe -> pda
+;;Purpose: Converts the given cfe into a pda
+(define (cfe->pda cfe)
+  ;;(listof state) natnum -> (listof state)
+  ;;Purpose: Generates natnum amount of states 
+  (define (gen-states num)
+    (for/fold ([states '()])
+              ([x (in-range num)])
+      (cons (gen-state (append '(K H) states)) states)))
+
+
+  (define (lang-boxes->rules loLabox new-nts new-final)
+    ;;nonterminal (queueof cfe) (listof rule) -> (listof rule)
+    ;;Purpose: Converts each cf in the (queueof cfe) into the proper grammar rules
+    (define (remake-rules nt rules-to-convert finished-rules)
+      ;;non-terminal cfe -> rule
+      ;;Purpose: Converts the cfe into a grammar rule using the given non-terminal
+      (define (cfe->rule nt cfe)
+        ;;cfe -> cfe
+        ;;Purpose: converts the cfe into a grammar production rule
+        ;;Assumption: The given cfe is NOT bound to a box and has to be concatenated a rule cfe that is bound to a box 
+        (define (convert-rhs cfe)
+          (cond [(mk-empty-cfexp? cfe) EMP]
+                [(mk-singleton-cfexp? cfe) (string->symbol (mk-singleton-cfexp-char cfe))]
+                [(box? cfe) (hash-ref new-nts cfe)]
+                [(mk-concat-cfexp? cfe) (tl-foldl (λ (cfe acc)
+                                                    (cons
+                                                     (if (mk-singleton-cfexp? cfe)
+                                                         (string->symbol (mk-singleton-cfexp-char cfe))
+                                                         (hash-ref new-nts cfe))
+                                                     acc))
+                                                  empty
+                                                  (treelist-reverse
+                                                   (vector->treelist (mk-concat-cfexp-locfe cfe))))]
+                [else (error (format "unsuitable cfe ~a" cfe))]))
+        ;;if union found in concat split union and make concat using every branch
+        (let ([RHS (cond [(mk-empty-cfexp? cfe) EMP]
+                         [(mk-singleton-cfexp? cfe) (list (string->symbol (mk-singleton-cfexp-char cfe)))]
+                         [(box? cfe) (hash-ref new-nts cfe)]
+                         [(mk-concat-cfexp? cfe)
+                          (tl-foldl (λ (cfe acc)
+                                      (cons
+                                       (cond [(mk-singleton-cfexp? cfe) (string->symbol (mk-singleton-cfexp-char cfe))]
+                                             [(or (mk-kleene-cfexp? cfe)
+                                                  (box? cfe))
+                                              (hash-ref new-nts cfe)] ;;sub with NT
+                                             [else (convert-rhs cfe)]) 
+                                       acc))
+                                    empty
+                                    (treelist-reverse (vector->treelist (mk-concat-cfexp-locfe cfe))))]
+                         [(mk-kleene-cfexp? cfe) (list
+                                                  (let [(cfe (mk-kleene-cfexp-cfe cfe))]
+                                                    (cond [(mk-singleton-cfexp? cfe) (string->symbol (mk-singleton-cfexp-char cfe))]
+                                                          [(or (mk-kleene-cfexp? cfe)
+                                                               (box? cfe))
+                                                           (hash-ref new-nts cfe)] ;;sub with NT
+                                                          [else (convert-rhs cfe)])) 
+                                                  (hash-ref new-nts cfe))]
+                         [else (error (format "unsuitable cfe ~a" cfe))])])
+          (pda-rule new-final (pda-action EMP (list nt) RHS) new-final)))
+      (if (qempty? rules-to-convert)
+          finished-rules
+          (let ([cfe (qfirst rules-to-convert)])
+            (cond [(mk-union-cfexp? cfe)
+                   (remake-rules nt (enqueue (dequeue rules-to-convert)
+                                             (vector->treelist (mk-union-cfexp-locfe cfe))) finished-rules)]
+                  [(mk-kleene-cfexp? cfe)
+                   (remake-rules nt (dequeue rules-to-convert) (cons (pda-rule new-final (pda-action EMP (list nt) EMP) new-final) (cons (cfe->rule nt cfe) finished-rules)))]
+                  [else (remake-rules nt (dequeue rules-to-convert) (cons (cfe->rule nt cfe) finished-rules))]))))
+    (foldl (λ (lang-box res)
+             (append (remake-rules (hash-ref new-nts lang-box)
+                                   (treelist (if (box? lang-box) (unbox lang-box) lang-box))
+                                   '())
+                     res))
+           '()
+           loLabox))
+
+  ;;pda -> ndpda
+  ;;Purpose: Converts a pda to an ndpda
+  (define (pda->unchecked P)
+    (make-unchecked-ndpda (pda-states P)
+                          (pda-sigma P)
+                          (pda-gamma P)
+                          (pda-start P)
+                          (pda-finals P)
+                          (map (λ (rule)
+                                 (list (list (pda-rule-source rule)
+                                             (pda-action-read (pda-rule-action rule))
+                                             (pda-action-pop (pda-rule-action rule)))
+                                       (list (pda-rule-destin rule) (pda-action-push (pda-rule-action rule)))))
+                               (pda-rules P))))
+ 
+  
+  (let* ([extract-res (extract-box-and-singles-cfe cfe)]         
+         [new-start 'K]
+         [new-final 'H]
+         [lang-boxes (set->list (extraction-results-lang-boxes extract-res))]
+         [alphabet (set->list (extraction-results-singles extract-res))]
+         [new-nts (foldl (λ (nt lang-box acc)
+                           (hash-set acc lang-box nt))
+                         (hash)
+                         (gen-states (length lang-boxes))
+                         lang-boxes)]
+         [read-rules (map (λ (sig)
+                            (pda-rule new-final (pda-action sig (list sig) EMP) new-final))
+                            alphabet)]
+         [new-gamma (append alphabet (hash-values new-nts))]
+         [push-rules (lang-boxes->rules lang-boxes new-nts new-final)])
+    (pda->unchecked (pda (list new-start new-final)
+                         alphabet
+                         new-gamma
+                         new-start
+                         (list new-final)
+                         (cons (pda-rule new-start (pda-action EMP EMP (list (hash-ref new-nts cfe))) new-final)
+                               (append push-rules read-rules))))))
+
 ;; pda -> cfe
 ;;Purpose: Converts the given pda into a cfe
 (define #;define/contract (pda->cfe P)
   #;pda->cfe/c
-  #|
-  pda-struct is a structural representation of a pda
-  states | The states for the given pda => (listof states)
-  sigma  | The alphabet that the given pda works over => (listof symbol)
-  gamma  | The stack alphabet that given pda works over => (listof symbol)
-  start  | The starting state => symbol
-  finals | The final states => symbol
-  rules  | The transition relation for the given pda => (listof pda-rule)
-  |#
-  (struct pda (states sigma gamma start final rules) #:transparent)
-
-  #|
-  pda-rule is a structural representation of a pda rule
-  source | The state the rule is coming from => symbol
-  action | The action the pda takes when using the rule => pda-action
-  destin | The state the rule transitions to => symbol
-  tag    | The cfe-template for the given rule => symbol / cfe-template
-  |#
-  (struct pda-rule (source action destin) #:transparent)
-
-  #|
-  a pda-action is a structural representation of a pda action
-  read | The element that the pda reads => symbol
-  pop  | The element(s) that the pda pops of the stack => symbol / (listof symbol)
-  push | The element(s) that the pda pushes to the stack => symbol / (listof symbol)
-  |#
-  (struct pda-action (read pop push) #:transparent)
-
   #|
   A cfe-template is an annotation for a pda-rule in preparation to be converted to a cfe
   A cfe-template is either:
@@ -1645,143 +1653,3 @@
                          (set-member? (list->set (pda-getfinals P)) (pda-getstart P)))
                     (mk-empty-cfexp)
                     (build-cfe sub-langs sublang-stack-pairs)))]))
-
-
-;;cfe -> pda
-;;Purpose: Converts the given cfe into a pda
-(define (cfe->pda cfe)
-  ;;vars    | the accumulated variables found from traversing the given cfe  | (listof union-cfexp)
-  ;;singles | the accumulated singletons found from traversing the given cfe | (setof singleton-cfexp)
-  (struct extraction-results (lang-boxes singles) #:transparent)
-
-  (define qempty? treelist-empty?)
-
-  (define E-QUEUE empty-treelist) 
-
-  ;; (qof X) → X throws error
-  ;; Purpose: Return first X of the given queue
-  (define (qfirst a-qox)
-    (if (qempty? a-qox)
-        (error "qfirst applied to an empty queue")
-        (treelist-first a-qox)))
-
-  ;; (tllistof X) (qof X) → (qof X)
-  ;; Purpose: Add the given list of X to the given queue of X
-  (define (enqueue a-lox a-qox) (treelist-append a-qox a-lox))
-
-  ;; (qof X) → (qof X) throws error
-  ;; Purpose: Return the rest of the given queue
-  (define (dequeue a-qox)
-    (if (qempty? a-qox)
-        (error "dequeue applied to an empty queue")
-        (treelist-rest a-qox)))
-
-  ;;(X -> Y) Z (treelistof X) -> Z
-  (define (tl-foldl f acc tl)
-    (if (treelist-empty? tl)
-        acc
-        (tl-foldl f (f (treelist-first tl) acc) (treelist-rest tl))))
-  
-  ;;cfe -> extraction-results
-  ;;Purpose: Extracts all var-cfexp and singleton-cfexp from the given cfe
-  (define (extract-var-and-singles-cfe cfe)
-    ;;cfe -> (listof cfe)
-    ;;Purpose: Extracts the sub-expressions from the given cfe
-    (define (extract-cfe-data cfe)
-      (cond [(mk-concat-cfexp? cfe) (vector->treelist (mk-concat-cfexp-locfe cfe))]
-            [(mk-union-cfexp? cfe) (vector->treelist (mk-union-cfexp-locfe cfe))]
-            [(mk-kleene-cfexp? cfe) (treelist (mk-kleene-cfexp-cfe cfe))]
-            [(box? cfe) (treelist (unbox cfe))]
-            [else empty-treelist]))
-    ;;cfe extraction-results -> extraction-results
-    ;;Purpose: Updates the given extraction-results to add the given cfe if it is a singleton or variable
-    (define (update-extraction-results cfe extract-res)
-      (cond [(box? cfe)
-             (struct-copy extraction-results
-                          extract-res
-                          [lang-boxes (set-add (extraction-results-lang-boxes extract-res) cfe)])]
-            [(mk-singleton-cfexp? cfe)
-             (struct-copy extraction-results
-                          extract-res
-                          [singles (set-add (extraction-results-singles extract-res)
-                                            (string->symbol (mk-singleton-cfexp-char cfe)))])]
-            [else extract-res]))
-    
-    ;;(queueof cfe) extraction-results (listof cfe) -> extraction-results
-    ;;Purpose: Extracts the cfe and adds it to the extraction-results if its a singleton or variable
-    (define (extract-var-and-singles qocfe extract-res visited)
-      (if (qempty? qocfe)
-          extract-res
-          (let* ([cfe (qfirst qocfe)]
-                 [cfes-to-add (extract-cfe-data cfe)]
-                 [new-queue (enqueue (dequeue qocfe)
-                                     (treelist-filter (λ (cfe) (not (set-member? visited cfe))) cfes-to-add))]
-                 [new-acc (update-extraction-results cfe extract-res)]
-                 [new-visited (set-add visited cfe)])
-            (extract-var-and-singles new-queue new-acc new-visited))))
-    (let ([init-queue (tl-foldl (λ (env acc)
-                                  (enqueue acc (treelist env)))
-                                E-QUEUE
-                                (extract-cfe-data cfe))])
-      (extract-var-and-singles init-queue
-                               (update-extraction-results cfe (extraction-results (set) (set)))
-                               (set cfe))))
-
-  #|
-  pda-struct is a structural representation of a pda
-  states | The states for the given pda => (listof states)
-  sigma  | The alphabet that the given pda works over => (listof symbol)
-  gamma  | The stack alphabet that given pda works over => (listof symbol)
-  start  | The starting state => symbol
-  finals | The final states => (listof symbol)
-  rules  | The transition relation for the given pda => (listof pda-rule)
-  |#
-  (struct pda (states sigma gamma start finals rules) #:transparent)
-
-  #|
-  pda-rule is a structural representation of a pda rule
-  source | The state the rule is coming from => symbol
-  action | The action the pda takes when using the rule => pda-action
-  destin | The state the rule transitions to => symbol
-  |#
-  (struct pda-rule (source action destin) #:transparent)
-
-  #|
-  a pda-action is a structural representation of a pda action
-  read | The element that the pda reads => symbol
-  pop  | The element(s) that the pda pops of the stack => symbol / (listof symbol)
-  push | The element(s) that the pda pushes to the stack => symbol / (listof symbol)
-  |#
-  (struct pda-action (read pop push) #:transparent)
-  
-
-  ;;(listof state) natnum -> (listof state)
-  ;;Purpose: Generates natnum amount of states 
-  (define (gen-states num)
-    (for/fold ([states '()])
-              ([x (in-range num)])
-      (cons (gen-state states) states)))
-  
-
-  ;;pda -> ndpda
-  ;;Purpose: Converts a pda to an ndpda
-  (define (pda->unchecked P)
-    (make-unchecked-ndpda (pda-states P)
-                          (pda-sigma P)
-                          (pda-gamma P)
-                          (pda-start P)
-                          (pda-finals P)
-                          (map (λ (rule)
-                                 (list (list (pda-rule-source rule)
-                                             (pda-action-read (pda-rule-action rule))
-                                             (pda-action-pop (pda-rule-action rule)))
-                                       (list (pda-rule-destin rule) (pda-action-push (pda-rule-action rule)))))
-                               (pda-rules P))))
- 
-  
-  (let* ([extract-res (extract-var-and-singles-cfe cfe)]
-         [alphabet (set->list (extraction-results-singles extract-res))]
-         )
-    
-    (pda->unchecked )
-    ))
