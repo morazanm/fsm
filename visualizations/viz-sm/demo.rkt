@@ -7,164 +7,6 @@
   "../../fsm-core/private/mtape-tm.rkt"
   "sm-viz.rkt")
 
-
-;;Pre-Condition: '(LM BLANK w) AND t0h = 1 AND tape 1 is empty AND t1h = 0
-;;compute f(w) = ww
-(define copy (make-unchecked-mttm '(K H T F E B W D M)
-                      '(a b)
-                      'K
-                      '(M)
-                      (list
-                       (list (list 'K (list BLANK BLANK)) ;;<--- start
-                             (list 'H (list RIGHT RIGHT))) 
-                       (list (list 'H (list 'a BLANK)) ;;<---- PHASE 1: read a in w 
-                             (list 'T (list 'a 'a)))
-                       (list (list 'T (list 'a 'a))
-                             (list 'H (list RIGHT RIGHT)))
-                       (list (list 'H (list 'b BLANK)) ;;<---- PHASE 1: read b in w
-                             (list 'F (list 'b 'b)))
-                       (list (list 'F (list 'b 'b))
-                             (list 'H (list RIGHT RIGHT)))
-                       (list (list 'H (list BLANK BLANK)) ;;<--- PHASE 2: Go to beginning of t1
-                             (list 'E (list BLANK LEFT)))
-                       (list (list 'E (list BLANK 'a))
-                             (list 'E (list BLANK LEFT)))
-                       (list (list 'E (list BLANK 'b))
-                             (list 'E (list BLANK LEFT)))
-                       (list (list 'E (list BLANK BLANK)) ;;<---- PHASE 3: read w on t1 AND write w on t0
-                             (list 'W (list BLANK RIGHT)))
-                       (list (list 'W (list BLANK 'a))
-                             (list 'D (list 'a 'a)))
-                       (list (list 'D (list 'a 'a))
-                             (list 'W (list RIGHT RIGHT)))
-                       (list (list 'W (list BLANK 'b))
-                             (list 'B (list 'b 'b)))
-                       (list (list 'B (list 'b 'b))
-                             (list 'W (list RIGHT RIGHT)))
-                       (list (list 'W (list BLANK BLANK))
-                             (list 'M (list BLANK BLANK)))
-                       )        
-                      2))
-
-;;(listof tape-configs) -> boolean
-;;Purpose: Determine if K-inv holds
-(define (k-inv tape-config)
-  (let [(t0h (car (car tape-config)))
-        (t0 (cadr (car tape-config)))
-        (t1h (car (cadr tape-config)))
-        (t1 (cadr (cadr tape-config)))]
-    (and (= t0h 1) (= t1h 0)
-         (eq? (list-ref t0 t0h) BLANK)
-         (equal? t1 (list BLANK)))))
-
-;;(listof tape-configs) -> boolean
-;;Purpose: Determine if H-inv holds
-(define (h-inv tape-config)
-  (let* [(t0h (car (car tape-config)))
-         (t0 (cadr (car tape-config)))
-         (t1h (car (cadr tape-config)))
-         (t1 (cadr (cadr tape-config)))
-         (readt0 (take (drop t0 2) (- t0h 2)))
-         (readt1 (take (drop t1 1) (- t1h 1)))]
-    (and (>= t0h 2) (>= t1h 1)
-         (= (length readt0) (- t1h 1))
-         (equal? readt0 readt1))))
-
-
-;;(listof tape-configs) -> boolean
-;;Purpose: Determine if T-inv holds
-(define (t-inv tape-config)
-  (let* [(t0h (car (car tape-config)))
-         (t0 (cadr (car tape-config)))
-         (t1h (car (cadr tape-config)))
-         (t1 (cadr (cadr tape-config)))
-         (readt0 (take (drop t0 2) (- t0h 2)))
-         (readt1 (take (drop t1 1) (- t1h 1)))]
-    (and (>= t0h 2) (>= t1h 1)
-         (eq? (list-ref t0 t0h) 'a)
-         (= (length readt0) (- t1h 1))
-         (equal? readt0 readt1))))
-
-;;(listof tape-configs) -> boolean
-;;Purpose: Determine if F-inv holds
-(define (f-inv tape-config)
-  (let* [(t0h (car (car tape-config)))
-         (t0 (cadr (car tape-config)))
-         (t1h (car (cadr tape-config)))
-         (t1 (cadr (cadr tape-config)))
-         (readt0 (take (drop t0 2) (- t0h 2)))
-         (readt1 (take (drop t1 1) (- t1h 1)))]
-    (and (>= t0h 2) (>= t1h 1)
-         (eq? (list-ref t0 t0h) 'b)
-         (= (length readt0) (- t1h 1))
-         (equal? readt0 readt1))))
-
-;;(listof tape-configs) -> boolean
-;;Purpose: Determine if E-inv holds
-(define (e-inv tape-config)
-  (let* [(t0h (car (car tape-config)))
-         (t0 (cadr (car tape-config)))
-         (t1h (car (cadr tape-config)))
-         (t1 (cadr (cadr tape-config)))
-         (readt0 (take (drop t0 1) t0h))]
-    (and (>= t0h 2)
-         (eq? (list-ref t0 t0h) BLANK)
-         (equal? readt0 t1))))
-
-(define (w-inv tape-config)
-  (let* [(t0h (car (car tape-config)))
-         (t0 (cadr (car tape-config)))
-         (t1h (car (cadr tape-config)))
-         (t1 (cadr (cadr tape-config)))
-         (writet0 (take (drop t0 (length t1)) (- t0h (length t1))))
-         (readt1 (take (drop t1 1) (- t1h 1)))]
-    (and (>= t0h 2) (>= t1h 1)
-         (equal? writet0 readt1))))
-
-(define (b-inv tape-config)
-  (let* [(t0h (car (car tape-config)))
-         (t0 (cadr (car tape-config)))
-         (t1h (car (cadr tape-config)))
-         (t1 (cadr (cadr tape-config)))
-         (writet0 (take (drop t0 (length t1)) (- t0h (length t1))))
-         (readt1 (take (drop t1 1) (- t1h 1)))]
-    (and (>= t0h 2) (>= t1h 1)
-         (eq? (list-ref t1 t1h) 'b)
-         (equal? writet0 readt1))))
-
-(define (d-inv tape-config)
-  (let* [(t0h (car (car tape-config)))
-         (t0 (cadr (car tape-config)))
-         (t1h (car (cadr tape-config)))
-         (t1 (cadr (cadr tape-config)))
-         (writet0 (take (drop t0 (length t1)) (- t0h (length t1))))
-         (readt1 (take (drop t1 1) (- t1h 1)))]
-    (and (>= t0h 2) (>= t1h 1)
-         (eq? (list-ref t1 t1h) 'a)
-         (equal? writet0 readt1))))
-
-(define (m-inv tape-config)
-  (let* [(t0h (car (car tape-config)))
-         (t0 (cadr (car tape-config)))
-         (t1h (car (cadr tape-config)))
-         (t1 (cadr (cadr tape-config)))
-         (readt0 (take (drop t0 2) (- t0h 2)))
-         (readt1 (take (drop t1 1) (- t1h 1)))]
-    (and (>= t0h 2) (>= t1h 1)
-         (eq? (list-ref t0 t0h) BLANK)
-         (eq? (list-ref t1 t1h) BLANK)
-         (equal? readt0 (append readt1 readt1)))))
-
-#;(sm-viz copy `(,LM ,BLANK a b b a b) #:head-pos 1 (list 'K k-inv) 
-        (list 'H h-inv)
-        (list 'T t-inv)
-        (list 'F f-inv)
-        (list 'E e-inv)
-        (list 'B b-inv)
-        (list 'W w-inv)
-        (list 'D d-inv)
-        (list 'M m-inv))
-
 ;; State Documentation:
 ;; S: i = 1 AND tape[1] = BLANK
 ;; A: i = 2 AND tape[i-1] = BLANK
@@ -429,7 +271,7 @@
        (= (remainder (length (filter (λ (symb) (eq? symb 'a)) t)) 2) 0)
        (= (remainder (length (filter (λ (symb) (eq? symb 'b)) t)) 2) 0)))
 
-#;(sm-viz ww '(@ _ a a b a a b) #:head-pos 1 (list 'S S-INV-ww)
+(sm-viz ww '(@ _ a a b a a b) #:head-pos 1 (list 'S S-INV-ww)
           (list 'A A-INV-ww)
           (list 'D D-INV-ww)
           (list 'E E-INV-ww)
@@ -444,3 +286,161 @@
           (list 'O O-INV-ww)
           (list 'P P-INV-ww)
           (list 'Y Y-INV-ww))
+
+
+;;Pre-Condition: '(LM BLANK w) AND t0h = 1 AND tape 1 is empty AND t1h = 0
+;;compute f(w) = ww
+(define copy (make-unchecked-mttm '(K H T F E B W D M)
+                      '(a b)
+                      'K
+                      '(M)
+                      (list
+                       (list (list 'K (list BLANK BLANK)) ;;<--- start
+                             (list 'H (list RIGHT RIGHT))) 
+                       (list (list 'H (list 'a BLANK)) ;;<---- PHASE 1: read a in w 
+                             (list 'T (list 'a 'a)))
+                       (list (list 'T (list 'a 'a))
+                             (list 'H (list RIGHT RIGHT)))
+                       (list (list 'H (list 'b BLANK)) ;;<---- PHASE 1: read b in w
+                             (list 'F (list 'b 'b)))
+                       (list (list 'F (list 'b 'b))
+                             (list 'H (list RIGHT RIGHT)))
+                       (list (list 'H (list BLANK BLANK)) ;;<--- PHASE 2: Go to beginning of t1
+                             (list 'E (list BLANK LEFT)))
+                       (list (list 'E (list BLANK 'a))
+                             (list 'E (list BLANK LEFT)))
+                       (list (list 'E (list BLANK 'b))
+                             (list 'E (list BLANK LEFT)))
+                       (list (list 'E (list BLANK BLANK)) ;;<---- PHASE 3: read w on t1 AND write w on t0
+                             (list 'W (list BLANK RIGHT)))
+                       (list (list 'W (list BLANK 'a))
+                             (list 'D (list 'a 'a)))
+                       (list (list 'D (list 'a 'a))
+                             (list 'W (list RIGHT RIGHT)))
+                       (list (list 'W (list BLANK 'b))
+                             (list 'B (list 'b 'b)))
+                       (list (list 'B (list 'b 'b))
+                             (list 'W (list RIGHT RIGHT)))
+                       (list (list 'W (list BLANK BLANK))
+                             (list 'M (list BLANK BLANK)))
+                       )        
+                      2))
+
+;;(listof tape-configs) -> boolean
+;;Purpose: Determine if K-inv holds
+(define (k-inv tape-config)
+  (let [(t0h (car (car tape-config)))
+        (t0 (cadr (car tape-config)))
+        (t1h (car (cadr tape-config)))
+        (t1 (cadr (cadr tape-config)))]
+    (and (= t0h 1) (= t1h 0)
+         (eq? (list-ref t0 t0h) BLANK)
+         (equal? t1 (list BLANK)))))
+
+;;(listof tape-configs) -> boolean
+;;Purpose: Determine if H-inv holds
+(define (h-inv tape-config)
+  (let* [(t0h (car (car tape-config)))
+         (t0 (cadr (car tape-config)))
+         (t1h (car (cadr tape-config)))
+         (t1 (cadr (cadr tape-config)))
+         (readt0 (take (drop t0 2) (- t0h 2)))
+         (readt1 (take (drop t1 1) (- t1h 1)))]
+    (and (>= t0h 2) (>= t1h 1)
+         (= (length readt0) (- t1h 1))
+         (equal? readt0 readt1))))
+
+
+;;(listof tape-configs) -> boolean
+;;Purpose: Determine if T-inv holds
+(define (t-inv tape-config)
+  (let* [(t0h (car (car tape-config)))
+         (t0 (cadr (car tape-config)))
+         (t1h (car (cadr tape-config)))
+         (t1 (cadr (cadr tape-config)))
+         (readt0 (take (drop t0 2) (- t0h 2)))
+         (readt1 (take (drop t1 1) (- t1h 1)))]
+    (and (>= t0h 2) (>= t1h 1)
+         (eq? (list-ref t0 t0h) 'a)
+         (= (length readt0) (- t1h 1))
+         (equal? readt0 readt1))))
+
+;;(listof tape-configs) -> boolean
+;;Purpose: Determine if F-inv holds
+(define (f-inv tape-config)
+  (let* [(t0h (car (car tape-config)))
+         (t0 (cadr (car tape-config)))
+         (t1h (car (cadr tape-config)))
+         (t1 (cadr (cadr tape-config)))
+         (readt0 (take (drop t0 2) (- t0h 2)))
+         (readt1 (take (drop t1 1) (- t1h 1)))]
+    (and (>= t0h 2) (>= t1h 1)
+         (eq? (list-ref t0 t0h) 'b)
+         (= (length readt0) (- t1h 1))
+         (equal? readt0 readt1))))
+
+;;(listof tape-configs) -> boolean
+;;Purpose: Determine if E-inv holds
+(define (e-inv tape-config)
+  (let* [(t0h (car (car tape-config)))
+         (t0 (cadr (car tape-config)))
+         (t1h (car (cadr tape-config)))
+         (t1 (cadr (cadr tape-config)))
+         (readt0 (take (drop t0 1) t0h))]
+    (and (>= t0h 2)
+         (eq? (list-ref t0 t0h) BLANK)
+         (equal? readt0 t1))))
+
+(define (w-inv tape-config)
+  (let* [(t0h (car (car tape-config)))
+         (t0 (cadr (car tape-config)))
+         (t1h (car (cadr tape-config)))
+         (t1 (cadr (cadr tape-config)))
+         (writet0 (take (drop t0 (length t1)) (- t0h (length t1))))
+         (readt1 (take (drop t1 1) (- t1h 1)))]
+    (and (>= t0h 2) (>= t1h 1)
+         (equal? writet0 readt1))))
+
+(define (b-inv tape-config)
+  (let* [(t0h (car (car tape-config)))
+         (t0 (cadr (car tape-config)))
+         (t1h (car (cadr tape-config)))
+         (t1 (cadr (cadr tape-config)))
+         (writet0 (take (drop t0 (length t1)) (- t0h (length t1))))
+         (readt1 (take (drop t1 1) (- t1h 1)))]
+    (and (>= t0h 2) (>= t1h 1)
+         (eq? (list-ref t1 t1h) 'b)
+         (equal? writet0 readt1))))
+
+(define (d-inv tape-config)
+  (let* [(t0h (car (car tape-config)))
+         (t0 (cadr (car tape-config)))
+         (t1h (car (cadr tape-config)))
+         (t1 (cadr (cadr tape-config)))
+         (writet0 (take (drop t0 (length t1)) (- t0h (length t1))))
+         (readt1 (take (drop t1 1) (- t1h 1)))]
+    (and (>= t0h 2) (>= t1h 1)
+         (eq? (list-ref t1 t1h) 'a)
+         (equal? writet0 readt1))))
+
+(define (m-inv tape-config)
+  (let* [(t0h (car (car tape-config)))
+         (t0 (cadr (car tape-config)))
+         (t1h (car (cadr tape-config)))
+         (t1 (cadr (cadr tape-config)))
+         (readt0 (take (drop t0 2) (- t0h 2)))
+         (readt1 (take (drop t1 1) (- t1h 1)))]
+    (and (>= t0h 2) (>= t1h 1)
+         (eq? (list-ref t0 t0h) BLANK)
+         (eq? (list-ref t1 t1h) BLANK)
+         (equal? readt0 (append readt1 readt1)))))
+
+(sm-viz copy `(,LM ,BLANK a b b a b) #:head-pos 1 (list 'K k-inv) 
+        (list 'H h-inv)
+        (list 'T t-inv)
+        (list 'F f-inv)
+        (list 'E e-inv)
+        (list 'B b-inv)
+        (list 'W w-inv)
+        (list 'D d-inv)
+        (list 'M m-inv))
