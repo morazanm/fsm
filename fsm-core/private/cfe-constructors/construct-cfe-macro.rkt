@@ -114,7 +114,7 @@
      (when (syntax-e #'iden)
        (check-for-bad-circular-ref #'iden #'a-kleene-expr.val 'kleene-cfexp))
      (syntax/loc #'a-kleene-expr
-       (kleene-cfexp a-kleene-expr.val))]
+       (kleenestar-cfexp a-kleene-expr.val))]
     
     [(_ a-concat-expr:concat-cfexp-expr (~optional iden #:defaults ([iden #'#f])))
      (when (syntax-e #'iden)

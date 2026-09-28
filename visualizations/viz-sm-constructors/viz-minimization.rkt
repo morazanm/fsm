@@ -773,17 +773,16 @@ A Path is a (treelistof dfa-rule)
         (if (= (phase-number phase) PHASE-5)
             (let* ([rebuild-M (phase-5-attributes-rebuild-M (phase-attributes phase))]
                    [applicable-rules (filter (λ (rule)
-                                               (or (eq? (first rule) merge-state)
-                                                   (eq? (third rule) merge-state)))
+                                               (eq? (first rule) merge-state))
                                              (dfa-rules rebuild-M))]
                    [old-rules (map (λ (rule) (list (hash-ref old-state-assoc (first rule) (λ () (first rule)))
                                                    (second rule)
                                                    (hash-ref old-state-assoc (third rule) (λ () (third rule)))))
                                    applicable-rules)])
               (list (list (create-graph-struct (phase-M phase) palette #:merge-state (if (symbol? merge-state)
-                                                                                 (box (cons (hash-ref old-state-assoc merge-state)
-                                                                                            old-rules))
-                                                                                 merge-state))
+                                                                                         (box (cons (hash-ref old-state-assoc merge-state)
+                                                                                                    old-rules))
+                                                                                         merge-state))
                           (create-graph-struct rebuild-M palette #:merge-state merge-state))
                     (draw-table (phase-state-pairing-table phase) (dfa-finals (phase-M phase))
                                 (if (symbol? merge-state)
@@ -815,11 +814,12 @@ A Path is a (treelistof dfa-rule)
 
   ;;(listof state) -> string
   ;;Purpose: Converts the given (listof state) into a string
-  (define (convert-to-string f los)
-    (if (= (length los) 1)
-        (f (first los))
-        (string-append (f (first los)) ", "
-                       (convert-to-string f (rest los)))))
+  (define (convert-to-string f los)    
+    (if (and (not (null? los))
+             (null? (cdr los)))
+        (f (car los))
+        (string-append (f (car los)) ", "
+                       (convert-to-string f (cdr los)))))
 
   ;;phase-attributes -> image
   ;;Purpose: Makes the imsg for phase 1
@@ -831,7 +831,8 @@ A Path is a (treelistof dfa-rule)
                   (convert-to-string symbol->string (phase-1-attributes-unreachable-state phase-attribute)))
           FONT-SIZE BLACK))
   
-  (define PHASE2-IMSG (text "Making State Pairing Table" FONT-SIZE BLACK))
+  (define PHASE2-IMSG (above (text "Making State Pairing Table" FONT-SIZE BLACK)
+                             (text "Using lower triangular matrix because pair order is superfluous" FONT-SIZE BLACK)))
 
   ;;state-pair -> string
   ;;Purpose: Makes the state pair readable
@@ -862,8 +863,8 @@ A Path is a (treelistof dfa-rule)
                  (beside (text "State pair " FONT-SIZE BLACK)
                          (text (pretty-print-state-pair phase-4-state-pair) FONT-SIZE (color-palette-select-color palette))
                          (text (if (state-pair-marked? phase-4-state-pair)
-                                   " is marked because at least one of it's destination state pairing:"
-                                   " remains unmarked because all of it's destination state pairings:")
+                                   " is marked because at least one of its destination state pairing:"
+                                   " remains unmarked because all of its destination state pairings:")
                                FONT-SIZE BLACK)
                          (apply beside (map pretty-print-destination-state-pair (state-pair-destination-pairs phase-4-state-pair)))
                          (text (if (state-pair-marked? phase-4-state-pair)
@@ -886,10 +887,10 @@ A Path is a (treelistof dfa-rule)
                                       (first (dfa-states (phase-5-attributes-rebuild-M phase-attribute))))
                               FONT-SIZE BLACK)
                         (text (format "States remaining to be used for building the minimized machine: ~a"
-                               (if (empty? remaining-states)
-                                   IMSG-NONE
-                                   (convert-to-string symbol->string remaining-states)))
-                       FONT-SIZE BLACK))
+                                      (if (empty? remaining-states)
+                                          IMSG-NONE
+                                          (convert-to-string symbol->string remaining-states)))
+                              FONT-SIZE BLACK))
                  (above (text (format "States ~a have been merged to create state ~s"
                                       (convert-to-string symbol->string (set->list (merged-state-old-symbols merged-state)))
                                       (merged-state-new-symbol merged-state))
@@ -919,7 +920,7 @@ A Path is a (treelistof dfa-rule)
   (define (make-phase6-imsg phase-attribute)
     (text (if (phase-6-attributes-minimized? phase-attribute)
               "Minimized machine"
-              "This machine is already minimized")
+              "This machine is already minimal")
           FONT-SIZE BLACK))
   (let ([current-phase (zipper-current (imsg-state-phase imsg-state))])
     (cond [(= (phase-number current-phase) PHASE--1) PHASE--1-IMSG]
@@ -941,6 +942,8 @@ A Path is a (treelistof dfa-rule)
              (let ([member-of-finals? (set-member? finals state)]
                    [found-state-from-state-pair?
                     (or (eq? state merge-states)
+                        (and (set? merge-states)
+                             (set-member? merge-states state))
                         (and (not (list? state-pair))
                              (or (eq? state (state-pair-s1 state-pair))
                                  (eq? state (state-pair-s2 state-pair)))))])
@@ -973,7 +976,8 @@ A Path is a (treelistof dfa-rule)
                      (or (and (list? merge-states)
                               (ormap (λ (r) (or (and (eq? (first r) (first rule))
                                                      (eq? (second r) (second rule)))
-                                                (equal? r rule))) merge-states))
+                                                (equal? r rule)))
+                                     merge-states))
                          (and (symbol? merge-states)
                               (eq? source-state merge-states))
                          (and (set? merge-states)
@@ -1000,12 +1004,12 @@ A Path is a (treelistof dfa-rule)
                                           [(or (symbol? merge-states)
                                                (empty? merge-states))
                                            merge-states]
-                                          [else (merged-state-old-symbols merge-states)]))     
+                                          [else (set-add (merged-state-old-symbols merge-states) (merged-state-new-symbol merge-states))]))     
                    (cond [(box? merge-states) (rest (unbox merge-states))]
                          [(or (symbol? merge-states)
                               (empty? merge-states))
                           merge-states]
-                         [else (merged-state-old-symbols merge-states)])))
+                         [else (set-add (merged-state-old-symbols merge-states) (merged-state-new-symbol merge-states))])))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;VIZ-PRIMITIVE;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; 
@@ -1149,7 +1153,7 @@ A Path is a (treelistof dfa-rule)
       ;;Purpose: Determines if the state-pair is newly marked
       (define (newly-marked? state-pairing)
         (let ([sp (struct-copy state-pair state-pairing [marked? #f])])
-              (set-member? seen-unmarkings sp)))
+          (set-member? seen-unmarkings sp)))
       (if (treelist-empty? loSP)
           (phase-results (reverse acc) state-pairing-table)
           (let ([state-pairing (treelist-first loSP)])
@@ -1220,7 +1224,7 @@ A Path is a (treelistof dfa-rule)
     (make-phase-5-helper loRM loMS states empty))
   (let* ([unchecked-M M]
          [results-from-minimization (minimize-dfa unchecked-M)]
-
+         [post-conversion-M-states (unchecked->dfa (ndfa->dfa (minimization-results-original-M results-from-minimization)))]
          [original-M (unchecked->dfa (minimization-results-original-M results-from-minimization))]
          [no-unreachables-M (minimization-results-unreachables-removed-M results-from-minimization)]
          [all-loSP (treelist-reverse (minimization-results-loSP results-from-minimization))]
@@ -1278,10 +1282,10 @@ A Path is a (treelistof dfa-rule)
          [rebuilding-machines (reconstruct-machine minimized-M merged-states)]
          
          [phase-5 (if can-be-minimized?
-                      (make-phase-5 no-unreachables-M rebuilding-machines merged-states filled-table (dfa-states original-M)
-                       (minimization-results-state-assoc results-from-minimization))
+                      (make-phase-5 no-unreachables-M rebuilding-machines merged-states filled-table (dfa-states no-unreachables-M)
+                                    (minimization-results-state-assoc results-from-minimization))
                       empty)]
-         [phase-6 (list (phase PHASE-6 (last rebuilding-machines) filled-table (phase-6-attributes can-be-minimized?)))]
+         [phase-6 (list (phase PHASE-6 (if can-be-minimized? (last rebuilding-machines) no-unreachables-M) filled-table (phase-6-attributes can-be-minimized?)))]
          [all-phases (append phase--1 phase-0 phase-1 phase-2 phase-3 phase-4 phase-5 phase-6)]
          [color-scheme (cond [(eq? palette 'prot) prot-color-scheme] ;;red color blind
                              [(eq? palette 'deut) deut-color-scheme] ;;green color blind 
