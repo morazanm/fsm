@@ -110,41 +110,83 @@
                         (cfg-get-alphabet G)
                         new-rules
                         (cfg-get-start G)))
+
+  ;; cfg -> cfg
+  ;; Removes completely nullable nonterminals before proceeding with DEL step
+  (define (remove-completely-nullable-nts G)
+      (define trls (map (lambda (r)
+                          (list (car r) (cadr r) (symbol->fsmlos (caddr r))))
+                        (cfg-get-rules G)))
+      (define nts (cfg-get-v G))
+      (define nt-to-rules-rhs (make-hasheq))
+      (for ([rule (in-list trls)])
+        (define lhs (car rule))
+        (define curr-lst (hash-ref nt-to-rules-rhs lhs '()))
+        (hash-set! nt-to-rules-rhs lhs (cons (caddr rule) curr-lst)))
+      (define completely-nullable-nts
+        (for/list ([nt (in-list nts)]
+                   #:do [(define nt-rules (hash-ref nt-to-rules-rhs nt))]
+                   #:when (andmap (lambda (nt-rule-rhs)
+                                    (andmap (lambda (elem) (equal? elem EMP)) nt-rule-rhs))
+                                  nt-rules))
+          (if (eq? nt (cfg-get-start G))
+              (error "Starting nonterminal is completely nullable. Cannot continue with transformation")
+              nt)))
+      (cond [(null? completely-nullable-nts) G]
+            [else
+             (define new-rules (for/list ([rule (in-list trls)]
+                                          #:when (not (member (car rule) completely-nullable-nts)))
+                                 (list (car rule) (cadr rule) (fsmlos->symbol (for/list ([elem (in-list (caddr rule))]
+                                                                         #:when (not (member elem completely-nullable-nts)))
+                                                                elem)))))
+             (define new-nts (for/list ([nt (in-list nts)]
+                                        #:when (not (member nt completely-nullable-nts)))
+                               nt))
+             (remove-completely-nullable-nts
+              (make-unchecked-cfg new-nts
+                                  (cfg-get-alphabet G)
+                                  new-rules
+                                  (cfg-get-start G)))]))
   
   ;; cfg --> cfg
   ;; Purpose: Remove e-rules from given grammar
   (define (del-grammar G)
+    
     (define trls (map (lambda (r)
                         (list (car r) (cadr r) (symbol->fsmlos (caddr r))))
                       (cfg-get-rules G)))
     
-    (define nulls
-      (list->mutable-seteq
-       (for/list ([rule (in-list trls)]
-                                      #:when (equal? (caddr rule) (list EMP)))
-                             (car rule))))
-
     (define (new-new-compute-nullables trls)
+      (define nulls
+        (list->mutable-seteq
+         (for/list ([rule (in-list trls)]
+                    #:when (equal? (caddr rule) (list EMP)))
+           (car rule))))
+      
+      (define (all-nulls-on-rhs? rule)
+        (and (not (set-member? nulls (car rule)))
+             (andmap (lambda (elem) (set-member? nulls elem)) (caddr rule))))
+      
       (define (found-new-nullables rules)
         (cond [(null? rules)
                (find-new-nullables trls)]
               [else
-               (cond [(and (not (set-member? nulls (car (car rules))))
-                           (andmap (lambda (elem) (set-member? nulls elem)) (caddr (car rules))))
+               (cond [(all-nulls-on-rhs? (car rules))
                       (set-add! nulls (car (car rules)))
                       (found-new-nullables (rest rules))]
                      [else (found-new-nullables (rest rules))])]))
+      
       (define (find-new-nullables rules)
         (cond [(null? rules)
                (set->list nulls)]
               [else
-               (cond [(and (not (set-member? nulls (car (car rules))))
-                           (andmap (lambda (elem) (set-member? nulls elem)) (caddr (car rules))))
+               (cond [(all-nulls-on-rhs? (car rules))
                       (set-add! nulls (car (car rules)))
                       (found-new-nullables (rest rules))]
                      [else (find-new-nullables (rest rules))])]))
+      
       (find-new-nullables trls))
-
+    
     (define (remove-nts null-elem idx-lst count word)
       (if (null? word)
           '()
@@ -222,4 +264,4 @@
                         new-rules
                         (cfg-get-start G)))
   
-  (unit-grammar (del-grammar (bin-grammar (term-grammar (start-grammar G))))))
+  (unit-grammar (del-grammar (remove-completely-nullable-nts (bin-grammar (term-grammar (start-grammar G)))))))
