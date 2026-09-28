@@ -67,6 +67,19 @@
   (check-equal? (grammar-derive? completely-nullable-nt '(a a a a a a a a a a a a a a a a b a a a a a a a a a a a a a a a a))
                 #t)
 
+  (define completely-nullable-recursive-nt (make-cfg '(S A B C)
+                                                     '(a b)
+                                                     `((S -> aSa)
+                                                       (S -> aSAa)
+                                                       (S -> b)
+                                                       (A -> B)
+                                                       (B -> C)
+                                                       (C -> ,EMP))
+                                                     'S))
+
+  (check-equal? (grammar-derive? completely-nullable-recursive-nt '(a a a a a a a a a a a a a a a a b a a a a a a a a a a a a a a a a))
+                #t)
+
   (check-equal? (grammar-derive? cfg-moreAs-than-Bs '(a b b a a))
                 #t)
   (check-equal? (grammar-derive? cfg-moreAs-than-Bs '(a b b b a a a a))
