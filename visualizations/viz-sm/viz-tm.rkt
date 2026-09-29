@@ -956,15 +956,16 @@
          [cut-off-computations-lengths (take (count-computations LoC '()) computation-length)]
          [color-legend (let* ([buffer-sqaure (square HEIGHT-BUFFER 'solid (color-palette-blank-color color-scheme))]
                               [spacer (beside buffer-sqaure buffer-sqaure buffer-sqaure buffer-sqaure)])
-                         (if rejected?
-                           (beside (text "Reject traced" 20 (color-palette-legend-shown-reject-color color-scheme))
-                                   spacer
-                                   (text "Reject not traced" 20 (color-palette-legend-other-reject-color color-scheme)))
-                           (beside (text "Accept traced" 20 (color-palette-legend-shown-accept-color color-scheme))
-                                   spacer
-                                   (text "Accept not traced" 20 (color-palette-legend-other-accept-color color-scheme))
-                                   spacer
-                                   (text "Reject not traced" 20 (color-palette-legend-other-reject-color color-scheme)))))])
+                         (cond [(eq? (tm-type M) 'tm) spacer]
+                               [rejected?
+                                (beside (text "Reject traced" 20 (color-palette-legend-shown-reject-color color-scheme))
+                                        spacer
+                                        (text "Reject not traced" 20 (color-palette-legend-other-reject-color color-scheme)))]
+                               [else (beside (text "Accept traced" 20 (color-palette-legend-shown-accept-color color-scheme))
+                                             spacer
+                                             (text "Accept not traced" 20 (color-palette-legend-other-accept-color color-scheme))
+                                             spacer
+                                             (text "Reject not traced" 20 (color-palette-legend-other-reject-color color-scheme)))]))])
    ;#;
     (run-viz graphs
             (list->vector (map (λ (x) (λ (grph) grph)) graphs))

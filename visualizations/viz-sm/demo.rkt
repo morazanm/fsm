@@ -271,7 +271,7 @@
        (= (remainder (length (filter (λ (symb) (eq? symb 'a)) t)) 2) 0)
        (= (remainder (length (filter (λ (symb) (eq? symb 'b)) t)) 2) 0)))
 
-(sm-viz ww '(@ _ a a b a a b) #:head-pos 1 (list 'S S-INV-ww)
+#;(sm-viz ww '(@ _ a a b a a b) #:head-pos 1 (list 'S S-INV-ww)
           (list 'A A-INV-ww)
           (list 'D D-INV-ww)
           (list 'E E-INV-ww)

@@ -1124,15 +1124,16 @@ destination -> the rest of a mttm rule | half-rule
                               [else mttm->=4tape-viz-max-zoom-out])]
          [color-legend (let* ([buffer-sqaure (square HEIGHT-BUFFER 'solid (color-palette-blank-color color-scheme))]
                               [spacer (beside buffer-sqaure buffer-sqaure buffer-sqaure buffer-sqaure)])
-                         (if rejected?
-                           (beside (text "Reject traced" 20 (color-palette-legend-shown-reject-color color-scheme))
-                                   spacer
-                                   (text "Reject not traced" 20 (color-palette-legend-other-reject-color color-scheme)))
-                           (beside (text "Accept traced" 20 (color-palette-legend-shown-accept-color color-scheme))
-                                   spacer
-                                   (text "Accept not traced" 20 (color-palette-legend-other-accept-color color-scheme))
-                                   spacer
-                                   (text "Reject not traced" 20 (color-palette-legend-other-reject-color color-scheme)))))])
+                         (cond [(eq? (mttm-type M) 'mttm) spacer]
+                               [rejected?
+                                (beside (text "Reject traced" 20 (color-palette-legend-shown-reject-color color-scheme))
+                                        spacer
+                                        (text "Reject not traced" 20 (color-palette-legend-other-reject-color color-scheme)))]
+                               [(beside (text "Accept traced" 20 (color-palette-legend-shown-accept-color color-scheme))
+                                        spacer
+                                        (text "Accept not traced" 20 (color-palette-legend-other-accept-color color-scheme))
+                                        spacer
+                                        (text "Reject not traced" 20 (color-palette-legend-other-reject-color color-scheme)))]))])
     ;#;
     (run-viz graphs
              (list->vector (map (λ (x) (λ (grph) grph)) graphs))
