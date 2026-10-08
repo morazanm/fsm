@@ -11,111 +11,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;PDA->CFE & CFE->PDA Transformations;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define abdc
-  (make-cfe ([A (singleton-cfexp "a")]
-             [B (singleton-cfexp "b")]
-             [C (singleton-cfexp "c")]
-             [D (singleton-cfexp "d")]             
-             [EMP (empty-cfexp)]
-             [L (union-cfexp EMP
-                             (concat-cfexp A B L D C))])
-            L))
 
-(define adc
-  (make-cfe ([A (singleton-cfexp "a")]             
-             [C (singleton-cfexp "c")]
-             [D (singleton-cfexp "d")]             
-             [EMP (empty-cfexp)]
-             [L (union-cfexp EMP
-                             (concat-cfexp A L D C))])
-            L))
-
-(define abd
-  (make-cfe ([A (singleton-cfexp "a")]
-             [B (singleton-cfexp "b")]
-             [D (singleton-cfexp "d")]             
-             [EMP (empty-cfexp)]
-             [L (union-cfexp EMP
-                             (concat-cfexp A B L D))])
-            L))
-
-(define ABCD
-  (make-cfe ([A (singleton-cfexp "a")]
-             [B (singleton-cfexp "b")]
-             [C (singleton-cfexp "c")]
-             [D (singleton-cfexp "d")])
-            (concat-cfexp A B C D)))
-
-(define ABCD2
-  (make-cfe ([A (singleton-cfexp "a")]
-             [B (singleton-cfexp "b")]
-             [C (singleton-cfexp "c")]
-             [D (singleton-cfexp "d")])
-            (union-cfexp A B C D)))
-
-(define AnCkBn
-  (make-cfe ([EMPTY (empty-cfexp)]
-             [A (singleton-cfexp "a")]
-             [B (singleton-cfexp "b")]
-             [C (singleton-cfexp "c")]
-             [ASB (union-cfexp (concat-cfexp A ASB B) Ck)]
-             [Ck (union-cfexp (concat-cfexp C Ck) EMPTY)])
-    ASB))
-
-(define AnCkBn2
-  (make-cfe ([EMPTY (empty-cfexp)]
-                          [A (singleton-cfexp "a")]
-                          [B (singleton-cfexp "b")]
-                          [C (singleton-cfexp "c")]
-                          [CK (kleenestar-cfexp C)]
-                          [AnCKbn (union-cfexp (concat-cfexp A AnCKbn B) CK)])
-                         AnCKbn))
-
-(define AiBj (make-cfe ([EMPTY (empty-cfexp)]
-                        [A (singleton-cfexp "a")]
-                        [B (singleton-cfexp "b")]
-                        [AiBj (union-cfexp EMPTY
-                                           (concat-cfexp A AiBj B)
-                                           (concat-cfexp A AiBj B B))])
-                       AiBj))
-
-(define AnBn (make-cfe ([EMPTY (empty-cfexp)]
-                        [A (singleton-cfexp "a")]
-                        [B (singleton-cfexp "b")]
-                        [AnBn (union-cfexp EMPTY (concat-cfexp A AnBn B))])
-                       AnBn))
-
-(define AnBncKUAkBnCn (make-cfe ([EMPTY (empty-cfexp)]
-                                 [A (singleton-cfexp "a")]
-                                 [B (singleton-cfexp "b")]
-                                 [C (singleton-cfexp "c")]
-                                 [AEB (union-cfexp EMPTY (concat-cfexp A AEB B))]
-                                 [CF (union-cfexp (concat-cfexp C CF) EMPTY)]
-                                 [BWC (union-cfexp (concat-cfexp B BWC C) EMPTY)]
-                                 [AZ (union-cfexp (concat-cfexp A AZ) EMPTY)]
-                                 [AiBjCk (union-cfexp (concat-cfexp AEB CF) (concat-cfexp AZ BWC))])
-                                AiBjCk))
-
-(define AnBncKUAkBnCn2 (make-cfe ([EMPTY (empty-cfexp)]
-                                  [A (singleton-cfexp "a")]
-                                  [B (singleton-cfexp "b")]
-                                  [C (singleton-cfexp "c")]
-                                  [AEB (union-cfexp EMPTY (concat-cfexp A AEB B))]
-                                  [CF (kleenestar-cfexp C)]
-                                  [BWC (union-cfexp (concat-cfexp B BWC C) EMPTY)]
-                                  [AZ (kleenestar-cfexp A)]
-                                  [AiBjCk (union-cfexp (concat-cfexp AEB CF) (concat-cfexp AZ BWC))])
-                                 AiBjCk))
-
-
-;;L = wcw^r
-(define WcWr (make-cfe ([A (singleton-cfexp "a")]
-                        [B (singleton-cfexp "b")]
-                        [C (singleton-cfexp "c")]
-                        [WcWr (union-cfexp (concat-cfexp A WcWr A)
-                                           (concat-cfexp B WcWr B)
-                                           C)])
-                       WcWr))
 
 (define dwcwˆr (make-unchecked-ndpda '(S F)
                                      '(a b c)
@@ -254,6 +150,7 @@
                                             ((M ,EMP ,EMP) (F ,EMP))
                                             ((F ,EMP (Z)) (S ,EMP)))))
 
+;;L={a^mb^nc^p|m!=n∧m,n,p>0}
 (define ambncp (make-unchecked-ndpda '(S A B C D E F G)
                                      '(a b c z)
                                      '(a y)

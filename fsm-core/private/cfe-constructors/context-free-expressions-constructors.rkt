@@ -402,7 +402,8 @@
 
 ;;cfe -> pda
 ;;Purpose: Converts the given cfe into a pda
-(define (cfe->pda cfe)
+(define/contract (cfe->pda cfe)
+  cfe->pda/c
   ;;(listof state) natnum -> (listof state)
   ;;Purpose: Generates natnum amount of states 
   (define (gen-states num)
@@ -467,7 +468,8 @@
                    (remake-rules nt (enqueue (dequeue rules-to-convert)
                                              (vector->treelist (mk-union-cfexp-locfe cfe))) finished-rules)]
                   [(mk-kleene-cfexp? cfe)
-                   (remake-rules nt (dequeue rules-to-convert) (cons (pda-rule new-final (pda-action EMP (list nt) EMP) new-final) (cons (cfe->rule nt cfe) finished-rules)))]
+                   (remake-rules nt (dequeue rules-to-convert) (cons (pda-rule new-final (pda-action EMP (list nt) EMP) new-final)
+                                                                     (cons (cfe->rule nt cfe) finished-rules)))]
                   [else (remake-rules nt (dequeue rules-to-convert) (cons (cfe->rule nt cfe) finished-rules))]))))
     (foldl (λ (lang-box res)
              (append (remake-rules (hash-ref new-nts lang-box)
@@ -849,6 +851,10 @@
                 [stack-length (length stack)])
             (and (>= stack-length pop-amount)
                  (equal? (take stack pop-amount) pop))))
+        ;;Goal: find ALL possible ways to pop non homogenous elements off the stack
+        ;Idea determine which rules are 'mandatory' (a SINGLE non e-transition between states) and which rules aren't (loop on a state)
+        ;possibly search the rules to determine all paths that can pop, mandatory paths >> optional paths can be
+        ;;fw: decision procedure to ensure i only create well-formed cfes
         (cond [(null? stack) (list push-pair)]
               [(null? pop-rules) (match-operations push-pair stack all-pop-rules all-pop-rules)]
               [(equal? stack (pda-action-pop (pda-rule-action (first pop-rules))))
@@ -863,7 +869,7 @@
                                  (drop stack (length (pda-action-pop (pda-rule-action (first pop-rules)))))
                                  (rest pop-rules)
                                  all-pop-rules)]
-              [else (match-operations push-pair stack (rest pop-rules) all-pop-rules)]))
+              [else (match-operations push-pair stack (rest pop-rules) (remove (first pop-rules) all-pop-rules))]))
 
       ;;inverse-pair pda-rule -> inverse pair
       ;;Purpose: Balances the stack of the given inverse pair
@@ -915,15 +921,15 @@
              (equal? (pda-action-push (pda-rule-action pop-rule)) (pda-action-pop (pda-rule-action pop-rule)))))
       
       (cond [(not (inverse-pair-homogenous? push-pair))
-             (match-operations push-pair (inverse-pair-stack push-pair) pop-rules pop-rules)]
-            [(or (null? pop-rules) (stack-wall? (first pop-rules))) (reverse acc)]
+             (match-operations push-pair (inverse-pair-stack push-pair) pop-rules pop-rules)] ;;not homogenous
+            [(or (null? pop-rules) (stack-wall? (first pop-rules))) (reverse acc)] ;;done
             [(and (not (equal? (inverse-pair-push push-pair) (first pop-rules)))
                   (push? (pda-rule-action (first pop-rules)))
-                  (equal? (inverse-pair-stack push-pair) (pda-action-pop (pda-rule-action (first pop-rules)))))             
+                  (equal? (inverse-pair-stack push-pair) (pda-action-pop (pda-rule-action (first pop-rules))))) ;;paired with rule thats push and pop
             (cons (struct-copy inverse-pair push-pair
                                 [pop (first pop-rules)]) acc)]
             [(and (not (same-rule? (inverse-pair-push push-pair) (first pop-rules)))
-                  (equal? (inverse-pair-stack push-pair) (pda-action-pop (pda-rule-action (first pop-rules)))))
+                  (equal? (inverse-pair-stack push-pair) (pda-action-pop (pda-rule-action (first pop-rules))))) ;;paired with rule only pops
              (pair-push-operations-helper push-pair
                                      (rest pop-rules)
                                      (cons (struct-copy inverse-pair push-pair
@@ -1641,11 +1647,12 @@
                      [reachable-rules (find-reachables rule-structs)]
                      [stack-operations (pair-stack-operations reachable-rules rule-structs)]
                      [sublang-stack-pairs (map (λ (sub-lang) (find-applicable-opers sub-lang stack-operations)) sub-langs)])
-                #;sub-langs
+                (values sub-langs
+                        stack-operations)
                 #;(values (pda-rule-action (pda-rules new-P))
                         9
                         sub-langs #;(map simplify-templates sub-langs))
-                (if (and (andmap (λ (sub-lang stack-pair)
+                #;(if (and (andmap (λ (sub-lang stack-pair)
                                    (and (null? stack-pair)
                                         (uses-stack? sub-lang)))
                                  sub-langs

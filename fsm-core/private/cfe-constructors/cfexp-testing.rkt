@@ -993,3 +993,4 @@
     (run-tests PDA-TRANSFORMATION-TESTS)
     (void)))
 
+(run-testing)
