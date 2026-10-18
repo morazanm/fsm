@@ -824,9 +824,9 @@
              (hash)
              states)))
 
-  ;;(hash state . (listof pda-rule)) (listof pda-rule) -> (listof inverse-pair)
+  ;;(hash state . (listof pda-rule)) (listof pda-rule) (listof path) -> (listof inverse-pair)
   ;;Purpose: Pairs all push operations with pop operations
-  (define (pair-stack-operations reachables-ht rules)
+  (define (pair-stack-operations reachables-ht rules paths-to-finals)
     ;;stack (listof symbol) -> Boolean
       ;;Purpose: Determines if the give (listof symbol) and pop the elements off the stack
       (define (same-elements? stack pop)
@@ -843,7 +843,7 @@
     (define (pair-push-operations-helper push-pair pop-rules acc)
       ;;inverse-pair stack (listof pda-rule) -> inverse-pair
       ;;Purpose: Matches the pop operations to the given push rule 
-      (define (match-operations push-pair stack pop-rules all-pop-rules)
+      (define (match-operations push-pair stack pop-rules)
         ;;stack (listof symbol) -> Boolean
         ;;Purpose: Determines if the given stack can have the given elements popped off
         (define (can-pop? stack pop)
@@ -851,25 +851,44 @@
                 [stack-length (length stack)])
             (and (>= stack-length pop-amount)
                  (equal? (take stack pop-amount) pop))))
+
+        (define (match-helper push-pair stack path)
+          (if (or (null? path)
+                  (is-length-one? path))
+              '()
+              (let* ([curr-state (first path)]
+                     [destin-state (second path)]
+                     [curr-pop-rules (filter (λ (rule) (and (eq? curr-state (pda-rule-source rule))
+                                                            (eq? destin-state (pda-rule-destin rule)))) pop-rules)])
+                (cond [(null? stack) (if (list? push-pair) push-pair (list push-pair))]
+                      [(null? curr-pop-rules) (match-helper push-pair stack (rest path))]
+                      [(and (is-length-one? curr-pop-rules)
+                            (equal? stack (pda-action-pop (pda-rule-action (first curr-pop-rules)))))
+                       (match-helper (struct-copy inverse-pair push-pair
+                                                  [pop (append (inverse-pair-pop push-pair) (list (first curr-pop-rules)))])
+                                     (list)
+                                     path)]
+                      [(and (is-length-one? curr-pop-rules)
+                            (can-pop? stack (pda-action-pop (pda-rule-action (first curr-pop-rules)))))
+                       (match-helper (struct-copy inverse-pair push-pair
+                                                  [pop (append (inverse-pair-pop push-pair) (list (first curr-pop-rules)))])
+                                     (drop stack (length (pda-action-pop (pda-rule-action (first curr-pop-rules)))))
+                                     path)]
+                      [(or (ormap (λ (p-rule) (equal? stack (pda-action-pop (pda-rule-action p-rule)))) curr-pop-rules)
+                           (ormap (λ (p-rule) (can-pop? stack (pda-action-pop (pda-rule-action p-rule)))) curr-pop-rules))
+                       (let ([pop-rules-mod-curr-pop-rules (filter-not (λ (rule) (eq? curr-state (pda-rule-source rule))) pop-rules)])
+                         (append-map (λ (p-rule)
+                                      (match-operations push-pair stack (cons p-rule pop-rules-mod-curr-pop-rules)))
+                                    curr-pop-rules))]
+                      [else (match-helper push-pair stack (rest path))]))))
+          
         ;;Goal: find ALL possible ways to pop non homogenous elements off the stack
         ;Idea determine which rules are 'mandatory' (a SINGLE non e-transition between states) and which rules aren't (loop on a state)
         ;possibly search the rules to determine all paths that can pop, mandatory paths >> optional paths can be
         ;;fw: decision procedure to ensure i only create well-formed cfes
-        (cond [(null? stack) (list push-pair)]
-              [(null? pop-rules) (match-operations push-pair stack all-pop-rules all-pop-rules)]
-              [(equal? stack (pda-action-pop (pda-rule-action (first pop-rules))))
-               (match-operations (struct-copy inverse-pair push-pair
-                                              [pop (append (inverse-pair-pop push-pair) (list (first pop-rules)))])
-                                 (list)
-                                 (rest pop-rules)
-                                 all-pop-rules)]
-              [(can-pop? stack (pda-action-pop (pda-rule-action (first pop-rules))))
-               (match-operations (struct-copy inverse-pair push-pair
-                                              [pop (append (inverse-pair-pop push-pair) (list (first pop-rules)))])
-                                 (drop stack (length (pda-action-pop (pda-rule-action (first pop-rules)))))
-                                 (rest pop-rules)
-                                 all-pop-rules)]
-              [else (match-operations push-pair stack (rest pop-rules) (remove (first pop-rules) all-pop-rules))]))
+        (let* ([relevant-paths (filter (λ (path) (member (pda-rule-source (inverse-pair-push push-pair)) path)) paths-to-finals)]
+               [updated-paths (map (λ (p) (dropf p (λ (x) (not (eq? x (pda-rule-destin (inverse-pair-push push-pair))))))) relevant-paths)])
+          (append-map (λ (path) (match-helper push-pair stack path)) updated-paths)))
 
       ;;inverse-pair pda-rule -> inverse pair
       ;;Purpose: Balances the stack of the given inverse pair
@@ -921,7 +940,7 @@
              (equal? (pda-action-push (pda-rule-action pop-rule)) (pda-action-pop (pda-rule-action pop-rule)))))
       
       (cond [(not (inverse-pair-homogenous? push-pair))
-             (match-operations push-pair (inverse-pair-stack push-pair) pop-rules pop-rules)] ;;not homogenous
+             (match-operations push-pair (inverse-pair-stack push-pair) pop-rules)] ;;not homogenous
             [(or (null? pop-rules) (stack-wall? (first pop-rules))) (reverse acc)] ;;done
             [(and (not (equal? (inverse-pair-push push-pair) (first pop-rules)))
                   (push? (pda-rule-action (first pop-rules)))
@@ -959,7 +978,7 @@
     (define (pair-pop-operations-helper pop-pair push-rules acc)
       ;;inverse-pair stack (listof pda-rule) -> inverse-pair
       ;;Purpose: Matches the pop operations to the given push rule 
-      (define (match-operations pop-pair stack push-rules all-pop-rules)
+      #;(define (match-operations pop-pair stack push-rules all-pop-rules)
         ;;stack (listof symbol) -> Boolean
         ;;Purpose: Determines if the given stack can have the given elements popped off
         (define (can-pop? stack pop)
@@ -982,6 +1001,53 @@
                                  (rest push-rules)
                                  all-pop-rules)]
               [else (match-operations pop-pair stack (rest push-rules) all-pop-rules)]))
+
+      (define (match-operations pop-pair stack push-rules)
+        ;;stack (listof symbol) -> Boolean
+        ;;Purpose: Determines if the given stack can have the given elements popped off
+        (define (can-pop? stack pop)
+          (let ([pop-amount (length pop)]
+                [stack-length (length stack)])
+            (and (>= stack-length pop-amount)
+                 (equal? (take stack pop-amount) pop))))
+
+        (define (match-helper pop-pair stack path)
+          (if (or (null? path)
+                  (is-length-one? path))
+              '()
+              (let* ([curr-state (first path)]
+                     [destin-state (second path)]
+                     [curr-push-rules (filter (λ (rule) (and (eq? curr-state (pda-rule-source rule))
+                                                            (eq? destin-state (pda-rule-destin rule)))) push-rules)])
+                (cond [(null? stack) (if (list? pop-pair) pop-pair (list pop-pair))]
+                      [(null? curr-push-rules) (match-helper pop-pair stack (rest path))]
+                      [(and (is-length-one? curr-push-rules)
+                            (equal? stack (pda-action-pop (pda-rule-action (first curr-push-rules)))))
+                       (match-helper (struct-copy inverse-pair pop-pair
+                                                  [push (append (inverse-pair-push pop-pair) (list (first curr-push-rules)))])
+                                     (list)
+                                     path)]
+                      [(and (is-length-one? curr-push-rules)
+                            (can-pop? stack (pda-action-pop (pda-rule-action (first curr-push-rules)))))
+                       (match-helper (struct-copy inverse-pair pop-pair
+                                                  [push (append (inverse-pair-push pop-pair) (list (first curr-push-rules)))])
+                                     (drop stack (length (pda-action-pop (pda-rule-action (first curr-push-rules)))))
+                                     path)]
+                      [(or (ormap (λ (p-rule) (equal? stack (pda-action-pop (pda-rule-action p-rule)))) curr-push-rules)
+                           (ormap (λ (p-rule) (can-pop? stack (pda-action-pop (pda-rule-action p-rule)))) curr-push-rules))
+                       (let ([pop-rules-mod-curr-pop-rules (filter-not (λ (rule) (eq? curr-state (pda-rule-source rule))) push-rules)])
+                         (append-map (λ (p-rule)
+                                      (match-operations pop-pair stack (cons p-rule pop-rules-mod-curr-pop-rules)))
+                                    curr-push-rules))]
+                      [else (match-helper pop-pair stack (rest path))]))))
+          
+        ;;Goal: find ALL possible ways to pop non homogenous elements off the stack
+        ;Idea determine which rules are 'mandatory' (a SINGLE non e-transition between states) and which rules aren't (loop on a state)
+        ;possibly search the rules to determine all paths that can pop, mandatory paths >> optional paths can be
+        ;;fw: decision procedure to ensure i only create well-formed cfes
+        (let* ([relevant-paths (filter (λ (path) (member (pda-rule-source (inverse-pair-pop pop-pair)) path)) paths-to-finals)]
+               [updated-paths (map (λ (p) (takef p (λ (x) (not (eq? x (pda-rule-source (inverse-pair-pop pop-pair))))))) relevant-paths)])
+          (append-map (λ (path) (match-helper pop-pair stack path)) updated-paths)))
 
       ;;inverse-pair pda-rule -> inverse pair
       ;;Purpose: Balances the stack of the given inverse pair
@@ -1033,7 +1099,7 @@
              (equal? (pda-action-push (pda-rule-action push-rule)) (pda-action-pop (pda-rule-action push-rule)))))
       
       (cond [(not (inverse-pair-homogenous? pop-pair))
-             (match-operations pop-pair (inverse-pair-stack pop-pair) push-rules push-rules)]
+             (match-operations pop-pair (inverse-pair-stack pop-pair) push-rules)]
             [(or (null? push-rules) (stack-wall? (first push-rules))) (reverse acc)]
             [(and (not (equal? (inverse-pair-pop pop-pair) (first push-rules)))
                   (push? (pda-rule-action (first push-rules)))
@@ -1103,6 +1169,7 @@
                                       push-rules))
                             pop-rules)]
            [pair-push-operations (append-map (λ (x y) (pair-pop-operations-helper x y '())) pop-pairs push-rules)])
+      #;pair-pop-operations
       (remove-duplicates (append pair-pop-operations pair-push-operations))
       #;(list push-pairs pop-pairs)
       #;(if (list? pair-pop-operations)
@@ -1151,14 +1218,14 @@
     ;;inverse-pair (setof pda-rule) -> Boolean
     ;;Purpose: Determines if the given inverse-pair's pop rules are the same as the given pop-rules
     (define (same-pop-rules? oper rules)
-      (map (λ (pop-rule)
+      (andmap (λ (pop-rule)
              (let ([oper (singleton (pda-rule-action pop-rule) (pda-rule-source pop-rule) (pda-rule-destin pop-rule))])
                (set-member? rules oper)))
            (inverse-pair-pop oper)))
     ;;inverse-pair (setof pda-rule) -> Boolean
     ;;Purpose: Determines if the given inverse-pair's push rules are the same as the given push-rules
     (define (same-push-rules? oper rules)
-      (map (λ (push-rule)
+      (andmap (λ (push-rule)
              (let ([oper (singleton (pda-rule-action push-rule) (pda-rule-source push-rule) (pda-rule-destin push-rule))])
                (set-member? rules oper)))
            (inverse-pair-push oper)))
@@ -1635,6 +1702,66 @@
                                                                                          (pda-action-push action))))))
                                production-temps)
                           start-nt)))
+
+  #|
+  a path is structure that represents all of the states a machine must transition through to accept
+  |#
+  (struct path (states visited loop?) #:transparent)
+  
+  ;; (listof pda-rule) (listof state) pda -> (listof path)
+  ;;Purpose: Contructs all possible paths that the start state to the final states
+  (define (rules->path rules reachables-from-start P)
+
+    ;;pda-rule -> Boolean
+    ;;Purpose: Determines if the given rule is a loop on itself
+    (define (self-loop? rule)
+      (eq? (pda-rule-source rule) (pda-rule-destin rule)))
+    ;; state (setof state) (listof path) (listof path) -> (listof path)
+    ;;Purpose: Contructs all possible paths the machine must go through to accept
+    (define (make-paths start finals lopaths acc)
+      (if (null? lopaths)
+          (map (λ (state-path) (struct-copy path state-path
+                                            [states (reverse (path-states state-path))]))
+               acc)
+          (let* ([first-path (first lopaths)]
+                 [curr-state (first (path-states first-path))]
+                 [next-rules (hash-ref rules curr-state)])
+            (cond [(and (set-member? finals curr-state)
+                        (not (path-loop? first-path)))
+                   (make-paths start
+                               finals
+                               (append (rest lopaths)
+                                       (map (λ (state) (struct-copy path first-path
+                                                                    [states (cons state (path-states first-path))]
+                                                                    [visited (set-add (path-visited first-path) curr-state)]))
+                                            (remove-duplicates (map (λ (rule) (pda-rule-destin rule)) (filter-not self-loop? next-rules)))))
+                               (cons first-path acc))]
+                  [(and (set-member? finals curr-state)
+                        (path-loop? first-path))
+                   (make-paths start
+                               finals
+                               (rest lopaths)
+                               (cons (struct-copy path first-path
+                                                  [states reachables-from-start]) acc))]
+                  [(and (not (set-member? (path-visited first-path) curr-state))
+                        (not (null? (filter-not self-loop? next-rules))))
+                   (make-paths start
+                               finals
+                               (append (rest lopaths)
+                                       (map (λ (state) (struct-copy path first-path
+                                                                    [states (cons state (path-states first-path))]
+                                                                    [visited (set-add (path-visited first-path) curr-state)]))
+                                            (remove-duplicates (map (λ (rule) (pda-rule-destin rule)) (filter-not self-loop? next-rules)))))
+                               acc)]
+                  [(set-member? (path-visited first-path) curr-state) (make-paths start finals (rest lopaths) acc)]
+                  [else (make-paths start finals (rest lopaths) acc)]))))    
+    (let ([start (pda-getstart P)]
+          [finals (list->set (pda-getfinals P))])
+      (make-paths start
+                  finals
+                  (list (path (list start) (set) (set-member? finals start)))
+                  '())))
+  
   (cond [(null? (pda-getrules P)) (mk-null-cfexp)]
         [(simulates-grammar? P) (cfg->cfe (rules->cfg P))]
         [else (let* ([new-P (pda2temp P)]
@@ -1645,13 +1772,23 @@
                                                     (first (second rule))))
                                         (pda-getrules P))]
                      [reachable-rules (find-reachables rule-structs)]
-                     [stack-operations (pair-stack-operations reachable-rules rule-structs)]
+                     [paths (rules->path (foldl (λ (state acc) 
+                                                  (hash-set acc state (filter (λ (rule)
+                                                                                (eq? state (pda-rule-source rule)))
+                                                                              rule-structs)))
+                                                (hash)
+                                                (pda-getstates P))
+                                         (remove-duplicates (map pda-rule-source (hash-ref reachable-rules (pda-getstart P))))
+                                         P)]
+                     [stack-operations (pair-stack-operations reachable-rules rule-structs (map path-states paths))]
                      [sublang-stack-pairs (map (λ (sub-lang) (find-applicable-opers sub-lang stack-operations)) sub-langs)])
+                #;(values paths stack-operations)
+                #;(pair-stack-operations reachable-rules rule-structs)
                 (values sub-langs
-                        stack-operations)
-                #;(values (pda-rule-action (pda-rules new-P))
-                        9
-                        sub-langs #;(map simplify-templates sub-langs))
+                        sublang-stack-pairs)
+                
+                
+               
                 #;(if (and (andmap (λ (sub-lang stack-pair)
                                    (and (null? stack-pair)
                                         (uses-stack? sub-lang)))

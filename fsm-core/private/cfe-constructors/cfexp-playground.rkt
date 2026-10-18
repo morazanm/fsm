@@ -40,7 +40,7 @@
                                          '(a b c)
                                          '(a b)
                                          'S
-                                         '(F)
+                                         '(Q F)
                                          `(((S ,EMP ,EMP) (P ,EMP))
                                            ((P a ,EMP) (P (a)))
                                            ((P b ,EMP) (P (b)))
@@ -186,3 +186,5 @@
 
 
 
+(sm-graph ambncp)
+(pda->cfe ambncp)
