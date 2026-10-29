@@ -219,14 +219,14 @@ A composed Turing machine.
 @section{State Machine Constructors}
 
 
-@defproc[(make-dfa [sts (listof state)] 
-                   [sigma alphabet] 
-                   [start state] 
-                   [finals (listof state)] 
-                   [delta (listof dfa-rule)]
+@defproc[(make-dfa [sts (listof state?)] 
+                   [sigma alphabet?] 
+                   [start state?] 
+                   [finals (listof state?)] 
+                   [delta (listof dfa-rule?)]
                    [add-dead (or/c 'no-dead void?)]
-                   [#:rejects rejects (listof word) '()]
-                   [#:accepts accepts (listof word) '()])
+                   [#:rejects rejects (listof word?) '()]
+                   [#:accepts accepts (listof word?) '()])
          dfa?]{Builds a deterministic finite-state automaton.
  @italic{delta} is a transition function. The optional
  argument @italic{add-dead} is used to signal the
@@ -246,13 +246,13 @@ A composed Turing machine.
 }
 
 
-@defproc[(make-ndfa [sts (listof state)] 
-                    [sigma alphabet] 
-                    [start state] 
-                    [finals (listof state)] 
-                    [delta (listof ndfa-rule)]
-                    [#:rejects rejects (listof word) '()]
-                    [#:accepts accepts (listof word) '()])
+@defproc[(make-ndfa [sts (listof state?)] 
+                    [sigma alphabet?] 
+                    [start state?] 
+                    [finals (listof state?)] 
+                    [delta (listof ndfa-rule?)]
+                    [#:rejects rejects (listof word?) '()]
+                    [#:accepts accepts (listof word?) '()])
          ndfa?]{Builds a nondeterministic finite-state automaton.
  @italic{delta} is a transition relation.
  The optional
@@ -265,14 +265,14 @@ A composed Turing machine.
  @italic{recipe-based} error is thrown.
 }
 
-@defproc[(make-ndpda [sts (listof state)] 
-                     [sigma alphabet] 
-                     [gamma (listof symbol)]
-                     [start state] 
-                     [finals (listof state)] 
-                     [delta (listof pda-rule)]
-                     [#:rejects rejects (listof word) '()]
-                     [#:accepts accepts (listof word) '()])
+@defproc[(make-ndpda [sts (listof state?)] 
+                     [sigma alphabet?] 
+                     [gamma (listof symbol?)]
+                     [start state?] 
+                     [finals (listof state?)] 
+                     [delta (listof pda-rule?)]
+                     [#:rejects rejects (listof word?) '()]
+                     [#:accepts accepts (listof word?) '()])
          ndpda?]{Builds a nondeterministic pushdown automaton from the
  given list of states, alphabet, list of stack symbols,
  start state, list of final states, and list of
@@ -290,21 +290,21 @@ A composed Turing machine.
  language may cause the constructor to not terminate.
 }
 
-@defproc*[([(make-tm    [sts (listof state)] 
-                        [sigma alphabet]
-                        [delta (listof tm-rule)]
-                        [start state] 
-                        [finals (listof state)]
-                        [#:rejects rejects (listof word) '()]
-                        [#:accepts accepts (listof word) '()]) tm?]
-           [(make-tm    [sts (listof state)] 
-                        [sigma alphabet]
-                        [delta (listof tm-rule)]
-                        [start state] 
-                        [finals (listof state)]
-                        (accept state)
-                        [#:rejects rejects (listof word) '()]
-                        [#:accepts accepts (listof word) '()]) tm?])]{Builds a nondeterministic Turing machine. 
+@defproc*[([(make-tm    [sts (listof state?)] 
+                        [sigma alphabet?]
+                        [delta (listof tm-rule?)]
+                        [start state?] 
+                        [finals (listof state?)]
+                        [#:rejects rejects (listof word?) '()]
+                        [#:accepts accepts (listof word?) '()]) tm?]
+           [(make-tm    [sts (listof state?)] 
+                        [sigma alphabet?]
+                        [delta (listof tm-rule?)]
+                        [start state?] 
+                        [finals (listof state?)]
+                        (accept state?)
+                        [#:rejects rejects (listof word?) '()]
+                        [#:accepts accepts (listof word?) '()]) tm?])]{Builds a nondeterministic Turing machine. 
  @italic{delta} is a transition relation.
  @italic{LM} is automatically added to the machine's alphabet.
  Rules for moving off the @italic{LM} are automatically added
@@ -324,23 +324,23 @@ A composed Turing machine.
  language may cause the constructor to not terminate.
 }
 
-@defproc*[([(make-mttm  [sts (listof state)] 
-                        [sigma alphabet]
-                        [start state]
-                        [finals (listof state)]
-                        [delta (listof mttm-rule)]
-                        [num-tapes number]
-                        [#:rejects rejects (listof word) '()]
-                        [#:accepts accepts (listof word) '()]) mttm?]
-           [(make-mttm  [sts (listof state)] 
-                        [sigma alphabet]
-                        [start state]
-                        [finals (listof state)]
-                        [delta (listof mttm-rule)]
-                        [num-tapes number]
-                        (accept state)
-                        [#:rejects rejects (listof word) '()]
-                        [#:accepts accepts (listof word) '()]) mttm?])]
+@defproc*[([(make-mttm  [sts (listof state?)] 
+                        [sigma alphabet?]
+                        [start state?]
+                        [finals (listof state?)]
+                        [delta (listof mttm-rule?)]
+                        [num-tapes number?]
+                        [#:rejects rejects (listof word?) '()]
+                        [#:accepts accepts (listof word?) '()]) mttm?]
+           [(make-mttm  [sts (listof state?)] 
+                        [sigma alphabet?]
+                        [start state?]
+                        [finals (listof state?)]
+                        [delta (listof mttm-rule?)]
+                        [num-tapes number?]
+                        (accept state?)
+                        [#:rejects rejects (listof word?) '()]
+                        [#:accepts accepts (listof word?) '()]) mttm?])]
 Builds a nondeterministic Multitape Turing machine with the given number of
 tapes. If the optional @italic{accept} argument is given then the resulting multitape
 Turing machine is a language recognizer. The optional
@@ -364,7 +364,7 @@ language may cause the constructor to not terminate.
          ndfa?]{Builds a fsm for the language of the given
  regular expression.}
 
-@defproc[(sm-rename-states [sts (listof state)] [m1 machine?])
+@defproc[(sm-rename-states [sts (listof state?)] [m1 machine?])
          machine?]{Builds a state machine that is excatly the same as
  the given machine except that its states are renamed
  as to not have a name in common with the given list
@@ -412,7 +412,8 @@ automaton with a minimal number of states from the given finite-state automaton.
 
 @section{State Machine Visualization}
 @bold{You must have GraphViz installed as an enviroment variable
- for this to work. For more information how to set this up, please see: @(hyperlink "https://github.com/morazanm/fsm/tree/master/GraphViz" "FSM GraphViz ReadMe")}
+ for this to work. For more information how to set this up,
+ please see: @(hyperlink "https://github.com/morazanm/fsm/tree/master/GraphViz" "FSM GraphViz ReadMe")}
 
 @defproc[(sm-graph [m machine?])
          image?]{Generates an image for the given machine's transition diagram. @(linebreak)}
@@ -441,7 +442,7 @@ for Turing machines and multitape Turing machines. @(linebreak)
                  [#:cut-off cut-off natural? 100]
                  [#:head-pos head-pos natural? 0]
                  [#:palette palette (or/c 'default 'prot 'duet 'trit) 'default]
-                 [invariant (list state (-> word? boolean?))] ...)
+                 [invariant (list state? (-> word? boolean?))] ...)
          void?]
 Visualizes the given machine being applied to the given word. Adds a dead state if the optional keyword argument
 @italic{add-dead} is set to true. In the case that a pushdown automata, a Turing machine, or a multitape Turing machine
@@ -456,7 +457,7 @@ and has been broken during the visualization by filling the state grean or red r
 
 @defproc*[([(sm-visualize [sym (or/c 'dfa 'ndfa 'pda 'tm 'mttm 'tm-language-recognizer 'mttm-language-recognizer)]) void?]
            [(sm-visualize [m machine?]
-                          [inv-list (listof (listof state? procedure?)) '()]) void?])]{
+                          [inv-list (listof (list state? procedure?)) '()]) void?])]{
  When supplied with a symbol as the argument the visualization tool is started for the specified machine type.
  When supplied with a state machine as the argument the visualization tool is started with
  the state machine built within the tool. When supplied with the optional list of state and
@@ -622,10 +623,10 @@ the language generated by the given regular expression.
  the visualization to the end}
 
 @defproc[(grammar-viz [g grammar?]
-                      [w word]
+                      [w word?]
                       [#:derv-type derv-type (or/c 'left 'right 'level-left 'level-right) 'left]
                       [#:cpu-cores cpu-cores (or/c number? #f) #f]
-                      [inv-list (listof (listof state? (-> word? boolean?))) void?])
+                      [inv-list (listof (list state? (-> word? boolean?))) void?])
          (or/c void? string?)]
 Launches a visualization tool for the construction of the derivation tree for the given
 word using the given grammar. If the given word is not in the language then the tool does
@@ -667,8 +668,8 @@ Note: Currently does not work with Turing machines, and mttms.}
 
 Note: Currently does not work with pdas, Turing machines, and mttms.}
 
-@defproc*[([(sm-test [m1 machine?]) (listof (list word symbol))]
-           [(sm-test [m1 machine?] [n natural?]) (listof (list word symbol?))])]
+@defproc*[([(sm-test [m1 machine?]) (listof (list word? symbol?))]
+           [(sm-test [m1 machine?] [n natural?]) (listof (list word? symbol?))])]
 Applies the given machine to randomly generated words  and returns
 a list of words and the obtained result. If the given machine is a
 Turing machine, it must be a language recognizer. For a Turing machine
@@ -694,12 +695,12 @@ Turing machines.
 
 @section{Grammar Constructors}
 
-@defproc[(make-rg   [nt (listof nts)] 
-                    [sigma alphabet] 
-                    [delta (listof rrule)]
-                    [start nts]
-                    [#:rejects rejects (listof word) '()]
-                    [#:accepts accepts (listof word) '()])
+@defproc[(make-rg   [nt (listof nts?)] 
+                    [sigma alphabet?] 
+                    [delta (listof rrule?)]
+                    [start nts?]
+                    [#:rejects rejects (listof word?) '()]
+                    [#:accepts accepts (listof word?) '()])
          rg?]{Builds a regular grammar. The optional
  keyword parameters @italic{rejects} and @italic{accepts}
  are used to integrate testing. They are both lists of
@@ -791,7 +792,7 @@ builds a grammar for L(g)@superscript{*}.
          grammar?]{Builds a grammar for the language of the given
  dfa, ndfa, or ndpda.}
 
-@defproc[(grammar-rename-nts [nts (listof nonterminals)][g grammar])
+@defproc[(grammar-rename-nts [nts (listof nts?)][g grammar])
          grammar?]{Renames the nonterminals of the given grammar such that the renamed grammar
  does not include any nonterminals in the given list of nonterminals.}
 
