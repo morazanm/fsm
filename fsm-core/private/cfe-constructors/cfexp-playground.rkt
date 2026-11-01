@@ -6,6 +6,8 @@
           "../pda.rkt"
           "../../../sm-graph.rkt"          
           "construct-cfe-macro.rkt"
+          "cfexp-structs.rkt"
+          racket/shared
           )
 
 
@@ -38,6 +40,45 @@
              [L (union-cfexp EMP
                              (concat-cfexp A B L D))])
             L))
+
+(define test1 (mk-union-cfexp (vector
+                               (singleton-cfexp "a")
+                              (mk-union-cfexp (vector (singleton-cfexp "a") (singleton-cfexp "a"))))))
+
+(define test2 (mk-union-cfexp (vector
+                               (singleton-cfexp "a")
+                              (mk-union-cfexp (vector test1)))))
+
+(define test3 (mk-union-cfexp (vector (mk-union-cfexp (vector test1)))))
+
+(define test4 (mk-union-cfexp (vector (mk-union-cfexp (vector (singleton-cfexp "a"))))))
+
+(define test5 (mk-union-cfexp (vector (mk-union-cfexp (vector (singleton-cfexp "a") (singleton-cfexp "a"))))))
+
+(define test6 (mk-union-cfexp (vector (mk-union-cfexp (vector (mk-union-cfexp (vector (singleton-cfexp "b") (singleton-cfexp "a")))
+                                                              (mk-union-cfexp (vector (singleton-cfexp "a") (singleton-cfexp "b"))))))))
+
+
+(define test7 (mk-union-cfexp (vector (empty-cfexp) (empty-cfexp) (empty-cfexp) (empty-cfexp))))
+
+(define test8 (mk-union-cfexp (vector (empty-cfexp) (empty-cfexp) (empty-cfexp) (empty-cfexp) (singleton-cfexp "b"))))
+
+
+(define test9 (mk-union-cfexp (vector
+                               (singleton-cfexp "b")
+                              (mk-union-cfexp (vector (singleton-cfexp "a") (singleton-cfexp "a"))))))
+
+(define test0 (mk-union-cfexp (vector 
+                               (mk-union-cfexp (vector
+                                                (shared ([b (box (mk-union-cfexp (vector b (singleton-cfexp "b"))))]) b)
+                                                (shared ([b (box (mk-union-cfexp (vector b (singleton-cfexp "c"))))]) b)))               
+                               (mk-union-cfexp (vector
+                                                (shared ([b (box (mk-union-cfexp (vector b (singleton-cfexp "a"))))]) b)
+                                                (mk-union-cfexp (vector (singleton-cfexp "c") (singleton-cfexp "a"))))))))
+
+(define 1test (mk-concat-cfexp (vector
+                               (singleton-cfexp "a")
+                              (mk-concat-cfexp (vector (singleton-cfexp "c") (singleton-cfexp "b"))))))
 
 (define ABCD
   (make-cfe ([A (singleton-cfexp "a")]

@@ -16,7 +16,8 @@
          racket/set
          racket/pretty
          racket/format
-         racket/function)
+         racket/function
+         racket/match)
 
 (provide cfexp?
          null-cfexp
@@ -42,6 +43,7 @@
          cfe->pda
          pick-cfexp
          ;printable-cfexp
+         simplify-cfexp
          )
 
 (define MAX-KLEENESTAR-LIMIT 20)
@@ -232,6 +234,47 @@
         [else (if (set-member? seen cfe)
                   ""
                   (string-append (printable-cfexp (mk-kleene-cfexp-cfe cfe) #:seen (set-add seen cfe)) "*"))]))
+
+
+
+;;cfexp -> cfexp
+;;Purpose: Simplfies the given cfexp
+(define (simplify-cfexp a-cfexp)
+
+  ;;(vectorof cfexp) -> (vectorof cfexp)
+  ;;Purpose: Simplfies the given concat-cfexp
+  (define (simplify-concat a-concat-cfexp)
+   (match a-concat-cfexp
+     [(vector cfexp) (simplify-cfexp cfexp)] ;;is length one
+     [(vector _ (mk-null-cfexp) ..1 _) (mk-null-cfexp)] ;;contains null
+     [(vector (mk-empty-cfexp) ...) (mk-empty-cfexp)] ;; only empty cfexps
+     [(vector (mk-empty-cfexp) ... cfexp) (simplify-cfexp cfexp)] ;; many emptys and one cfexp
+     [(vector (mk-concat-cfexp cfexps) ...) (simplify-cfexp (mk-concat-cfexp (apply vector-append cfexps)))] ;; a series of concats
+     [(vector cfexp ... (mk-concat-cfexp cfexps)) (simplify-cfexp (mk-concat-cfexp (vector-append (list->vector cfexp) cfexps)))]
+     [_ (mk-concat-cfexp a-concat-cfexp)]))
+
+  ;;(vectorof cfexp) -> (vectorof cfexp)
+  ;;Purpose: Simplfies the given union-cfexp
+  (define (simplify-union a-union-cfexp)
+    (match a-union-cfexp
+      [(vector cfexp) (simplify-cfexp cfexp)] ;;is length one
+      [(vector (mk-empty-cfexp) ...) (mk-empty-cfexp)] ;; only empty cfexps
+      [(vector (mk-empty-cfexp) ..2 cfexp) (simplify-cfexp (mk-union-cfexp (vector (mk-empty-cfexp) cfexp)))] ;; many emptys and one cfexp
+      [(vector (mk-singleton-cfexp str) ...) #:when (apply string=? str) (mk-singleton-cfexp (first str))] ;;only contains same singleton 
+      [(vector (mk-union-cfexp cfexps) ...) (simplify-cfexp (mk-union-cfexp (apply vector-append cfexps)))] ;; a series of unions
+      [(vector (box cfe) ... (mk-union-cfexp cfexps) (box cfexp) ...)
+       (let ([res (simplify-cfexp (mk-union-cfexp cfexps))])
+         (mk-union-cfexp (vector-append (list->vector cfe)
+                                        (if (mk-union-cfexp? res) (mk-union-cfexp-locfe res) (vector res))
+                                        (list->vector cfexp))))]
+      [(vector cfexp ... (mk-union-cfexp cfexps)) (simplify-cfexp (mk-union-cfexp (list->vector (append cfexp (vector->list cfexps)))))]     
+      [_ (mk-union-cfexp a-union-cfexp)]))
+  
+  (match a-cfexp
+    [(mk-union-cfexp cfexps) (simplify-union cfexps)]
+    [(mk-concat-cfexp cfexps) (simplify-concat cfexps)]
+    [(mk-kleene-cfexp cfexp) (mk-kleene-cfexp (simplify-cfexp cfexp))]
+    [_ a-cfexp]))
   
 
 ;;context-free grammar -> cfe
