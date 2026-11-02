@@ -239,8 +239,8 @@
 
 ;;cfexp -> cfexp
 ;;Purpose: Simplfies the given cfexp
-(define (simplify-cfexp a-cfexp)
-
+(define/contract (simplify-cfexp a-cfexp)
+  simplify-cfexp/c
   ;;(vectorof cfexp) -> (vectorof cfexp)
   ;;Purpose: Simplfies the given concat-cfexp
   (define (simplify-concat a-concat-cfexp)
@@ -510,7 +510,8 @@
                    (remake-rules nt (enqueue (dequeue rules-to-convert)
                                              (vector->treelist (mk-union-cfexp-locfe cfe))) finished-rules)]
                   [(mk-kleene-cfexp? cfe)
-                   (remake-rules nt (dequeue rules-to-convert) (cons (pda-rule new-final (pda-action EMP (list nt) EMP) new-final) (cons (cfe->rule nt cfe) finished-rules)))]
+                   (remake-rules nt (dequeue rules-to-convert) (cons (pda-rule new-final (pda-action EMP (list nt) EMP) new-final)
+                                                                     (cons (cfe->rule nt cfe) finished-rules)))]
                   [else (remake-rules nt (dequeue rules-to-convert) (cons (cfe->rule nt cfe) finished-rules))]))))
     (foldl (λ (lang-box res)
              (append (remake-rules (hash-ref new-nts lang-box)
