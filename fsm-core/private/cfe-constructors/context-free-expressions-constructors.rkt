@@ -217,6 +217,9 @@
                   ""
                   (string-append (printable-cfexp (mk-kleene-cfexp-cfe cfe) #:seen (set-add seen cfe)) "*"))]))
 
+
+;;Moved into a different bc the functions (namely pda->cfe) are HUGE
+
 ;;CFE -> CFG
 ;;Purpose: Converts the given CFE into its equivalent CFG
 (define/contract (cfe->cfg cfe)
@@ -237,8 +240,8 @@
 
 ;;PDA -> cfe
 ;;Purpose: Converts the given PDA into its equivalent CFE
-(define/contract (pda->cfe cfe)
-  pda->cfe/c
-  (unchecked-pda->cfe cfe))
+(define #;define/contract (pda->cfe pda)
+  #;pda->cfe/c
+  (unchecked-pda->cfe pda))
 
  

@@ -201,7 +201,7 @@ a pda-action is a structural representation of a pda action
       (cons (gen-nt nts) nts)))
  
   ;;cfe -> cfe
-  ;;Purpose: Updates the cfe to be bound to a box if it is not already a box
+  ;;Purpose: Updates the cfe to be bound to a box if it is not already a box (so it has a starting NT)
   (define (update-cfe cfe)
     (if (or (mk-kleene-cfexp? cfe) (box? cfe))
         cfe

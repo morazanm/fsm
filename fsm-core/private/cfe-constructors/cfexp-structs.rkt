@@ -11,7 +11,7 @@
 ;; 6. union
 ;; 7. kleene
 
-;;null-cfexp ;;Purpose: Only contains an environment
+;;null-cfexp ;;Purpose: A cfexp to represent the empty language
 (struct mk-null-cfexp () #:transparent)
 
 ;;empty-cfexp ;;Purpose: A cfexp to represent the empty word
@@ -35,7 +35,8 @@
   (or (mk-null-cfexp? x)
       (mk-empty-cfexp? x) 
       (mk-singleton-cfexp? x)
-      (box? x) 
+      (and (box? x)
+           (cfexp? (unbox x)))
       (mk-concat-cfexp? x) 
       (mk-union-cfexp? x) 
       (mk-kleene-cfexp? x)))
