@@ -20,6 +20,7 @@
          "../cfg-constructors.rkt"
          "../pda.rkt"
          "../cfe-constructors/context-free-expressions-constructors.rkt"
+         "../cfe-constructors/construct-cfe-macro.rkt"
          (for-syntax racket/base
                      racket/set)
          (filtered-in
@@ -45,7 +46,7 @@
           "../testing-utils/unsafe-struct-accessors.rkt")
          "../../../sm-graph.rkt")
 
-(provide quickcheck-invs-cfg)
+;(provide quickcheck-invs-cfg)
 
 ;; cfg boolean (listof (listof nt inv)) -> hashtable
 ;; Purpose: To return a hashtable of all context-free expressions that
@@ -182,28 +183,25 @@
 
 
 
-
-
-
 (define MAX-KLEENE-LENGTH 20)
 
 ;; cfexp -> generator throw error
 ;; Purpose: To translate the given cfexp into a generator, that generates
 ;;          words that are in the language in the context-free expression
-(define (translate-regexp cfexp)
+(define (translate-cfexp cfexp)
   (cond [(equal? null-cfexp cfexp)
          (error "cannot generate a word for the null-cfexp")]
         [(singleton-cfexp? cfexp)
          (gen:const (string->symbol (singleton-cfexp-a cfexp)))]
         [(concat-cfexp? cfexp)
-         (gen:tuple (translate-regexp (concat-cfexp-r1 cfexp))
-                    (translate-regexp (concat-cfexp-r2 cfexp)))] ;;;;;;;;;;;;;;;;;;;;;;
+         (apply gen:tuple (translate-cfexp (vector-ref (concat-cfexp-cfes cfexp) 0))
+                    (translate-cfexp (vector-ref (concat-cfexp-cfes cfexp) 1)))] 
         [(union-cfexp? cfexp)
-         (gen:choice (translate-regexp (union-cfexp-r1 cfexp))
-                     (translate-regexp (union-cfexp-r2 cfexp)))]
-         [(kleenestar-cfexp? cfexp)
+         (gen:choice (translate-cfexp (vector-ref (union-cfexp-cfes cfexp) 0))
+                     (translate-cfexp (vector-ref (union-cfexp-cfes cfexp) 1)))]
+        [(kleenestar-cfexp? cfexp)
          (gen:bind (gen:integer-in 0 MAX-KLEENE-LENGTH)
-                   (λ (x) (gen:list (translate-regexp (kleenestar-cfexp-r1 cfexp))
+                   (λ (x) (gen:list (translate-cfexp (kleenestar-cfexp-c1 cfexp))
                                     #:max-length x)))]
         [(empty-cfexp? cfexp)
          (gen:const '())]))
@@ -213,12 +211,11 @@
 ;; nt regexp invariant natnum -> void throw error
 ;; Purpose: To test if a word generated from the given regexp holds for the invariant of the nt
 (define (testing-function state cfexp inv tests)
-  (let [(machine (regexp->fsa cfexp))]
-    (check-property
-     (make-config #:tests tests)
-     (property #:name (format "~a-invariant" state)
-               ([generated-word (gen:map (translate-regexp cfexp) flatten)])
-               (inv generated-word)))))
+  (check-property
+   (make-config #:tests tests)
+   (property #:name (format "~a-invariant" state)
+             ([generated-word (gen:map (translate-cfexp cfexp) flatten)])
+             (inv generated-word))))
 
 
 ;; cfg (listof (state invariant)) natnum -> void throw error 
@@ -228,9 +225,28 @@
   (define los&inv-only-states-that-reach-finals
     (filter (λ (s&inv) (hash-has-key? los&regexp (car s&inv))) los&inv))
   (for ([inv (in-list
-                 los&inv-only-states-that-reach-finals)])
+              los&inv-only-states-that-reach-finals)])
     (testing-function (car inv) (hash-ref los&regexp (car inv)) (cadr inv) tests)))
 
 
 
 
+;; syntactic categories
+;; S: word is a palindrome
+(define palindrome
+  (make-cfg '(S)
+            '(a b)
+            `((S ,ARROW ,EMP)
+              (S ,ARROW aSa)
+              (S ,ARROW bSb)
+              (S ,ARROW a)
+              (S ,ARROW b))
+            'S))
+
+(define (S-INV w)
+  (equal? w (reverse w)))
+
+
+(make-cfe ([L (union-cfexp (concat-cfexp (singleton-cfexp "a") L (singleton-cfexp "b"))
+                           (empty-cfexp))])
+           L)

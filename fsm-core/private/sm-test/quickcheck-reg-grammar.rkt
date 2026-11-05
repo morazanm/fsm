@@ -13,7 +13,6 @@
          "../constants.rkt"
          "../fsa.rkt"
          "../misc.rkt"
-         "../../../sm-graph.rkt"
          "../sm-getters.rkt"
          "../grammar-getters.rkt")
 
@@ -88,7 +87,7 @@
         [(union-regexp? regexp)
          (gen:choice (translate-regexp (union-regexp-r1 regexp))
                      (translate-regexp (union-regexp-r2 regexp)))]
-         [(kleenestar-regexp? regexp)
+        [(kleenestar-regexp? regexp)
          (gen:bind (gen:integer-in 0 MAX-KLEENE-LENGTH)
                    (λ (x) (gen:list (translate-regexp (kleenestar-regexp-r1 regexp))
                                     #:max-length x)))]
@@ -100,12 +99,11 @@
 ;; nt regexp invariant natnum -> void throw error
 ;; Purpose: To test if a word generated from the given regexp holds for the invariant of the nt
 (define (testing-function state regexp inv tests)
-  (let [(machine (regexp->fsa regexp))]
-    (check-property
-     (make-config #:tests tests)
-     (property #:name (format "~a-invariant" state)
-               ([generated-word (gen:map (translate-regexp regexp) flatten)])
-               (inv generated-word)))))
+  (check-property
+   (make-config #:tests tests)
+   (property #:name (format "~a-invariant" state)
+             ([generated-word (gen:map (translate-regexp regexp) flatten)])
+             (inv generated-word))))
 
 
 ;; rg (listof (state invariant)) natnum -> void throw error 
@@ -115,7 +113,7 @@
   (define los&inv-only-states-that-reach-finals
     (filter (λ (s&inv) (hash-has-key? los&regexp (car s&inv))) los&inv))
   (for ([inv (in-list
-                 los&inv-only-states-that-reach-finals)])
+              los&inv-only-states-that-reach-finals)])
     (testing-function (car inv) (hash-ref los&regexp (car inv)) (cadr inv) tests)))
 
 
