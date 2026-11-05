@@ -44,7 +44,7 @@
          racket/treelist
          "../sm-getters.rkt"
          "../grammar-getters.rkt")
-(provide rg-test-invs-andres)
+(provide rg-test-invs)
 
 
 ;; andres stuff ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -311,6 +311,7 @@
   (define finals-set (list->seteq (fsa-getfinals a-machine)))
   (define machine-paths (treelist-filter (λ (x) (set-member? finals-set (first (first (path-with-hash-config-path x)))))
                                          (find-paths a-machine rep-limit)))
+  
   #;(define machine-paths (find-paths a-machine rep-limit))
   #;(define machine-paths (find-paths a-machine REPETITION-LIMIT)) 
 
@@ -341,10 +342,11 @@
     (for/list ([path (in-treelist all-paths)]
                #:do [;(define cache (caddr (car path)))
                      #;(define a-config (list (word-of-path path) cache))
+                     (define config-word (filter (λ (x) (not (eq? 'ε x))) (path-with-hash-word-of-path path)))
                      (define a-config (list nt-tested (path-with-hash-word-of-path path)))]
-               #:when (not (inv (filter (λ (x) (not (eq? 'ε x))) (second a-config)))))
+               #:when (not (inv config-word)))
       #;a-config
-      (second a-config)))
+      config-word))
   
   #;(if (null? a-loi)
       '()
@@ -361,7 +363,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; this is the old one
-(define (rg-test-invs-andres a-rg a-loi)
+(define (rg-test-invs a-rg rep-limit a-loi)
   (define inv-nts (map (λ (inv-pair) (first inv-pair)) a-loi)) ;; <- all nts that need to be tested
   #;(displayln (grammar-nts a-rg))
   (define state-fsas
@@ -372,7 +374,7 @@
              '()]
             [else
              (define rg-pair (car rg-lst))
-             (cons (sm-test-invs-fsa (cadr rg-pair) 3 (car rg-pair) (cadr (assoc (car rg-pair) a-loi)))
+             (cons (sm-test-invs-fsa (cadr rg-pair) rep-limit #;2 (car rg-pair) (cadr (assoc (car rg-pair) a-loi)))
                    (test-rgs (cdr rg-lst)))]))
     (filter (λ (x) (not (empty? (second x)))) (test-rgs state-fsas)))
 
@@ -426,12 +428,12 @@
                                 (eq? 'a x))))))
 
   
-#;(rg-test-invs-andres rg-STARTS-WITH-aa #;2 (list (list 'S S-INV #;(lambda (x) #t))
+#;(rg-test-invs rg-STARTS-WITH-aa #;2 (list (list 'S S-INV #;(lambda (x) #t))
                                           (list 'A A-INV #;(lambda (x) #t))
                                           (list 'B B-INV #;(lambda (x) #t))))
 
 
-#;(rg-test-invs-andres rg-STARTS-WITH-aa #;2 (list (list 'S (lambda (x) #f))
+#;(rg-test-invs rg-STARTS-WITH-aa #;2 (list (list 'S (lambda (x) #f))
                                           (list 'A (lambda (x) #f))
                                           (list 'B (lambda (x) #f))))
 

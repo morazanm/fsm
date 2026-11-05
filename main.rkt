@@ -15,7 +15,8 @@
            "visualizations/viz-sm-constructors/viz-ndfa2regexp.rkt"
            "visualizations/viz-sm-constructors/viz-regexp2ndfa.rkt"
            "visualizations/viz-sm-constructors/viz-union.rkt"
-           "sm-graph.rkt")
+           "sm-graph.rkt"
+           )
   
   (provide
    (all-from-out racket)
@@ -24,7 +25,11 @@
    sm-visualize
    check-machine
    empties
-
+grammar-test-invs   
+ 
+ 
+ 
+ 
 
    ;;cfexp constructors
    make-cfe null-cfexp empty-cfexp singleton-cfexp

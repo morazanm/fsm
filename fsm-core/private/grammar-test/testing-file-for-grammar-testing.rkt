@@ -50,7 +50,7 @@
                                                                                       
 
 
-;; L =  U ba*
+;; L = empty U ba*
 
 ;; syntactic categories
 ;; S: words in EMP U ba*
@@ -879,7 +879,7 @@
 
 
 ;;REGULAR GRAMMARS
-(define tests (list
+#;(define tests (list
                (test-case 'EMP-U-ba*
                           NUM-TESTS-PER-GRAMMAR
                           (lambda () (rg-test-invs-impl2 EMP-U-ba* loi-EMP-U-ba*)))
@@ -923,23 +923,24 @@
                     
                ))
 
-(define path-length-cfgs 16)
+(define path-length-cfgs 34)
 
 ;; CONTEXT-FREE-GRAMMARS
-#;(define tests (list
-               (test-case 'numb>numa
+(define tests (list
+               #;(test-case 'numb>numa
                           NUM-TESTS-PER-GRAMMAR
                           (lambda () (cfg-test-invs numb>numa path-length-cfgs  loi-numb>numa)))
                
-               (test-case 'palindrome
+               #;(test-case 'palindrome
                           NUM-TESTS-PER-GRAMMAR
-                          (lambda () (cfg-test-invs palindrome path-length-cfgs  loi-palindrome)))
+                          (lambda () (cfg-test-invs palindrome path-length-cfgs loi-palindrome)))
+              
 
                (test-case 'c^mb^na^nd^m
                           NUM-TESTS-PER-GRAMMAR
                           (lambda () (cfg-test-invs c^mb^na^nd^m path-length-cfgs  loi-c^mb^na^nd^m)))
 
-               (test-case 'wcw^r
+               #;(test-case 'wcw^r
                           NUM-TESTS-PER-GRAMMAR
                           (lambda () (cfg-test-invs wcw^r path-length-cfgs  loi-wcw^r)))
                

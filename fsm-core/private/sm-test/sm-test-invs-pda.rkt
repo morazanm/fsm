@@ -2,7 +2,7 @@
 (#%declare #:unsafe)
 ;; working on optimizations
 
-;(provide sm-test-invs-pda)
+(provide sm-test-invs-pda)
 ;(provide sm-test-invs-pda find-paths #;sm-all-possible-words)
 (provide (all-defined-out))
 (require (for-syntax racket/base

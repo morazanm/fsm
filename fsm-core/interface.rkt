@@ -46,6 +46,7 @@
   (rename-in "private/machine-minimization/fsa-minimization.rkt"
              (minimize-dfa fsa-minimize))
   "../visualizations/viz-sm-constructors/viz-minimization.rkt"
+  "private/grammar-test/grammar-test-invs.rkt"
   )
   
 (provide
@@ -53,7 +54,7 @@
  sm-quickcheck
  check-machine
  empties
-
+grammar-test-invs
  ; sm constructors
  make-dfa make-ndfa make-ndpda make-tm
  regexp->fsa ndfa->dfa fsa->regexp

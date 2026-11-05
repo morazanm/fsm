@@ -6,9 +6,9 @@
 
 (provide grammar-test-invs)
 
-(define (grammar-test-invs a-grammar #:cutoff-length [cutoff-length 15] . inv-pairs)
+(define (grammar-test-invs a-grammar #:rep-limit [rep-limit 2] #:max-comp-length [max-comp-length 33] . inv-pairs)
   (define g-type (grammar-type a-grammar))
-  (cond [(eq? g-type 'rg) (rg-test-invs a-grammar inv-pairs)]
-        [(eq? g-type 'cfg) (cfg-test-invs a-grammar cutoff-length inv-pairs)]
+  (cond [(eq? g-type 'rg) (rg-test-invs a-grammar rep-limit inv-pairs)]
+        [(eq? g-type 'cfg) (cfg-test-invs a-grammar max-comp-length inv-pairs)]
         [(eq? g-type 'csg) (error "Not implemented for unrestricted grammars yet")]
         [else (error "This shouldn't be possible")]))

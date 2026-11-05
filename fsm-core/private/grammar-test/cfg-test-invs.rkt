@@ -231,7 +231,7 @@
     (define new-config
       (config (PDA-rule-destination i)
               (if (eq? EMP (PDA-rule-read i))
-                  '()                                 ;; <- the current word of the path 
+                  '()                          ;; <- the current word of the path 
                   (list (PDA-rule-read i)))
               (if (eq? EMP (PDA-rule-push i))  ;;  ⚙️making/adding the first paths to the queue
                   (stack '() 0)

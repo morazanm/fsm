@@ -1,0 +1,150 @@
+#lang racket/base
+(require racket/list
+         racket/treelist
+         racket/set
+         data/queue
+         rackcheck
+         "../regexp.rkt"
+         "../fsa.rkt"
+         "../sm-getters.rkt"
+         "../../../sm-graph.rkt"
+         "../rg-constructors.rkt"
+         "../regular-grammar.rkt"
+         "../constants.rkt"
+         "../fsa.rkt"
+         "../misc.rkt"
+         "../../../sm-graph.rkt"
+         "../sm-getters.rkt"
+         "../grammar-getters.rkt")
+
+(provide quickcheck-invs-rg)
+
+;; rg boolean (listof (listof nt inv)) -> hashtable
+;; Purpose: To return a hashtable of all regular expressions that
+;;          can be made from the given rg
+(define (get-all-regexp a-rg-grammar dead-state-removal? a-loi)
+  ;; have to get all the nts that are being tested, then get the rgexps for those nts, then add everything to a ht
+  (define nts-being-tested (map (λ (inv-pair) (first inv-pair)) a-loi)) ;<- gets all the nts that have to be tested
+
+  (for/hash ([nt nts-being-tested])     ;<- ht of the nt and its regexp 
+    (values nt (rg->regexp a-rg-grammar nt))))
+
+
+;; rg nonterminal -> regexp
+;; purpose: to return a regular expression for the given nonterminal from the given grammar
+(define (rg->regexp a-rg new-start)   
+  (define old-nts (list->seteq (cons 'ε (rg-getnts a-rg))))
+  (define new-rules (mutable-set))
+  (define new-nts (mutable-seteq))
+  
+  (define all-rules (rg-getunparsedrules a-rg))
+
+  ;; adds all the given nts rules and new nts to the set
+  (define (add-nt-rules nt)
+    (cond [(set-member? new-nts nt)
+           (void)]
+          [else (set-add! new-nts nt)
+                (for ([rule (in-list all-rules)]
+                      #:when (eq? nt (car rule))) ;<- means nt was just discovered, so add all nts rules
+                  (set-add! new-rules rule)
+                  (for ([symb (in-list (symbol->fsmlos (caddr rule)))]
+                        #:when (set-member? old-nts symb))
+                    (when (not (eq? symb EMP))
+                      (add-nt-rules symb))))]))
+    
+  (add-nt-rules new-start)
+  
+  (define new-rg
+    (make-unchecked-rg
+     (set->list new-nts)
+     (rg-getalphabet a-rg)
+     (set->list new-rules)
+     new-start))
+  
+  (define new-state-ndfa
+    (rg->fsa new-rg))
+  
+  (simplify-regexp (fsa->regexp new-state-ndfa))) ;;<- added it converting it to a regexp here
+
+
+
+
+
+
+
+(define MAX-KLEENE-LENGTH 20)
+
+;; regexp -> generator throw error
+;; Purpose: To translate the given regexp into a generator, that generates
+;;          words that are in the language in the regular expression
+(define (translate-regexp regexp)
+  (cond [(equal? null-regexp regexp)
+         (error "cannot generate a word for the null-regexp")]
+        [(singleton-regexp? regexp)
+         (gen:const (string->symbol (singleton-regexp-a regexp)))]
+        [(concat-regexp? regexp)
+         (gen:tuple (translate-regexp (concat-regexp-r1 regexp))
+                    (translate-regexp (concat-regexp-r2 regexp)))]
+        [(union-regexp? regexp)
+         (gen:choice (translate-regexp (union-regexp-r1 regexp))
+                     (translate-regexp (union-regexp-r2 regexp)))]
+         [(kleenestar-regexp? regexp)
+         (gen:bind (gen:integer-in 0 MAX-KLEENE-LENGTH)
+                   (λ (x) (gen:list (translate-regexp (kleenestar-regexp-r1 regexp))
+                                    #:max-length x)))]
+        [(empty-regexp? regexp)
+         (gen:const '())]))
+
+
+
+;; nt regexp invariant natnum -> void throw error
+;; Purpose: To test if a word generated from the given regexp holds for the invariant of the nt
+(define (testing-function state regexp inv tests)
+  (let [(machine (regexp->fsa regexp))]
+    (check-property
+     (make-config #:tests tests)
+     (property #:name (format "~a-invariant" state)
+               ([generated-word (gen:map (translate-regexp regexp) flatten)])
+               (inv generated-word)))))
+
+
+;; rg (listof (state invariant)) natnum -> void throw error 
+;; Purpose: To quickcheck the invariants of the nts of the given regular grammar
+(define (quickcheck-invs-rg machine los&inv tests dead-state-removal?)
+  (define los&regexp (get-all-regexp machine dead-state-removal? los&inv))
+  (define los&inv-only-states-that-reach-finals
+    (filter (λ (s&inv) (hash-has-key? los&regexp (car s&inv))) los&inv))
+  (for ([inv (in-list
+                 los&inv-only-states-that-reach-finals)])
+    (testing-function (car inv) (hash-ref los&regexp (car inv)) (cadr inv) tests)))
+
+
+
+
+(define rg-STARTS-WITH-aa (make-rg '(S A B) 
+                                   '(a b) 
+                                   '((S -> aA)
+                                     (A -> a)
+                                     (A -> aB)
+                                     (B -> a)
+                                     (B -> aB)
+                                     (B -> b)
+                                     (B -> bB))
+                                   'S))
+
+
+
+;;purpose: to determine if a would ought to be generated by S
+(define (S-INV w)
+  (<= 2 (length (takef w (λ (x) (eq? 'a x))))))
+
+;; word -> boolean
+;;purpose: to determine if a would ought to be generated by A
+(define (A-INV w)
+  (<= 1 (length (takef w (λ (x) (eq? 'a x))))))
+
+;; word -> boolean
+;;purpose: to determine if a would ought to be generated by B
+(define (B-INV w)
+  (equal? w (takef w (λ (x) (or (eq? 'b x)
+                                (eq? 'a x))))))
