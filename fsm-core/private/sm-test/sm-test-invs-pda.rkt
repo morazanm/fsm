@@ -191,8 +191,8 @@
           (make-new-stack new-rule curr-config-stack)))
 
 ;; pda -> (listof PATH)
-;; Purpose: Returns all the paths that lead to an accepting word of the given machine
-(define (get-accepting-paths pda-states pda-start pda-finals pda-rules max-length inv-ht accum)
+;; Purpose: To return all the paths in the given pda 
+(define (find-paths-pda a-machine #:max-length [max-length 12])
   (define queue (make-queue))
   (define visited (mutable-set))
   (define tested (mutable-set))
@@ -281,35 +281,129 @@
                                             (hash-ref rule-ht (unsafe-config-state another-qfirst))
                                             accum)])]))
   
-  (for ([i (in-set pda-rules)]
-        #:when (eq? (unsafe-PDA-rule-source i) pda-start))
-    (define new-config
-      (config (unsafe-PDA-rule-destination i)
-              (if (eq? EMP (unsafe-PDA-rule-read i))
-                  '()                                 ;; <- the current word of the path 
-                  (list (unsafe-PDA-rule-read i)))
-              (if (eq? EMP (unsafe-PDA-rule-push i))  ;;  ⚙️making/adding the first paths to the queue
-                  (stack '() 0)
-                  (stack (unsafe-PDA-rule-push i) (unsafe-PDA-rule-push-len i)))))
-    (set-add! visited
-              new-config)
-    (enqueue! queue (computation
-                     (list new-config)
-                     1)))
-  
-  (find-configs #f #f accum))
+  (begin
+    (for/list ([i rules]
+               #:when (and (eq? 'ε (get-pop i)) ;<-- need to make sure that the rule can be applied to an empty stack to start off
+                           (eq? (get-source-state i) (sm-start a-machine))))
+      (enqueue! queue (make-PATH (list i) ;<- current lor of the path
+                                 (if (eq? 'ε (get-push i))  ;;  ⚙️making/adding the first paths to the queue
+                                     '()
+                                     (get-push i))  ;; <- current stack of the path
+                                 (if (eq? 'ε (get-elem-read i))
+                                     '()                                 ;; <- the current word of the path 
+                                     (list (get-elem-read i)))
+                                 1    ;<- current length of the path
+                                 (get-destination-state i)))) 
+    
+    (find-paths-helper '() (mutable-set)) ))
+
+
+
+;; pda -> (listof PATH)
+;; Purpose: Returns all the paths that lead to an accepting word of the given machine
+(define (get-accepting-paths a-pda max-length)
+  (define finals-set (list->set (sm-finals a-pda)))
+  (define paths-that-end-in-finals (for/list ([i (find-paths-pda a-pda #:max-length max-length)]
+                                              #:when (set-member? finals-set (PATH-destination-state i)))
+                                     (make-PATH (reverse (PATH-lor i)) (PATH-stack i) (PATH-word i) (PATH-path-length i) (PATH-destination-state i))))
+
+  ;; PATH -> Boolean
+  ;; Purpose: To determine if the given path leads to an accept 
+  (define (leads-to-accepting? a-path)
+    (empty? (PATH-stack a-path)))
+
+  ;; PATH -> (listof PATH)
+  ;; Purpose: To return all the sub paths of the given
+  ;;          path, including the given path
+  (define (get-sub-paths a-path)
+
+    (define a-m-set (mutable-set))
+    ;; (listof pda-rules) -> (listof symbol)
+    ;; Purpose: To get the stack of the given path
+    (define (get-stack path-lor)
+      ;; (listof pda-rules) (listof symbol) -> (listof symbol)
+      ;; Purpose: To get the stack of the given path
+      (define (get-stack-helper rules-left cur-stack)
+        (if (empty? rules-left)
+            cur-stack
+            (get-stack-helper (rest rules-left)
+                              (append (if (eq? 'ε (get-push (first rules-left)))
+                                          '()
+                                          (get-push (first rules-left)))
+                                      (drop cur-stack
+                                            (PDA-rule-pop-length (first rules-left)))))))
+      (get-stack-helper path-lor '()))
+    (define (get-word a-path)
+      (for/fold ([accum '()])
+                ([rule a-path]
+                 #:when (not (eq? 'ε (get-elem-read rule))))
+        (append accum (list (get-elem-read rule)))))
+    
+    ;; number (listof PATH) -> (setof PATH)
+    ;; Purpose: To return all the sub paths of the given
+    ;;          path, including the given path
+    (define (get-sub-paths-helper length-cur-path)
+      (let [(new-lor (take (PATH-lor a-path) length-cur-path))]
+        (cond [(= length-cur-path (PATH-path-length a-path))
+               (set-add! a-m-set (make-PATH '()
+                                            (get-stack (take (PATH-lor a-path) length-cur-path))  ;;;<- the lor and path length is set to 0 
+                                            (get-word (take (PATH-lor a-path) length-cur-path))    ;;   and '() to prevent duplicates from 
+                                            0                                                      ;;   other sub paths from other computations
+                                            (get-destination-state (last new-lor))
+                                            ))
+               a-m-set]
+              [else
+               (set-add! a-m-set (make-PATH '()
+                                            (get-stack (take (PATH-lor a-path) length-cur-path))
+                                            (get-word (take (PATH-lor a-path) length-cur-path))
+                                            0
+                                            (get-destination-state (last new-lor))
+                                            ))
+               (get-sub-paths-helper  (+ 1 length-cur-path))])))
+    (get-sub-paths-helper 1))
+
+  (define new-mutable-set (mutable-set))
+
+  (apply (curry set-union! new-mutable-set)
+         (for/list ([i paths-that-end-in-finals]
+                    #:when (leads-to-accepting? i))
+           (get-sub-paths i)))
+  ;(display new-mutable-set)
+  (set->list new-mutable-set))
+
+
+
+
 
 ;; pda -> pda
 ;; Purpose: Takes in pda and remove states and rules that can't reach a final state 
 (define (remove-states-that-cannot-reach-finals a-pda max-length inv-ht accum)
   (define new-rules (mutable-set))
-  (define new-states (mutable-seteq))
-  (define visited (mutable-set))
-  (define queue (make-queue))
-  (define finals-set (list->seteq (sm-finals a-pda)))
-  (define old-rules
-    (for/list ([rule (in-list (sm-rules a-pda))])
-      (rule->PDA-rule rule)))
+  (define new-states (mutable-set))
+
+  (for ([path (filter (λ (x) (set-member? finals-set (get-destination-state (first (PATH-lor x))))) ;<- paths that end in finals
+                                           (find-paths-pda a-pda #:max-length max-length))])
+       (for ([rule (PATH-lor path)])
+            (set-add! new-rules rule)
+            (set-add! new-states (get-source-state rule))
+            (set-add! new-states (get-destination-state rule))))
+  (make-unchecked-ndpda (set->list new-states) (sm-sigma a-pda) (sm-gamma a-pda) (sm-start a-pda) (sm-finals a-pda) (map PDA-rule->rule (set->list new-rules))))
+
+
+;; (listof pda-rule) -> word
+;; Purpose: To return a word that is made from the given path
+(define (word-of-path a-path)
+  (for/fold ([accum '()])
+            ([rule (PATH-lor a-path)]
+             #:when (not (eq? 'ε (get-elem-read rule))))
+    (append accum (list (get-elem-read rule)))))
+
+;; PATH (listof (list state (word -> boolean))) -> Boolean
+;; Purpose: To determine if a the invariant for a given path holds
+(define (path-inv-not-hold? a-path a-loi)
+  (not (invariant-holds? a-loi
+                         (PATH-word a-path)
+                         (PATH-stack a-path))))
 
   (define rule-ht
     (for/hasheq ([state (in-list (sm-states a-pda))])
@@ -393,17 +487,106 @@
 
 ;; pda (listof (list state (word -> boolean))) -> (listof (word stack state))
 ;; Purpose: To return a list of the invarients that don't hold and the words that cause it not to hold
-(define (sm-test-invs-pda a-machine max-path-length a-loi)
-  
-  (define inv-ht
-    (for/hash ([inv-state-pair (in-list a-loi)])
-      (values (car inv-state-pair) (car (cdr inv-state-pair)))))
+(define (sm-test-invs-pda a-machine max-path-length ds-remove? a-loi)
+  ;; the given machine without the states and rules of states that cannot reach a final state
+  (define new-machine (if ds-remove?
+                          (remove-states-that-cannot-reach-finals a-machine max-path-length)  ;<- refactored
+                          a-machine))
+  ;; list of invariants that are reachable from the starting configuration
+  (define reachable-inv (for/list ([i a-loi]
+                                   #:when (member (first i) (sm-states new-machine)))
+                          i))
+  ;; all accepting paths of new-machine
+  (define all-paths-new-machine (get-accepting-paths new-machine max-path-length))
+  ;; (listof PATH) (listof (word stack state)) -> (listof (word stack state))
+  ;; Purpose: To return a list of the invariants and the word that causes them not to hold
+  ;; Accumulator Invariant: accum = list of lists of words and stacks that cause the invarient not to hold
+  ;;                                & the state that it doesn't hold for
+  (define (sm-test-invs-helper all-paths accum)
+    (if (empty? all-paths)
+        accum
+        (sm-test-invs-helper (rest all-paths)
+                             (if (path-inv-not-hold? (first all-paths)
+                                                     (for/list ([i (map list-pair->inv-pair reachable-inv)] ; <- reachable inv pair structures
+                                                                #:when (eq? (PATH-destination-state (first all-paths))
+                                                                            (inv-pair-state i)))
+                                                       i))
+                                 (cons (list (PATH-word (first all-paths))
+                                             (PATH-stack (first all-paths))
+                                             (PATH-destination-state (first all-paths))) accum)
+                                 accum))))
+          
+  (order-output (sm-test-invs-helper all-paths-new-machine
+                       (let [(start-pair (assoc (sm-start a-machine) a-loi))]
+                         (if (or (not (pair? start-pair))
+                                 ((second start-pair) '() '()))
+                             '()
+                             (list (list '() '() (sm-start a-machine))))))))
 
-  (define start-pair (assoc (sm-start a-machine) a-loi))
-  (if ((hash-ref inv-ht
-                 (sm-start a-machine)
-                 always-true-inv-thunk)
-       '()
-       '())
-      (remove-states-that-cannot-reach-finals a-machine max-path-length inv-ht '())
-      (remove-states-that-cannot-reach-finals a-machine max-path-length inv-ht (list (list '() '() (sm-start a-machine))))))
+
+
+
+
+
+;; this part organized the output:
+
+;; '(((a) (a) S) (() () S))
+
+
+;; the results is a list of lists, and these lists are the word and the state
+(define (order-output results)
+  ;; have to get the states of the results
+  (define state-set (mutable-set))
+  
+  (for ([triple (in-list results)])
+    (set-add! state-set (third triple)))  ;<-- adds all the states in the set
+
+  ;; making the lists for the states
+  
+  ;; (listof symbol) -> (listof (symbol (listof word)))
+  ;; Purpose: To generate a list of lists of a state and an empty list for each given states
+  (define (build-list-of-states-&-empty-low states)
+    ;; (listof symbol) (listof word)-> (listof (symbol '()))
+    ;; Purpose: To generate a list of lists of a state and an empty list for each given states
+    ;; Accumulator Invariant: accum = list containing a list with the state and an empty list of words
+    (define (build-list-of-states-&-empty-low-helper states accum)
+      (if (null? states) accum
+          (build-list-of-states-&-empty-low-helper (cdr states) (cons (list (car states) '()) accum))))
+    (build-list-of-states-&-empty-low-helper states '()))
+  
+  (define states-&-empty-low (build-list-of-states-&-empty-low (set->list state-set)))
+
+  ;; now adding in all the words and stacks to the lists
+
+  ;; (listof (listof word state)) -> (listof (listof state (listof word)))
+  ;; Purpose: To sort the words to be a list of the state and the words that can possibly reach that state
+  (define (sort-words listof-all-words-&-states)
+    ;; (listof (word state)) -> (listof word)
+    ;; Purpose: To make the given (listof (word state)) into a list of words
+    (define (make-low list-of-words-&-stacks-&-states)
+      ;; (listof (word state)) -> (listof word)
+      ;; Purpose: To make the given (listof (word state)) into a list of words
+      ;; Accumulator Invariant: accum = current list of words for the state
+      (define (make-low-helper list-of-words-&-states accum)
+        (if (null? list-of-words-&-states) accum
+            (make-low-helper (cdr list-of-words-&-states) (cons (list (car (car list-of-words-&-states))
+                                                                      (cadr (car list-of-words-&-states))) accum))))
+      (make-low-helper list-of-words-&-stacks-&-states '()))
+    ;; (listof (listof word state)) -> (listof (listof state (listof word)))
+    ;; Purpose: To sort the words to be a list of the state and the words that can possibly reach that state
+    ;; Accumulator Invairant: accum = list of states with all the possible words in them 
+    (define (sort-words-helper states-&-empty-low accum)
+      (if (null? states-&-empty-low) accum
+          (sort-words-helper (cdr states-&-empty-low)
+                             (cons (list (car (car states-&-empty-low))
+                                         (make-low (remove-duplicates
+                                                    (filter (λ (x) (eq? (car (car states-&-empty-low)) (caddr x)))
+                                                           listof-all-words-&-states)))) accum))))
+            
+    (sort-words-helper states-&-empty-low '()))
+
+  (sort-words results))
+
+
+
+

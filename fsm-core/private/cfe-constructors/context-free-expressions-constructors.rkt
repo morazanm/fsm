@@ -1,6 +1,7 @@
 #lang racket/base
 
-(require "../constants.rkt"
+(require "../../../sm-graph.rkt"
+         "../constants.rkt"
          "../cfg-struct.rkt"
          (except-in "../pda.rkt" pda->spda)
          "../misc.rkt"
@@ -12,7 +13,10 @@
          racket/list
          racket/treelist
          racket/hash
-         racket/set)
+         racket/set
+         racket/pretty
+         racket/format
+         racket/function)
 
 (provide cfexp?
          null-cfexp
@@ -26,17 +30,19 @@
                      (mk-kleene-cfexp? kleenestar-cfexp?)
                      (mk-empty-cfexp? empty-cfexp?)
                      (mk-null-cfexp? null-cfexp?)
-                     (kleene-cfexp kleenestar-cfexp))
+                     (kleene-cfexp kleenestar-cfexp)         
+                     (mk-singleton-cfexp-char singleton-cfexp-a)
+                     (mk-union-cfexp-locfe union-cfexp-cfes)
+                     (mk-concat-cfexp-locfe concat-cfexp-cfes)
+                     (mk-kleene-cfexp-cfe kleenestar-cfexp-c1))
          gen-cfexp-word          
          cfg->cfe
          cfe->cfg
          pda->cfe
          cfe->pda
          pick-cfexp
-         singleton-cfexp-a
-         union-cfexp-cfes
-         concat-cfexp-cfes
-         kleenestar-cfexp-c1
+         printable-cfexp
+         #;make-smallest-paths
          )
 
 (define MAX-KLEENESTAR-LIMIT 20)
@@ -68,20 +74,11 @@
   singleton-cfexp/c 
   (mk-singleton-cfexp a-char))
 
-(define singleton-cfexp-a mk-singleton-cfexp-char)
-
-(define union-cfexp-cfes mk-union-cfexp-locfe)
-
-(define concat-cfexp-cfes mk-concat-cfexp-locfe)
-
-(define kleenestar-cfexp-c1 mk-kleene-cfexp-cfe)
-
 ;;(listof X) -> boolean
 ;;Purpose: Determines if the (listof X) is of length 1
 (define (is-length-one? lox)
   (and (not (null? lox))
        (null? (cdr lox))))
-
 
 ;;(listof cfexp) -> boolean
 ;;Purpose: Determines if the given (listof cfexp) contains the null-cfexp
@@ -101,7 +98,7 @@
   (cond [(or (null? cfexps) (contains-null? cfexps)) (null-cfexp)] ;; no input cfes -> null
         [(andmap mk-empty-cfexp? cfexps) (empty-cfexp)] ;; only empty cfes -> empty
         [(is-length-one? cfexps) (car cfexps)] ;;only one cfe -> cfe
-        [else (mk-concat-cfexp (list->vector (map unnest-unions cfexps)))])) ;;otherwise box unboxed-union cfes -> concat
+        [else (mk-concat-cfexp (list->vector (map unnest-unions cfexps)))])) ;;otherwise box any unboxed-union cfes -> concat
 
 ;; . cfexp -> union-cfexp/null-cfexp/empty-cfexp/singleton-cfexp
 ;;Purpose: A wrapper to create a union-cfexp unless all the given cfexps are empty-cfexp
@@ -110,7 +107,8 @@
   (cond [(or (null? cfexps) (andmap mk-null-cfexp? cfexps)) (null-cfexp)] ;; no input cfes -> null
         [(andmap mk-empty-cfexp? cfexps) (empty-cfexp)] ;; only empty cfes -> empty
         [(is-length-one? cfexps) (car cfexps)] ;;only one cfe -> cfe
-        [else (mk-union-cfexp (vector-append (list->vector (filter (compose1 not mk-union-cfexp?) cfexps)) ;;otherwise flatten nested unions -> union
+        [else (mk-union-cfexp (vector-append (list->vector (filter (compose1 not mk-union-cfexp?)
+                                                                   cfexps)) ;;otherwise flatten nested unions -> union
                                              (foldl (λ (u-cfe acc)
                                                       (vector-append acc (mk-union-cfexp-locfe u-cfe)))
                                                     (vector)
@@ -159,15 +157,33 @@
                      (build-list
                       (random (add1 reps))
                       (λ (i) (gen-function (mk-kleene-cfexp-cfe kleene-cfexp) reps))))))]
-    (if (null? lst-words) EMP (foldr (λ (str acc)
-                                       (string-append str acc))
-                                     ""
-                                     lst-words))))
+    (if (null? lst-words) "" (apply string-append lst-words))))
 
 ;;string -> Boolean
 ;;Purpose: Determines if the given string is empty
 (define (string-empty? str)
   (string=? str ""))
+
+
+;;string -> (listof symbol)
+;;Purpose: Converts the given string into a fsm word
+(define (string->word2 str)
+
+  (define (string-first str)
+    (substring str 0 1))
+  
+  (define (string-rest str)
+    (substring str 1))
+ 
+    ;;natnum (listof symbol) -> (listof symbol)
+    ;;Purpose: Converts the string into a fsm word
+    (define (string->word-helper str acc)
+      (if (string-empty? str)
+          (reverse acc)
+          (string->word-helper (string-rest str)
+                               (cons (string->symbol (string-first str)) acc))))
+    (string->word-helper str '()))
+
 
 ;;string -> (listof symbol)
 ;;Purpose: Converts the given string into a fsm word
@@ -186,12 +202,12 @@
 ;; Purpose: Generates a word using 
 (define/contract (gen-cfexp-word cfe [reps MAX-KLEENESTAR-LIMIT])
   gen-cfexp-word/c
-  #;(define MAX-KLEENESTAR-REPS (if (null? reps) MAX-KLEENESTAR-LIMIT (car reps)))
-  (cond [(mk-null-cfexp? cfe) (error "A word cannot be generated using the null-regexp.")]
+  (define MAX-KLEENESTAR-REPS (if (null? reps) MAX-KLEENESTAR-LIMIT reps))
+  (cond [(mk-null-cfexp? cfe) (error "A word cannot be generated using the null-cfexp.")]
         [(mk-empty-cfexp? cfe) EMP]
         [(mk-singleton-cfexp? cfe) (list (string->symbol (mk-singleton-cfexp-char cfe)))]
-        #;[(box? cfe) (gen-cfexp-word-helper (unbox cfe) reps)]
-        [else (let ([res (gen-cfexp-word-helper cfe reps)])
+        [(box? cfe) (gen-cfexp-word (unbox cfe) MAX-KLEENESTAR-REPS)]
+        [else (let ([res (gen-cfexp-word-helper cfe MAX-KLEENESTAR-REPS)])
                 (if (string-empty? res)
                     EMP
                     (string->word res)))]))
@@ -199,7 +215,7 @@
 ;;cfexp ;;natnum
 ;;Purpose: Generates a word that is in the given cfexp's language
 (define (gen-cfexp-word-helper cfe reps)
-  (cond [(mk-null-cfexp? cfe) (error "A word cannot be generated using the null-regexp.")]
+  (cond [(mk-null-cfexp? cfe) (error "A word cannot be generated using the null-cfexp.")]
         [(mk-empty-cfexp? cfe) ""]
         [(mk-singleton-cfexp? cfe) (mk-singleton-cfexp-char cfe)]
         [(mk-concat-cfexp? cfe) (gen-concat-word cfe gen-cfexp-word-helper reps)]
@@ -213,27 +229,31 @@
   ;;(listof cfe) string (setof cfe) -> string
   ;;Purpose: Converts and appends all of the cfes in the given (listof cfe) 
   (define (printable-helper locfe connector seen)
-    (cond [(= (length locfe) 1) (printable-cfexp (car locfe) #:seen seen)]
+    (cond [(is-length-one? locfe) (printable-cfexp (car locfe) #:seen #;(set-add seen (car locfe)) seen)]
           [else (let ([new-seen (set-add seen (car locfe))])
                   (string-append (printable-cfexp (car locfe) #:seen new-seen)
                                  connector
                                  (printable-helper (cdr locfe) connector new-seen)))]))
 
-  ;;var-cfexp (setof cfe) -> string
+  ;;box (setof cfe) -> string
   ;;Purpose: Prints the variable 
-  (define (printable-var var-cfe seen)
-    seen)
+  (define (printable-box lang-box seen)
+   (printable-cfexp (unbox lang-box) #:seen seen))
+  
   (define NULL-REGEXP-STRING "∅")
   (define EMPTY-REGEXP-STRING (symbol->string EMP))
+  (displayln (format "cfe: ~a\nseen: ~a\n\n" cfe seen))
   (cond [(mk-null-cfexp? cfe) NULL-REGEXP-STRING]
         [(mk-empty-cfexp? cfe) EMPTY-REGEXP-STRING]
         [(mk-singleton-cfexp? cfe) (mk-singleton-cfexp-char cfe)]
-        [(box? cfe) (printable-var cfe (if (set-empty? seen)
-                                           (set)
-                                           seen))]
+        [(box? cfe) (if (set-member? seen cfe)
+                        "x"
+                        (string-append "" (printable-box cfe (set-add seen cfe))))]
         [(mk-concat-cfexp? cfe) (printable-helper (vector->list (mk-concat-cfexp-locfe cfe)) "" seen)]
-        [(mk-union-cfexp? cfe) (printable-helper (vector->list (mk-union-cfexp-locfe cfe)) " | " seen)]
-        [else (string-append (printable-cfexp (mk-kleene-cfexp cfe)) "*")]))
+        [(mk-union-cfexp? cfe) (string-append "(" (printable-helper (vector->list (mk-union-cfexp-locfe cfe)) " U " seen) ")")]
+        [else (if (set-member? seen cfe)
+                  ""
+                  (string-append (printable-cfexp (mk-kleene-cfexp-cfe cfe) #:seen (set-add seen cfe)) "*"))]))
   
 
 ;;context-free grammar -> cfe
@@ -279,21 +299,24 @@
                                              [(= (length RHS) 1) (rule->expression (car RHS))]
                                              [else (apply union-cfexp (map (λ (rule) (rule->expression rule)) RHS))])))))
   
-  (let* ([nts (cfg-get-v G)]
-         [rules (make-hash-table nts (λ (nt) (filter-map (λ (rule)
-                                                           (and (eq? (car rule) nt)
-                                                                (symbol->fsmlos (caddr rule))))
-                                                         (cfg-get-rules G))))]
-         [start (cfg-get-start G)]
-         [singletons (make-hash-table (cfg-get-alphabet G) (λ (sig)
-                                                             (singleton-cfexp (symbol->string sig))))]
-         [lang-boxes (make-hash-table nts (λ (x) (box (void))))]
-         [rules->cfexp (make-cfexps-frm-rules rules singletons lang-boxes)]
-         [updated-bindings (hash-map/copy rules->cfexp (λ (key value)
-                                                         (begin
-                                                           (set-box! (hash-ref lang-boxes key) value)
-                                                           (values key (hash-ref lang-boxes key)))))])
-    (hash-ref updated-bindings start)))
+  (let ([rules (cfg-get-rules G)])
+    (if (empty? rules)
+        (null-cfexp)
+        (let* ([nts (cfg-get-v G)]
+               [rules-hash (make-hash-table nts (λ (nt) (filter-map (λ (rule)
+                                                                 (and (eq? (car rule) nt)
+                                                                      (symbol->fsmlos (caddr rule))))
+                                                               rules)))]
+               [start (cfg-get-start G)]
+               [singletons (make-hash-table (cfg-get-alphabet G) (λ (sig)
+                                                                   (singleton-cfexp (symbol->string sig))))]
+               [lang-boxes (make-hash-table nts (λ (x) (box (void))))]
+               [rules->cfexp (make-cfexps-frm-rules rules-hash singletons lang-boxes)]
+               [updated-bindings (hash-map/copy rules->cfexp (λ (key value)
+                                                               (begin
+                                                                 (set-box! (hash-ref lang-boxes key) value)
+                                                                 (values key (hash-ref lang-boxes key)))))])
+          (hash-ref updated-bindings start)))))
 
 ;;cfe -> cfg
 ;;Purpose: Converts the given cfe into its corresponding cfg
@@ -417,7 +440,8 @@
                                                                          (symbol->string (hash-ref new-nts cfe)))
                                                                      acc))
                                                                   ""
-                                                                  (treelist-reverse (vector->treelist (mk-concat-cfexp-locfe cfe)))))]
+                                                                  (treelist-reverse
+                                                                   (vector->treelist (mk-concat-cfexp-locfe cfe)))))]
                 [else (error (format "unsuitable cfe ~a" cfe))]))
         ;;if union found in concat split union and make concat using every branch
         (let ([RHS (cond [(mk-empty-cfexp? cfe) EMP]
@@ -448,7 +472,8 @@
           finished-rules
           (let ([cfe (qfirst rules-to-convert)])
             (cond [(mk-union-cfexp? cfe)
-                   (remake-rules nt (enqueue (dequeue rules-to-convert) (vector->treelist (mk-union-cfexp-locfe cfe))) finished-rules)]
+                   (remake-rules nt (enqueue (dequeue rules-to-convert)
+                                             (vector->treelist (mk-union-cfexp-locfe cfe))) finished-rules)]
                   [(mk-kleene-cfexp? cfe)
                    (remake-rules nt (dequeue rules-to-convert) (cons (list nt ARROW EMP) (cons (cfe->rule nt cfe) finished-rules)))]
                   [else (remake-rules nt (dequeue rules-to-convert) (cons (cfe->rule nt cfe) finished-rules))]))))
@@ -481,220 +506,394 @@
 
 ;; pda -> cfe
 ;;Purpose: Converts the given pda into a cfe
-(define #;define/contract (pda->cfe pda)
+(define #;define/contract (pda->cfe P)
   #;pda->cfe/c
+  #|
+  pda-struct is a structural representation of a pda
+  states | The states for the given pda => (listof states)
+  sigma  | The alphabet that the given pda works over => (listof symbol)
+  gamma  | The stack alphabet that given pda works over => (listof symbol)
+  start  | The starting state => symbol
+  finals | The final states => (listof symbol)
+  rules  | The transition relation for the given pda => (listof pda-rule)
+  |#
+  (struct pda (states sigma gamma start finals rules) #:transparent)
 
-  ;;nts   | the non-terminals for the given CFG     | (listof non-terminal)
-  ;;sigma | the alphabet for the given CFG          | (listof symbol)
-  ;;rules | the productions rules for the given CFG | (listof cfg-rule)
-  ;;start | the starting nt of the given CFG        | non-terminal
-  (struct CFG (nts sigma rules start) #:transparent)
+  #|
+  pda-rule is a structural representation of a pda rule
+  source | The state the rule is coming from => symbol
+  action | The action the pda takes when using the rule => pda-action
+  destin | The state the rule transitions to => symbol
+  tag    | The cfe-template for the given rule => symbol / cfe-template
+  |#
+  (struct pda-rule (source action destin) #:transparent)
 
-  ;;cfg -> CFG
-  ;;Purpose: Converts the given cfg into a CFG
-  (define (unchecked->cfg G)
-    (CFG (cfg-get-v G) (cfg-get-alphabet G) (cfg-get-the-rules G) (cfg-get-start G)))
+  #|
+  a pda-action is a structural representation of a pda action
+  read | The element that the pda reads => symbol
+  pop  | The element(s) that the pda pops of the stack => symbol / (listof symbol)
+  push | The element(s) that the pda pushes to the stack => symbol / (listof symbol)
+  |#
+  (struct pda-action (read pop push) #:transparent)
 
-  ;;CFG -> cfg
-  ;;Purpose: Converts the given CFG into a cfg
-  (define (cfg->unchecked G)
-    (cfg (CFG-nts G) (CFG-sigma G) (CFG-rules G) (CFG-start G)))
+  (struct inverse-pair (push pop) #:transparent)
+
+  #|
+  A cfe-template is an annotation for a pda-rule in preparation to be converted to a cfe
+  A cfe-template is either:
+  1. kleene
+  2. union
+  3. concat
+  4. empty
+  5. singleton
+  |#
+  ;;kleene is a cfe-template
+  ;;rule | the rule to be annotated with a Kleenestar
+  (struct kleene (rule) #:transparent)
+  ;;union is a cfe-template
+  ;;rule | the rule to be annotated with a union
+  (struct union (rules) #:transparent)
+  ;;concat is a cfe-template
+  ;;rule | the rule to be annotated with a concatenation
+  (struct concat (rules) #:transparent)
+  ;;empty is a cfe-template
+  ;;rule | the rule to be annotated with a empty
+  (struct empty (rule) #:transparent)
+  ;;singleton is a cfe-template
+  ;;rule | the rule to be annotated with a singleton
+  (struct singleton (rule) #:transparent)
+
+  ;;symbol los los -> pda-action
+  ;;Purpose: Creates a pda action from the given input
+  (define (make-pda-action read pop push)
+    (pda-action read pop push))
+
+  ;;(list (list state symbol los) (list state los)) -> pda-rule
+  ;;Purpose: Converts the given pda rule into a pda-rule struct
+  (define (rule->struct rule)
+    ;;pda-rule -> cfe-template
+    ;;Purpose: Converts the given pda-rule to a cfe-template
+    (define (rules->cfe pda-action)
+      ;;pda-rule -> Boolean
+      ;;Purpose: Determines if the given pda-rule is an empty transition
+      (define (e-transition? action)
+        (and (eq? EMP (pda-action-read action))
+             (eq? EMP (pda-action-pop action))
+             (eq? EMP (pda-action-push action))))
+      (if (e-transition? pda-action)
+          (empty pda-action) 
+          (singleton pda-action)))
+    (pda-rule (first (first rule))
+              (rules->cfe (make-pda-action (second (first rule)) (third (first rule)) (second (second rule))))
+              (first (second rule))))
+
+  ;;pda-rule -> (list (list state symbol los) (list state los))
+  ;;Purpose: Converts the given pda-rule to a pda rule
+  (define (struct->rules rule)
+     ;;cfe-template -> pda-rule / (listof pda-rule)
+  ;;Purpose: Extracts of the rule(s) out of the given cfe-template
+  (define (template->rules temp)
+    (cond [(symbol? temp) temp]
+          [(empty? temp) (action->string (empty-rule temp))]
+          [(singleton? temp) (action->string (singleton-rule temp))]
+          [(union? temp) (apply string-append
+                                (map template->rules #;(compose1 pda-rule-action template->rules) (union-rules temp))
+                                #;(map (λ (x) (string-append (template->rules x) "U")) #;(compose1 pda-rule-action template->rules) (union-rules temp))
+                                #;(cons "U" (map (λ (x) (string-append (template->rules x) "U")) #;(compose1 pda-rule-action template->rules) (union-rules temp))))]
+          [(concat? temp) (apply string-append
+                                (map template->rules (concat-rules temp)))]
+          [else (template->rules (kleene-rule temp))]))
+    (list (list (pda-rule-source rule)
+                (string->symbol (template->rules (pda-rule-action rule))) #;(pda-action-read (pda-rule-action rule))
+                 EMP #;(pda-action-pop (pda-rule-action rule)))
+          (list (pda-rule-destin rule)
+                EMP #;(pda-action-push (pda-rule-action rule)))))
+
+  ;;pda-action pda-action -> Boolean
+  ;;Purpose: Determines if the given pda-actions have inverse stack operations
+  (define (inverse-stack-operations? push-action pop-action)
+    (let ([push (pda-action-push push-action)]
+          [pop (pda-action-pop pop-action)])
+      (and (equal? pop push)
+           (not (eq? pop EMP))
+           (not (eq? push EMP)))))
+
+  (define (simplify-rules lor)
+    (if (null? lor)
+        '()
+        (let* ([rule (first lor)]
+               [source (pda-rule-source rule)]
+               [destin (pda-rule-destin rule)]
+               [same-destin-rules (filter (λ (rule)
+                                            (and (eq? source (pda-rule-source rule))
+                                                 (eq? destin (pda-rule-destin rule))))
+                                          lor)]
+               [remaining-rules (filter (λ (rule)
+                                          (not (member rule same-destin-rules)))
+                                            lor)]
+               [collapsed (if (is-length-one? same-destin-rules)
+                              (first same-destin-rules)
+                              (pda-rule source (union (map pda-rule-action same-destin-rules)) destin))])
+          (cons collapsed
+                (simplify-rules remaining-rules)))))
   
-  ;;CFG -> (hash nt . nt)
-  ;;Purpose: Creates a hash table with all the nts and new respective name  
-  (define (rename-nts G)
-  
-    ;;(listof nt) (listof nt) (hash nt . nt)
-    ;;Purpose: Renames the given (listof nt) and pairs the each nt with a new name in a hash
-    (define (rename-nts-helper old-nts new-nts acc)
-      (if (null? old-nts)
-          acc
-          (let* ([translated-nt (gen-nt new-nts)]
-                 [new-acc (hash-set acc (car old-nts) translated-nt)]
-                 [new-nts (cons translated-nt new-nts)])
-            (rename-nts-helper (cdr old-nts) new-nts new-acc))))
-    (rename-nts-helper (CFG-nts G) '() (hash)))
-
-  ;;CFG (hash nt . nt) -> cfg
-  ;;Purpose: Rebuilds the cfg by renaming all of the nts and remaking the 
-  (define (rebuild-cfg improper-cfg nts-mapping)
-    (let ([sigma (CFG-sigma improper-cfg)])
-      (make-unchecked-cfg (hash-values nts-mapping)
-                          sigma
-                          (map (λ (rule)
-                                 (list (hash-ref nts-mapping (cfg-rule-lhs rule))
-                                       ARROW
-                                       (let ([RHS (cfg-rule-rhs rule)])
-                                         (los->symbol (map (λ (r)
-                                                             (if (member r (cons EMP sigma))
-                                                                 r
-                                                                 (hash-ref nts-mapping r)))
-                                                           RHS)))))
-                               (CFG-rules improper-cfg))
-                          (hash-ref nts-mapping (CFG-start improper-cfg)))))
-
-  ;;cfg -> cfg
-  ;;Purpose: minimizes the given cfg by removing nts and rules that aren't needed
-  (define (minimize-cfg G)
-  
-    ;;CFG -> cfg
-    ;;Purpose: Minimizes the given CFG by repeatedly removing rules that can't
-    ;;         be used the grammar until the same grammar is created twice
-    (define (clean-up-cfg cfg acc)
-
-      ;;CFG -> CFG
-      ;;Purpose: Cleans up the given CFG's rules and nts by removing rules that cannot be generated
-      ;;         or contain nts that produce nothing
-      (define (clean-up-cfg-rules-and-nts G)
-
-        ;;symbol (listof nt) (listof cfg-rule) (listof symbol) -> (listof cfg-rule)
-        ;;Purpose: Remvoes rules that dont have produce an nt that has no production rule
-        ;;         (e.i a rule that produces a nt on the RHS but doesnt have a LHS substitution)
-        (define (remove-useless-rules start nts rules sigma)
-
-          ;;(listof nt) (listof cfg-rule) (listof symbol) (listof cfg-rule) -> (listof cfg-rule)
-          ;;Purpose: Removes that produces a nt on the RHS but doesnt have a LHS substitution
-          (define (remove-rules-without-nts nts rules sigma acc)
     
-            ;;(listof cfg-rule) (listof cfg-rule) -> Boolean
-            ;;Purpose: Determines if the first given (listof cfg-rule) is the same as the second given (listof cfg-rule)
-            (define (same-rules? rules1 rules2)
-              (and (andmap (λ (rule) (member rules2 rule)) rules1)
-                   (andmap (λ (rule) (member rules1 rule)) rules2)))
-            (if (and (>= (length acc) 2)
-                     (same-rules? (car acc) (cadr acc)))
-                (car acc)
-                (let* ([new-rules (filter (λ (rule)
-                                            (andmap (λ (rhs)
-                                                      (or (member sigma rhs)
-                                                          (member nts rhs)))
-                                                    (cfg-rule-rhs rule)))
-                                          rules)]
-                       [new-nts (map cfg-rule-lhs new-rules)])
-                  (remove-rules-without-nts new-nts new-rules sigma (cons new-rules acc)))))
+      ;;make pred for do nothing on stack rule e.i push and pop same element
   
-          ;;(listof cfg-rules) (listof cfg-rules) -> (listof cfg-rules)
-          ;;Purpose: Removes rules whose LHS nt only produces self-loops 
-          (define (remove-only-self-loops rules new-rules)
-            (if (null? rules)
-                new-rules
-                (let* ([rule-lhs (cfg-rule-lhs (car rules))]
-                       [related-rules (filter (λ (rule) (eq? (cfg-rule-lhs rule) rule-lhs)) rules)]
-                       [only-self-loop? (or (and (= (length related-rules) 1)
-                                                 (not (member (cfg-rule-rhs (car related-rules)) rule-lhs)))
-                                            (and (> (length related-rules) 1)
-                                                 (ormap (λ (rule) (not (member (cfg-rule-rhs rule) rule-lhs))) related-rules)))])
-                  (if (not only-self-loop?)
-                      (remove-only-self-loops (cdr rules) new-rules)
-                      (remove-only-self-loops (cdr rules) (cons (car rules) new-rules))))))
   
-          (let* ([rhs-nts (remove-duplicates (append-map cfg-rule-rhs rules))]
-                 [rules-that-can-be-generated (filter (λ (rule)
-                                                        (or (eq? (cfg-rule-lhs rule) start)
-                                                            (member  rhs-nts (cfg-rule-lhs rule))))
-                                                      rules)]
-                 [lhs-nts (map cfg-rule-lhs rules-that-can-be-generated)])
-            (remove-only-self-loops (remove-rules-without-nts lhs-nts rules-that-can-be-generated sigma '()) '())))
+  ;;pda -> pda-struct
+  ;;Purpose: Converts the given pda into a pda-struct
+   (define (unchecked->pda P)
+    (pda (pda-getstates P)
+         (pda-getalphabet P)
+         (pda-getgamma P)
+         (pda-getstart P)
+         (pda-getfinals P)
+         (simplify-rules (map rule->struct (pda-getrules P)) (pda-getstates P))))
 
-        ;;(listof cfg-rule) (listof nt) (listof nt) -> (listof nt)
-        ;;Purpose: Extrascts rules who rhs contain needed nts
-        (define (extract-needed-nts rules needed seen)
-          (let* ([new-needed-nts (filter (λ (nt)
-                                           (not (member seen nt)))
-                                         (remove-duplicates (filter-map (λ (rule)
-                                                                          (and (ormap (λ (rhs) (member needed rhs))
-                                                                                      (cfg-rule-rhs rule))
-                                                                               (cfg-rule-lhs rule)))
-                                                                        rules)))])
-            (if (null? new-needed-nts)
-                seen 
-                (extract-needed-nts rules (append needed new-needed-nts) (append seen new-needed-nts)))))
+  ;;pda-struct -> pda
+  ;;Purpose: Converts the given pda-struct into a pda
+  (define (pda->unchecked P)
+    (make-unchecked-ndpda (pda-states P)
+                          (pda-sigma P)
+                          (pda-gamma P)
+                          (pda-start P)
+                          (pda-finals P)
+                          (map struct->rules (pda-rules P))))
   
-        (let* ([sigma (cons EMP (CFG-sigma G))]
-               [needed-nts (extract-needed-nts (remove-useless-rules (CFG-start G) (CFG-nts G) (CFG-rules G) sigma) sigma '())]
-               [rules-that-contain-needed-nts (filter (λ (rule)
-                                                        (member needed-nts (cfg-rule-lhs rule)))
-                                                      (CFG-rules G))])
-          (CFG needed-nts
-               (CFG-sigma G)
-               (filter (λ (rule)
-                         (andmap (λ (rhs) (or (member sigma rhs)
-                                              (member needed-nts rhs))) (cfg-rule-rhs rule)))
-                       rules-that-contain-needed-nts)
-               (CFG-start G))))
-      (if (and (>= (length acc) 2)
-               (equal? (car acc) (cadr acc)))
-          (cfg->unchecked (car acc))
-          (let ([new-cfg (clean-up-cfg-rules-and-nts cfg)])
-            (clean-up-cfg new-cfg (cons new-cfg acc)))))
-    (clean-up-cfg G '()))
 
-  ;;(listof X) (X -> Y) -> (hash X . Y)
-  ;;Purpose: Creates a hash table using the given (listof x) and function where x is a key and (f x) is the value
-  (define (make-hash-table lox f)
-    (foldl (λ (x h)
-             (hash-set h x (f x)))
-           (hash)
-           lox))
+  ;;pda-struct -> pda-struct
+  ;;Purpose: Recursively rips nodes out from the given M and converts the ripped nodes to cfe-templates
+  (define (rip-nodes M)
+    ;;cfe-template -> cfe-template
+    ;;Purpose: Simplifies the given cfe-template
+    (define (simplify-templates temp)
+      ;;union-cfe-template -> cfe-template
+      ;;Purpose: Simplifies the given union-cfe-template
+      (define (simplify-empty temp)
+        (if (andmap empty? (union-rules temp))
+            (empty (first (union-rules temp)))
+            (union (map simplify-templates (union-rules temp)))))
+      (cond [(concat? temp) (concat (filter-not empty? (map simplify-templates (concat-rules temp))))]
+            [(union? temp) (simplify-empty temp)]
+            [(kleene? temp) (kleene (simplify-templates (kleene-rule temp)))]
+            [else temp]))
+    
+    ;;pda-rule -> Boolean
+    ;;Purpose: Determines if the given pda-rule is a self loop
+    (define (self-loop? pda-rule)
+      (eq? (pda-rule-source pda-rule) (pda-rule-destin pda-rule)))
+    
+    ;;(listof pda-rule) -> pda-rule
+    ;;Purpose: If the given list has many rules (e.i more than 1), merge their tags together and create a union.
+    ;;         Otherwise return the given list
+    (define (merge-rules rules)
+      (if (or (null? rules)(is-length-one? rules))
+          rules
+          (list (struct-copy pda-rule (first rules)
+                             [action (union (map pda-rule-action rules))]))))
 
-  (define (simplify-rules curr-rules acc-rules)
-    (if (and (>= (length acc-rules) 2)
-             (equal? (car acc-rules) (cadr acc-rules)))
-        (hash-filter (car acc-rules)
-                     (λ (k v)
-                       (andmap (λ (r) (not (or (null? r)
-                                               (equal? (list EMP) r)))) v)))
-        (let* ([only-empty-rules
-                (hash-filter curr-rules (λ (k v)
-                                          (andmap (λ (r) (or (null? r)
-                                                             (equal? (list EMP) r))) v)))]
-               [e-nts (hash-keys only-empty-rules)]
-               [new-rules (hash-map/copy curr-rules (λ (k v)
-                                                      (if (ormap (λ (rule)
-                                                                   (ormap (λ (r)
-                                                                            (hash-has-key? only-empty-rules r)) rule)) v)
-                                                          (values k (map (λ (val) (filter (λ (r) (not (member r e-nts))) val)) v))
-                                                          (values k v))))])
-          (simplify-rules new-rules (cons new-rules acc-rules)))))
+    ;;rule -> (listof rules)
+    ;;Purpose: Extracts the rules that make the concat if possible
+    (define (extract-concat rule)
+      (if (concat? rule)
+          (concat-rules rule)
+          (list rule)))
+    
+    (let ([states-to-rip-out (filter (λ (state) (and (not (eq? state (pda-start M)))
+                                                     (not (eq? state (first (pda-finals M))))))
+                                     (pda-states M))])
+      (if (null? states-to-rip-out)
+          (let ([new-rule (first (merge-rules (pda-rules M)))])
+            (struct-copy pda M
+                         [rules (list (struct-copy pda-rule new-rule
+                                                   [action (simplify-templates (pda-rule-action new-rule))]))]))
+          (let* ([state-to-rip (first states-to-rip-out)]
+                 [rules-frm-ripped-state (filter (λ (rule) (or (eq? state-to-rip (pda-rule-source rule))
+                                                               (eq? state-to-rip (pda-rule-destin rule))))
+                                                 (pda-rules M))]
+                 [rule-frm-start (first (filter (λ (rule) (eq? (pda-start M) (pda-rule-source rule))) rules-frm-ripped-state))]
+                 [frm-ripped-state-rules (filter (λ (rule) (and (not (self-loop? rule))
+                                                                (eq? state-to-rip (pda-rule-source rule))))
+                                                 rules-frm-ripped-state)]
+                 [to-ripped-state-rules (filter (λ (rule) (and (not (self-loop? rule))   
+                                                               (eq? state-to-rip (pda-rule-destin rule))))
+                                                rules-frm-ripped-state)]
+                 [self-loop-rules (filter (λ (rule) (self-loop? rule)) rules-frm-ripped-state)]
+                 [new-states-for-P (filter (λ (state) (not (eq? state-to-rip state))) (pda-states M))]
+                 [updated-self-loop (map (λ (rule)
+                                           (struct-copy pda-rule rule
+                                                        [source (pda-start M)]
+                                                        [action (kleene (pda-rule-action rule))]))
+                                         self-loop-rules)]
+                 [updated-destins (map (λ (rule)
+                                         (struct-copy pda-rule rule
+                                                      [source (pda-start M)]
+                                                      [action (concat (append (extract-concat (pda-rule-action rule-frm-start))
+                                                                              (map pda-rule-action updated-self-loop)
+                                                                              (extract-concat (pda-rule-action rule))))]))
+                                       frm-ripped-state-rules)]
+                 [updated-to-rules (if (null? frm-ripped-state-rules)
+                                       '()
+                                       (let ([rule-frm-ripped (first frm-ripped-state-rules)])
+                                         (filter-map (λ (rule)
+                                                       (and (and (eq? (pda-rule-source rule-frm-ripped)
+                                                                      (pda-rule-destin rule))
+                                                                 (eq? (pda-rule-destin rule-frm-ripped)
+                                                                      (pda-rule-source rule)))
+                                                            (struct-copy pda-rule rule
+                                                                         [action (concat (list
+                                                                                          (pda-rule-action rule)
+                                                                                          (pda-rule-action rule-frm-ripped)))]
+                                                                         [destin (pda-rule-source rule)])))
+                                                     to-ripped-state-rules)))])
+            (rip-nodes (struct-copy pda M
+                                    [states new-states-for-P]
+                                    [rules (append updated-to-rules
+                                                   updated-destins
+                                                   (filter (λ (rule) (and (not (eq? state-to-rip (pda-rule-source rule)))
+                                                                          (not (eq? state-to-rip (pda-rule-destin rule)))))
+                                                           (pda-rules M)))]))))))
+
+
+  ;;pda-action -> string
+  ;;Purpose: Converts a pda-action to a string
+  (define (action->string action)
+    (format "[~a~a~a]" (pda-action-read action) (pda-action-pop action) (pda-action-push action)))
+
+  ;;cfe-template -> string
+  ;;Purpose: Prints the given tag as a string
+  (define (printable-tag tag)
+    ;;(listof cfe-template) string -> string
+    ;;Purpose: Converts a (listof cfe-template) to a string
+    (define (printable-helper tags connector)
+      (if (null? tags)
+          connector
+          (if (is-length-one? tags)
+              (printable-tag (first tags))
+              (let ([res (printable-helper (rest tags) connector)])
+                (format "~a~a~a"(printable-tag (first tags)) connector res)))))
+    (cond [(symbol? tag) ""]
+          [(pda-action? tag) (format "~a" (action->string tag))]
+          [(pda-rule? tag) (printable-tag (pda-rule-action tag)) #;(format "~a" (action->string tag) )]
+          [(empty? tag) (~a (printable-tag (empty-rule tag)))]
+          [(singleton? tag) (~a (printable-tag (singleton-rule tag)))]
+          [(union? tag) (format "(~a)" (printable-helper (union-rules tag) " U "))]
+          [(concat? tag) (printable-helper (concat-rules tag) "")]
+          [else (format "(~a)*" (printable-tag (kleene-rule tag)))]))
+
+  ;;pda -> pda-struct
+  ;;Purpose: Converts given pda into a pda-struct
+  (define (make-new-machine P)
+    (let* ([new-states (for/fold ([st (pda-getstates P)])
+                                 ([x (in-range 2)])
+                         (cons (gen-state st) st))]
+           [new-start (first new-states)]
+           [new-final (second new-states)]
+           [new-rules-to-final (for/fold ([acc '()])
+                                         ([final (pda-getfinals P)])
+                                 (cons (list (list final EMP EMP) (list new-final EMP)) acc))]
+           [new-rules-to-start (list (list new-start EMP EMP) (list (pda-getstart P) EMP))])
+      (pda new-states
+           (pda-getalphabet P)
+           (pda-getgamma P)
+           new-start
+           (list new-final)
+           (simplify-rules (map rule->struct (append (cons new-rules-to-start new-rules-to-final) (pda-getrules P)))))))
   
-  (let* ([G (unchecked->cfg (pda2cfg pda))]
-         [renamed-nts-mapping (rename-nts G)]
-         [renamed-cfg (unchecked->cfg (rebuild-cfg G renamed-nts-mapping))]
-         [proper-cfg  (minimize-cfg renamed-cfg)]
-         [new-rules (make-hash-table (cfg-get-v proper-cfg) (λ (nt) (filter-map (λ (rule)
-                                                                                  (and (eq? (car rule) nt)
-                                                                                       (symbol->fsmlos (caddr rule))))
-                                                                                (cfg-get-rules proper-cfg))))]
-         [only-empty-rules (hash-filter new-rules (λ (k v)
-                                                    (or (null? v)
-                                                        (andmap (λ (r) (equal? (list EMP) r)) v))))]
-         [e-nts (hash-keys only-empty-rules)]
-         [simp-rules (simplify-rules new-rules '())]
-         [sub-only-rules (hash-filter simp-rules (λ (k v)
-                                                   (andmap (λ (r)
-                                                             (and (= (length r) 1)
-                                                                  (ormap (λ (el)
-                                                                           (member el (hash-keys simp-rules))) r))) v)))]
-         [sub-nts (hash-keys sub-only-rules)]
-         [simp-rules2 (hash-map/copy simp-rules (λ (k v)
-                                                  (if (ormap (λ (rule)
-                                                               (ormap (λ (r)
-                                                                        (hash-has-key? sub-only-rules r)) rule)) v)
-                                                      (values k (map (λ (val) (map (λ (r)
-                                                                                     (if (hash-has-key? sub-only-rules r)
-                                                                                         (car (flatten (hash-ref sub-only-rules r)))
-                                                                                         r)) val)) v))
-                                                      (values k v))))]
-         [startt (car (filter (λ (x) (eq? x (cfg-get-start proper-cfg))) (hash-keys simp-rules2)))]
-         [final-rules (hash-filter simp-rules2 (λ (k v)
-                                                 (or (eq? k startt)
-                                                     (not (member k sub-nts)))))]
-         [usable-rules (append-map (λ (lhs)
-                                     (map (λ (rhs)
-                                            (cfg-rule lhs rhs))
-                                          (hash-ref final-rules lhs)))
-                                   (hash-keys final-rules))])
-    final-rules))
+
+  ;;pda-rule -> Boolean
+  ;;Purpose: Determines if the given pda-rule only reads an letter in sigma
+  (define (read-only? pda-rule)
+    (let ([action (pda-rule-action pda-rule)])
+      (and (not (eq? EMP (pda-action-read action)))
+           (eq? EMP (pda-action-pop action))
+           (eq? EMP (pda-action-push action)))))
+  
+
+  ;;(listof pda-rule) -> (listof pda-rule)
+  ;;Purpose: Extracts all the pda-rules that ONLY push to the stack
+  (define (get-push-only-rules rules)
+    (filter (λ (rule)
+              (and (list? (pda-action-push (pda-rule-action rule)))
+                   (symbol? (pda-action-pop (pda-rule-action rule)))))
+            rules))
+
+  ;;(listof pda-rule) -> (listof pda-rule)
+  ;;Purpose: Extracts all the pda-rules that ONLY pop off the stack
+  (define (get-pop-only-rules rules)
+    (filter (λ (rule)
+              (and (symbol? (pda-action-push (pda-rule-action rule)))
+                   (list? (pda-action-pop (pda-rule-action rule)))))
+              
+            rules))
+
+  ;;(listof pda-rule) -> (listof pda-rule)
+  ;;Purpose: Extracts all the pda-rules both push and pop off the stack
+  (define (get-push&pop-rules rules)
+    (filter (λ (rule)
+              (and (list? (pda-action-push (pda-rule-action rule)))
+                   (list? (pda-action-pop (pda-rule-action rule)))))
+              
+            rules))
+
+  (define (get-read-only-rules rules)
+    (filter read-only? rules))
+
+  (define (find-largest accessor rules acc)
+    (if (null? rules)
+        acc
+        (let ([oper-amount (length (accessor (first rules)))])
+          (if (> oper-amount acc)
+              (find-largest accessor (rest rules) oper-amount)
+              (find-largest accessor (rest rules) acc)))))
+        
+  
+  (define (make-inverses-equal push-rules pop-rules)
+    (cond [(or (null? push-rules) (null? pop-rules)) '()]
+          [(> (length push-rules) (length pop-rules)) '()]))
+  
+  (define (make-inverse-pairs push-rules pop-rules)
+    (for/list ([push (in-list push-rules)]
+               [pop (in-list pop-rules)]
+               #:when (inverse-stack-operations? (pda-rule-action push) (pda-rule-action pop))
+               [pair (list (inverse-pair push pop))])
+      pair))
+  
+  (let* ([new-P (make-new-machine P)]
+         [shrunken-P (rip-nodes new-P)]
+         [simple-P (make-new-machine (pda->spda P))]
+         #;[cfe-templates (pda-rule-tag (first (pda-rules shrunken-P)))]
+         #;[extracted-rules (flatten (template->rules cfe-templates))]
+         #;[inverse-pairs (make-inverse-pairs (get-push-only-rules extracted-rules) (get-pop-only-rules extracted-rules))])
+    
+    
+    (values (sm-graph P)
+            ;(pda-rules new-P)
+           ; (sm-graph (pda->unchecked shrunken-P))
+            (pda-rule-action (first (pda-rules shrunken-P)))
+           #;shrunken-P)
+    ;(sm-graph (pda->spda P))
+    #;(values simple-P
+            ;(pda2cfg P)
+            ;(printable-tag (pda-rule-action (first (pda-rules shrunken-P))))
+            ;(pda-rule-action (first (pda-rules shrunken-P)))
+            )
+    ;(sm-graph (pda->unchecked shrunken-P))
+      #;(values #;(sm-graph (pda->unchecked new-P))
+              #;(sm-graph (pda->unchecked shrunken-P))
+              cfe-templates
+              (printable-tag cfe-templates)
+              
+              #;extracted-rules
+              (get-push-only-rules extracted-rules)
+              (get-pop-only-rules extracted-rules)
+              (get-push&pop-rules extracted-rules)
+              (get-read-only-rules extracted-rules))
+      
+      
+      ))
+
 
 ;;cfe -> pda
 ;;Purpose: Converts the given cfe into a pda

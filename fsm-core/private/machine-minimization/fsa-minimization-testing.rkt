@@ -3,6 +3,7 @@
 (require "../constants.rkt"
          "../fsa.rkt"
          "./fsa-minimization.rkt"
+         "../regexp.rkt"
          "../../../sm-graph.rkt"
          "../../../visualizations/viz-sm-constructors/viz-minimization.rkt")
 
@@ -332,6 +333,19 @@
                                  (D ,EMP S)
                                  (E ,EMP S))))
 
+(define AUB*A-NDFA
+  (let* (;;L = a
+          (A (make-unchecked-singleton "a"))
+          ;;L = b
+          (B (make-unchecked-singleton "b"))
+          ;;L = a U b
+          (AUB (make-unchecked-union A B))
+          ;;L = (a U b)*
+          (AUB* (make-unchecked-kleenestar AUB))
+          ;;L = (A U B)*A
+          (AUB*A (make-unchecked-concat AUB* A)))
+    (regexp->fsa AUB*A)))
+
 (define ND2
   (make-unchecked-ndfa
    '(S A B C D E F)
@@ -425,9 +439,22 @@
                                            (J a S) (J b S))
                                  'no-dead))
 
+
+(define ends-1-2-bs (make-unchecked-ndfa '(S A B C)
+                                         '(a b)
+                                         'S
+                                         '(A C)
+                                         '((S a S) (S b S) (S b A) (S b B) (B b C))))
+
+(define aba (make-unchecked-ndfa '(S A B C D E)
+                                 '(a b)
+                                 'S
+                                 '(E)
+                                 '((S a A) (S a B) (B b C) (A b C) (C b D) (C a E))))
+
 (define listofmachines
   (list EX1 EX2-trans EX3-vid EX4-vid EX5 EX5-vid EX6-vid ODDL M L aa*Uab* AT-LEAST-ONE-MISSING p2-ndfa AB*B*UAB* AB*B*UAB*2 aa-ab ends-with-two-bs
-        nd n nk ab*-U-ab*b*-ndfa PROP-BI DNA-SEQUENCE ND ND2 ND3 ND4 ND5 ENDS-WITH-TWO-Bs nd-a* missing-exactly-one EVEN-NUM-Bs M2 a*))
+        nd n nk ab*-U-ab*b*-ndfa PROP-BI DNA-SEQUENCE ND ND2 ND3 ND4 ND5 ENDS-WITH-TWO-Bs nd-a* missing-exactly-one EVEN-NUM-Bs M2 a* ends-1-2-bs aba))
 
 
 ;;to use the old viz, the incantation is (minimization-viz <FSA>) 
@@ -447,9 +474,10 @@
 "success rate"
 (* 100 (/ (length (filter (λ (s) (status-result s)) minimize5-test)) (length listofmachines)))
 |#
+
 #;(map (λ (M)
-         (time (minimization-viz M)))
-       listofmachines)
+         (minimization-viz M))   ;;;<---RUN THIS
+       (reverse listofmachines))
 
 #;(map (λ (M)
          (list (sm-graph M)

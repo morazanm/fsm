@@ -305,7 +305,7 @@
 ;; Purpose: To determine if the given word and stack belongs in A
 ;;          (ci = stack reversed)
 (define (A-INV-PALINDROME-PDA ci stack)
-  (not (equal? ci (reverse stack))))
+  (equal? ci (reverse stack)))
 
 ;; tests for A-INV-PALINDROME-PDA
 ;(check-equal? (A-INV-PALINDROME-PDA '() '()) #t)
@@ -352,7 +352,7 @@
 ;; Purpose: To determine if the given word and stack belongs in C
 ;;          (stack = empty AND ci = ww^R)
 (define (C-INV-PALINDROME-PDA ci stack)
-  (and (not (empty? stack))
+  (and (empty? stack)
        (or (empty? ci)
            (equal? ci (reverse ci)))))
 
@@ -2056,7 +2056,159 @@ this means that w ≠ a^mb^nc^p, where m,n,p≥0 ∧ (m = n ∨ n = p). Thus, w�
 
 
 
+(struct test-case (name num-tests thunk))
+(define NUM-TESTS-PER-MACHINE 50)
+(define ds-removal #f)
 
+(define min 15)
+(define max 16)
+
+#;(define res
+  (for ([rep-limit (in-range min max)])
+    (let ([tests (list
+                  #;(test-case 'aˆnbˆn
+                             NUM-TESTS-PER-MACHINE
+                             (lambda () (sm-test-invs aˆnbˆn
+                                                      #:max-path-length rep-limit
+                                                      #:ds-remove ds-removal
+                                                      (list 'S S-INV-aˆnbˆn)
+                                                      (list 'M M-INV-aˆnbˆn)
+                                                      (list 'F F-INV-aˆnbˆn))))
+                  #;(test-case 'wcwˆr
+                             NUM-TESTS-PER-MACHINE
+                             (lambda () (sm-test-invs wcwˆr
+                                                      #:max-path-length rep-limit
+                                                      #:ds-remove ds-removal
+                                                      (list 'S S-INV-wcwˆr)
+                                                      (list 'P P-INV-wcwˆr)
+                                                      (list 'Q Q-INV-wcwˆr)
+                                                      (list 'F F-INV-wcwˆr))))
+                  #;(test-case 'palindrome-pda
+                             NUM-TESTS-PER-MACHINE
+                             (lambda () (sm-test-invs palindrome-pda
+                                                      #:max-path-length rep-limit
+                                                      #:ds-remove ds-removal
+                                                      (list 'S S-INV-PALINDROME-PDA)
+                                                      (list 'A A-INV-PALINDROME-PDA)
+                                                      (list 'B B-INV-PALINDROME-PDA)
+                                                      (list 'C C-INV-PALINDROME-PDA))))
+                  (test-case 'AiBj
+                             NUM-TESTS-PER-MACHINE
+                             (lambda () (sm-test-invs-pda AiBj
+                                                      rep-limit
+                                                      (list (list 'S S-INV-AiBj)
+                                                      (list 'A A-INV-AiBj)
+                                                      (list 'B B-INV-AiBj)
+                                                      (list 'C C-INV-AiBj)))))
+                  #;(test-case 'A^nB^mA^n
+                             NUM-TESTS-PER-MACHINE
+                             (lambda () (sm-test-invs A^nB^mA^n
+                                                      #:max-path-length rep-limit
+                                                      #:ds-remove ds-removal
+                                                      (list 'S S-INV-A^nB^mA^n)
+                                                      (list 'A A-INV-A^nB^mA^n)
+                                                      (list 'B B-INV-A^nB^mA^n))))
+                  #;(test-case 'a^mb^nc^pd^q
+                             NUM-TESTS-PER-MACHINE
+                             (lambda () (sm-test-invs a^mb^nc^pd^q
+                                                      #:max-path-length rep-limit
+                                                      #:ds-remove ds-removal
+                                                      (list 'S S-INV-a^mb^nc^pd^q)
+                                                      (list 'A A-INV-a^mb^nc^pd^q)
+                                                      (list 'B B-INV-a^mb^nc^pd^q)
+                                                      (list 'C C-INV-a^mb^nc^pd^q))))
+                  #;(test-case 'a^mb^nc^p
+                             NUM-TESTS-PER-MACHINE
+                             (lambda () (sm-test-invs a^mb^nc^p
+                                                      #:max-path-length rep-limit
+                                                      #:ds-remove ds-removal
+                                                      (list 'S S-INV-a^mb^nc^p)
+                                                      (list 'A A-INV-a^mb^nc^p)
+                                                      (list 'B B-INV-a^mb^nc^p)
+                                                      (list 'C C-INV-a^mb^nc^p)
+                                                      (list 'D D-INV-a^mb^nc^p)
+                                                      (list 'E E-INV-a^mb^nc^p)
+                                                      (list 'F F-INV-a^mb^nc^p))))
+                  #;(test-case 'a^mca^mcaba^nba^n
+                             NUM-TESTS-PER-MACHINE
+                             (lambda () (sm-test-invs a^mca^mcaba^nba^n
+                                                      #:max-path-length rep-limit
+                                                      #:ds-remove ds-removal
+                                                      (list 'S S-INV-a^mca^mcaba^nba^n)
+                                                      (list 'A A-INV-a^mca^mcaba^nba^n)
+                                                      (list 'B B-INV-a^mca^mcaba^nba^n)
+                                                      (list 'C C-INV-a^mca^mcaba^nba^n)
+                                                      (list 'D D-INV-a^mca^mcaba^nba^n)
+                                                      (list 'E E-INV-a^mca^mcaba^nba^n)
+                                                      (list 'F F-INV-a^mca^mcaba^nba^n)
+                                                      (list 'G G-INV-a^mca^mcaba^nba^n)
+                                                      (list 'H H-INV-a^mca^mcaba^nba^n)
+                                                      (list 'I I-INV-a^mca^mcaba^nba^n)
+                                                      (list 'J J-INV-a^mca^mcaba^nba^n))))
+                  #;(test-case 'a^nb^n*
+                             NUM-TESTS-PER-MACHINE
+                             (lambda () (sm-test-invs a^nb^n*
+                                                      #:max-path-length rep-limit
+                                                      #:ds-remove ds-removal
+                                                      (list 'S S-INV-a^nb^n*)
+                                                      (list 'A A-INV-a^nb^n*)
+                                                      (list 'B B-INV-a^nb^n*))))
+                  #;(test-case 'ambncp
+                             NUM-TESTS-PER-MACHINE
+                             (lambda () (sm-test-invs ambncp
+                                                      #:max-path-length rep-limit
+                                                      #:ds-remove ds-removal
+                                                      (list 'S S-INV-ambncp)
+                                                      (list 'A A-INV-ambncp)
+                                                      (list 'B B-INV-ambncp)
+                                                      (list 'C C-INV-ambncp)
+                                                      (list 'D D-INV-ambncp)
+                                                      (list 'E E-INV-ambncp)
+                                                      (list 'F F-INV-ambncp)
+                                                      (list 'G G-INV-ambncp))))
+                  #;(test-case 'SCHIZO-SAME-NUM-AB
+                             NUM-TESTS-PER-MACHINE
+                             (lambda () (sm-test-invs SCHIZO-SAME-NUM-AB
+                                                      #:max-path-length rep-limit
+                                                      #:ds-remove ds-removal
+                                                      (list 'K K-INV-SCHIZO-SAME-NUM-AB)
+                                                      (list 'H H-INV-SCHIZO-SAME-NUM-AB)
+                                                      (list 'F F-INV-SCHIZO-SAME-NUM-AB)
+                                                      (list 'M M-INV-SCHIZO-SAME-NUM-AB)))) ;<-- I couldn't find the I inv 😅
+                 #;(test-case 'dwcwˆr
+                             NUM-TESTS-PER-MACHINE
+                             (lambda () (sm-test-invs dwcwˆr
+                                                      #:max-path-length rep-limit
+                                                      #:ds-remove ds-removal
+                                                      (list 'S S-INV-dwcwˆr)
+                                                      (list 'F F-INV-dwcwˆr))))
+
+                  #;(test-case 'dambncp
+                             NUM-TESTS-PER-MACHINE
+                             (lambda () (sm-test-invs dambncp
+                                                      #:max-path-length rep-limit
+                                                      #:ds-remove ds-removal
+                                                      (list 'S dambncp-S-INV)
+                                                      (list 'A dambncp-A-INV)
+                                                      (list 'B dambncp-B-INV)
+                                                      (list 'C dambncp-C-INV)
+                                                      (list 'D dambncp-D-INV)
+                                                      (list 'E dambncp-E-INV)
+                                                      (list 'F dambncp-F-INV)
+                                                      (list 'G dambncp-G-INV)))))])
+      (displayln (format "n = ~a" rep-limit))
+      (for/list ([test (in-list tests)])
+        (displayln (test-case-name test))
+        (let ([result (for/vector #:length (test-case-num-tests test)
+                        ([test-num (in-range (test-case-num-tests test))])
+                        (define-values (results-lst cpu-time real-time gc-time)  ;;<-- UNCOMMENT THIS AND THE PRINT STATEMENT BELOW TO RUN IT
+                          (time-apply (test-case-thunk test) '()))
+                        (collect-garbage 'major)
+                        (collect-garbage 'major)
+                        real-time)])
+          (println result)
+          (list (test-case-name test)
+                result))))))
 
 
 

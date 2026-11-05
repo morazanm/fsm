@@ -8,6 +8,7 @@ A DSL for the Automata Theory Classroom
 - [Website](https://morazanm.github.io/fsm/)
 
 ## Installation
+NOTE: Ubuntu users should install DrRacket through the apt package manager instead of the snap to use the visualizations within FSM
 - [Installing fsm on your machine](fsm-docs/readmes/fsm_install.md)
 - [Installing graphviz on your machine](fsm-gviz/README.md)
 
