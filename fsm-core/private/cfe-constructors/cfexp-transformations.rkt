@@ -1,6 +1,7 @@
 #lang racket/base
 
-(require "cfexp-structs.rkt"
+(require "../../../sm-graph.rkt"
+         "cfexp-structs.rkt"
          "../constants.rkt"
          "../cfg-struct.rkt"
          (except-in "../pda.rkt" pda->spda)
@@ -9,7 +10,8 @@
          racket/treelist
          racket/list
          racket/function
-         racket/vector)
+         racket/vector
+         racket/format)
 
 (provide is-length-one?
          (rename-out (cfe->cfg unchecked-cfe->cfg)
@@ -82,7 +84,18 @@ a pda-action is a structural representation of a pda action
   (if (treelist-empty? tl)
       acc
       (tl-foldl f (f (treelist-first tl) acc) (treelist-rest tl))))
-  
+
+
+;;cfe -> cfe
+;;Purpose: Updates the cfe to be bound to a box if it is not already a box (so it has a starting NT)
+(define (box-cfe cfe)
+  (if (or (mk-kleene-cfexp? cfe) (box? cfe))
+      cfe
+      (let ([S (box (void))])
+        (begin
+          (set-box! S cfe)
+          S))))
+
 ;;cfe -> extraction-results
 ;;Purpose: Extracts all var-cfexp and singleton-cfexp from the given cfe
 (define (extract-box-and-singles-cfe cfe)
@@ -198,17 +211,7 @@ a pda-action is a structural representation of a pda action
   (define (gen-nts num)
     (for/fold ([nts '()])
               ([x (in-range num)])
-      (cons (gen-nt nts) nts)))
- 
-  ;;cfe -> cfe
-  ;;Purpose: Updates the cfe to be bound to a box if it is not already a box (so it has a starting NT)
-  (define (update-cfe cfe)
-    (if (or (mk-kleene-cfexp? cfe) (box? cfe))
-        cfe
-        (let ([S (box (void))])
-          (begin
-            (set-box! S cfe)
-            S))))    
+      (cons (gen-nt nts) nts)))   
 
   ;;(listof lang-boxes) (hash old-nt . new-nt) (listof rule) -> (listof rule)
   ;;Purpose: Converts every var-cfexp into the corresponding grammar rule
@@ -251,7 +254,26 @@ a pda-action is a structural representation of a pda action
                                                        acc))
                                                     ""
                                                     (treelist-reverse (vector->treelist (mk-concat-cfexp-locfe cfe)))))]
-                         [(mk-kleene-cfexp? cfe) (string->symbol (string-append
+                         [(mk-kleene-cfexp? cfe) (let ([k-star-ref (symbol->string (hash-ref new-nts cfe))]
+                                                       [cfe (mk-kleene-cfexp-cfe cfe)])
+                                                   (cond [(mk-singleton-cfexp? cfe) (string->symbol
+                                                                                     (string-append (mk-singleton-cfexp-char cfe))
+                                                                                     k-star-ref)]
+                                                         [(mk-union-cfexp? cfe) (map (λ (cfe) (string->symbol
+                                                                                               (string-append
+                                                                                                (symbol->string (convert-rhs cfe))
+                                                                                                k-star-ref)))
+                                                                                     (vector->list (mk-union-cfexp-locfe cfe)))]
+                                                         [(mk-concat-cfexp? cfe) (string->symbol (string-append
+                                                                                                  (symbol->string (convert-rhs cfe))
+                                                                                                                k-star-ref))]
+                                                         [(or (mk-kleene-cfexp? cfe)
+                                                              (box? cfe))
+                                                          (string->symbol (string-append (symbol->string (hash-ref new-nts cfe))
+                                                                                         k-star-ref))] ;;sub with NT
+                                                         [else (string->symbol (string-append (symbol->string (convert-rhs cfe))
+                                                                                              k-star-ref))]))
+                                                 #;(string->symbol (string-append
                                                                   (let [(cfe (mk-kleene-cfexp-cfe cfe))]
                                                                     (cond [(mk-singleton-cfexp? cfe) (mk-singleton-cfexp-char cfe)]
                                                                           [(or (mk-kleene-cfexp? cfe)
@@ -260,7 +282,10 @@ a pda-action is a structural representation of a pda action
                                                                           [else (symbol->string (convert-rhs cfe))])) 
                                                                   (symbol->string (hash-ref new-nts cfe))))]
                          [else (error (format "unsuitable cfe ~a" cfe))])])
-          (list nt ARROW RHS)))
+          (if (and (list? RHS)
+                   (andmap symbol? RHS))
+              (map (λ (RHS) (list nt ARROW RHS)) RHS)
+              (list nt ARROW RHS))))
       (if (qempty? rules-to-convert)
           finished-rules
           (let ([cfe (qfirst rules-to-convert)])
@@ -268,7 +293,11 @@ a pda-action is a structural representation of a pda action
                    (remake-rules nt (enqueue (dequeue rules-to-convert)
                                              (vector->treelist (mk-union-cfexp-locfe cfe))) finished-rules)]
                   [(mk-kleene-cfexp? cfe)
-                   (remake-rules nt (dequeue rules-to-convert) (cons (list nt ARROW EMP) (cons (cfe->rule nt cfe) finished-rules)))]
+                   (remake-rules nt (dequeue rules-to-convert) (cons (list nt ARROW EMP)
+                                                                     (let ([res (cfe->rule nt cfe)])
+                                                                       (if (andmap list? res)
+                                                                           (append res finished-rules)
+                                                                           (cons res finished-rules)))))]
                   [else (remake-rules nt (dequeue rules-to-convert) (cons (cfe->rule nt cfe) finished-rules))]))))
     (foldl (λ (lang-box res)
              (append (remake-rules (hash-ref new-nts lang-box)
@@ -279,7 +308,7 @@ a pda-action is a structural representation of a pda action
            loLabox))
   (if (mk-null-cfexp? cfe)
       (make-unchecked-cfg '(S) '() '() 'S)
-      (let* ([cfe (update-cfe cfe)]
+      (let* ([cfe (box-cfe cfe)]
              [extracted-components (extract-box-and-singles-cfe cfe)]
              [lang-boxes (set->list (extraction-results-lang-boxes extracted-components))]
              [new-nts (foldl (λ (nt lang-box acc)
@@ -343,16 +372,23 @@ a pda-action is a structural representation of a pda action
                                        acc))
                                     empty
                                     (treelist-reverse (vector->treelist (mk-concat-cfexp-locfe cfe))))]
-                         [(mk-kleene-cfexp? cfe) (list
-                                                  (let [(cfe (mk-kleene-cfexp-cfe cfe))]
-                                                    (cond [(mk-singleton-cfexp? cfe) (string->symbol (mk-singleton-cfexp-char cfe))]
-                                                          [(or (mk-kleene-cfexp? cfe)
-                                                               (box? cfe))
-                                                           (hash-ref new-nts cfe)] ;;sub with NT
-                                                          [else (convert-rhs cfe)])) 
-                                                  (hash-ref new-nts cfe))]
-                         [else (error (format "unsuitable cfe ~a" cfe))])])
-          (pda-rule new-final (pda-action EMP (list nt) RHS) new-final)))
+                         [(mk-kleene-cfexp? cfe) (let [[k-star-ref (hash-ref new-nts cfe)]
+                                                       (cfe (mk-kleene-cfexp-cfe cfe))]
+                                                   (cond [(mk-singleton-cfexp? cfe) (list (string->symbol (mk-singleton-cfexp-char cfe))
+                                                                                          k-star-ref)]
+                                                         [(mk-union-cfexp? cfe) (map (λ (cfe) (list (convert-rhs cfe) 
+                                                                                                    k-star-ref))
+                                                                                     (vector->list (mk-union-cfexp-locfe cfe)))]
+                                                         [(mk-concat-cfexp? cfe) (append (convert-rhs cfe)
+                                                                                         (list k-star-ref))]
+                                                         [(or (mk-kleene-cfexp? cfe)
+                                                              (box? cfe))
+                                                          (list (hash-ref new-nts cfe) k-star-ref)] ;;sub with NT
+                                                         [else (list (convert-rhs cfe) k-star-ref)]))]
+                         [else (error (format "unsuitable cfe ~a" cfe))])])          
+          (if (andmap list? RHS)
+              (map (λ (RHS) (pda-rule new-final (pda-action EMP (list nt) RHS) new-final)) RHS)
+              (pda-rule new-final (pda-action EMP (list nt) RHS) new-final))))
       (if (qempty? rules-to-convert)
           finished-rules
           (let ([cfe (qfirst rules-to-convert)])
@@ -361,7 +397,10 @@ a pda-action is a structural representation of a pda action
                                              (vector->treelist (mk-union-cfexp-locfe cfe))) finished-rules)]
                   [(mk-kleene-cfexp? cfe)
                    (remake-rules nt (dequeue rules-to-convert) (cons (pda-rule new-final (pda-action EMP (list nt) EMP) new-final)
-                                                                     (cons (cfe->rule nt cfe) finished-rules)))]
+                                                                     (let ([res (cfe->rule nt cfe)])
+                                                                       (if (list? res)
+                                                                           (append res finished-rules)
+                                                                           (cons res finished-rules))))) ]
                   [else (remake-rules nt (dequeue rules-to-convert) (cons (cfe->rule nt cfe) finished-rules))]))))
     (foldl (λ (lang-box res)
              (append (remake-rules (hash-ref new-nts lang-box)
@@ -387,7 +426,8 @@ a pda-action is a structural representation of a pda action
                                (pda-rules P))))
  
   
-  (let* ([extract-res (extract-box-and-singles-cfe cfe)]         
+  (let* ([cfe (box-cfe cfe)]
+         [extract-res (extract-box-and-singles-cfe cfe)]         
          [new-start 'K]
          [new-final 'H]
          [lang-boxes (set->list (extraction-results-lang-boxes extract-res))]
@@ -1652,6 +1692,35 @@ a pda-action is a structural representation of a pda action
                   finals
                   (list (path (list start) (set) (set-member? finals start)))
                   '())))
+
+  (define (pda->unchecked P)
+    (make-unchecked-ndpda (pda-states P)
+                          (pda-sigma P)
+                          (pda-gamma P)
+                          (pda-start P)
+                          (list (pda-finals P))
+                          (list (list (list (pda-rule-source (pda-rules P))
+                                      (string->symbol (pda-rule-action (pda-rules P)))
+                                      (string->symbol ""))
+                                (list (pda-rule-destin (pda-rules P)) (string->symbol ""))))))
+
+   (define (printable-helper tags connector)
+    (if (is-length-one? tags)
+        (printable-tag (first tags))
+        (let ([res (printable-helper (rest tags) connector)])
+          (format "~a~a~a"(printable-tag (first tags)) connector res))))
+
+  (define (print-action action)
+    (format "[~a~a~a]" (pda-action-read action) (pda-action-pop action) (pda-action-push action)))
+  
+  (define (printable-tag tag)
+    (cond [(symbol? tag) ""]
+          [(singleton? tag) (print-action (singleton-rule tag))]
+          #;[(pda-rule? tag) (format "~a~a" (print-action (pda-rule-action tag)))]
+          [(empty? tag) (print-action (empty-rule tag)) #;(~a (printable-tag (empty-rule tag)))]
+          [(union? tag) (format "(~a)" (printable-helper (union-rules tag) " U "))]
+          [(concat? tag) (printable-helper (concat-rules tag) "")]
+          [else (format "(~a)*" (printable-tag (kleene-rule tag)))]))
   
   (cond [(null? (pda-getrules P)) (mk-null-cfexp)]
         [(simulates-grammar? P) (cfg->cfe (rules->cfg P))]
@@ -1675,10 +1744,21 @@ a pda-action is a structural representation of a pda action
                      [sublang-stack-pairs (map (λ (sub-lang) (find-applicable-opers sub-lang stack-operations)) sub-langs)])
                 #;(values paths stack-operations)
                 #;(pair-stack-operations reachable-rules rule-structs)
-                (values sub-langs
+                (values (sm-graph (pda->unchecked (struct-copy pda new-P
+                             [rules (struct-copy pda-rule (pda-rules new-P)
+                                                 [action (printable-tag (pda-rule-action (pda-rules new-P)))])])))
+                        (printable-tag (pda-rule-action (pda-rules new-P)))
+                        sub-langs
+                        (map printable-tag sub-langs)
+                        stack-operations
                         sublang-stack-pairs)
-                
-                
+                #;new-P
+                #;(struct-copy pda new-P
+                             [rules (struct-copy pda-rule (pda-rules new-P)
+                                                 [action (printable-tag (pda-rule-action (pda-rules new-P)))])])
+                #;(sm-graph (pda->unchecked (struct-copy pda new-P
+                             [rules (struct-copy pda-rule (pda-rules new-P)
+                                                 [action (printable-tag (pda-rule-action (pda-rules new-P)))])])))
                
                 #;(if (and (andmap (λ (sub-lang stack-pair)
                                    (and (null? stack-pair)

@@ -184,7 +184,9 @@
                                                  (concat-cfexp A AiBj B B))])
                              AiBj)) 
 
+(sm-graph (cfe->pda (kleenestar-cfexp (concat-cfexp (singleton-cfexp "b") (singleton-cfexp "a")))))
 
 
-(sm-graph ambncp)
-(pda->cfe ambncp)
+
+;(sm-graph Gina-a^mb^nc^p)
+;(pda->cfe Gina-a^mb^nc^p)

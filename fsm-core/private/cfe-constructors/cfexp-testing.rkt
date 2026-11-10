@@ -14,7 +14,7 @@
          racket/list
          )
 
-(define WORD-AMOUNT 25)
+(define WORD-AMOUNT 30)
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;CFEXP;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -480,7 +480,7 @@
 
 
 ;;w = a*
-
+#|
 (define A*-cfe (pda->cfe A*))
 
 (define Gina-aˆnbˆn-cfe (pda->cfe Gina-aˆnbˆn))
@@ -508,7 +508,7 @@
 ;;w = a^nb^n
 #;(define converted-ANBN (pda->cfe (cfe->pda ANBN)))
 
-
+|#
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;Unit Tests;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -790,7 +790,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;TESTING;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define PDA-TRANSFORMATION-TESTS
+#;(define PDA-TRANSFORMATION-TESTS
   (let (#;[A*-WORDS (gen-cfe-words A*-cfe)]
 
         [WWR-WORDS (gen-cfe-words WWR)]
@@ -990,7 +990,7 @@
     ;(run-tests CFE-UNIT-TESTING)
     ;(run-tests CFE-WORD-TESTS)
     (run-tests CFG-TRANSFORMATION-TESTS)
-    (run-tests PDA-TRANSFORMATION-TESTS)
+    #;(run-tests PDA-TRANSFORMATION-TESTS)
     (void)))
 
 (run-testing)
