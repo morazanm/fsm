@@ -194,11 +194,9 @@
         [(singleton-cfexp? cfexp)
          (gen:const (string->symbol (singleton-cfexp-a cfexp)))]
         [(concat-cfexp? cfexp)
-         (apply gen:tuple (translate-cfexp (vector-ref (concat-cfexp-cfes cfexp) 0))
-                    (translate-cfexp (vector-ref (concat-cfexp-cfes cfexp) 1)))] 
+         (apply gen:tuple (apply translate-cfexp (vector->list (concat-cfexp-cfes cfexp))))] 
         [(union-cfexp? cfexp)
-         (gen:choice (translate-cfexp (vector-ref (union-cfexp-cfes cfexp) 0))
-                     (translate-cfexp (vector-ref (union-cfexp-cfes cfexp) 1)))]
+         (gen:choice (vector->list (union-cfexp-cfes cfexp)))]
         [(kleenestar-cfexp? cfexp)
          (gen:bind (gen:integer-in 0 MAX-KLEENE-LENGTH)
                    (λ (x) (gen:list (translate-cfexp (kleenestar-cfexp-c1 cfexp))
@@ -249,4 +247,4 @@
 
 (make-cfe ([L (union-cfexp (concat-cfexp (singleton-cfexp "a") L (singleton-cfexp "b"))
                            (empty-cfexp))])
-           L)
+          L)
