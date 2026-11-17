@@ -182,11 +182,21 @@
                               [AiBj (union-cfexp EMPTY
                                                  (concat-cfexp A AiBj B)
                                                  (concat-cfexp A AiBj B B))])
-                             AiBj)) 
+                             AiBj))
 
-(sm-graph (cfe->pda (kleenestar-cfexp (concat-cfexp (singleton-cfexp "b") (singleton-cfexp "a")))))
+(define ANBN-cfg (make-unchecked-cfg '(S)
+                                     '(a b)
+                                     `((S ,ARROW ,EMP) (S ,ARROW aSb))
+                                     'S))
+
+#;(sm-graph (cfe->pda (concat-cfexp (singleton-cfexp "b") (singleton-cfexp "a"))))
+
+
+"same-rule(s) determines if the stack-pair rule exists in the given sublang"
+
+"possible fix: determine all the other rules go to the same state. if so then then return the sublang otherwise, return (rest sublang)"
 
 
 
-;(sm-graph Gina-a^mb^nc^p)
-;(pda->cfe Gina-a^mb^nc^p)
+(sm-graph (cfg->pda ANBN-cfg))
+(pda->cfe (cfg->pda ANBN-cfg))
