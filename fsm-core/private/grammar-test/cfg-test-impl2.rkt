@@ -199,22 +199,6 @@
                                           (cons (get-elem-read (first next-rules)) (PATH-word a-path)))) ;<- word is reversed
                        
 
-                       (new-path-stack-config (append (if (eq? 'ε (get-push (first next-rules)))
-                                                          '()
-                                                          (get-push (first next-rules)))
-                                                      (if (set-member? nts (first (PATH-stack a-path))) 
-                                                          (list (hash-ref prime-nt-hash (first (PATH-stack a-path)))) ;<- adding the nt prime in stack if popped nt
-                                                          '())
-                                                      (drop #;(PATH-stack a-path) (third (first (PATH-lor a-path)))               
-                                                            (PDA-rule-pop-length (first next-rules)))
-                                                      )) 
-
-                       (new-path-word-config (cond [(set-member? nts (third (first (PATH-lor a-path)))) (let [(stack-nt (third (first (PATH-lor a-path))))]
-                                                                                                          (append (get-pop (first next-rules)) (second (first (PATH-lor a-path)))))]; <- nt is popped its added to ci
-                                                   [(hash-ref nt-prime-hash (first (PATH-stack a-path)) #f) (append (second (first (PATH-lor a-path))) (first (PATH-stack a-path)))]
-                                                   [else new-path-word]))
-
- 
                        (new-path-stack (append (if (eq? 'ε (get-push (first next-rules)))
                                                    '()
                                                    (get-push (first next-rules)))
@@ -226,19 +210,12 @@
                        (new-path-rules (cons (list (if (set-member? nts (first (get-pop (first next-rules)))) ;; <- now its going to be a config of the cur state & word (no stack)
                                                        (first (get-pop (first next-rules))) ;<- nt is getting popped off the stack, so that the one thats gonna be in the config 
                                                        (first (first (PATH-lor a-path)))) ;<- still producing words for the prev nt
-                                                   new-path-word-config
-                                                   new-path-stack-config
+                                                   new-path-word
+                                                   new-path-stack
                                                    )
                                              (PATH-lor a-path)))] ;<- the paths are in reverse
                   
-                  (begin (displayln (make-PATH new-path-rules
-                                               new-path-stack
-                                               new-path-word
-                                               (+ 1 (PATH-path-length a-path))
-                                               (get-destination-state (first next-rules))))
-                         (display new-path-word-config) (displayln new-path-stack-config)
-                         (displayln "")
-                         (set-add! visited
+                  (begin (set-add! visited
                                    (make-config (get-destination-state (first next-rules))
                                                 new-path-word ;<- the word is in reverse
                                                 new-path-stack))
