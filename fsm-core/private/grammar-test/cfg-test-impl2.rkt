@@ -239,18 +239,46 @@
 (define (find-paths-pda a-machine start-nt set-nts #:max-length [max-length 6])
   (define queue (make-queue))
   (define rules (map rule->PDA-rule (sm-rules a-machine)))
-
+  
   (define nt->primes-ht (for/hasheq ([nt set-nts])  ;<- making a ht of the key being the nt's prime and the value is the original nt
                           (let* [(nt-string (symbol->string nt))
                                  (nt-prime (string->symbol (string-append nt-string nt-string)))]
                             (values nt-prime nt))))
 
-  (define prime->nt-ht (for/hasheq ([nt set-nts])
+  (define prime->nt-ht (for/hasheq ([nt set-nts]) ;<- key is nt & value is prime for that nt
                          (let* [(nt-string (symbol->string nt))
                                 (nt-prime (string->symbol (string-append nt-string nt-string)))]
                            (values nt nt-prime))))
 
-  
+  ;(define-struct PDA-rule (source read pop destination push pop-length) #:transparent)
+  (define ep-rule (make-PDA-rule 'Q 'EP (list 'EP) 'Q 'ε 1))
+  (define start-state-rule (filter (lambda (rule) (eq? (PDA-rule-source rule) (sm-start a-machine))) rules))
+  (define terminal-rules (filter (lambda (rule) (not (eq? 'ε (PDA-rule-read rule)))) rules))
+  (define pop-prime-rules (for/list [(nt set-nts)]
+                            (make-PDA-rule 'Q nt (list (hash-ref prime->nt-ht nt)) 'Q 'ε 1)))
+                             
+  (define prime-rules (apply append (for/list [(nt set-nts)]
+                                      (let [(nt-prime (hash-ref prime->nt-ht nt))]
+                                        (for/list [(rule rules)
+                                                   #:when (and (not (eq? 'ε (get-pop rule)))
+                                                               (eq? nt (first (get-pop rule)))
+                                                               #;(eq? (sm-start a-machine) (PDA-rule-source rule)))]
+                                          (make-PDA-rule (PDA-rule-source rule)
+                                                         (first (append (if (eq? 'ε (PDA-rule-read rule))
+                                                                     '()
+                                                                     (PDA-rule-read rule))
+                                                                 (if (eq? 'ε (PDA-rule-pop rule))
+                                                                     '()
+                                                                     (PDA-rule-pop rule))))
+                                                         (PDA-rule-pop rule)  
+                                                         (PDA-rule-destination rule)
+                                                         (if (eq? 'ε (PDA-rule-push rule))
+                                                             (append '(EP) (list nt-prime))
+                                                             (append (PDA-rule-push rule) (list nt-prime)))
+                                                         (PDA-rule-pop-length rule)))))))
+
+  (define new-rules (append (list ep-rule) start-state-rule prime-rules terminal-rules pop-prime-rules))
+  (displayln new-rules) (displayln "") (displayln rules)
   ;; (queueof (listof PATH)) (listof PATH) -> (listof PATH)
   ;; Purpose: To return all the paths of the given machine
   ;; Accumulator invariant: paths = list of current paths
@@ -265,7 +293,7 @@
         (let* [(qfirst (dequeue! queue))
                ;; hash table of the state (<- the key) and the rules that COME OUT of that state (the source state is that state) ;; need to change when reverse paths      
                (rule-ht (for/hasheq ([state (sm-states a-machine)])
-                          (values state (for/list ([i rules]
+                          (values state (for/list ([i #;rules new-rules]
                                                    #:when (and (or (eq? (get-pop i) 'ε)
                                                                    (and (<= (PDA-rule-pop-length i) (length (PATH-stack qfirst)))
                                                                         (equal? (take (PATH-stack qfirst)
@@ -285,7 +313,7 @@
               ))))
   
   (begin
-    (for/list ([i rules]
+    (for/list ([i #;rules new-rules]
                #:when (and (eq? 'ε (get-pop i)) ;<-- need to make sure that the rule can be applied to an empty stack to start off
                            (eq? (get-source-state i) (sm-start a-machine))))
       (enqueue! queue (make-PATH #;(list i)(list (list start-nt '() (list start-nt)) (list start-nt '() '())) ;<- current lor of the path
