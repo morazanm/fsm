@@ -9,11 +9,11 @@
 
 ;; ci (listof NT) (listof terminal) -> (hash NT . (setof word)
 ;; Purpose: Parses the given ci to determine what words are generated from each NT
-(define (parse-consumed-input ci loNT loT)  
+(define (parse-consumed-input ci loNT loT acc)  
   ;; (vectorof symbol) (setof NT) (setof terminal)  (hash NT . (setof word)-> (hash NT . (setof word)
   ;;Purpose: Parses the given ci to determine what words are generated from each NT
   ;;ACC: hash contains words for the NT processed so far
-  (define (parse-ci ci NTs terminals ci-length acc)
+  (define (parse-ci ci NTs terminals ci-length)
     ;; number number number (hash NT . (setof word) -> (hash NT . (setof word)
     ;;Purpose: Parses the given ci to determine what words are generated from each NT
     ;;ACC: hash contains words for the NT processed so far
@@ -86,11 +86,7 @@
   (parse-ci (list->vector ci)
             (list->set loNT)
             (list->set loT)
-            (sub1 (length ci))
-            (foldl (λ (NT acc)
-                     (hash-set acc NT (set)))
-                   (hash)
-                   loNT)))
+            (sub1 (length ci))))
 
 #|
 (define to-string (λ (x) (apply ~a x)))
@@ -101,6 +97,9 @@
 (define sampleCI2 '(S A EP A B b B EP B B S))
 (define sampleCI3 '(S A a A a A EP A b A b A B b B EP B B S))
 
-(parse-consumed-input sampleCI3 sampleNTs sampleTs)
+(parse-consumed-input sampleCI sampleNTs sampleTs (foldl (λ (NT acc)
+                                                            (hash-set acc NT (set)))
+                                                          (hash)
+                                                          '(S A B)))
 (to-string sampleCI3)
 |#
