@@ -12,11 +12,11 @@
   ;; (vectorof symbol) (setof NT) (setof terminal)  (hash NT . (setof word)-> (hash NT . (setof word)
   ;;Purpose: Parses the given ci to determine what words are generated from each NT
   ;;ACC: hash contains words for the NT processed so far
-  (define (parse-ci ci NTs terminals acc)
+  (define (parse-ci ci NTs terminals ci-length acc)
     ;; number number number (hash NT . (setof word) -> (hash NT . (setof word)
     ;;Purpose: Parses the given ci to determine what words are generated from each NT
     ;;ACC: hash contains words for the NT processed so far
-    (define (parse-ci-helper nt-first-idx nt-last-idx vec-bound acc)
+    (define (parse-ci-helper nt-first-idx nt-last-idx acc)
       ;;X -> Boolean
       ;;Purpose: Determines if X is a NT
       (define (is-NT? x)
@@ -51,45 +51,41 @@
       ;;number number -> number
       ;;Purpose: Finds the next index of a NT that comes after the first the nt-first-idx but is before the last-occurence.
       ;; If none can be found, return the index of a distinct that is after last-occurence.
-      (define (find-next-NT idx last-occurence)
+      (define (find-next-first-NT idx last-occurence)
         ;; number NT -> number
         ;;Purpose: Finds a *DISTINCT* NT that occurs after the given NT
         (define (find-new-NT idx NT)
-          (if (or (> idx vec-bound) ;;shouldn't happened, could be removed
+          (if (or (> idx ci-length) ;;shouldn't happened, could be removed
                   (and (is-NT? (vector-ref ci idx))
                        (not (eq? NT (vector-ref ci idx)))))
               idx
               (find-new-NT (add1 idx) NT)))
         (cond [(is-NT? (vector-ref ci idx)) idx]
               [(= idx last-occurence) (find-new-NT idx (vector-ref ci last-occurence))]
-              [(find-next-NT (add1 idx) last-occurence)]))
+              [(find-next-first-NT (add1 idx) last-occurence)]))
 
       ;; number -> number 
       ;;Purpose: Finds the next index of a NT that comes before the last occurence index but is after the nt-first-idx.
       ;; If none can be found, return the last valid index into the vector
       (define (find-next-last-NT idx)
         (cond [(is-NT? (vector-ref ci idx)) idx]
-              [(= idx nt-first-idx) vec-bound]
-              [(find-next-last-NT (sub1 idx))]))
-      
-      (if (>= nt-first-idx vec-bound)
-            acc
-            (let* ([first-elem (vector-ref ci nt-first-idx)]
-                   [last-occur-idx (find-last-idx first-elem (add1 nt-first-idx) nt-first-idx)]
-                   [new-acc (hash-set acc
-                                      first-elem
-                                      (set-add (hash-ref acc first-elem)
-                                               (remove-nts last-occur-idx '())))]
-                   [next-nt-idx (find-next-NT (add1 nt-first-idx) last-occur-idx)]
-                   [new-last-nt-idx (find-next-last-NT (sub1 last-occur-idx))])        
-              (parse-ci-helper next-nt-idx new-last-nt-idx vec-bound new-acc))))
-    
-    (let ([last-idx (sub1 (vector-length ci))]
-          [first-idx 0])
-      (parse-ci-helper first-idx last-idx last-idx acc)))  
+              [(= idx nt-first-idx) ci-length]
+              [(find-next-last-NT (sub1 idx))]))      
+      (if (>= nt-first-idx ci-length)
+          acc
+          (let* ([first-elem (vector-ref ci nt-first-idx)]
+                 [last-occur-idx (find-last-idx first-elem (add1 nt-first-idx) nt-first-idx)])        
+            (parse-ci-helper (find-next-first-NT (add1 nt-first-idx) last-occur-idx)
+                             (find-next-last-NT (sub1 last-occur-idx))
+                             (hash-set acc
+                                       first-elem
+                                       (set-add (hash-ref acc first-elem)
+                                                (remove-nts last-occur-idx '())))))))
+    (parse-ci-helper 0 ci-length acc))  
   (parse-ci (list->vector ci)
             (list->set loNT)
             (list->set loT)
+            (sub1 (length ci))
             (foldl (λ (NT acc)
                      (hash-set acc NT (set)))
                    (hash)
