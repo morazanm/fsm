@@ -99,7 +99,8 @@
 (define sampleTs '(a b EP))
 (define sampleCI '(S A a A a A EP A b A b A B EP B S))
 (define sampleCI2 '(S A EP A B b B EP B B S))
+(define sampleCI3 '(S A a A a A EP A b A b A B b B EP B B S))
 
-(parse-consumed-input sampleCI2 sampleNTs sampleTs)
-(to-string sampleCI2)
+(parse-consumed-input sampleCI3 sampleNTs sampleTs)
+(to-string sampleCI3)
 |#
