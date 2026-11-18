@@ -174,7 +174,7 @@
 
 ;; PATH (listof pda-rule) -> (listof (listof PATH) (listof (listof state word stack)))
 ;; Purpose: To return a list of paths that comes from the given path and rules
-(define (new-paths&visited a-path rules visited  nts max-length)
+(define (new-paths&visited a-path rules visited nts nt-prime-hash prime-nt-hash max-length)
   ;; (listof pda-rule) (listof PATH) -> (listof (listof PATH) (listof (listof state word stack)))
   ;; Purpose: To return a list of paths that come from the given paths and rules
   ;; Accumulator invariant: accum = list of paths
@@ -197,20 +197,48 @@
           [else (let* [(new-path-word (if (eq? 'ε (get-elem-read (first next-rules)))
                                           (PATH-word a-path)
                                           (cons (get-elem-read (first next-rules)) (PATH-word a-path)))) ;<- word is reversed
+                       
+
+                       (new-path-stack-config (append (if (eq? 'ε (get-push (first next-rules)))
+                                                          '()
+                                                          (get-push (first next-rules)))
+                                                      (if (set-member? nts (first (PATH-stack a-path))) 
+                                                          (list (hash-ref prime-nt-hash (first (PATH-stack a-path)))) ;<- adding the nt prime in stack if popped nt
+                                                          '())
+                                                      (drop #;(PATH-stack a-path) (third (first (PATH-lor a-path)))               
+                                                            (PDA-rule-pop-length (first next-rules)))
+                                                      )) 
+
+                       (new-path-word-config (cond [(set-member? nts (third (first (PATH-lor a-path)))) (let [(stack-nt (third (first (PATH-lor a-path))))]
+                                                                                                          (append (get-pop (first next-rules)) (second (first (PATH-lor a-path)))))]; <- nt is popped its added to ci
+                                                   [(hash-ref nt-prime-hash (first (PATH-stack a-path)) #f) (append (second (first (PATH-lor a-path))) (first (PATH-stack a-path)))]
+                                                   [else new-path-word]))
+
+ 
                        (new-path-stack (append (if (eq? 'ε (get-push (first next-rules)))
                                                    '()
                                                    (get-push (first next-rules)))
                                                (drop (PATH-stack a-path)                      
                                                      (PDA-rule-pop-length (first next-rules))
                                                      ))) ;<- word is reversed
+                       
+                       
                        (new-path-rules (cons (list (if (set-member? nts (first (get-pop (first next-rules)))) ;; <- now its going to be a config of the cur state & word (no stack)
                                                        (first (get-pop (first next-rules))) ;<- nt is getting popped off the stack, so that the one thats gonna be in the config 
                                                        (first (first (PATH-lor a-path)))) ;<- still producing words for the prev nt
-                                                       new-path-word
-                                                       new-path-stack)
+                                                   new-path-word-config
+                                                   new-path-stack-config
+                                                   )
                                              (PATH-lor a-path)))] ;<- the paths are in reverse
                   
-                  (begin (set-add! visited
+                  (begin (displayln (make-PATH new-path-rules
+                                               new-path-stack
+                                               new-path-word
+                                               (+ 1 (PATH-path-length a-path))
+                                               (get-destination-state (first next-rules))))
+                         (display new-path-word-config) (displayln new-path-stack-config)
+                         (displayln "")
+                         (set-add! visited
                                    (make-config (get-destination-state (first next-rules))
                                                 new-path-word ;<- the word is in reverse
                                                 new-path-stack))
@@ -233,8 +261,18 @@
 ;; Purpose: To return all the paths in the given pda 
 (define (find-paths-pda a-machine start-nt set-nts #:max-length [max-length 6])
   (define queue (make-queue))
-  (define rules (map rule->PDA-rule (sm-rules a-machine))) 
-  
+  (define rules (map rule->PDA-rule (sm-rules a-machine)))
+
+  (define nt->primes-ht (for/hasheq ([nt set-nts])  ;<- making a ht of the key being the nt's prime and the value is the original nt
+                          (let* [(nt-string (symbol->string nt))
+                                 (nt-prime (string->symbol (string-append nt-string nt-string)))]
+                            (values nt-prime nt))))
+
+  (define prime->nt-ht (for/hasheq ([nt set-nts])
+                         (let* [(nt-string (symbol->string nt))
+                                (nt-prime (string->symbol (string-append nt-string nt-string)))]
+                           (values nt nt-prime))))
+
   
   ;; (queueof (listof PATH)) (listof PATH) -> (listof PATH)
   ;; Purpose: To return all the paths of the given machine
@@ -264,9 +302,9 @@
           (if (empty? next-rules-first-path)
               (find-paths-helper paths-with-qfirst
                                  visited)
-              (begin (map (λ (x) (enqueue! queue x)) (first (new-paths&visited qfirst next-rules-first-path visited set-nts max-length)))
+              (begin (map (λ (x) (enqueue! queue x)) (first (new-paths&visited qfirst next-rules-first-path visited set-nts nt->primes-ht prime->nt-ht max-length)))
                      (find-paths-helper paths-with-qfirst
-                                        (second (new-paths&visited qfirst next-rules-first-path visited set-nts max-length))))
+                                        (second (new-paths&visited qfirst next-rules-first-path visited set-nts nt->primes-ht prime->nt-ht max-length))))
               ))))
   
   (begin
@@ -281,7 +319,7 @@
                                      '()                                 ;; <- the current word of the path 
                                      (list (get-elem-read i)))
                                  1    ;<- current length of the path
-                                 (get-destination-state i)))) 
+                                 (get-destination-state i))))
     
     (find-paths-helper '() (mutable-set)) ))
 
