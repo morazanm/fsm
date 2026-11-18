@@ -1,10 +1,11 @@
 #lang racket/base
 
-(require "../constants.rkt"
-         racket/set
+(require racket/set
          racket/format)
 
 (provide parse-consumed-input)
+
+(define EMPTY-WORD 'EP)
 
 ;; ci (listof NT) (listof terminal) -> (hash NT . (setof word)
 ;; Purpose: Parses the given ci to determine what words are generated from each NT
@@ -23,7 +24,7 @@
         (set-member? NTs x))
       ;;number los -> word
       ;;Purpose: Removes all of the NTs from [nt-first-idx..hi]
-      ;; ACC: word = the terminals - {EMP} from [hi..last-occur-idx]
+      ;; ACC: word = the terminals - {EMPTY-WORD} from [hi..last-occur-idx]
       (define (remove-nts hi acc)
         ;;X -> Boolean
         ;;Purpose: Determines if X is a terminal
@@ -32,10 +33,10 @@
         (if (< hi nt-first-idx)
             acc
             (remove-nts (sub1 hi)
-                        (let ([first (vector-ref ci hi)])
-                          (if (and (is-terminal? first)
-                                   (not (eq? first EMP)))
-                              (cons first acc)
+                        (let ([curr-elem (vector-ref ci hi)])
+                          (if (and (is-terminal? curr-elem)
+                                   (not (eq? curr-elem EMPTY-WORD)))
+                              (cons curr-elem acc)
                               acc)))))                  
 
       ;; NT number number -> number
@@ -94,8 +95,8 @@
 (define to-string (λ (x) (apply ~a x)))
 
 (define sampleNTs '(S A B))
-(define sampleTs `(a b ,EMP))
-(define sampleCI `(S A a A a A ,EMP A b A b A B ,EMP B S))
+(define sampleTs `(a b EP))
+(define sampleCI `(S A a A a A EP A b A b A B EP B S))
 
 (parse-consumed-input sampleCI sampleNTs sampleTs)
 (to-string sampleCI)
