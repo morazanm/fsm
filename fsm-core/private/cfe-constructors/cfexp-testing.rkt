@@ -208,8 +208,8 @@
                                                    BC)]
                                 [ABCC (union-cfexp (concat-cfexp A ABCC C)
                                                    BC)]
-                                [ABDD (union-cfexp (concat-cfexp A BD D)
-                                                   EMP)]
+                                [ABDD (union-cfexp (concat-cfexp A ABDD D)
+                                                   BD)]
                                 [BD (union-cfexp (concat-cfexp B BD D)
                                                  EMP)])
                                (union-cfexp AACD BBCD ABCD ABCC ABDD)))

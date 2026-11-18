@@ -189,9 +189,15 @@
                                      `((S ,ARROW ,EMP) (S ,ARROW aSb))
                                      'S))
 
+(define amanbncm-cfg (make-unchecked-cfg '(S F)
+                                         '(a b c)
+                                         `((S ,ARROW F) (S ,ARROW aSc)
+                                                        (F ,ARROW ,EMP) (F ,ARROW aFb))
+                                         'S))
+
 #;(sm-graph (cfe->pda (concat-cfexp (singleton-cfexp "b") (singleton-cfexp "a"))))
 
-
+#|
 "same-rule(s) determines if the stack-pair rule exists in the given sublang"
 
 "possible fix: determine all the other rules go to the same state. if so then then return the sublang otherwise, return (rest sublang)"
@@ -200,3 +206,25 @@
 
 (sm-graph (cfg->pda ANBN-cfg))
 (pda->cfe (cfg->pda ANBN-cfg))
+|#
+
+#;(pda->cfe (make-unchecked-ndpda '(S A B C) ;; States 
+                      '(a b c d) ;; Input alphabet
+                      '(a)       ;; Stack alphabet 
+                      'S         ;; Starting State
+                      '(C)       ;; Final State            
+                      `(((S a ,EMP) (S (a))) ((S ,EMP ,EMP) (A ,EMP)) ;; Transition Relation
+                                             ((A b ,EMP) (A (a))) ((A ,EMP ,EMP) (B ,EMP))
+                                             ((B c (a)) (B ,EMP)) ((B ,EMP ,EMP) (C ,EMP))
+                                             ((C d (a)) (C ,EMP)))))
+
+(define P (make-unchecked-ndpda '(S P Q)
+                                '(a b)
+                                '(a)
+                                'S
+                                '(Q)
+                                `(((S a ,EMP) (S ,EMP))
+                                  ((S ,EMP ,EMP) (P ,EMP))
+                                  ((P a ,EMP) (P (a)))
+                                  ((P ,EMP ,EMP) (Q ,EMP))
+                                  ((Q b (a)) (Q ,EMP)))))

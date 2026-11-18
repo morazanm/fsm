@@ -1389,8 +1389,8 @@ a pda-action is a structural representation of a pda action
           (if (null? sub-langs)
               sub-langs
               (let ([rule (extractor-prims (first sub-langs))])
-                (and (list? rule) (same-rules? inverse-pair-pop stack-pair rule))
-                #;(if (or (and (list? rule) (same-rules? inverse-pair-pop stack-pair rule))
+                #;(and (list? rule) (same-rules? inverse-pair-pop stack-pair rule))
+                (if (or (and (list? rule) (same-rules? inverse-pair-pop stack-pair rule))
                         (and (singleton? rule) (same-rule? inverse-pair-pop stack-pair rule)))
                     (rest sub-langs)
                     (search-for-after stack-pair (rest sub-langs))))))
@@ -1411,16 +1411,16 @@ a pda-action is a structural representation of a pda action
         ;;Purpose: Returns all of the cfe-templates AFTER the given pop rule from the inverse pair
         (define (get-temps-after sub-langs stack-pairs)
           (cond [(and (is-length-one? stack-pairs) (singleton? (inverse-pair-pop (first stack-pairs))))
-                 (displayln "here")
+                 ;(displayln "here")
                  (search-for-after (first stack-pairs) sub-langs)]
                 [(and (is-length-one? stack-pairs) (list? (inverse-pair-pop (first stack-pairs))))
-                 (displayln "where")
+                 ;(displayln "where")
                  (search-for-after (struct-copy inverse-pair (first stack-pairs)
                                                 [pop (last (inverse-pair-pop (first stack-pairs)))]) sub-langs)]
                 [(let ([pda-rules (flatten (map inverse-pair-pop stack-pairs))])
                    (goes-to-same-state? pda-rules (pda-rule-destin (first pda-rules))))
-                 (displayln (last stack-pairs))
-                 (displayln stack-pairs)
+                 ;(displayln (last stack-pairs))
+                 ;(displayln stack-pairs)
                  (search-for-after (last stack-pairs) sub-langs)]
                 [else (error (format "i need to think: ~a" stack-pairs))]))
 
@@ -1544,9 +1544,9 @@ a pda-action is a structural representation of a pda action
               [(or (and (is-length-one? stack-pair) (list? (inverse-pair-pop (first stack-pair))))
                    (let ([pda-rules (flatten (map inverse-pair-pop stack-pair))]) ;flatten might be an issue
                      (goes-to-same-state? pda-rules (pda-rule-destin (first pda-rules)))))
-               (displayln stack-pair)
-               (pretty-print (get-temps-after sub-lang stack-pair))
-               (error 'stop)
+               ;(displayln stack-pair)
+               ;(pretty-print (get-temps-after sub-lang stack-pair))
+               ;(error 'stop)
                (make-concat (get-temps-after sub-lang stack-pair)
                             (cons (inverse-pairs->cfe stack-pair
                                                       (get-temps-before sub-lang stack-pair))
@@ -1584,7 +1584,8 @@ a pda-action is a structural representation of a pda action
     (let ([res (map (λ (sub-lang stack-oper) (build-cfe-helper sub-lang stack-oper)) sub-langs stack-operations)])
       (if (is-length-one? res)
           (first res)
-          res #;(mk-union-cfexp (list->vector res)))))
+          #;res
+          (mk-union-cfexp (list->vector res)))))
 
   ;;pda -> Boolean
   ;;Purpose: Determines if the given pda simulates a grammar
