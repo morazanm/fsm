@@ -218,7 +218,9 @@
                                              ((B c (a)) (B ,EMP)) ((B ,EMP ,EMP) (C ,EMP))
                                              ((C d (a)) (C ,EMP)))))
 
-(define P (make-unchecked-ndpda '(S P Q)
+(pda->cfe Gina-a^mb^nc^pd^q)
+
+#;(define P (make-unchecked-ndpda '(S P Q)
                                 '(a b)
                                 '(a)
                                 'S

@@ -532,9 +532,32 @@ a pda-action is a structural representation of a pda action
     ;; (listof node) dgraph --> dgraph
     ;; Purpose: Rip out the given nodes from the given graph
     (define (rip-out-nodes lon g)
+      (define (graph->unchecked g)
+        (let ([states (foldl (λ (rule acc)
+                              (set-add (set-add acc (pda-rule-source rule)) (pda-rule-destin rule)))
+                              (set)
+                              g)])
+          (make-unchecked-ndpda (set->list states)
+                                (pda-getalphabet P)
+                                (pda-getgamma P)
+                                'E
+                                (list 'D)
+                                (map (λ (rule)
+                                       (list (list (pda-rule-source rule)
+                                                   (string->symbol (printable-tag (simplify-templates (pda-rule-action rule))))
+                                                   (string->symbol ""))
+                                             (list (pda-rule-destin rule)
+                                                   (string->symbol ""))))
+                                     g))))
       ;; node dgraph --> dgraph
       ;; Purpose: Rip out given state from given graph
       (define (rip-out-node node graph)
+        (displayln (sm-graph (graph->unchecked graph))
+                   #;(struct-copy pda P
+                                [rules (map (λ (rule)
+                                             (struct-copy pda-rule rule
+                                                          [action (printable-tag (pda-rule-action rule))]))
+                                       (pda-rules P))]))
         ;;rule -> (listof rules)
         ;;Purpose: Extracts the rules that make the concat if possible
         (define (extract-concat rule)
@@ -1714,7 +1737,7 @@ a pda-action is a structural representation of a pda action
           (format "~a~a~a"(printable-tag (first tags)) connector res))))
 
   (define (print-action action)
-    (format "[~a~a~a]" (pda-action-read action) (pda-action-pop action) (pda-action-push action)))
+    (format "~a ~a ~a" (pda-action-read action) (pda-action-pop action) (pda-action-push action)))
   
   (define (printable-tag tag)
     (cond [(symbol? tag) ""]
