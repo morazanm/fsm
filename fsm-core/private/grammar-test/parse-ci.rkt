@@ -70,7 +70,7 @@
       ;; If none can be found, return the last valid index into the vector
       (define (find-next-last-NT idx)
         (cond [(is-NT? (vector-ref ci idx)) idx]
-              [(= idx nt-first-idx) ci-length]
+              [(<= idx nt-first-idx) ci-length]
               [(find-next-last-NT (sub1 idx))]))      
       (if (>= nt-first-idx ci-length)
           acc
@@ -92,11 +92,14 @@
                    (hash)
                    loNT)))
 
+#|
 (define to-string (λ (x) (apply ~a x)))
 
 (define sampleNTs '(S A B))
-(define sampleTs `(a b EP))
-(define sampleCI `(S A a A a A EP A b A b A B EP B S))
+(define sampleTs '(a b EP))
+(define sampleCI '(S A a A a A EP A b A b A B EP B S))
+(define sampleCI2 '(S A EP A B b B EP B B S))
 
-(parse-consumed-input sampleCI sampleNTs sampleTs)
-(to-string sampleCI)
+(parse-consumed-input sampleCI2 sampleNTs sampleTs)
+(to-string sampleCI2)
+|#
