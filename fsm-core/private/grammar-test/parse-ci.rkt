@@ -62,7 +62,7 @@
               idx
               (find-new-NT (add1 idx) NT)))
         (cond [(is-NT? (vector-ref ci idx)) idx]
-              [(= idx last-occurence) (find-new-NT idx (vector-ref ci last-occurence))]
+              [(>= idx last-occurence) (find-new-NT idx (vector-ref ci last-occurence))]
               [(find-next-first-NT (add1 idx) last-occurence)]))
 
       ;; number -> number 
