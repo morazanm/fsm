@@ -38,7 +38,9 @@
          racket/set
          racket/list
          data/queue
-         racket/function)
+         racket/function
+         "parse-ci.rkt"
+         racket/hash)
 (provide cfg-test-invs-impl2)
 
 
@@ -265,11 +267,11 @@
                                                                #;(eq? (sm-start a-machine) (PDA-rule-source rule)))]
                                           (make-PDA-rule (PDA-rule-source rule)
                                                          (first (append (if (eq? 'ε (PDA-rule-read rule))
-                                                                     '()
-                                                                     (PDA-rule-read rule))
-                                                                 (if (eq? 'ε (PDA-rule-pop rule))
-                                                                     '()
-                                                                     (PDA-rule-pop rule))))
+                                                                            '()
+                                                                            (PDA-rule-read rule))
+                                                                        (if (eq? 'ε (PDA-rule-pop rule))
+                                                                            '()
+                                                                            (PDA-rule-pop rule))))
                                                          (PDA-rule-pop rule)  
                                                          (PDA-rule-destination rule)
                                                          (if (eq? 'ε (PDA-rule-push rule))
@@ -278,7 +280,6 @@
                                                          (PDA-rule-pop-length rule)))))))
 
   (define new-rules (append (list ep-rule) start-state-rule prime-rules terminal-rules pop-prime-rules))
-  (displayln new-rules) (displayln "") (displayln rules)
   ;; (queueof (listof PATH)) (listof PATH) -> (listof PATH)
   ;; Purpose: To return all the paths of the given machine
   ;; Accumulator invariant: paths = list of current paths
@@ -393,15 +394,20 @@
                        (values (car inv) (cadr inv))))
 
   (define inv-nts (map (λ (inv-pair) (first inv-pair)) a-loi));; <- all nts that need to be tested
+  
   ;; turning the cfg into a pda
   (define cfg-machine (cfg->state-pda a-cfg (grammar-start a-cfg)))
 
   ;; gettng ht of nts and words to test them with
-  ;(define test-word-ht (split-paths (find-paths cfg-machine REPETITION-LIMIT) (sm-states cfg-machine)))
-  (define test-word-ht (new-split-paths (get-accepting-paths cfg-machine (grammar-start a-cfg)(list->set (grammar-nts a-cfg)) MAX-COMP-LENGTH)
-                                        (grammar-nts a-cfg)
-                                        (sm-finals cfg-machine)
-                                        (grammar-start a-cfg))) ;<- with new-split-paths
+  (define test-word-ht (apply hash-union
+                              (map (lambda (path) (parse-consumed-input (PATH-word path)
+                                                                        (grammar-nts a-cfg)
+                                                                        (grammar-sigma a-cfg)))
+                                   (get-accepting-paths cfg-machine
+                                                        (grammar-start a-cfg)
+                                                        (list->set (grammar-nts a-cfg))
+                                                        MAX-COMP-LENGTH))
+                              #:combine/key (lambda (k v1 v2) (set-union v1 v2))))
   
   ;(displayln test-word-ht)
   ;;testing each nt in ht with the test words
