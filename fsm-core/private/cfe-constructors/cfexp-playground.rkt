@@ -218,7 +218,20 @@
                                              ((B c (a)) (B ,EMP)) ((B ,EMP ,EMP) (C ,EMP))
                                              ((C d (a)) (C ,EMP)))))
 
-(pda->cfe Gina-a^mb^nc^pd^q)
+#;(pda->cfe Gina-a^mb^nc^pd^q)
+
+(sm-graph (cfe->pda (make-cfe ([EMPTY (empty-cfexp)]
+                               [A (singleton-cfexp "a")]
+                               [C (singleton-cfexp "c")]
+                               [D (singleton-cfexp "d")]
+                               [B (union-cfexp EMPTY
+                                               (concat-cfexp C B D))]
+                               [AiBj (union-cfexp (null-cfexp)
+                                                  EMPTY
+                                                  (concat-cfexp A AiBj B)
+                                                  (concat-cfexp A AiBj B B))])
+                              AiBj)))
+
 
 #;(define P (make-unchecked-ndpda '(S P Q)
                                 '(a b)

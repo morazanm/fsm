@@ -84,13 +84,14 @@
         [else (mk-concat-cfexp (list->vector (map unnest-unions cfexps)))])) ;;otherwise box any unboxed-union cfes -> concat
 
 ;; . cfexp -> union-cfexp/null-cfexp/empty-cfexp/singleton-cfexp
-;;Purpose: A wrapper to create a union-cfexp unless all the given cfexps are empty-cfexp
+;;Purpose: A wrapper to create a union-cfexp unless all the given cfexps are empty-cfexp,null-cfexp, or length one
 (define/contract (union-cfexp . cfexps)
   union-cfexp/c
   (cond [(or (null? cfexps) (andmap mk-null-cfexp? cfexps)) (null-cfexp)] ;; no input cfes -> null
         [(andmap mk-empty-cfexp? cfexps) (empty-cfexp)] ;; only empty cfes -> empty
         [(is-length-one? cfexps) (car cfexps)] ;;only one cfe -> cfe
-        [else (mk-union-cfexp (vector-append (list->vector (filter (compose1 not mk-union-cfexp?)
+        [else (mk-union-cfexp (vector-append (list->vector (filter (λ (cfe) (or (not (mk-union-cfexp? cfe))
+                                                                                (not (mk-null-cfexp? cfe))))
                                                                    cfexps)) ;;otherwise flatten nested unions -> union
                                              (foldl (λ (u-cfe acc)
                                                       (vector-append acc (mk-union-cfexp-locfe u-cfe)))

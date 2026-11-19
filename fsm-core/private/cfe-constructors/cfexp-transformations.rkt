@@ -20,7 +20,7 @@
                      (pda->cfe unchecked-pda->cfe)
                      (cfe->pda unchecked-cfe->pda)))
 
-;;(listof X) -> boolean
+;;(listof X) -> Boolean
 ;;Purpose: Determines if the (listof X) is of length 1
 (define (is-length-one? lox)
   (and (not (null? lox))
@@ -69,7 +69,7 @@ a pda-action is a structural representation of a pda action
       (error "qfirst applied to an empty queue")
       (treelist-first a-qox)))
 
-;; (tllistof X) (qof X) → (qof X)
+;; (treelistof X) (qof X) → (qof X)
 ;; Purpose: Add the given list of X to the given queue of X
 (define (enqueue a-lox a-qox) (treelist-append a-qox a-lox))
 
@@ -80,7 +80,7 @@ a pda-action is a structural representation of a pda action
       (error "dequeue applied to an empty queue")
       (treelist-rest a-qox)))
 
-;;(X -> Y) Z (treelistof X) -> Z
+;;(X -> Y) Y (treelistof X) -> Y
 (define (tl-foldl f acc tl)
   (if (treelist-empty? tl)
       acc
@@ -227,7 +227,8 @@ a pda-action is a structural representation of a pda action
         ;;Purpose: converts the cfe into a grammar production rule
         ;;Assumption: The given cfe is NOT bound to a box and has to be concatenated a rule cfe that is bound to a box 
         (define (convert-rhs cfe)
-          (cond [(mk-empty-cfexp? cfe) EMP]
+          (cond [(mk-null-cfexp? cfe) (error "Cannot transform the null langauge")]
+                [(mk-empty-cfexp? cfe) EMP]
                 [(mk-singleton-cfexp? cfe) (string->symbol (mk-singleton-cfexp-char cfe))]
                 [(box? cfe) (hash-ref new-nts cfe)]
                 [(mk-concat-cfexp? cfe) (string->symbol (tl-foldl (λ (cfe acc)
@@ -247,7 +248,8 @@ a pda-action is a structural representation of a pda action
                          [(mk-concat-cfexp? cfe)
                           (string->symbol (tl-foldl (λ (cfe acc)
                                                       (string-append
-                                                       (cond [(mk-singleton-cfexp? cfe) (mk-singleton-cfexp-char cfe)]
+                                                       (cond [(mk-null-cfexp? cfe) (error "Cannot transform the null langauge")]
+                                                             [(mk-singleton-cfexp? cfe) (mk-singleton-cfexp-char cfe)]
                                                              [(or (mk-kleene-cfexp? cfe)
                                                                   (box? cfe))
                                                               (symbol->string (hash-ref new-nts cfe))] ;;sub with NT
@@ -257,7 +259,8 @@ a pda-action is a structural representation of a pda action
                                                     (treelist-reverse (vector->treelist (mk-concat-cfexp-locfe cfe)))))]
                          [(mk-kleene-cfexp? cfe) (let ([k-star-ref (symbol->string (hash-ref new-nts cfe))]
                                                        [cfe (mk-kleene-cfexp-cfe cfe)])
-                                                   (cond [(mk-singleton-cfexp? cfe) (string->symbol
+                                                   (cond [(mk-null-cfexp? cfe) (error "Cannot transform the null langauge")]
+                                                         [(mk-singleton-cfexp? cfe) (string->symbol
                                                                                      (string-append (mk-singleton-cfexp-char cfe))
                                                                                      k-star-ref)]
                                                          [(mk-union-cfexp? cfe) (map (λ (cfe) (string->symbol
@@ -284,7 +287,9 @@ a pda-action is a structural representation of a pda action
           (let ([cfe (qfirst rules-to-convert)])
             (cond [(mk-union-cfexp? cfe)
                    (remake-rules nt (enqueue (dequeue rules-to-convert)
-                                             (vector->treelist (mk-union-cfexp-locfe cfe))) finished-rules)]
+                                             (vector->treelist (vector-filter (λ (cfe) (not (mk-null-cfexp? cfe)))
+                                                                              (mk-union-cfexp-locfe cfe))))
+                                 finished-rules)]
                   [(mk-kleene-cfexp? cfe)
                    (remake-rules nt (dequeue rules-to-convert) (cons (list nt ARROW EMP)
                                                                      (let ([res (cfe->rule nt cfe)])
@@ -337,7 +342,8 @@ a pda-action is a structural representation of a pda action
         ;;Purpose: converts the cfe into a grammar production rule
         ;;Assumption: The given cfe is NOT bound to a box and has to be concatenated a rule cfe that is bound to a box 
         (define (convert-rhs cfe)
-          (cond [(mk-empty-cfexp? cfe) EMP]
+          (cond [(mk-null-cfexp? cfe) (error "Cannot transform the null langauge")]
+                [(mk-empty-cfexp? cfe) EMP]
                 [(mk-singleton-cfexp? cfe) (string->symbol (mk-singleton-cfexp-char cfe))]
                 [(box? cfe) (hash-ref new-nts cfe)]
                 [(mk-concat-cfexp? cfe) (tl-foldl (λ (cfe acc)
@@ -351,13 +357,14 @@ a pda-action is a structural representation of a pda action
                                                    (vector->treelist (mk-concat-cfexp-locfe cfe))))]
                 [else (error (format "unsuitable cfe ~a" cfe))]))
         ;;if union found in concat split union and make concat using every branch
-        (let ([RHS (cond [(mk-empty-cfexp? cfe) EMP]
+        (let ([RHS (cond [(mk-empty-cfexp? cfe)  (list EMP)]
                          [(mk-singleton-cfexp? cfe) (list (string->symbol (mk-singleton-cfexp-char cfe)))]
                          [(box? cfe) (hash-ref new-nts cfe)]
                          [(mk-concat-cfexp? cfe)
                           (tl-foldl (λ (cfe acc)
                                       (cons
-                                       (cond [(mk-singleton-cfexp? cfe) (string->symbol (mk-singleton-cfexp-char cfe))]
+                                       (cond [(mk-null-cfexp? cfe) (error "Cannot transform the null langauge")]
+                                             [(mk-singleton-cfexp? cfe) (string->symbol (mk-singleton-cfexp-char cfe))]
                                              [(or (mk-kleene-cfexp? cfe)
                                                   (box? cfe))
                                               (hash-ref new-nts cfe)] ;;sub with NT
@@ -367,7 +374,8 @@ a pda-action is a structural representation of a pda action
                                     (treelist-reverse (vector->treelist (mk-concat-cfexp-locfe cfe))))]
                          [(mk-kleene-cfexp? cfe) (let [[k-star-ref (hash-ref new-nts cfe)]
                                                        (cfe (mk-kleene-cfexp-cfe cfe))]
-                                                   (cond [(mk-singleton-cfexp? cfe) (list (string->symbol (mk-singleton-cfexp-char cfe))
+                                                   (cond [(mk-null-cfexp? cfe) (error "Cannot transform the null langauge")]
+                                                         [(mk-singleton-cfexp? cfe) (list (string->symbol (mk-singleton-cfexp-char cfe))
                                                                                           k-star-ref)]
                                                          [(mk-union-cfexp? cfe) (map (λ (cfe) (list (convert-rhs cfe) 
                                                                                                     k-star-ref))
@@ -378,16 +386,18 @@ a pda-action is a structural representation of a pda action
                                                               (box? cfe))
                                                           (list (hash-ref new-nts cfe) k-star-ref)] ;;sub with NT
                                                          [else (list (convert-rhs cfe) k-star-ref)]))]
-                         [else (error (format "unsuitable cfe ~a" cfe))])])          
-          (if (andmap list? RHS)
-              (map (λ (RHS) (pda-rule new-final (pda-action EMP (list nt) RHS) new-final)) RHS)
-              (pda-rule new-final (pda-action EMP (list nt) RHS) new-final))))
+                         [else (error (format "unsuitable cfe ~a" cfe))])])
+          (cond [(andmap list? RHS) (map (λ (RHS) (pda-rule new-final (pda-action EMP (list nt) RHS) new-final)) RHS)]
+                [(is-length-one? RHS) (pda-rule new-final (pda-action EMP (list nt) (first RHS)) new-final)]
+                [else (pda-rule new-final (pda-action EMP (list nt) RHS) new-final)])))
       (if (qempty? rules-to-convert)
           finished-rules
           (let ([cfe (qfirst rules-to-convert)])
             (cond [(mk-union-cfexp? cfe)
                    (remake-rules nt (enqueue (dequeue rules-to-convert)
-                                             (vector->treelist (mk-union-cfexp-locfe cfe))) finished-rules)]
+                                             (vector->treelist (vector-filter (λ (cfe) (not (mk-null-cfexp? cfe)))
+                                                                              (mk-union-cfexp-locfe cfe))))
+                                             finished-rules)]
                   [(mk-kleene-cfexp? cfe)
                    (remake-rules nt (dequeue rules-to-convert) (cons (pda-rule new-final (pda-action EMP (list nt) EMP) new-final)
                                                                      (let ([res (cfe->rule nt cfe)])
