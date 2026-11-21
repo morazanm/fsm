@@ -46,9 +46,9 @@
          simplify-cfexp
          )
 
+;;natnum
+;;Purpose: The default kleenestar limit
 (define MAX-KLEENESTAR-LIMIT 20)
-
-(define EMPTY-CHANCE .25)
 
 ;;a context-free expression is either:
 ;; 1. null (base case)
@@ -102,7 +102,7 @@
         [else (mk-concat-cfexp (list->vector (map unnest-unions cfexps)))])) ;;otherwise box any unboxed-union cfes -> concat
 
 ;; . cfexp -> union-cfexp/null-cfexp/empty-cfexp/singleton-cfexp
-;;Purpose: A wrapper to create a union-cfexp unless all the given cfexps are empty-cfexp
+;;Purpose: A wrapper to create a union-cfexp unless all the given cfexps are empty-cfexp, null-cfexp, or length one
 (define/contract (union-cfexp . cfexps)
   union-cfexp/c
   (cond [(or (null? cfexps) (andmap mk-null-cfexp? cfexps)) (null-cfexp)] ;; no input cfes -> null
@@ -124,84 +124,135 @@
       cfe
       (mk-kleene-cfexp cfe)))
 
-;;(vectorof cfexp) -> boolean
-;;Purpose: Determines if the given (vectorof cfexp) contains an empty-cfexp
-(define (contains-empty? Vocfe)
-  (for/or ([cfe (in-vector Vocfe)])
-    (mk-empty-cfexp? cfe)))
 
-;; (vectorof cfexp) --> cfexp
+;; union-cfexvp -> cfexp
 ;; Purpose: Return a randomly chosen sub-cfexp from the given union-cfexp weigthed towards a non-empty-cfexp
-(define (pick-cfexp cfexps)
-  (if (contains-empty? cfexps)
-      (let ([filtered-empties (vector-filter-not mk-empty-cfexp? cfexps)])
-        (if (or (vector-empty? filtered-empties)
-                (< (random) EMPTY-CHANCE))
-            (empty-cfexp)
-            (vector-ref filtered-empties (random (vector-length filtered-empties)))))
-      (vector-ref cfexps (random (vector-length cfexps)))))
+(define/contract (pick-cfexp union-cfexp)
+  pick-cfexp/c
+  (let ([vocfes (mk-union-cfexp-locfe union-cfexp)])
+    (vector-ref vocfes (random (vector-length vocfes)))))
 
-;;concat-cfexp --> word
-;;Purpose: Returns the concatenation of the sub context-free expressions 
-(define (gen-concat-word concat-cfexp gen-function reps)
-  (for/fold ([word ""])
-            ([cfe (in-vector (mk-concat-cfexp-locfe concat-cfexp))])
-    (string-append word (gen-function cfe reps))))
 
-;; natnum kleene-star-cfexp (cfexp --> word) --> word
-;; Purpose: Generate a word of arbitrary length in [0..reps+1] using
-;;          given context-free expression and the given word-generating function
-(define (gen-cfe-kleene-word kleene-cfexp reps gen-function)
-  (let [(lst-words (filter
-                    (λ (w) (not (eq? w EMP)))
-                    (flatten
-                     (build-list
-                      (random (add1 reps))
-                      (λ (i) (gen-function (mk-kleene-cfexp-cfe kleene-cfexp) reps))))))]
-    (if (null? lst-words) "" (apply string-append lst-words))))
-
-;;string -> Boolean
-;;Purpose: Determines if the given string is empty
-(define (string-empty? str)
-  (string=? str ""))
-
-;;string -> (listof symbol)
-;;Purpose: Converts the given string into a fsm word
-(define (string->word str)
-  (let ([end-idx (string-length str)])
-    ;;natnum (listof symbol) -> (listof symbol)
-    ;;Purpose: Converts the string into a fsm word
-    (define (string->word-helper idx acc)
-      (if (= idx end-idx)
-          (reverse acc)
-          (string->word-helper (add1 idx)
-                               (cons (string->symbol (substring str idx (add1 idx))) acc))))
-    (string->word-helper 0 '())))
+;; cfexp cfexp (setof cfexp) -> Boolean
+;;Purpose: Determines if the given cfe has a non-recursive case for the given rec-cfe
+(define (base-case? cfe rec-cfe [seen (set)])
+  ;; (vectorof cfe) (setof cfexp) -> Boolean
+  ;;Purpose: Determines if the given vector of cfexps does not contain the rec-cfe
+  (define (vector-ormap Vocfe seen)
+      (for/and ([cfe (in-vector Vocfe)])
+        (base-case? cfe rec-cfe (set-add seen cfe))))
+  ;;(cfexp -> Boolean) (cfexp -> X) cfexp (setof cfexp) -> Boolean
+  ;;Purpose: Determines if the given cfe has a non-recursive case for the given rec-cfe
+  (define (has-base-case? cfe? cfe-accessor cfe seen)
+    (and (cfe? cfe)
+         (vector-ormap (cfe-accessor cfe) (set-add seen cfe))))
+  (and (not (set-member? seen cfe))
+       (or (mk-empty-cfexp? cfe)
+           (mk-singleton-cfexp? cfe)
+           (has-base-case? mk-concat-cfexp? mk-concat-cfexp-locfe cfe seen)
+           (has-base-case? mk-union-cfexp? mk-concat-cfexp-locfe cfe seen)
+           (has-base-case? mk-kleene-cfexp? mk-kleene-cfexp-cfe cfe seen))))
 
 ;; cfe [natnum] -> word
 ;; Purpose: Generates a word using the given cfexp
 (define/contract (gen-cfexp-word cfe [reps MAX-KLEENESTAR-LIMIT])
   gen-cfexp-word/c
+
+  ;;0 <= number <= 1
+  ;;Purpose: The default of picking the base-case in a union 
+  (define BASE-CASE-CHANCE .25)
+  
+  ;; union-cfexp -> cfexp
+  ;; Purpose: Return a randomly chosen sub-cfexp from the given union-cfexp weigthed towards a non-empty-cfexp
+  (define (pick-cfexp cfexp base-case-chance)
+    ;; cfexp cfexp (setof cfexp) -> Boolean
+    ;;Purpose: Determines if the given cfe has a non-recursive case for the given rec-cfe
+    (define (non-rec-case? cfe rec-cfe [seen (set)])
+      ;; (vectorof cfe) (setof cfexp) -> Boolean
+      ;;Purpose: Determines if the given vector of cfexps does not contain the rec-cfe
+      (define (vector-andmap Vocfe seen)
+        (for/and ([cfe (in-vector Vocfe)])
+          (non-rec-case? cfe rec-cfe (set-add seen cfe))))
+      ;;(cfexp -> Boolean) (cfexp -> X) cfexp (setof cfexp) -> Boolean
+      ;;Purpose: Determines if the given cfe has a non-recursive case for the given rec-cfe
+      (define (has-base-case? cfe? cfe-accessor cfe seen)
+        (and (cfe? cfe)
+             (vector-andmap (cfe-accessor cfe) (set-add seen cfe))))
+      (and (not (set-member? seen cfe))
+           (or (mk-empty-cfexp? cfe)
+               (mk-singleton-cfexp? cfe)
+               (has-base-case? mk-concat-cfexp? mk-concat-cfexp-locfe cfe seen)
+               (has-base-case? mk-union-cfexp? mk-union-cfexp-locfe cfe seen)
+               (has-base-case? mk-kleene-cfexp? mk-kleene-cfexp-cfe cfe seen))))
+    (let ([cfexps (mk-union-cfexp-locfe cfexp)])
+      (if (< (random) base-case-chance)        
+          (let ([filtered-base-cases (vector-filter (λ (cfe) (non-rec-case? cfe cfexp)) cfexps)])
+            (if (vector-empty? filtered-base-cases)
+                (vector-ref cfexps (random (vector-length cfexps)))
+                (vector-ref filtered-base-cases (random (vector-length filtered-base-cases)))))
+          (vector-ref cfexps (random (vector-length cfexps))))))
+
+  
+  ;;string -> Boolean
+  ;;Purpose: Determines if the given string is empty
+  (define (string-empty? str)
+    (string=? str ""))
+
+  ;;string -> (listof symbol)
+  ;;Purpose: Converts the given string into a fsm word
+  (define (string->word str)
+    ;;natnum (listof symbol) -> (listof symbol)
+    ;;Purpose: Converts the string into a fsm word
+    (define (string->word-helper idx acc)
+      (if (< idx 0)
+          acc
+          (string->word-helper (sub1 idx)
+                               (cons (string->symbol (substring str idx (add1 idx))) acc))))
+    (string->word-helper (sub1 (string-length str)) empty))
+  
+  ;;cfexp natnum number -> word
+  ;;Purpose: Generates a word that is in the given cfexp's language
+  (define (gen-cfexp-word-helper cfe reps base-case-chance)
+    ;;concat-cfexp --> word
+    ;;Purpose: Returns the concatenation of the sub context-free expressions 
+    (define (gen-concat-word concat-cfexp reps base-case-chance)
+      (for/fold ([word ""])
+                ([cfe (in-vector (mk-concat-cfexp-locfe concat-cfexp))])
+        (string-append word (gen-cfexp-word-helper cfe reps base-case-chance))))
+
+    ;; natnum kleene-star-cfexp (cfexp --> word) --> word
+    ;; Purpose: Generate a word of arbitrary length in [0..reps+1] using
+    ;;          given context-free expression and the given word-generating function
+    (define (gen-cfe-kleene-word kleene-cfexp reps base-case-chance)
+      (let [(lst-words (filter
+                        (λ (w) (not (eq? w EMP)))
+                        (flatten
+                         (build-list
+                          (random (add1 reps))
+                          (λ (i) (gen-cfexp-word-helper (mk-kleene-cfexp-cfe kleene-cfexp) reps base-case-chance))))))]
+        (if (null? lst-words) "" (apply string-append lst-words))))
+  
+    (cond [(mk-null-cfexp? cfe) (error "A word cannot be generated using the null-cfexp.")]
+          [(mk-empty-cfexp? cfe) ""]
+          [(mk-singleton-cfexp? cfe) (mk-singleton-cfexp-char cfe)]
+          [(mk-concat-cfexp? cfe) (gen-concat-word cfe reps base-case-chance)]
+          [(mk-union-cfexp? cfe) (gen-cfexp-word-helper (pick-cfexp cfe base-case-chance)
+                                                        reps
+                                                        (+ base-case-chance .1))]
+          [(box? cfe) (gen-cfexp-word-helper (unbox cfe) reps base-case-chance)]
+          [else (gen-cfe-kleene-word cfe reps base-case-chance)]))
+  
   (define MAX-KLEENESTAR-REPS (if (null? reps) MAX-KLEENESTAR-LIMIT reps))
   (cond [(mk-null-cfexp? cfe) (error "A word cannot be generated using the null-cfexp.")]
         [(mk-empty-cfexp? cfe) EMP]
         [(mk-singleton-cfexp? cfe) (list (string->symbol (mk-singleton-cfexp-char cfe)))]
         [(box? cfe) (gen-cfexp-word (unbox cfe) MAX-KLEENESTAR-REPS)]
-        [else (let ([res (gen-cfexp-word-helper cfe MAX-KLEENESTAR-REPS)])
+        [else (let ([res (gen-cfexp-word-helper cfe MAX-KLEENESTAR-REPS BASE-CASE-CHANCE)])
                 (if (string-empty? res)
                     EMP
                     (string->word res)))]))
 
-;;cfexp natnum -> word
-;;Purpose: Generates a word that is in the given cfexp's language
-(define (gen-cfexp-word-helper cfe reps)
-  (cond [(mk-null-cfexp? cfe) (error "A word cannot be generated using the null-cfexp.")]
-        [(mk-empty-cfexp? cfe) ""]
-        [(mk-singleton-cfexp? cfe) (mk-singleton-cfexp-char cfe)]
-        [(mk-concat-cfexp? cfe) (gen-concat-word cfe gen-cfexp-word-helper reps)]
-        [(mk-union-cfexp? cfe) (gen-cfexp-word-helper (pick-cfexp (mk-union-cfexp-locfe cfe)) reps)]
-        [(box? cfe) (gen-cfexp-word-helper (unbox cfe) reps)]
-        [else (gen-cfe-kleene-word cfe reps gen-cfexp-word-helper)]))
+
       
 ;;cfexp [(setof cfe)] -> string
 ;;Purpose: Converts the given cfe into a string to make it readable

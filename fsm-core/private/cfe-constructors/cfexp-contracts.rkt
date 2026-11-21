@@ -11,6 +11,7 @@
          concat-cfexp/c
          union-cfexp/c
          kleene-cfexp/c
+         pick-cfexp/c
          gen-cfexp-word/c
          simplify-cfexp/c
          cfe->cfg/c
@@ -66,7 +67,7 @@
 
 ;;-> flat-contract
 ;;Purpose: Creates a flat contract that determines if the input is a symbol or natural number
-(define valid-singleton-input
+(define valid-singleton-input/c
   (make-flat-contract
    #:name 'is-valid-singleton-input?
    #:projection (λ (blame)
@@ -85,7 +86,7 @@
 
 ;;-> flat-contract
 ;;Purpose: Creates a flat contract that determines if the input is cfexp
-(define valid-kleene-input
+(define valid-kleene-input/c
   (make-flat-contract
    #:name 'is-cfe-for-kleene?
    #:projection (λ (blame)
@@ -96,6 +97,23 @@
                             blame
                             val
                             "kleene-cfexp expects a cfe as input, given"))))))))
+
+;; -> flat-contract
+;;Purpose: Creats a flat contract that determines if the input is a union-cfexp
+(define is-union-cfexp?/c
+  (make-flat-contract
+   #:name 'is-union-cfexp?
+   #:projection (λ (blame)
+                  (λ (value)
+                    (or (mk-union-cfexp? value) #;(and (cfexp? value)
+                             (mk-union-cfexp? value))
+                        ((λ ()
+                           (current-blame-format format-error)
+                           (raise-blame-error
+                            blame
+                            value
+                            "pick-cfexp expects a union-cfexp as input, given"))))))))
+                        
 
 ;;-> flat-contract
 ;;Purpose: Creates a flat contract that determines if the input is natural number
@@ -146,7 +164,7 @@
 
 
 (define singleton-cfexp/c
-  (-> valid-singleton-input 
+  (-> valid-singleton-input/c 
       mk-singleton-cfexp?))
 
 (define concat-cfexp/c
@@ -166,7 +184,7 @@
 
 
 (define kleene-cfexp/c
-  (-> valid-kleene-input
+  (-> valid-kleene-input/c
       (or/c mk-kleene-cfexp?
             mk-empty-cfexp?
             mk-null-cfexp?)))
@@ -175,9 +193,15 @@
   (-> (is-cfexp/c "simplify-cfexp expects a cfe as input, given")
       (is-cfexp/c "simplify-cfexp broke its own contract, should produce a cfe instead of")))
 
+      
+(define pick-cfexp/c
+   (-> is-union-cfexp?/c
+       (is-cfexp/c "pick-cfe/c broke its own contract, should return a cfexp instead of")))
+
+
 (define gen-cfexp-word/c
   (->* ((is-cfexp/c "gen-cfexp-word expects a cfe as input, given"))
-       (nat-num/c)
+       (nat-num/c) ;;for optional input
        (or/c symbol?
              (listof symbol?))))
 
@@ -196,3 +220,4 @@
 (define cfe->pda/c
   (-> (is-cfexp/c "cfe->pda expects a cfe as input, given")
       (is-ndpda? "cfe->pda broke its own contract, should produce a pda instead of")))
+
