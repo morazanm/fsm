@@ -5,8 +5,8 @@
          "../cfg.rkt"
          "../constants.rkt"
          "../../../sm-graph.rkt"          
-          "construct-cfe-macro.rkt"
-          "../cfg-struct.rkt"
+         "construct-cfe-macro.rkt"
+         "../cfg-struct.rkt"
          "./context-free-expressions-constructors.rkt"
          rackunit
          rackunit/text-ui
@@ -14,37 +14,37 @@
          racket/list
          )
 
-(define WORD-AMOUNT 10)
+(define WORD-AMOUNT 25)
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;CFEXP;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define EMPTY (make-cfe [(EMPTY (empty-cfexp))]
-                 EMPTY))
+                        EMPTY))
 
 (define NULL (make-cfe [(NULL (null-cfexp))]
-                 NULL))
+                       NULL))
 
 (define ONEorTWO (make-cfe ([one (singleton-cfexp "1")]
-                             [two (singleton-cfexp "2")])
-                      (union-cfexp one two)))
+                            [two (singleton-cfexp "2")])
+                           (union-cfexp one two)))
 
 
 (define A (make-cfe [(A (singleton-cfexp "a"))]
-                 A))
+                    A))
 
 (define B (make-cfe [(B (singleton-cfexp "b"))]
-                 B))
+                    B))
 
 (define C (make-cfe [(C (singleton-cfexp "c"))]
-                 C))
+                    C))
 
 (define D (make-cfe [(D (singleton-cfexp "d"))]
-                 D))
+                    D))
 
 (define G (make-cfe [(B (singleton-cfexp "g"))
                      (test (kleenestar-cfexp B))]
-                 test))
+                    test))
 
 
 ;; w = ww^r
@@ -64,16 +64,16 @@
                       AUB))
 (define cAUB (make-cfe ([AUB (union-cfexp A B)]
                         [aAUB (concat-cfexp C AUB)])
-                      aAUB))
+                       aAUB))
 
 (define cAUB2 (make-cfe ([aAUB (concat-cfexp C (union-cfexp A B))]) ;; now boxes the union-cfexp 
-                      aAUB))
+                        aAUB))
 
 (define CUAUB (make-cfe ([CUAUB (union-cfexp C (union-cfexp A B))]) ;;now lifts nested unions
-                      CUAUB))
+                        CUAUB))
 
 (define CUAUBUD (make-cfe ([CUAUBUD (union-cfexp C (union-cfexp A (union-cfexp D B)))]) ;;now lifts nested unions
-                      CUAUBUD))
+                          CUAUBUD))
 
 
 ;;w = a^2ib^i
@@ -82,14 +82,15 @@
 
 ;;w = A^iB^j | i <= j <= 2i
 (define AiBj (make-cfe ([AiBj (union-cfexp EMPTY
-                          (concat-cfexp A AiBj B)
-                          (concat-cfexp A AiBj B B))])
-            AiBj))
+                                           (concat-cfexp A AiBj B)
+                                           (concat-cfexp A AiBj B B))])
+                       AiBj))
 
 
 ;;w = b^na^n
 (define BNAN (make-cfe ([BNAN (union-cfexp EMPTY (concat-cfexp B BNAN A))])
-            BNAN) )
+                       BNAN) )
+
 
 ;;w = a^ib^jc^k, i=j or j=k
 
@@ -150,45 +151,68 @@
       ASB)))
 
 (define ANBN-2 (make-cfe ([ASB (union-cfexp EMPTY (concat-cfexp A ASB B))])
-            ASB))
+                         ASB))
 
 (define ANBN* (kleenestar-cfexp ANBN-2))
 
 (define A-STAR (make-cfe ([EMPTY (empty-cfexp)]
-             [A (singleton-cfexp "a")]
-             [A* (union-cfexp EMPTY (concat-cfexp A A*))])
-             A*))
+                          [A (singleton-cfexp "a")]
+                          [A* (union-cfexp EMPTY (concat-cfexp A A*))])
+                         A*))
 
 
 (define AiBjCk2 (make-cfe ([A (singleton-cfexp "a")]
-             [B (singleton-cfexp "b")]
-             [C (singleton-cfexp "c")]
-             [AEB (union-cfexp EMPTY (concat-cfexp A AEB B))]
-             [CF (union-cfexp (concat-cfexp C CF) EMPTY)]
-             [BWC (union-cfexp (concat-cfexp B BWC C) EMPTY)]
-             [AZ (union-cfexp (concat-cfexp A AZ) EMPTY)]
-             [AiBjCk (union-cfexp (concat-cfexp AEB CF) (concat-cfexp AZ BWC))])
-            AiBjCk))
+                           [B (singleton-cfexp "b")]
+                           [C (singleton-cfexp "c")]
+                           [AEB (union-cfexp EMPTY (concat-cfexp A AEB B))]
+                           [CF (union-cfexp (concat-cfexp C CF) EMPTY)]
+                           [BWC (union-cfexp (concat-cfexp B BWC C) EMPTY)]
+                           [AZ (union-cfexp (concat-cfexp A AZ) EMPTY)]
+                           [AiBjCk (union-cfexp (concat-cfexp AEB CF) (concat-cfexp AZ BWC))])
+                          AiBjCk))
 
 (define AiBjCk4 (make-cfe ([A (singleton-cfexp "a")]
-             [B (singleton-cfexp "b")]
-             [C (singleton-cfexp "c")]
-             [AEB (union-cfexp EMPTY (concat-cfexp A AEB B))]
-             [CF (kleenestar-cfexp C)]
-             [BWC (union-cfexp (concat-cfexp B BWC C) EMPTY)]
-             [AZ (kleenestar-cfexp A)]
-             [AiBjCk (union-cfexp (concat-cfexp AEB CF) (concat-cfexp AZ BWC))])
-            AiBjCk))
+                           [B (singleton-cfexp "b")]
+                           [C (singleton-cfexp "c")]
+                           [AEB (union-cfexp EMPTY (concat-cfexp A AEB B))]
+                           [CF (kleenestar-cfexp C)]
+                           [BWC (union-cfexp (concat-cfexp B BWC C) EMPTY)]
+                           [AZ (kleenestar-cfexp A)]
+                           [AiBjCk (union-cfexp (concat-cfexp AEB CF) (concat-cfexp AZ BWC))])
+                          AiBjCk))
 
 
 ;;L = wcw^r
 (define WcWr (make-cfe ([WcWr (union-cfexp (concat-cfexp A WcWr A)
-                                     (concat-cfexp B WcWr B)
-                                     C)])
+                                           (concat-cfexp B WcWr B)
+                                           C)])
                        WcWr))
 
 
 
+;;L = {a^mb^nc^pd^q | m,n,p,q ≥ 0 ∧ m + n = p + q}
+(define a^mb^nc^pd^q (make-cfe ([A (singleton-cfexp "a")]
+                                [B (singleton-cfexp "b")]
+                                [C (singleton-cfexp "c")]
+                                [D (singleton-cfexp "d")]
+                                [EMP (empty-cfexp)]
+                                [AACD (union-cfexp (concat-cfexp A AACD D)
+                                                   AC)]
+                                [AC (union-cfexp (concat-cfexp A AC C)
+                                                 EMP)]
+                                [BBCD (union-cfexp (concat-cfexp B BBCD D)
+                                                   BC)]
+                                [BC (union-cfexp (concat-cfexp B BC C)
+                                                 EMP)]
+                                [ABCD (union-cfexp (concat-cfexp A ABCD D)
+                                                   BC)]
+                                [ABCC (union-cfexp (concat-cfexp A ABCC C)
+                                                   BC)]
+                                [ABDD (union-cfexp (concat-cfexp A BD D)
+                                                   EMP)]
+                                [BD (union-cfexp (concat-cfexp B BD D)
+                                                 EMP)])
+                               (union-cfexp AACD BBCD ABCD ABCC ABDD)))
 
 (define G2 (cfe->cfg AiBjCk2))
 
@@ -237,8 +261,8 @@
                                  'X))
 ;;w = (abc)^na^n
 (define thesis-cfe (make-cfe ([ABY (union-cfexp (concat-cfexp A B CXA) EMPTY)]
-             [CXA (concat-cfexp C ABY A)])
-            ABY))
+                              [CXA (concat-cfexp C ABY A)])
+                             ABY))
 
 (define thesis-cfe21
   (let ([ABY (box (void))]
@@ -247,21 +271,21 @@
       (set-box! ABY (union-cfexp (concat-cfexp A B CXA) EMPTY))
       (set-box! CXA (concat-cfexp C ABY A))
       ABY))
-    #;(make-cfe ([ABY (union-cfexp (concat-cfexp A B CXA) EMPTY)]
-             [CXA (concat-cfexp C ABY A)])
-            ABY))
+  #;(make-cfe ([ABY (union-cfexp (concat-cfexp A B CXA) EMPTY)]
+               [CXA (concat-cfexp C ABY A)])
+              ABY))
 
 ;;w = (abc)^na^n
 #;(define thesis-cfe2
-  (let* [(X (var-cfexp 'X))
-         (Y (var-cfexp 'Y))
-         (ABY (concat-cfexp A B Y))
-         (CXA (concat-cfexp C X A))]
-    (begin
-      (update-binding! X 'X EMPTY)
-      (update-binding! X 'X ABY)
-      (update-binding! Y 'Y CXA)
-      X)))
+    (let* [(X (var-cfexp 'X))
+           (Y (var-cfexp 'Y))
+           (ABY (concat-cfexp A B Y))
+           (CXA (concat-cfexp C X A))]
+      (begin
+        (update-binding! X 'X EMPTY)
+        (update-binding! X 'X ABY)
+        (update-binding! Y 'Y CXA)
+        X)))
 
 ;;w = (abc)^na^n
 (define thesis-cfg1 (make-unchecked-cfg '(X Y)
@@ -284,11 +308,11 @@
 
 ;;w = a*
 (define A* (make-unchecked-ndpda '(S)
-                                '(a b)
-                                '(a)
-                                'S
-                                '(S)
-                                `(((S a ,EMP) (S ,EMP)))))
+                                 '(a b)
+                                 '(a)
+                                 'S
+                                 '(S)
+                                 `(((S a ,EMP) (S ,EMP)))))
 
 
 (define Gina-aˆnbˆn (make-unchecked-ndpda '(S M F)
@@ -302,48 +326,48 @@
                                             ((M ,EMP ,EMP) (F ,EMP)))))
 ;;L = {wcw^r | sig = {a b}}
 (define Gina-wcwˆr (make-unchecked-ndpda '(S P Q F)
-                          '(a b c)
-                          '(a b)
-                          'S
-                          '(F)
-                          `(((S ,EMP ,EMP) (P ,EMP))
-                            ((P a ,EMP) (P (a)))
-                            ((P b ,EMP) (P (b)))
-                            ((P c ,EMP) (Q ,EMP))
-                            ((Q a (a)) (Q ,EMP))
-                            ((Q b (b)) (Q ,EMP))
-                            ((Q ,EMP ,EMP) (F ,EMP)))))
+                                         '(a b c)
+                                         '(a b)
+                                         'S
+                                         '(F)
+                                         `(((S ,EMP ,EMP) (P ,EMP))
+                                           ((P a ,EMP) (P (a)))
+                                           ((P b ,EMP) (P (b)))
+                                           ((P c ,EMP) (Q ,EMP))
+                                           ((Q a (a)) (Q ,EMP))
+                                           ((Q b (b)) (Q ,EMP))
+                                           ((Q ,EMP ,EMP) (F ,EMP)))))
 
 (define Gina-palindrome-pda (make-unchecked-ndpda '(S A B C)
-                                   '(a b)
-                                   '(a b)
-                                   'S
-                                   '(C)
-                                   `(((S ,EMP ,EMP) (A ,EMP))
-                                     ((A a ,EMP) (A (a)))
-                                     ((A b ,EMP) (A (b)))
-                                     ((A a ,EMP) (B,EMP))
-                                     ((A b ,EMP) (B ,EMP))
-                                     ((A ,EMP ,EMP) (B ,EMP))
-                                     ((B a (a)) (B ,EMP))
-                                     ((B b (b)) (B ,EMP))
-                                     ((B ,EMP ,EMP) (C ,EMP)))))
+                                                  '(a b)
+                                                  '(a b)
+                                                  'S
+                                                  '(C)
+                                                  `(((S ,EMP ,EMP) (A ,EMP))
+                                                    ((A a ,EMP) (A (a)))
+                                                    ((A b ,EMP) (A (b)))
+                                                    ((A a ,EMP) (B,EMP))
+                                                    ((A b ,EMP) (B ,EMP))
+                                                    ((A ,EMP ,EMP) (B ,EMP))
+                                                    ((B a (a)) (B ,EMP))
+                                                    ((B b (b)) (B ,EMP))
+                                                    ((B ,EMP ,EMP) (C ,EMP)))))
 ;;L = {a^ib^j | i ≤ j ≤ 2i}
 (define Gina-AiBj (make-unchecked-ndpda '(S A B C)
-                         '(a b)
-                         '(a)
-                         'S
-                         '(C)
-                         `(((S a ,EMP) (A (a)))
-                           ((S a ,EMP) (A (a a)))
-                           ((S ,EMP ,EMP) (A ,EMP))
-                           ((A a ,EMP) (A (a)))
-                           ((A a ,EMP) (A (a a)))
-                           ((A b (a)) (B ,EMP))
-                           ((A ,EMP ,EMP) (B ,EMP))
-                           ((B b (a)) (B ,EMP))
-                           ((B ,EMP ,EMP) (C ,EMP))
-                           )))
+                                        '(a b)
+                                        '(a)
+                                        'S
+                                        '(C)
+                                        `(((S a ,EMP) (A (a)))
+                                          ((S a ,EMP) (A (a a)))
+                                          ((S ,EMP ,EMP) (A ,EMP))
+                                          ((A a ,EMP) (A (a)))
+                                          ((A a ,EMP) (A (a a)))
+                                          ((A b (a)) (B ,EMP))
+                                          ((A ,EMP ,EMP) (B ,EMP))
+                                          ((B b (a)) (B ,EMP))
+                                          ((B ,EMP ,EMP) (C ,EMP))
+                                          )))
 
 (define Gina-Aibj-TBH (make-cfe ([EMP (empty-cfexp)]
                                  [A (singleton-cfexp "a")]
@@ -354,50 +378,50 @@
 
 ;;L = {a^nb^ma^n | n,m ≥ 0}
 (define Gina-A^nB^mA^n (make-unchecked-ndpda '(S A B)
-                              '(a b)
-                              '(a)
-                              'S
-                              '(B)
-                              `(((S a ,EMP) (S (a)))
-                                ((S ,EMP ,EMP) (A ,EMP))
-                                ((S b ,EMP) (A ,EMP))
-                                ((A b ,EMP) (A ,EMP))
-                                ((A ,EMP ,EMP) (B ,EMP))
-                                ((A a (a)) (B ,EMP))
-                                ((B a (a)) (B ,EMP)))))
+                                             '(a b)
+                                             '(a)
+                                             'S
+                                             '(B)
+                                             `(((S a ,EMP) (S (a)))
+                                               ((S ,EMP ,EMP) (A ,EMP))
+                                               ((S b ,EMP) (A ,EMP))
+                                               ((A b ,EMP) (A ,EMP))
+                                               ((A ,EMP ,EMP) (B ,EMP))
+                                               ((A a (a)) (B ,EMP))
+                                               ((B a (a)) (B ,EMP)))))
 
 ;;L = {a^mb^nc^pd^q | m,n,p,q ≥ 0 ∧ m + n = p + q}
 (define Gina-a^mb^nc^pd^q (make-unchecked-ndpda '(S A B C)
-                                 '(a b c d)
-                                 '(a)
-                                 'S
-                                 '(C)
-                                 `(((S a ,EMP) (S (a)))
-                                   ((S ,EMP ,EMP) (A ,EMP))
-                                   ((A b ,EMP) (A (a)))
-                                   ((A ,EMP ,EMP) (B ,EMP))
-                                   ((B c (a)) (B ,EMP))
-                                   ((B ,EMP ,EMP) (C ,EMP))
-                                   ((C d (a)) (C ,EMP)))))
+                                                '(a b c d)
+                                                '(a)
+                                                'S
+                                                '(C)
+                                                `(((S a ,EMP) (S (a)))
+                                                  ((S ,EMP ,EMP) (A ,EMP))
+                                                  ((A b ,EMP) (A (a)))
+                                                  ((A ,EMP ,EMP) (B ,EMP))
+                                                  ((B c (a)) (B ,EMP))
+                                                  ((B ,EMP ,EMP) (C ,EMP))
+                                                  ((C d (a)) (C ,EMP)))))
 
 ;;L = {a^mb^nc^p | m,n,p≥0 ∧ (m = n ∨ n = p)}
 (define Gina-a^mb^nc^p (make-unchecked-ndpda '(S A B C D E F)
-                              '(a b c)
-                              '(a)
-                              'S
-                              '(C F)
-                              `(((S ,EMP ,EMP) (A ,EMP))
-                                ((S ,EMP ,EMP) (D ,EMP))
-                                ((A a ,EMP) (A (a)))
-                                ((A ,EMP ,EMP) (B ,EMP))
-                                ((B b (a)) (B ,EMP))
-                                ((B ,EMP ,EMP) (C ,EMP))
-                                ((C c ,EMP) (C ,EMP))
-                                ((D a ,EMP) (D ,EMP))
-                                ((D ,EMP ,EMP) (E ,EMP))
-                                ((E b ,EMP) (E (a)))
-                                ((E ,EMP ,EMP) (F ,EMP))
-                                ((F c (a)) (F ,EMP)))))
+                                             '(a b c)
+                                             '(a)
+                                             'S
+                                             '(C F)
+                                             `(((S ,EMP ,EMP) (A ,EMP))
+                                               ((S ,EMP ,EMP) (D ,EMP))
+                                               ((A a ,EMP) (A (a)))
+                                               ((A ,EMP ,EMP) (B ,EMP))
+                                               ((B b (a)) (B ,EMP))
+                                               ((B ,EMP ,EMP) (C ,EMP))
+                                               ((C c ,EMP) (C ,EMP))
+                                               ((D a ,EMP) (D ,EMP))
+                                               ((D ,EMP ,EMP) (E ,EMP))
+                                               ((E b ,EMP) (E (a)))
+                                               ((E ,EMP ,EMP) (F ,EMP))
+                                               ((F c (a)) (F ,EMP)))))
 
 
 (define Gina-a^mb^nc^p-tbh (make-cfe ([L (union-cfexp w1 w3)]
@@ -430,14 +454,38 @@
                                       [S (union-cfexp (concat-cfexp C S D) EMPTY)])
                                      (concat-cfexp L S)))
 
+(define anbkckdn (make-unchecked-ndpda '(S D M C)
+                                       '(a b c d)
+                                       '(n k)
+                                       'S
+                                       '(C)
+                                       `(((S ,EMP ,EMP)(D ,EMP))
+                                         ((D ,EMP ,EMP)(M ,EMP))
+                                         ((S a ,EMP)(S (n)))
+                                         ((D b ,EMP)(D (k)))
+                                         ((M c (k))(M ,EMP))
+                                         ((C d (n))(C ,EMP))
+                                         ((M ,EMP ,EMP)(C ,EMP)))))
+
+(define Gina-aˆnbˆn* (make-unchecked-ndpda '(S M F)
+                                          '(a b)
+                                          '(a Z)
+                                          'S
+                                          '(S)
+                                          `(((S ,EMP ,EMP) (M (Z)))
+                                            ((M a ,EMP) (M (a)))
+                                            ((F b (a)) (F ,EMP))
+                                            ((M ,EMP ,EMP) (F ,EMP))
+                                            ((F ,EMP (Z)) (S ,EMP)))))
+
+
 ;;w = a*
-#|
+
 (define A*-cfe (pda->cfe A*))
 
 (define Gina-aˆnbˆn-cfe (pda->cfe Gina-aˆnbˆn))
 
 (define Gina-wcwˆr-cfe (pda->cfe Gina-wcwˆr))
-
 
 (define Gina-palindrome-pda-cfe (pda->cfe Gina-palindrome-pda))
 
@@ -449,9 +497,18 @@
 
 (define Gina-a^mb^nc^p-cfe (pda->cfe Gina-a^mb^nc^p))
 
+(define anbkckdn-cfe (pda->cfe anbkckdn))
+
+(define Gina-aˆnbˆn*-cfe (pda->cfe Gina-aˆnbˆn*))
+
+
+
+
+
 ;;w = a^nb^n
-(define converted-ANBN (pda->cfe (cfe->pda ANBN)))
-|#
+#;(define converted-ANBN (pda->cfe (cfe->pda ANBN)))
+
+
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;Unit Tests;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -558,15 +615,16 @@
   (define (loopinator-helper acc)
     (if (= (set-count acc) WORD-AMOUNT)
         acc
-        (loopinator-helper (set-add acc (gen-cfexp-word cfe)))))
+        (let ([word (gen-cfexp-word cfe)])
+          (loopinator-helper (set-add acc (if (eq? word EMP) '() word))))))
   (set->list (loopinator-helper (set))))
 
 
 ;;cfg cfexp -> boolean
 ;;Purpose: Determines if the given cfe can generate a natnum amount of words that the grammar can derive
-#;(define (grammar-checker g words)
-  (for/and ([w (in-list words)])
-    (list? (cfg-derive g (if (eq? w EMP) '() w)))))
+(define (grammar-checker g words)
+    (for/and ([w (in-list words)])
+      (list? (cfg-derive g (if (eq? w EMP) '() w)))))
 
 ;;pda cfexp -> boolean
 ;;Purpose: Determines if the given cfe can generate a natnum amount of words that the pda can accept
@@ -648,8 +706,9 @@
   (let* [(as (takef ci (λ (s) (eq? s 'a))))
          (bs (takef (drop ci (length as))
                     (λ (s) (eq? s 'b))))]
-    (and (equal? (append as bs) ci)
-         (= (length as) (length bs)))))
+    (or (eq? ci EMP)
+        (and (equal? (append as bs) ci)
+             (= (length as) (length bs))))))
 
 ;;word -> boolean
 ;;Purpose: Determines if the given word is a valid word for w = wcwˆr
@@ -690,8 +749,9 @@
          (Bs (takef (drop ci (length As)) (λ (x) (eq? x 'b))))
          (Cs (takef (drop ci (+ (length As) (length Bs))) (λ (x) (eq? x 'c))))
          (Ds (takef (drop ci (+ (length As) (length Bs) (length Cs))) (λ (x) (eq? x 'd))))]
-    (and (equal? (append As Bs Cs Ds) ci)
-         (= 0 (- (+ (length As) (length Bs)) (length Cs) (length Ds))))))
+    (or (eq? EMP ci)
+        (and (equal? (append As Bs Cs Ds) ci)
+             (= (+ (length As) (length Bs)) (+ (length Cs) (length Ds)))))))
 
 ;;word -> boolean
 ;;Purpose: Determines if the given word is a valid word for w = a^mb^nc^p
@@ -704,47 +764,8 @@
              (= 0 (- (length As) (length Bs)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;LANGUAGE BANK;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 #|
-(define WWR-WORDS (gen-cfe-words WWR))
-
-(define ANBN-WORDS (gen-cfe-words ANBN))
-
-(define BNAN-WORDS (gen-cfe-words BNAN))
-
-(define A2iBi-WORDS (gen-cfe-words A2iBi))
-
-(define AiBj-WORDS (gen-cfe-words AiBj))
-
-(define TRANSFORMED-ANBN-WORDS (gen-cfe-words transformed-anbn))
-
-(define TRANSFORMED-BNAN-WORDS (gen-cfe-words (cfg->cfe (cfe->cfg BNAN))))
-
-(define TRANSFORMED-WWR-WORDS (gen-cfe-words (cfg->cfe (cfe->cfg WWR))))
-
-(define TRANSFORMED-AiBj-WORDS (gen-cfe-words (cfg->cfe (cfe->cfg AiBj))))
-
-(define TRANSFORMED-A2iBi-WORDS (gen-cfe-words (cfg->cfe (cfe->cfg A2iBi))))
-
-(define thesis-cfg-converted-WORDS (gen-cfe-words thesis-cfg-converted))
-
-(define thesis-cfe-WORDS (gen-cfe-words thesis-cfe))
-
-(define A*-WORDS (gen-cfe-words A*-cfe))
-
-(define Gina-aˆnbˆn-WORDS (gen-cfe-words Gina-aˆnbˆn-cfe))
-
-(define Gina-wcwˆr-WORDS (gen-cfe-words Gina-wcwˆr-cfe))
-
-(define Gina-palindrome-pda-WORDS (gen-cfe-words Gina-palindrome-pda-cfe))
-
-(define Gina-AiBj-WORDS (gen-cfe-words Gina-AiBj-cfe))
-
-(define Gina-A^nB^mA^n-WORDS (gen-cfe-words Gina-A^nB^mA^n-cfe))
-
-(define Gina-a^mb^nc^pd^q-WORDS (gen-cfe-words Gina-a^mb^nc^pd^q-cfe))
-
-(define Gina-a^mb^nc^p-WORDS (gen-cfe-words Gina-a^mb^nc^p-cfe))
-
 (define converted-ANBN-WORDS (gen-cfe-words converted-ANBN))
 
 (define converted-BNAN-WORDS (gen-cfe-words (pda->cfe (cfe->pda BNAN))))
@@ -755,82 +776,137 @@
 
 (define converted-AiBj-WORDS (gen-cfe-words (pda->cfe (cfe->pda AiBj))))
 
+#;(check-pred (λ (low) (andmap valid-anbn-word? low)) converted-ANBN-WORDS)
+
+    #;(check-pred (λ (low) (andmap valid-bnan-word? low)) converted-BNAN-WORDS)
+
+    #;(check-pred (λ (low) (andmap valid-wwr-word? low)) converted-WWR-WORDS)
+
+    #;(check-pred (λ (low) (andmap valid-a2ibi-word? low)) converted-A2iBi-WORDS)
+
+    #;(check-pred (λ (low) (andmap valid-aibj-word? low)) converted-AiBj-WORDS)
+|#
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;TESTING;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(test-case
- "PDA->CFE Word Generation"
- (check-pred (λ (low) (andmap valid-A*-word? low)) A*-WORDS)
+(define PDA-TRANSFORMATION-TESTS
+  (let (#;[A*-WORDS (gen-cfe-words A*-cfe)]
 
- (check-pred (λ (low) (andmap valid-anbn-word? low)) converted-ANBN-WORDS)
+        [WWR-WORDS (gen-cfe-words WWR)]
 
- (check-pred (λ (low) (andmap valid-bnan-word? low)) converted-BNAN-WORDS)
+        [A2iBi-WORDS (gen-cfe-words A2iBi)]
 
- (check-pred (λ (low) (andmap valid-wwr-word? low)) converted-WWR-WORDS)
+        [AiBj-WORDS (gen-cfe-words AiBj)]
 
- (check-pred (λ (low) (andmap valid-a2ibi-word? low)) converted-A2iBi-WORDS)
+        [Gina-aˆnbˆn-WORDS (gen-cfe-words Gina-aˆnbˆn-cfe)]
 
- (check-pred (λ (low) (andmap valid-aibj-word? low)) converted-AiBj-WORDS)
+        [Gina-wcwˆr-WORDS (gen-cfe-words Gina-wcwˆr-cfe)]
 
- (check-pred (λ (low) (andmap valid-Gina-aˆnbˆn-word? low)) Gina-aˆnbˆn-WORDS) 
+        [Gina-palindrome-pda-WORDS (gen-cfe-words Gina-palindrome-pda-cfe)]
 
- (check-pred (λ (low) (andmap valid-Gina-wcwˆr-word? low)) Gina-wcwˆr-WORDS)
+        [Gina-AiBj-WORDS (gen-cfe-words Gina-AiBj-cfe)]
 
- (check-pred (λ (low) (andmap valid-Gina-palindrome-pda-word? low)) Gina-palindrome-pda-WORDS)
+        [Gina-A^nB^mA^n-WORDS (gen-cfe-words Gina-A^nB^mA^n-cfe)]
 
- (check-pred (λ (low) (andmap valid-Gina-AiBj-word? low)) Gina-AiBj-WORDS)
+        [Gina-a^mb^nc^pd^q-WORDS (gen-cfe-words Gina-a^mb^nc^pd^q-cfe)]
 
- (check-pred (λ (low) (andmap valid-Gina-A^nB^mA^n-word? low)) Gina-A^nB^mA^n-WORDS)
+        [Gina-a^mb^nc^p-WORDS (gen-cfe-words Gina-a^mb^nc^p-cfe)]
 
- (check-pred (λ (low) (andmap valid-Gina-a^mb^nc^pd^q-word? low)) Gina-a^mb^nc^pd^q-WORDS)
+        [anbkckdn-WORDS (gen-cfe-words anbkckdn-cfe)]
+        
+        [Gina-aˆnbˆn*-WORDS (gen-cfe-words Gina-aˆnbˆn*-cfe)])
+    (test-suite
+     "PDA transformation test"
+     (test-case
+      "PDA->CFE Word Generation"
+      #;(check-pred (λ (low) (andmap valid-A*-word? low)) A*-WORDS)
 
- (check-pred (λ (low) (andmap valid-Gina-a^mb^nc^p-word? low)) Gina-a^mb^nc^p-WORDS)
- )
+      (check-pred (λ (low) (andmap valid-Gina-aˆnbˆn-word? low)) Gina-aˆnbˆn-WORDS) 
 
-(test-case "CFE->PDA Word Membership"
+      (check-pred (λ (low) (andmap valid-Gina-wcwˆr-word? low)) Gina-wcwˆr-WORDS)
 
-           (check-true (pda-checker (cfe->pda ANBN) converted-ANBN-WORDS))
+      (check-pred (λ (low) (andmap valid-Gina-palindrome-pda-word? low)) Gina-palindrome-pda-WORDS)
 
-           (check-true (pda-checker (cfe->pda BNAN) converted-BNAN-WORDS))
+      (check-pred (λ (low) (andmap valid-Gina-AiBj-word? low)) Gina-AiBj-WORDS)
 
-           (check-true (pda-checker (cfe->pda AiBj) converted-AiBj-WORDS))
+      (check-pred (λ (low) (andmap valid-Gina-A^nB^mA^n-word? low)) Gina-A^nB^mA^n-WORDS)
 
-           (check-true (pda-checker (cfe->pda A2iBi) converted-A2iBi-WORDS))
+      (check-pred (λ (low) (andmap valid-Gina-a^mb^nc^pd^q-word? low)) Gina-a^mb^nc^pd^q-WORDS)
 
-           (check-true (pda-checker (cfe->pda WWR) converted-WWR-WORDS))
-           )
+      (check-pred (λ (low) (andmap valid-Gina-a^mb^nc^p-word? low)) Gina-a^mb^nc^p-WORDS))
 
-(test-case
- "PDA->CFE Word Membership" 
+     (test-case
+      "PDA->CFE Word Membership" 
 
- (check-true (pda-checker Gina-aˆnbˆn Gina-aˆnbˆn-WORDS))
+      (check-true (pda-checker Gina-aˆnbˆn Gina-aˆnbˆn-WORDS))
 
- (check-true (pda-checker Gina-wcwˆr Gina-wcwˆr-WORDS))
+      (check-true (pda-checker Gina-wcwˆr Gina-wcwˆr-WORDS))
 
- (check-true (pda-checker Gina-palindrome-pda Gina-palindrome-pda-WORDS))
+      (check-true (pda-checker Gina-palindrome-pda Gina-palindrome-pda-WORDS))
 
- (check-true (pda-checker Gina-AiBj Gina-AiBj-WORDS))
+      (check-true (pda-checker Gina-AiBj Gina-AiBj-WORDS))
 
- (check-true (pda-checker Gina-A^nB^mA^n Gina-A^nB^mA^n-WORDS))
+      (check-true (pda-checker Gina-A^nB^mA^n Gina-A^nB^mA^n-WORDS))
 
- (check-true (pda-checker Gina-a^mb^nc^pd^q Gina-a^mb^nc^pd^q-WORDS))
+      (check-true (pda-checker Gina-a^mb^nc^pd^q Gina-a^mb^nc^pd^q-WORDS))
 
- (check-true (pda-checker Gina-a^mb^nc^p Gina-a^mb^nc^p-WORDS))
+      (check-true (pda-checker Gina-a^mb^nc^p Gina-a^mb^nc^p-WORDS))
 
- (check-true (pda-checker (cfe->pda Gina-aˆnbˆn-cfe) Gina-aˆnbˆn-WORDS))
+      (check-true (pda-checker anbkckdn anbkckdn-WORDS))
 
- (check-true (pda-checker (cfe->pda Gina-wcwˆr-cfe) Gina-wcwˆr-WORDS))
+      (check-true (pda-checker Gina-aˆnbˆn* Gina-aˆnbˆn*-WORDS))
+      )
+      
 
- (check-true (pda-checker (cfe->pda Gina-palindrome-pda-cfe) Gina-palindrome-pda-WORDS))
+     (test-case "CFE->PDA Word Membership"
 
- (check-true (pda-checker (cfe->pda Gina-AiBj-cfe) Gina-AiBj-WORDS))
+                #;(check-true (pda-checker (cfe->pda ANBN) converted-ANBN-WORDS))
 
- (check-true (pda-checker (cfe->pda Gina-A^nB^mA^n-cfe) Gina-A^nB^mA^n-WORDS))
+                #;(check-true (pda-checker (cfe->pda BNAN) converted-BNAN-WORDS))
 
- (check-true (pda-checker (cfe->pda Gina-a^mb^nc^pd^q-cfe) Gina-a^mb^nc^pd^q-WORDS))
+                (check-true (pda-checker (cfe->pda AiBj) AiBj-WORDS))
 
- (check-true (pda-checker (cfe->pda Gina-a^mb^nc^p-cfe) Gina-a^mb^nc^p-WORDS))
- )
+                (check-true (pda-checker (cfe->pda A2iBi) A2iBi-WORDS))
+
+                (check-true (pda-checker (cfe->pda WWR) WWR-WORDS))
+           
+                (check-true (pda-checker (cfe->pda Gina-aˆnbˆn-cfe) Gina-aˆnbˆn-WORDS))
+
+                (check-true (pda-checker Gina-AiBj Gina-AiBj-WORDS))
+           
+                (check-true (pda-checker Gina-palindrome-pda Gina-palindrome-pda-WORDS))
+
+                (check-true (pda-checker Gina-A^nB^mA^n Gina-A^nB^mA^n-WORDS))
+
+                (check-true (pda-checker Gina-a^mb^nc^pd^q Gina-a^mb^nc^pd^q-WORDS))
+
+                (check-true (pda-checker Gina-a^mb^nc^p Gina-a^mb^nc^p-WORDS))
+
+                (check-true (pda-checker anbkckdn anbkckdn-WORDS))
+
+                (check-true (pda-checker Gina-aˆnbˆn* Gina-aˆnbˆn*-WORDS))
+                )
+
+     #;(test-case "Transformation Composition Word Membership"
+
+                  (check-true (pda-checker (cfe->pda Gina-wcwˆr-cfe) Gina-wcwˆr-WORDS))
+
+                  (check-true (pda-checker (cfe->pda Gina-palindrome-pda-cfe) Gina-palindrome-pda-WORDS))
+
+                  (check-true (pda-checker (cfe->pda Gina-AiBj-cfe) Gina-AiBj-WORDS))
+
+                  (check-true (pda-checker (cfe->pda Gina-A^nB^mA^n-cfe) Gina-A^nB^mA^n-WORDS))
+
+                  (check-true (pda-checker (cfe->pda Gina-a^mb^nc^pd^q-cfe) Gina-a^mb^nc^pd^q-WORDS))
+
+                  (check-true (pda-checker (cfe->pda Gina-a^mb^nc^p-cfe) Gina-a^mb^nc^p-WORDS))
+
+                  (check-true (pda-checker (cfe->pda anbkckdn-cfe) anbkckdn-WORDS))
+
+                  (check-true (pda-checker (cfe->pda Gina-aˆnbˆn*-WORDS) Gina-aˆnbˆn*-WORDS))
+                  ))))
+
 
 
 (define CFE-WORD-TESTS
@@ -842,21 +918,7 @@
 
         (A2iBi-WORDS (gen-cfe-words A2iBi))
 
-        (AiBj-WORDS (gen-cfe-words AiBj))
-
-        (TRANSFORMED-ANBN-WORDS (gen-cfe-words transformed-anbn))
-
-        (TRANSFORMED-BNAN-WORDS (gen-cfe-words (cfg->cfe (cfe->cfg BNAN))))
-
-        (TRANSFORMED-WWR-WORDS (gen-cfe-words (cfg->cfe (cfe->cfg WWR))))
-
-        (TRANSFORMED-AiBj-WORDS (gen-cfe-words (cfg->cfe (cfe->cfg AiBj))))
-
-        (TRANSFORMED-A2iBi-WORDS (gen-cfe-words (cfg->cfe (cfe->cfg A2iBi))))
-
-        (thesis-cfg-converted-WORDS (gen-cfe-words thesis-cfg-converted))
-
-        (thesis-cfe-WORDS (gen-cfe-words thesis-cfe))]
+        (AiBj-WORDS (gen-cfe-words AiBj))]
     (test-suite
      "Word-Generation-&-Membership"
      (test-case
@@ -871,10 +933,25 @@
       (check-pred (λ (low) (andmap valid-a2ibi-word? low)) A2iBi-WORDS)
 
       (check-pred (λ (low) (andmap valid-aibj-word? low)) AiBj-WORDS)
-      )
+      ))))
 
 
+(define CFG-TRANSFORMATION-TESTS
+  (let [(TRANSFORMED-ANBN-WORDS (gen-cfe-words transformed-anbn))
 
+        (TRANSFORMED-BNAN-WORDS (gen-cfe-words (cfg->cfe (cfe->cfg BNAN))))
+
+        (TRANSFORMED-WWR-WORDS (gen-cfe-words (cfg->cfe (cfe->cfg WWR))))
+
+        (TRANSFORMED-AiBj-WORDS (gen-cfe-words (cfg->cfe (cfe->cfg AiBj))))
+
+        (TRANSFORMED-A2iBi-WORDS (gen-cfe-words (cfg->cfe (cfe->cfg A2iBi))))
+
+        (thesis-cfg-converted-WORDS (gen-cfe-words thesis-cfg-converted))
+
+        (thesis-cfe-WORDS (gen-cfe-words thesis-cfe))]
+    (test-suite
+     "CFG transformation tests"
      (test-case
       "CFG->CFE Word Membership"
 
@@ -905,19 +982,14 @@
       (check-true (grammar-checker (cfe->cfg A2iBi) TRANSFORMED-A2iBi-WORDS))
 
       (check-true (grammar-checker (cfe->cfg WWR) TRANSFORMED-WWR-WORDS))
-      )
+      ))))
 
-     )))
+
 (define (run-testing)
   (begin
-    (run-tests CFE-UNIT-TESTING)
-    (run-tests CFE-WORD-TESTS)
+    ;(run-tests CFE-UNIT-TESTING)
+    ;(run-tests CFE-WORD-TESTS)
+    (run-tests CFG-TRANSFORMATION-TESTS)
+    (run-tests PDA-TRANSFORMATION-TESTS)
     (void)))
-|#
 
-
-#|
-(pda-checker Gina-AiBj (gen-cfe-words Gina-Aibj-TBH))
-(pda-checker Gina-a^mb^nc^p (gen-cfe-words Gina-a^mb^nc^p-tbh))
-(pda-checker marco-anbncndn (gen-cfe-words marco-anbncndn-tbh))
-|#

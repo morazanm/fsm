@@ -12,6 +12,7 @@
          union-cfexp/c
          kleene-cfexp/c
          gen-cfexp-word/c
+         simplify-cfexp/c
          cfe->cfg/c
          cfg->cfe/c
          pda->cfe/c
@@ -170,7 +171,9 @@
             mk-empty-cfexp?
             mk-null-cfexp?)))
 
-
+(define simplify-cfexp/c
+  (-> (is-cfexp/c "simplify-cfexp expects a cfe as input, given")
+      (is-cfexp/c "simplify-cfexp broke its own contract, should produce a cfe instead of")))
 
 (define gen-cfexp-word/c
   (->* ((is-cfexp/c "gen-cfexp-word expects a cfe as input, given"))
