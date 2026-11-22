@@ -1,23 +1,18 @@
 #lang racket/base
 
-(require "../../../sm-graph.rkt"
-         "../constants.rkt"
-         "../cfg-struct.rkt"
-         (except-in "../pda.rkt" pda->spda)
-         "../misc.rkt"
+(require "../constants.rkt"
          "cfexp-contracts.rkt"
          "cfexp-structs.rkt"
-         "cfexp-transformation-helpers.rkt"
+         "../misc.rkt"
+         "../cfg-struct.rkt"
+         (except-in "../pda.rkt" pda->spda)
+         #;"cfexp-transformations.rkt"         
          racket/contract/region
          racket/vector
-         racket/list
-         racket/treelist
-         racket/hash
+         racket/list         
          racket/set
-         racket/pretty
-         racket/format
-         racket/function
-         racket/match)
+         racket/treelist
+         racket/function)
 
 (provide cfexp?
          null-cfexp
@@ -43,8 +38,14 @@
          cfe->pda
          pick-cfexp
          ;printable-cfexp
-         simplify-cfexp
          )
+
+;;(listof X) -> Boolean
+;;Purpose: Determines if the (listof X) is of length 1
+(define (is-length-one? lox)
+  (and (not (null? lox))
+       (null? (cdr lox))))
+
 
 ;;natnum
 ;;Purpose: The default kleenestar limit
@@ -75,17 +76,6 @@
   singleton-cfexp/c 
   (mk-singleton-cfexp a-char))
 
-;;(listof X) -> boolean
-;;Purpose: Determines if the (listof X) is of length 1
-(define (is-length-one? lox)
-  (and (not (null? lox))
-       (null? (cdr lox))))
-
-;;(listof cfexp) -> boolean
-;;Purpose: Determines if the given (listof cfexp) contains the null-cfexp
-(define (contains-null? locfe)
-  (ormap mk-null-cfexp? locfe))
-
 ;; . cfexp -> concat-cfexp/null-cfexp/empty-cfexp/singleton-cfexp
 ;;Purpose: A wrapper to create a concat-cfexp unless all the given cfexps are empty-cfexp
 (define/contract (concat-cfexp . cfexps)
@@ -96,6 +86,10 @@
     (if (mk-union-cfexp? cfe)
         (box cfe)
         cfe))
+  ;;(listof cfexp) -> boolean
+  ;;Purpose: Determines if the given (listof cfexp) contains the null-cfexp
+  (define (contains-null? locfe)
+    (ormap mk-null-cfexp? locfe))
   (cond [(or (null? cfexps) (contains-null? cfexps)) (null-cfexp)] ;; no input cfes -> null
         [(andmap mk-empty-cfexp? cfexps) (empty-cfexp)] ;; only empty cfes -> empty
         [(is-length-one? cfexps) (car cfexps)] ;;only one cfe -> cfe
@@ -108,7 +102,8 @@
   (cond [(or (null? cfexps) (andmap mk-null-cfexp? cfexps)) (null-cfexp)] ;; no input cfes -> null
         [(andmap mk-empty-cfexp? cfexps) (empty-cfexp)] ;; only empty cfes -> empty
         [(is-length-one? cfexps) (car cfexps)] ;;only one cfe -> cfe
-        [else (mk-union-cfexp (vector-append (list->vector (filter (compose1 not mk-union-cfexp?)
+        [else (mk-union-cfexp (vector-append (list->vector (filter (λ (cfe) (or (not (mk-union-cfexp? cfe))
+                                                                                (not (mk-null-cfexp? cfe))))
                                                                    cfexps)) ;;otherwise flatten nested unions -> union
                                              (foldl (λ (u-cfe acc)
                                                       (vector-append acc (mk-union-cfexp-locfe u-cfe)))
@@ -287,46 +282,112 @@
                   (string-append (printable-cfexp (mk-kleene-cfexp-cfe cfe) #:seen (set-add seen cfe)) "*"))]))
 
 
+;;Moved into a different bc the functions (namely pda->cfe) are HUGE
 
-;;cfexp -> cfexp
-;;Purpose: Simplfies the given cfexp
-(define/contract (simplify-cfexp a-cfexp)
-  simplify-cfexp/c
-  ;;(vectorof cfexp) -> (vectorof cfexp)
-  ;;Purpose: Simplfies the given concat-cfexp
-  (define (simplify-concat a-concat-cfexp)
-   (match a-concat-cfexp
-     [(vector cfexp) (simplify-cfexp cfexp)] ;;is length one
-     [(vector _ (mk-null-cfexp) ..1 _) (mk-null-cfexp)] ;;contains null
-     [(vector (mk-empty-cfexp) ...) (mk-empty-cfexp)] ;; only empty cfexps
-     [(vector (mk-empty-cfexp) ... cfexp) (simplify-cfexp cfexp)] ;; many emptys and one cfexp
-     [(vector (mk-concat-cfexp cfexps) ...) (simplify-cfexp (mk-concat-cfexp (apply vector-append cfexps)))] ;; a series of concats
-     [(vector cfexp ... (mk-concat-cfexp cfexps)) (simplify-cfexp (mk-concat-cfexp (vector-append (list->vector cfexp) cfexps)))]
-     [_ (mk-concat-cfexp a-concat-cfexp)]))
+(define qempty? treelist-empty?)
 
-  ;;(vectorof cfexp) -> (vectorof cfexp)
-  ;;Purpose: Simplfies the given union-cfexp
-  (define (simplify-union a-union-cfexp)
-    (match a-union-cfexp
-      [(vector cfexp) (simplify-cfexp cfexp)] ;;is length one
-      [(vector (mk-empty-cfexp) ...) (mk-empty-cfexp)] ;; only empty cfexps
-      [(vector (mk-empty-cfexp) ..2 cfexp) (simplify-cfexp (mk-union-cfexp (vector (mk-empty-cfexp) cfexp)))] ;; many emptys and one cfexp
-      [(vector (mk-singleton-cfexp str) ...) #:when (apply string=? str) (mk-singleton-cfexp (first str))] ;;only contains same singleton 
-      [(vector (mk-union-cfexp cfexps) ...) (simplify-cfexp (mk-union-cfexp (apply vector-append cfexps)))] ;; a series of unions
-      [(vector (box cfe) ... (mk-union-cfexp cfexps) (box cfexp) ...)
-       (let ([res (simplify-cfexp (mk-union-cfexp cfexps))])
-         (mk-union-cfexp (vector-append (list->vector cfe)
-                                        (if (mk-union-cfexp? res) (mk-union-cfexp-locfe res) (vector res))
-                                        (list->vector cfexp))))]
-      [(vector cfexp ... (mk-union-cfexp cfexps)) (simplify-cfexp (mk-union-cfexp (list->vector (append cfexp (vector->list cfexps)))))]     
-      [_ (mk-union-cfexp a-union-cfexp)]))
-  
-  (match a-cfexp
-    [(mk-union-cfexp cfexps) (simplify-union cfexps)]
-    [(mk-concat-cfexp cfexps) (simplify-concat cfexps)]
-    [(mk-kleene-cfexp cfexp) (mk-kleene-cfexp (simplify-cfexp cfexp))]
-    [_ a-cfexp]))
-  
+(define E-QUEUE empty-treelist) 
+
+;; (qof X) → X throws error
+;; Purpose: Return first X of the given queue
+(define (qfirst a-qox)
+  (if (qempty? a-qox)
+      (error "qfirst applied to an empty queue")
+      (treelist-first a-qox)))
+
+;; (treelistof X) (qof X) → (qof X)
+;; Purpose: Add the given list of X to the given queue of X
+(define (enqueue a-lox a-qox) (treelist-append a-qox a-lox))
+
+;; (qof X) → (qof X) throws error
+;; Purpose: Return the rest of the given queue
+(define (dequeue a-qox)
+  (if (qempty? a-qox)
+      (error "dequeue applied to an empty queue")
+      (treelist-rest a-qox)))
+
+;;(X -> Y) Y (treelistof X) -> Y
+(define (tl-foldl f acc tl)
+  (if (treelist-empty? tl)
+      acc
+      (tl-foldl f (f (treelist-first tl) acc) (treelist-rest tl))))
+
+
+;;vars    | the accumulated boxes found from traversing the given cfe      => (setof union-cfexp)
+;;singles | the accumulated singletons found from traversing the given cfe => (setof singleton-cfexp)
+(struct extraction-results (lang-boxes singles) #:transparent)
+
+;;cfe -> extraction-results
+;;Purpose: Extracts all var-cfexp and singleton-cfexp from the given cfe
+(define (extract-box-and-singles-cfe cfe)
+  ;;cfe -> (listof cfe)
+  ;;Purpose: Extracts the sub-expressions from the given cfe
+  (define (extract-cfe-data cfe)
+    (cond [(mk-concat-cfexp? cfe) (vector->treelist (mk-concat-cfexp-locfe cfe))]
+          [(mk-union-cfexp? cfe) (vector->treelist (mk-union-cfexp-locfe cfe))]
+          [(mk-kleene-cfexp? cfe) (treelist (mk-kleene-cfexp-cfe cfe))]
+          [(box? cfe) (treelist (unbox cfe))]
+          [else empty-treelist]))
+  ;;cfe extraction-results -> extraction-results
+  ;;Purpose: Updates the given extraction-results to add the given cfe if it is a singleton or variable
+  (define (update-extraction-results cfe extract-res)
+    (cond [(or (mk-kleene-cfexp? cfe) (box? cfe))
+           (struct-copy extraction-results
+                        extract-res
+                        [lang-boxes (set-add (extraction-results-lang-boxes extract-res) cfe)])]
+          [(mk-singleton-cfexp? cfe)
+           (struct-copy extraction-results
+                        extract-res
+                        [singles (set-add (extraction-results-singles extract-res)
+                                          (string->symbol (mk-singleton-cfexp-char cfe)))])]
+          [else extract-res]))
+    
+  ;;(queueof cfe) extraction-results (listof cfe) -> extraction-results
+  ;;Purpose: Extracts the cfe and adds it to the extraction-results if its a singleton or variable
+  (define (extract-box-and-singles qocfe extract-res visited)
+    (if (qempty? qocfe)
+        extract-res
+        (let* ([cfe (qfirst qocfe)]
+               [cfes-to-add (extract-cfe-data cfe)]
+               [new-queue (enqueue (dequeue qocfe)
+                                   (treelist-filter (λ (cfe) (not (set-member? visited cfe))) cfes-to-add))]
+               [new-acc (update-extraction-results cfe extract-res)]
+               [new-visited (set-add visited cfe)])
+          (extract-box-and-singles new-queue new-acc new-visited))))
+  (let ([init-queue (tl-foldl (λ (env acc)
+                                (enqueue acc (treelist env)))
+                              E-QUEUE
+                              (extract-cfe-data cfe))])
+    (extract-box-and-singles init-queue
+                             (update-extraction-results cfe (extraction-results (set) (set)))
+                             (set cfe))))
+
+#|
+pda-struct is a structural representation of a pda
+  states | The states for the given pda => (listof states)
+  sigma  | The alphabet that the given pda works over => (listof symbol)
+  gamma  | The stack alphabet that given pda works over => (listof symbol)
+  start  | The starting state => symbol
+  finals | The final states => (listof symbol)
+  rules  | The transition relation for the given pda => (listof pda-rule)
+|#
+(struct pda (states sigma gamma start finals rules) #:transparent)
+
+#|
+pda-rule is a structural representation of a pda rule
+  source | The state the rule is coming from => symbol
+  action | The action the pda takes when using the rule => pda-action
+  destin | The state the rule transitions to => symbol
+|#
+(struct pda-rule (source action destin) #:transparent)
+
+#|
+a pda-action is a structural representation of a pda action
+  read | The element that the pda reads => symbol
+  pop  | The element(s) that the pda pops of the stack => symbol / (listof symbol)
+  push | The element(s) that the pda pushes to the stack => symbol / (listof symbol)
+|#
+(struct pda-action (read pop push) #:transparent)
 
 ;;context-free grammar -> cfe
 ;;Purpose: Converts the given cfg its equivalent cfe
@@ -1748,3 +1809,4 @@
                          (set-member? (list->set (pda-getfinals P)) (pda-getstart P)))
                     (mk-empty-cfexp)
                     (build-cfe sub-langs sublang-stack-pairs)))]))
+ 
